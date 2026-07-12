@@ -1,0 +1,85 @@
+name: Retriever CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Backend API Checks & Tests
+  backend-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv package manager
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          uv pip install --system -r pyproject.toml
+          # Install dev dependencies
+          uv pip install --system pytest ruff mypy
+
+      - name: Run Ruff Linter
+        run: |
+          cd apps/api
+          ruff check src/ tests/
+
+      - name: Run pytest Suite
+        run: |
+          cd apps/api
+          python -m pytest tests/
+
+  # Background Workers Checks
+  background-workers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv package manager
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          cd workers
+          uv pip install --system -r pyproject.toml
+          uv pip install --system ruff
+
+      - name: Run Ruff Linter
+        run: |
+          cd workers
+          ruff check src/
+
+  # Frontend Web Checks
+  frontend-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run Next.js Linter
+        run: |
+          cd apps/web
+          npm run lint

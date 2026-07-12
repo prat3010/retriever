@@ -1,0 +1,8 @@
+{
+  "name": "@retriever/core-types",
+  "version": "0.1.0",
+  "description": "Shared JSON schemas and type definitions for Retriever",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true
+}

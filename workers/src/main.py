@@ -5,11 +5,16 @@ Initializes the Celery application and binds task brokers based on environmental
 
 from celery import Celery
 
+import os
+
+broker_url = os.environ.get("RABBITMQ_URL", "amqp://guest:guest@localhost:5672//")
+backend_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
 # In a production context, setting broker configurations loads from settings
 app = Celery(
     "retriever-workers",
-    broker="amqp://guest:guest@localhost:5672//",
-    backend="redis://localhost:6379/0",
+    broker=broker_url,
+    backend=backend_url,
     include=["src.tasks"],
 )
 

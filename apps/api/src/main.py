@@ -14,9 +14,10 @@ from src.domain.abstractions.config import TenantConfiguration
 from src.adapters.api.security import verify_tenant_isolation, verify_admin_key, verify_scopes
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.identity_repository import SqlIdentityProvider
+from src.adapters.database.config_repository import SqlConfigRegistry
 from src.domain.config.config_service import ConfigurationService
 from src.adapters.database.connection import engine, tenant_session
-from src.adapters.cache.config_cache import redis_client
+from src.adapters.cache.config_cache import redis_client, RedisTenantConfigCache
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.database.models import DocumentDb, DocumentChunkDb
 
@@ -38,7 +39,10 @@ app.add_middleware(
 # Initialize components
 tenant_registry = SqlTenantRegistry()
 identity_provider = SqlIdentityProvider()
-config_service = ConfigurationService()
+config_service = ConfigurationService(
+    registry=SqlConfigRegistry(),
+    cache=RedisTenantConfigCache()
+)
 local_storage = LocalStorage()
 celery_client = Celery("retriever-workers", broker=settings.RABBITMQ_URL)
 

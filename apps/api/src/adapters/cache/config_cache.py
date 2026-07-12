@@ -2,13 +2,13 @@ import json
 from typing import Optional
 import redis.asyncio as redis
 from src.config import settings
-from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.config import TenantConfiguration, ConfigCache
 
 # Initialize async Redis client pool
 redis_client: redis.Redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
-class RedisTenantConfigCache:
+class RedisTenantConfigCache(ConfigCache):
     @staticmethod
     def _get_key(tenant_id: str) -> str:
         return f"config:tenant:{tenant_id}"

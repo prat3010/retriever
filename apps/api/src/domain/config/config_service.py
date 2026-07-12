@@ -1,14 +1,12 @@
 import os
 from typing import Optional, Any
-from src.domain.abstractions.config import TenantConfiguration
-from src.adapters.database.config_repository import SqlConfigRegistry
-from src.adapters.cache.config_cache import RedisTenantConfigCache
+from src.domain.abstractions.config import TenantConfiguration, ConfigRegistry, ConfigCache
 
 
 class ConfigurationService:
-    def __init__(self) -> None:
-        self.registry = SqlConfigRegistry()
-        self.cache = RedisTenantConfigCache()
+    def __init__(self, registry: ConfigRegistry, cache: ConfigCache) -> None:
+        self.registry = registry
+        self.cache = cache
 
     async def get_global_config(self) -> TenantConfiguration:
         """Fetch global configuration, integrating caching and environment defaults."""

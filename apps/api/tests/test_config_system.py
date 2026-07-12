@@ -64,7 +64,8 @@ def test_tenant_config_inheritance_override(mock_validate) -> None:
 
 def test_env_resolution_fallback_logic() -> None:
     from src.domain.config.config_service import ConfigurationService
-    service = ConfigurationService()
+    from unittest.mock import MagicMock
+    service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
 
     config = TenantConfiguration()
     config.ai_provider.provider_name = "openai"
@@ -78,7 +79,8 @@ def test_env_resolution_fallback_logic() -> None:
 
 def test_merge_configurations_overlay() -> None:
     from src.domain.config.config_service import ConfigurationService
-    service = ConfigurationService()
+    from unittest.mock import MagicMock
+    service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
 
     base_config = TenantConfiguration(
         feature_flags=FeatureFlags(enable_hybrid_search=True, enable_reranking=True)

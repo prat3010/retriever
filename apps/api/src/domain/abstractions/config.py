@@ -77,3 +77,35 @@ class ConfigRegistry(ABC):
     async def save_raw_config(self, tenant_id: Optional[str], config_data: dict[str, Any]) -> None:
         """Persist raw configuration dictionary to database."""
         pass
+
+
+class ConfigCache(ABC):
+    @abstractmethod
+    async def get_cached_config(self, tenant_id: str) -> Optional[TenantConfiguration]:
+        """Fetch cached tenant configurations, returning None if cache misses."""
+        pass
+
+    @abstractmethod
+    async def set_cached_config(self, tenant_id: str, config: TenantConfiguration) -> None:
+        """Cache configuration parameters with TTL boundary."""
+        pass
+
+    @abstractmethod
+    async def get_cached_global_config(self) -> Optional[TenantConfiguration]:
+        """Fetch cached global configurations, returning None if cache misses."""
+        pass
+
+    @abstractmethod
+    async def set_cached_global_config(self, config: TenantConfiguration) -> None:
+        """Cache global configurations with TTL."""
+        pass
+
+    @abstractmethod
+    async def invalidate_config(self, tenant_id: str) -> None:
+        """Invalidate the cached tenant configuration parameters immediately."""
+        pass
+
+    @abstractmethod
+    async def invalidate_global_config(self) -> None:
+        """Invalidate the cached global configuration parameters immediately."""
+        pass

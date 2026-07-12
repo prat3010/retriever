@@ -40,18 +40,18 @@ def test_create_tenant_unauthorized() -> None:
     assert "Invalid administrative master key" in response.json()["detail"]
 
 
-@patch("src.domain.identity.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 def test_verify_tenant_isolation_breach(mock_validate) -> None:
     # Key belongs to Tenant A
     mock_validate.return_value = UserContext(
         user_id="user_123",
         tenant_id="tenant_A",
         roles=["integrator"],
-        scopes=["query:execute"],
+        scopes=["query:execute", "document:read"],
     )
 
     # Key deactivation check
-    with patch("src.domain.identity.security.tenant_session") as mock_session:
+    with patch("src.adapters.api.security.tenant_session") as mock_session:
         mock_db_session = AsyncMock()
         mock_session.return_value.__aenter__.return_value = mock_db_session
 

@@ -36,14 +36,14 @@ def test_global_config_crud_admin_auth() -> None:
         assert response.json()["feature_flags"]["enable_hybrid_search"] is False
 
 
-@patch("src.domain.identity.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 def test_tenant_config_inheritance_override(mock_validate) -> None:
     tenant_id = "tnt_999"
     mock_validate.return_value = UserContext(
         user_id="user_123",
         tenant_id=tenant_id,
         roles=["integrator"],
-        scopes=[],
+        scopes=["document:read"],
     )
 
     mock_merged_config = TenantConfiguration(

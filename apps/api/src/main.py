@@ -1,16 +1,19 @@
 from typing import Optional
-from fastapi import FastAPI, status, HTTPException, Header, Depends
+from fastapi import FastAPI, status, HTTPException, Header, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
+from sqlalchemy import text
 
 from src.config import settings
 from src.domain.abstractions.exceptions import TenantIsolationViolationError, AuthenticationError
 from src.domain.abstractions.tenant import Tenant
 from src.domain.abstractions.config import TenantConfiguration
-from src.domain.identity.security import verify_tenant_isolation
+from src.adapters.api.security import verify_tenant_isolation, verify_admin_key, verify_scopes
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.domain.config.config_service import ConfigurationService
+from src.adapters.database.connection import engine
+from src.adapters.cache.config_cache import redis_client
 
 app = FastAPI(
     title="Retriever Core Platform",
@@ -85,21 +88,33 @@ async def liveness_probe() -> HealthResponse:
 
 @app.get("/health/readiness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
 async def readiness_probe() -> HealthResponse:
-    """Readiness probe to confirm external infrastructure connections are active."""
-    return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
+    """Readiness probe to confirm database and cache infrastructure connection endpoints are alive."""
+    try:
+        # Stateful query check on Postgres engine pool
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        
+        # Stateful ping check on Redis cluster connection pool
+        await redis_client.ping()
+
+        return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Readiness check failed: {str(e)}",
+        )
 
 
-@app.post("/v1/tenants", status_code=status.HTTP_201_CREATED, response_model=Tenant)
+@app.post(
+    "/v1/tenants",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Tenant,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def create_tenant(
     payload: CreateTenantRequest,
-    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
 ) -> Tenant:
     """Register a new tenant workspace bounds (System-wide Admin)."""
-    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid administrative master key credential.",
-        )
     return await tenant_registry.create_tenant(
         name=payload.name,
         tier=payload.tier,
@@ -110,17 +125,12 @@ async def create_tenant(
 @app.put(
     "/v1/config/global",
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
 )
 async def update_global_config(
     payload: TenantConfiguration,
-    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
 ) -> dict[str, str]:
     """Update global system-wide configurations (Admin only)."""
-    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid administrative master key credential.",
-        )
     await config_service.update_global_config(payload)
     return {"status": "updated", "scope": "global"}
 
@@ -129,16 +139,10 @@ async def update_global_config(
     "/v1/config/global",
     status_code=status.HTTP_200_OK,
     response_model=TenantConfiguration,
+    dependencies=[Depends(verify_admin_key)],
 )
-async def get_global_config(
-    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
-) -> TenantConfiguration:
+async def get_global_config() -> TenantConfiguration:
     """Get global configurations with secrets redacted (Admin only)."""
-    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid administrative master key credential.",
-        )
     config = await config_service.get_global_config()
     return config.redact_secrets()
 
@@ -146,7 +150,7 @@ async def get_global_config(
 @app.put(
     "/v1/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation)],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
 )
 async def update_tenant_config(
     tenantId: str,
@@ -161,7 +165,7 @@ async def update_tenant_config(
     "/v1/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
     response_model=TenantConfiguration,
-    dependencies=[Depends(verify_tenant_isolation)],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
 )
 async def get_tenant_config(tenantId: str) -> TenantConfiguration:
     """Get configuration settings for the tenant workspace (secrets redacted)."""
@@ -173,7 +177,7 @@ async def get_tenant_config(tenantId: str) -> TenantConfiguration:
     "/v1/tenants/{tenantId}/api-keys",
     status_code=status.HTTP_201_CREATED,
     response_model=ApiKeyCreatedResponse,
-    dependencies=[Depends(verify_tenant_isolation)],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
 )
 async def generate_api_key(
     tenantId: str,

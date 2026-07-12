@@ -1,8 +1,10 @@
 import hashlib
 import sys
+import json
 from typing import Optional
-from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import APIKeyHeader
+from fastapi import Depends, HTTPException, Security, status, Header
+from fastapi.security import APIKeyHeader, SecurityScopes
+from src.config import settings
 from src.domain.abstractions.exceptions import AuthenticationError, TenantIsolationViolationError
 from src.domain.abstractions.identity import UserContext
 from src.adapters.database.identity_repository import SqlIdentityProvider
@@ -16,14 +18,13 @@ identity_provider = SqlIdentityProvider()
 
 
 async def get_current_user(token: Optional[str] = Security(api_key_header)) -> UserContext:
-    """Validate incoming token and return active UserContext."""
+    """Validate incoming Bearer API key token and return active UserContext."""
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization API key is missing.",
         )
 
-    # Trim Bearer prefix if exists
     clean_token = token
     if token.lower().startswith("bearer "):
         clean_token = token[7:]
@@ -55,7 +56,6 @@ async def verify_tenant_isolation(
             "target_tenant": tenantId,
             "message": "Tenant mismatch detected! Initiating Key Revocation Kill-Switch.",
         }
-        import json
         print(json.dumps(log_payload), file=sys.stderr)
 
         # Invalidate key immediately if token is available
@@ -75,4 +75,29 @@ async def verify_tenant_isolation(
 
         raise TenantIsolationViolationError(
             "Access Denied: Tenancy boundary violation detected."
+        )
+
+
+async def verify_scopes(
+    security_scopes: SecurityScopes,
+    user_context: UserContext = Depends(get_current_user),
+) -> None:
+    """Enforce Role-Based Access Control (RBAC) scopes checks on key permissions."""
+    if security_scopes.scopes:
+        for scope in security_scopes.scopes:
+            if scope not in user_context.scopes:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Access Forbidden: Missing required scope '{scope}'.",
+                )
+
+
+async def verify_admin_key(
+    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
+) -> None:
+    """Enforce administrative master key verification checks (System-wide Admin)."""
+    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid administrative master key credential.",
         )

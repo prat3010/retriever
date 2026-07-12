@@ -20,6 +20,7 @@ Operational overview of the Retriever platform's current engineering status.
 - **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all configurations, tenant configs, api keys, and audit logs.
 - **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
 - **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
+- **Audit Remediation**: Resolved Hexagonal dependency violations, configured Alembic database migrations tracking, enforced OAuth2 scopes (RBAC), and implemented stateful readiness probes.
 
 ### Testing Status: **Green**
 - **Unit Test Coverage**: `tests/test_config_system.py` covers configuration validation, inheritance, secret redaction, and environment fallback.
@@ -35,5 +36,4 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 3. Outstanding Blockers & Issues
 
-- None. All High and Critical audit findings have been resolved.
-
+- None. All audit findings (AUD-ARC-001, AUD-API-002, AUD-DB-003, AUD-PERF-004) have been resolved.

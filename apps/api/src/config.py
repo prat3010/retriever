@@ -23,5 +23,8 @@ class Settings(BaseSettings):
     STORAGE_ACCESS_KEY: str = "minioadmin"
     STORAGE_SECRET_KEY: str = "minioadmin"
 
+    # Cognitive Provider Keys
+    COHERE_API_KEY: str = ""
+
 
 settings = Settings()

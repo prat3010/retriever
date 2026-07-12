@@ -14,7 +14,10 @@ async def initialize_database() -> None:
     async with engine.connect() as conn:
         print("Enabling Row-Level Security policies...", file=sys.stderr)
         # Enable RLS on customer data tables and register security policies
-        tables_to_isolate = ["tenant_configs", "api_keys", "audit_logs", "documents", "document_chunks"]
+        tables_to_isolate = [
+            "tenant_configs", "api_keys", "audit_logs",
+            "documents", "document_chunks", "vector_records",
+        ]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
             await conn.execute(text(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table};"))
@@ -47,6 +50,30 @@ async def initialize_database() -> None:
                 """
             )
         )
+
+        # Create HNSW cosine similarity index on vector_records
+        print("Creating HNSW vector index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vector_records_embedding
+                ON vector_records USING hnsw (embedding vector_cosine_ops)
+                WITH (m = 16, ef_construction = 200);
+                """
+            )
+        )
+
+        # Create GIN tsvector index on document_chunks for BM25 keyword search
+        print("Creating GIN tsvector index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_document_chunks_content_tsvector
+                ON document_chunks USING gin (to_tsvector('english', content));
+                """
+            )
+        )
+
         await conn.commit()
     print("Database initialization complete.", file=sys.stderr)
 

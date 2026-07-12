@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import Column, String, Float, Integer, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
+from pgvector.sqlalchemy import Vector
 
 
 def utc_now() -> datetime:
@@ -151,3 +152,19 @@ class DocumentChunkDb(Base):
     document = relationship("DocumentDb", back_populates="chunks")
 
 
+class VectorRecordDb(Base):
+    __tablename__ = "vector_records"
+
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    embedding = Column(Vector(1536), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)

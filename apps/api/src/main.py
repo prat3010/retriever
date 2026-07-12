@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, Any
 import uuid
 import hashlib
+import time
 from fastapi import FastAPI, status, HTTPException, Header, Depends, Security, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -11,15 +12,21 @@ from src.config import settings
 from src.domain.abstractions.exceptions import TenantIsolationViolationError, AuthenticationError
 from src.domain.abstractions.tenant import Tenant
 from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.retrieval import SearchQuery, SearchResponse
 from src.adapters.api.security import verify_tenant_isolation, verify_admin_key, verify_scopes
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.config_repository import SqlConfigRegistry
 from src.domain.config.config_service import ConfigurationService
+from src.domain.retrieval.search_service import HybridSearchService
 from src.adapters.database.connection import engine, tenant_session
 from src.adapters.cache.config_cache import redis_client, RedisTenantConfigCache
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.database.models import DocumentDb, DocumentChunkDb
+from src.adapters.vector.vector_repository import PgVectorSearchAdapter
+from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
+from src.adapters.cognitive.embedding_adapter import StubEmbeddingAdapter
+from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 
 app = FastAPI(
     title="Retriever Core Platform",
@@ -45,6 +52,14 @@ config_service = ConfigurationService(
 )
 local_storage = LocalStorage()
 celery_client = Celery("retriever-workers", broker=settings.RABBITMQ_URL)
+
+# Initialize search service
+search_service = HybridSearchService(
+    vector_search=PgVectorSearchAdapter(),
+    keyword_search=PgKeywordSearchAdapter(),
+    embedder=StubEmbeddingAdapter(),
+    reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
+)
 
 # Exception Handlers mapping to HTTP Responses
 @app.exception_handler(TenantIsolationViolationError)
@@ -97,6 +112,33 @@ class DocumentResponse(BaseModel):
     status: str
     createdAt: str
     updatedAt: str
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000)
+    limit: int = Field(default=5, ge=1, le=100)
+    filters: dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchResultItem(BaseModel):
+    chunkId: str
+    documentId: str
+    content: str
+    score: float
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchMetaResponse(BaseModel):
+    strategy: str
+    totalCandidates: int
+    returnedResults: int
+    durationMs: float
+
+
+class SearchResponseDto(BaseModel):
+    query: str
+    results: list[SearchResultItem]
+    searchMeta: SearchMetaResponse
 
 
 # --- API Routes ---
@@ -387,6 +429,56 @@ async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
 
         await session.commit()
         return {"status": "deleted", "documentId": documentId}
+
+
+# --- Search & Retrieval Endpoints ---
+
+@app.post(
+    "/v1/tenants/{tenantId}/search",
+    status_code=status.HTTP_200_OK,
+    response_model=SearchResponseDto,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def search_documents(
+    tenantId: str,
+    payload: SearchRequest,
+) -> SearchResponseDto:
+    """Execute hybrid search across tenant document vectors and keyword indexes."""
+    # Resolve tenant configuration for feature flags and retrieval settings
+    tenant_config = await config_service.get_tenant_config(tenantId)
+
+    query = SearchQuery(
+        query=payload.query,
+        tenant_id=tenantId,
+        top_k=payload.limit,
+        filters=payload.filters,
+        enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
+        enable_reranking=tenant_config.feature_flags.enable_reranking,
+        rrf_k=tenant_config.retrieval_settings.rrf_k,
+        reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+    )
+
+    response = await search_service.search(query)
+
+    return SearchResponseDto(
+        query=response.query,
+        results=[
+            SearchResultItem(
+                chunkId=r.chunk_id,
+                documentId=r.document_id,
+                content=r.content,
+                score=r.score,
+                metadata=r.metadata,
+            )
+            for r in response.results
+        ],
+        searchMeta=SearchMetaResponse(
+            strategy=response.search_meta.strategy,
+            totalCandidates=response.search_meta.total_candidates,
+            returnedResults=response.search_meta.returned_results,
+            durationMs=response.search_meta.duration_ms,
+        ),
+    )
 
 
 @app.get("/")

@@ -1,0 +1,154 @@
+"""Inference Domain Abstractions (Ports).
+
+Defines pure domain entities and abstract interfaces for the generative
+inference pipeline — LLM interaction, prompt construction, citation
+validation, and session tracking. Contains zero infrastructure imports.
+"""
+
+from abc import ABC, abstractmethod
+from typing import Optional, Any
+from pydantic import BaseModel, Field
+
+
+# ── Domain Models ──────────────────────────────────────────────────────────
+
+
+class ToolCall(BaseModel):
+    id: str
+    type: str = "function"
+    function: dict[str, Any] = Field(default_factory=dict)
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    name: Optional[str] = None
+    tool_calls: list[ToolCall] = Field(default_factory=list)
+
+
+class InferenceRequest(BaseModel):
+    messages: list[ChatMessage]
+    temperature: float = 0.7
+    max_tokens: Optional[int] = None
+    json_schema: Optional[dict[str, Any]] = None
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class Usage(BaseModel):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+
+
+class InferenceResponse(BaseModel):
+    content: str
+    usage: Usage = Field(default_factory=Usage)
+    finish_reason: str = "stop"
+
+
+class PromptTemplate(BaseModel):
+    prompt_id: Optional[str] = None
+    tenant_id: Optional[str] = None
+    name: str = "default"
+    content: str = ""
+    is_system_prompt: bool = False
+
+
+class ChatSessionInfo(BaseModel):
+    session_id: str
+    tenant_id: str
+    created_at: str = ""
+
+
+class InferenceLog(BaseModel):
+    log_id: Optional[str] = None
+    tenant_id: str
+    session_id: Optional[str] = None
+    model_used: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: int = 0
+
+
+# ── Ports (Abstract Interfaces) ────────────────────────────────────────────
+
+
+class LlmProvider(ABC):
+    """Port for external LLM / cognitive model providers."""
+
+    @abstractmethod
+    async def generate(
+        self, request: InferenceRequest, configuration: dict[str, Any]
+    ) -> InferenceResponse:
+        """Execute a synchronous generation and return the full response."""
+        pass
+
+    @abstractmethod
+    async def generate_stream(
+        self, request: InferenceRequest, configuration: dict[str, Any]
+    ) -> Any:
+        """Execute a streaming generation, yielding delta strings.
+
+        Returns an async iterable that yields JSON-serialisable dicts
+        with keys ``delta`` (str) and optionally ``finish_reason`` (str).
+        """
+        pass
+
+
+class PromptTemplateRegistry(ABC):
+    """Port for resolving prompt templates from storage."""
+
+    @abstractmethod
+    async def get_template(
+        self, tenant_id: str, name: str
+    ) -> Optional[PromptTemplate]:
+        """Retrieve a named prompt template for a tenant."""
+        pass
+
+    @abstractmethod
+    async def save_template(
+        self, tenant_id: str, template: PromptTemplate
+    ) -> None:
+        """Persist a prompt template."""
+        pass
+
+
+class ChatSessionRepository(ABC):
+    """Port for chat session and message persistence."""
+
+    @abstractmethod
+    async def create_session(
+        self, tenant_id: str
+    ) -> ChatSessionInfo:
+        """Create a new chat session and return its metadata."""
+        pass
+
+    @abstractmethod
+    async def get_session(
+        self, session_id: str, tenant_id: str
+    ) -> Optional[ChatSessionInfo]:
+        """Retrieve a chat session by ID, scoped to tenant."""
+        pass
+
+    @abstractmethod
+    async def add_message(
+        self, session_id: str, message: ChatMessage
+    ) -> None:
+        """Append a message to a session's history."""
+        pass
+
+    @abstractmethod
+    async def get_messages(
+        self, session_id: str
+    ) -> list[ChatMessage]:
+        """Retrieve all messages for a session in chronological order."""
+        pass
+
+
+class InferenceLogWriter(ABC):
+    """Port for persisting inference telemetry records."""
+
+    @abstractmethod
+    async def write_log(self, log: InferenceLog) -> None:
+        """Persist an inference log entry."""
+        pass

@@ -8,8 +8,9 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from src.main import app
 from src.domain.abstractions.identity import UserContext
+from src.domain.abstractions.events import EventEnvelope, DocumentEventPayload
 from src.adapters.database.models import DocumentDb
-from workers.src.tasks import process_document_async, parse_document
+from workers.src.tasks import process_document_async
 
 client = TestClient(app)
 
@@ -25,9 +26,10 @@ def clean_storage() -> None:
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-@patch("src.main.celery_client.send_task")
+@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.declare_topology")
+@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.publish")
 @patch("src.main.tenant_session")
-def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate) -> None:
+def test_document_upload_success(mock_session_ctx, mock_publish, mock_declare, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
         user_id="user_123",
@@ -58,20 +60,23 @@ def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate
         headers=headers,
     )
 
-    assert response.status_code == 201
-    assert response.json()["filename"] == "sample.txt"
-    assert response.json()["status"] == "uploaded"
-    doc_id = response.json()["documentId"]
+    assert response.status_code == 202
+    body = response.json()
+    assert body["status"] == "pending"
+    assert "documentId" in body
+    assert "fileHash" in body
+    doc_id = body["documentId"]
 
     # Verify db save called
     mock_db_session.add.assert_called_once()
     mock_db_session.commit.assert_called_once()
 
-    # Verify celery dispatch
-    mock_send_task.assert_called_once_with(
-        "tasks.parse_document",
-        args=[doc_id, tenant_id, os.path.join("./storage", tenant_id, "sample.txt")],
-    )
+    # Verify event published
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    envelope = call_args[0][0]
+    assert envelope.eventType == "DOCUMENT_UPLOADED"
+    assert envelope.payload.documentId == doc_id
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
@@ -100,7 +105,7 @@ def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
         storage_path="/path/to/existing",
         file_size=100,
         mime_type="text/plain",
-        status="processed",
+        status="INDEXED",
         created_at=datetime.datetime.now(datetime.timezone.utc),
         updated_at=datetime.datetime.now(datetime.timezone.utc),
     )
@@ -115,11 +120,10 @@ def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
         headers=headers,
     )
 
-    # Status must be 201 and return the existing document metadata immediately
-    assert response.status_code == 201
+    # Status must be 202 and return the existing document metadata immediately
+    assert response.status_code == 202
     assert response.json()["documentId"] == doc_id
-    assert response.json()["filename"] == "existing.txt"
-    assert response.json()["status"] == "processed"
+    assert response.json()["status"] == "pending"
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
@@ -147,7 +151,7 @@ def test_document_list_and_get(mock_session_ctx, mock_validate) -> None:
         storage_path="/path",
         file_size=200,
         mime_type="text/plain",
-        status="processed",
+        status="INDEXED",
         created_at=datetime.datetime.now(datetime.timezone.utc),
         updated_at=datetime.datetime.now(datetime.timezone.utc),
     )
@@ -168,7 +172,7 @@ def test_document_list_and_get(mock_session_ctx, mock_validate) -> None:
     # Test GET status
     response = client.get(f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers)
     assert response.status_code == 200
-    assert response.json()["status"] == "processed"
+    assert response.json()["status"] == "INDEXED"
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
@@ -197,7 +201,7 @@ def test_document_delete(mock_session_ctx, mock_validate) -> None:
         storage_path="/path",
         file_size=10,
         mime_type="text/plain",
-        status="processed",
+        status="INDEXED",
         created_at=datetime.datetime.now(datetime.timezone.utc),
         updated_at=datetime.datetime.now(datetime.timezone.utc),
     )
@@ -215,8 +219,9 @@ def test_document_delete(mock_session_ctx, mock_validate) -> None:
 
 
 @pytest.mark.asyncio
+@patch("workers.src.tasks._publish_event")
 @patch("workers.src.tasks.create_async_engine")
-async def test_worker_processing_task(mock_create_engine) -> None:
+async def test_worker_processing_task(mock_create_engine, mock_publish_event) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
 

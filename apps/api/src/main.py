@@ -2,11 +2,11 @@ from typing import Optional, Any
 import uuid
 import hashlib
 import time
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, HTTPException, Header, Depends, Security, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import text, select, delete
-from celery import Celery
 
 from src.config import settings
 from src.domain.abstractions.exceptions import TenantIsolationViolationError, AuthenticationError
@@ -25,14 +25,45 @@ from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.database.models import DocumentDb, DocumentChunkDb
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
-from src.adapters.cognitive.embedding_adapter import StubEmbeddingAdapter
+from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
+from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
+from src.adapters.database.inference_repository import (
+    SqlChatSessionRepository,
+    SqlPromptTemplateRegistry,
+    SqlInferenceLogWriter,
+)
+from src.domain.inference.prompt_builder import PromptBuilder
+from src.domain.inference.citation_validator import CitationValidator
+from src.domain.inference.orchestrator import InferenceOrchestrator
+from src.adapters.telemetry.setup import init_telemetry
+from src.adapters.telemetry.rate_limiter_dep import rate_limit
+from src.adapters.broker.rabbitmq_event_publisher import RabbitMQEventPublisher, ROUTING_UPLOADED
+from src.domain.abstractions.events import EventEnvelope, DocumentEventPayload
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # Flush pending telemetry on shutdown
+    try:
+        from src.adapters.telemetry.setup import get_tracer
+        tracer = get_tracer()
+        if tracer:
+            tracer.force_flush()
+    except Exception:
+        pass
+
 
 app = FastAPI(
     title="Retriever Core Platform",
     description="Headless Multi-Tenant AI Knowledge Platform Memory Layer API",
     version="0.1.0",
+    lifespan=lifespan,
 )
+
+# Initialise telemetry subsystems at import time
+init_telemetry(app)
 
 # Configure CORS
 app.add_middleware(
@@ -51,14 +82,33 @@ config_service = ConfigurationService(
     cache=RedisTenantConfigCache()
 )
 local_storage = LocalStorage()
-celery_client = Celery("retriever-workers", broker=settings.RABBITMQ_URL)
+event_publisher = RabbitMQEventPublisher(amqp_url=settings.RABBITMQ_URL)
 
 # Initialize search service
 search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
     keyword_search=PgKeywordSearchAdapter(),
-    embedder=StubEmbeddingAdapter(),
+    embedder=OpenAIEmbeddingAdapter(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    ),
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
+)
+
+# Initialize inference service
+session_repo = SqlChatSessionRepository()
+template_registry = SqlPromptTemplateRegistry()
+log_writer = SqlInferenceLogWriter()
+
+inference_orchestrator = InferenceOrchestrator(
+    llm_provider=OpenAILLMAdapter(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    ),
+    prompt_builder=PromptBuilder(template_registry=template_registry),
+    citation_validator=CitationValidator(),
+    session_repo=session_repo,
+    log_writer=log_writer,
 )
 
 # Exception Handlers mapping to HTTP Responses
@@ -266,14 +316,13 @@ async def generate_api_key(
 
 @app.post(
     "/v1/tenants/{tenantId}/documents",
-    status_code=status.HTTP_201_CREATED,
-    response_model=DocumentResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="ingest", max_requests=20))],
 )
 async def upload_document(
     tenantId: str,
     file: UploadFile = File(...),
-) -> DocumentResponse:
+) -> dict:
     """Upload and schedule document text chunking extraction pipeline."""
     content = await file.read()
     file_hash = hashlib.sha256(content).hexdigest()
@@ -288,15 +337,12 @@ async def upload_document(
         res = await session.execute(stmt)
         existing = res.scalar_one_or_none()
         if existing:
-            return DocumentResponse(
-                documentId=str(existing.document_id),
-                filename=existing.filename,
-                fileSize=existing.file_size,
-                mimeType=existing.mime_type,
-                status=existing.status,
-                createdAt=existing.created_at.isoformat(),
-                updatedAt=existing.updated_at.isoformat()
-            )
+            return {
+                "documentId": str(existing.document_id),
+                "status": "pending",
+                "fileHash": file_hash,
+                "createdAt": existing.created_at.isoformat(),
+            }
 
     # 2. Save file to isolated tenant folder
     storage_path = await local_storage.save_file(tenantId, file.filename, content)
@@ -314,28 +360,34 @@ async def upload_document(
             storage_path=storage_path,
             file_size=len(content),
             mime_type=file.content_type or "application/octet-stream",
-            status="uploaded",
+            status="PENDING",
             created_at=now,
             updated_at=now
         )
         session.add(db_doc)
         await session.commit()
-        await session.refresh(db_doc)
         created_str = db_doc.created_at.isoformat()
-        updated_str = db_doc.updated_at.isoformat()
 
-    # 4. Dispatch async processing celery task
-    celery_client.send_task("tasks.parse_document", args=[str(doc_id), tenantId, storage_path])
-
-    return DocumentResponse(
-        documentId=str(doc_id),
-        filename=file.filename,
-        fileSize=len(content),
-        mimeType=file.content_type or "application/octet-stream",
-        status="uploaded",
-        createdAt=created_str,
-        updatedAt=updated_str
+    # 4. Publish DocumentUploadedEvent
+    envelope = EventEnvelope(
+        eventType="DOCUMENT_UPLOADED",
+        payload=DocumentEventPayload(
+            documentId=str(doc_id),
+            tenantId=tenantId,
+            fileName=file.filename,
+            storagePath=storage_path,
+            mimeType=file.content_type or "application/octet-stream",
+        ),
     )
+    await event_publisher.declare_topology()
+    await event_publisher.publish(envelope, ROUTING_UPLOADED)
+
+    return {
+        "documentId": str(doc_id),
+        "status": "pending",
+        "fileHash": file_hash,
+        "createdAt": created_str,
+    }
 
 
 @app.get(
@@ -437,7 +489,7 @@ async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     "/v1/tenants/{tenantId}/search",
     status_code=status.HTTP_200_OK,
     response_model=SearchResponseDto,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"]), Depends(rate_limit(scope="search", max_requests=120))],
 )
 async def search_documents(
     tenantId: str,
@@ -478,6 +530,110 @@ async def search_documents(
             returnedResults=response.search_meta.returned_results,
             durationMs=response.search_meta.duration_ms,
         ),
+    )
+
+
+# --- Chat & Inference Endpoints ---
+
+
+class CreateSessionResponse(BaseModel):
+    sessionId: str
+    createdAt: str
+
+
+class ChatMessageRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=4000)
+    stream: bool = True
+
+
+@app.post(
+    "/v1/tenants/{tenantId}/chat/sessions",
+    status_code=status.HTTP_201_CREATED,
+    response_model=CreateSessionResponse,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+)
+async def create_chat_session(
+    tenantId: str,
+) -> CreateSessionResponse:
+    """Create a new chat session for grounded inference."""
+    session = await inference_orchestrator.create_session(tenantId)
+    return CreateSessionResponse(
+        sessionId=session.session_id,
+        createdAt=session.created_at,
+    )
+
+
+@app.post(
+    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+)
+async def send_chat_message(
+    tenantId: str,
+    sessionId: str,
+    payload: ChatMessageRequest,
+):
+    """Send a message to a chat session and get a grounded inference response.
+
+    When ``stream=true`` (default), returns a Server-Sent Events stream.
+    When ``stream=false``, returns a JSON response.
+    """
+    # Verify session belongs to tenant
+    session = await inference_orchestrator.get_session(sessionId, tenantId)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    # Retrieve tenant config for inference parameters
+    tenant_config = await config_service.get_tenant_config(tenantId)
+
+    # Execute hybrid search for grounding context
+    search_query = SearchQuery(
+        query=payload.query,
+        tenant_id=tenantId,
+        top_k=tenant_config.retrieval_settings.top_k,
+        enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
+        enable_reranking=tenant_config.feature_flags.enable_reranking,
+        rrf_k=tenant_config.retrieval_settings.rrf_k,
+        reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+    )
+    search_response = await search_service.search(search_query)
+
+    if not payload.stream:
+        response = await inference_orchestrator.generate(
+            tenant_id=tenantId,
+            session_id=sessionId,
+            query=payload.query,
+            context_chunks=search_response.results,
+            tenant_config=tenant_config,
+        )
+        return {
+            "content": response.content,
+            "usage": response.usage.model_dump(),
+            "finish_reason": response.finish_reason,
+        }
+
+    # Streaming response via SSE
+    from fastapi.responses import StreamingResponse
+
+    async def event_stream():
+        async for event in inference_orchestrator.generate_stream(
+            tenant_id=tenantId,
+            session_id=sessionId,
+            query=payload.query,
+            context_chunks=search_response.results,
+            tenant_config=tenant_config,
+        ):
+            import json
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

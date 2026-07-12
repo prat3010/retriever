@@ -17,6 +17,8 @@ async def initialize_database() -> None:
         tables_to_isolate = [
             "tenant_configs", "api_keys", "audit_logs",
             "documents", "document_chunks", "vector_records",
+            "prompt_templates", "chat_sessions", "chat_messages",
+            "inference_logs",
         ]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
@@ -70,6 +72,39 @@ async def initialize_database() -> None:
                 """
                 CREATE INDEX IF NOT EXISTS idx_document_chunks_content_tsvector
                 ON document_chunks USING gin (to_tsvector('english', content));
+                """
+            )
+        )
+
+        # Create index on chat_sessions created_at for ordering
+        print("Creating chat_sessions created_at index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_sessions_created_at
+                ON chat_sessions (created_at DESC);
+                """
+            )
+        )
+
+        # Create compound index on prompt_templates for tenant lookups
+        print("Creating prompt_templates compound index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_prompt_templates_tenant_name
+                ON prompt_templates (tenant_id, name);
+                """
+            )
+        )
+
+        # Create index on inference_logs for time-range queries
+        print("Creating inference_logs created_at index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_inference_logs_created_at
+                ON inference_logs (created_at DESC);
                 """
             )
         )

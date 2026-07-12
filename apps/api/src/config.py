@@ -25,6 +25,14 @@ class Settings(BaseSettings):
 
     # Cognitive Provider Keys
     COHERE_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""
+
+    # Observability & Telemetry
+    OTLP_ENDPOINT: str = ""
+    RATE_LIMIT_ENABLED: bool = False
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_MAX_REQUESTS: int = 100
 
 
 settings = Settings()

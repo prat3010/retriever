@@ -27,6 +27,7 @@ class TenantDb(Base):
     # Relationships
     config = relationship("TenantConfigDb", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
     api_keys = relationship("ApiKeyDb", back_populates="tenant", cascade="all, delete")
+    sessions = relationship("ChatSessionDb", backref="tenant", cascade="all, delete")
 
 
 class TenantConfigDb(Base):
@@ -116,7 +117,7 @@ class DocumentDb(Base):
     storage_path = Column(String(512), nullable=False)
     file_size = Column(Integer, nullable=False)
     mime_type = Column(String(100), nullable=False)
-    status = Column(String(50), nullable=False, default="uploaded")
+    status = Column(String(50), nullable=False, default="PENDING")
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
     is_deleted = Column(Boolean, nullable=False, default=False)
@@ -167,4 +168,79 @@ class VectorRecordDb(Base):
         index=True,
     )
     embedding = Column(Vector(1536), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class PromptTemplateDb(Base):
+    __tablename__ = "prompt_templates"
+
+    prompt_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    is_system_prompt = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class ChatSessionDb(Base):
+    __tablename__ = "chat_sessions"
+
+    session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    messages = relationship(
+        "ChatMessageDb", back_populates="session",
+        cascade="all, delete-orphan", order_by="ChatMessageDb.created_at"
+    )
+
+
+class ChatMessageDb(Base):
+    __tablename__ = "chat_messages"
+
+    message_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_sessions.session_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role = Column(String(50), nullable=False)
+    content = Column(Text, nullable=False)
+    tool_calls = Column(JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    session = relationship("ChatSessionDb", back_populates="messages")
+
+
+class InferenceLogDb(Base):
+    __tablename__ = "inference_logs"
+
+    log_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_sessions.session_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    model_used = Column(String(255), nullable=False)
+    input_tokens = Column(Integer, nullable=False, default=0)
+    output_tokens = Column(Integer, nullable=False, default=0)
+    latency_ms = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)

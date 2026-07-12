@@ -99,3 +99,55 @@ class ConfigurationDb(Base):
     )
     is_deleted = Column(Boolean, nullable=False, default=False)
 
+
+class DocumentDb(Base):
+    __tablename__ = "documents"
+
+    document_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    filename = Column(String(255), nullable=False)
+    file_hash = Column(String(64), nullable=False, index=True)
+    storage_path = Column(String(512), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    status = Column(String(50), nullable=False, default="uploaded")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+
+    # Relationships
+    chunks = relationship("DocumentChunkDb", back_populates="document", cascade="all, delete-orphan")
+
+
+class DocumentChunkDb(Base):
+    __tablename__ = "document_chunks"
+
+    chunk_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.document_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    content = Column(Text, nullable=False)
+    token_count = Column(Integer, nullable=False)
+    chunk_index = Column(Integer, nullable=False)
+    parent_chunk_id = Column(UUID(as_uuid=True), ForeignKey("document_chunks.chunk_id", ondelete="SET NULL"), nullable=True)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    # Relationships
+    document = relationship("DocumentDb", back_populates="chunks")
+
+

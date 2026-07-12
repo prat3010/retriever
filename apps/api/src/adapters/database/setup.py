@@ -14,7 +14,7 @@ async def initialize_database() -> None:
     async with engine.connect() as conn:
         print("Enabling Row-Level Security policies...", file=sys.stderr)
         # Enable RLS on customer data tables and register security policies
-        tables_to_isolate = ["tenant_configs", "api_keys", "audit_logs"]
+        tables_to_isolate = ["tenant_configs", "api_keys", "audit_logs", "documents", "document_chunks"]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
             await conn.execute(text(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table};"))

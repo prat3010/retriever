@@ -17,9 +17,7 @@ async def initialize_database() -> None:
         tables_to_isolate = ["tenant_configs", "api_keys", "audit_logs"]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
-            # Drop policy if exists to avoid conflicts
             await conn.execute(text(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table};"))
-            # Create policy linking context current_tenant_id to tenant_id or bypass-rls key
             await conn.execute(
                 text(
                     f"""
@@ -32,6 +30,23 @@ async def initialize_database() -> None:
                     """
                 )
             )
+
+        # Apply custom RLS on configurations table supporting global config (tenant_id IS NULL)
+        await conn.execute(text("ALTER TABLE configurations ENABLE ROW LEVEL SECURITY;"))
+        await conn.execute(text("DROP POLICY IF EXISTS tenant_isolation_policy ON configurations;"))
+        await conn.execute(
+            text(
+                """
+                CREATE POLICY tenant_isolation_policy ON configurations
+                FOR ALL
+                USING (
+                    tenant_id IS NULL
+                    OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+                    OR current_setting('app.bypass_rls', true) = 'true'
+                );
+                """
+            )
+        )
         await conn.commit()
     print("Database initialization complete.", file=sys.stderr)
 

@@ -5,11 +5,12 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from src.config import settings
 from src.domain.abstractions.exceptions import TenantIsolationViolationError, AuthenticationError
-from src.domain.abstractions.tenant import TenantConfig, Tenant
+from src.domain.abstractions.tenant import Tenant
+from src.domain.abstractions.config import TenantConfiguration
 from src.domain.identity.security import verify_tenant_isolation
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.identity_repository import SqlIdentityProvider
-from src.adapters.cache.config_cache import RedisTenantConfigCache
+from src.domain.config.config_service import ConfigurationService
 
 app = FastAPI(
     title="Retriever Core Platform",
@@ -29,7 +30,7 @@ app.add_middleware(
 # Initialize components
 tenant_registry = SqlTenantRegistry()
 identity_provider = SqlIdentityProvider()
-config_cache = RedisTenantConfigCache()
+config_service = ConfigurationService()
 
 # Exception Handlers mapping to HTTP Responses
 @app.exception_handler(TenantIsolationViolationError)
@@ -74,16 +75,6 @@ class ApiKeyCreatedResponse(BaseModel):
     expiresAt: Optional[str] = None
 
 
-class ConfigUpdatePayload(BaseModel):
-    activeModel: str = Field(alias="active_model")
-    temperature: float = Field(..., ge=0.0, le=1.0)
-    chunkSize: int = Field(alias="chunk_size", ge=50, le=2000)
-    chunkOverlap: int = Field(alias="chunk_overlap", ge=0, le=500)
-    systemPromptTemplate: str = Field(alias="system_prompt_template")
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
 # --- API Routes ---
 
 @app.get("/health/liveness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
@@ -117,56 +108,65 @@ async def create_tenant(
 
 
 @app.put(
+    "/v1/config/global",
+    status_code=status.HTTP_200_OK,
+)
+async def update_global_config(
+    payload: TenantConfiguration,
+    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
+) -> dict[str, str]:
+    """Update global system-wide configurations (Admin only)."""
+    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid administrative master key credential.",
+        )
+    await config_service.update_global_config(payload)
+    return {"status": "updated", "scope": "global"}
+
+
+@app.get(
+    "/v1/config/global",
+    status_code=status.HTTP_200_OK,
+    response_model=TenantConfiguration,
+)
+async def get_global_config(
+    x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
+) -> TenantConfiguration:
+    """Get global configurations with secrets redacted (Admin only)."""
+    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid administrative master key credential.",
+        )
+    config = await config_service.get_global_config()
+    return config.redact_secrets()
+
+
+@app.put(
     "/v1/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_tenant_isolation)],
 )
 async def update_tenant_config(
     tenantId: str,
-    payload: ConfigUpdatePayload,
+    payload: TenantConfiguration,
 ) -> dict[str, str]:
-    """Update Dynamic configuration settings (CAD) for the tenant workspace."""
-    # Convert payload schema parameters to Domain Entity model representation
-    domain_config = TenantConfig(
-        tenant_id=tenantId,
-        active_model=payload.activeModel,
-        temperature=payload.temperature,
-        chunk_size=payload.chunkSize,
-        chunk_overlap=payload.chunkOverlap,
-        system_prompt_template=payload.systemPromptTemplate,
-    )
-    
-    # Update DB first, then invalidate the cache to ensure cache coherence
-    await tenant_registry.update_config(tenantId, domain_config)
-    await config_cache.invalidate_config(tenantId)
-    
+    """Update / override configuration settings for the tenant workspace."""
+    await config_service.update_tenant_config(tenantId, payload)
     return {"tenantId": tenantId, "status": "updated"}
 
 
 @app.get(
     "/v1/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
-    response_model=TenantConfig,
+    response_model=TenantConfiguration,
     dependencies=[Depends(verify_tenant_isolation)],
 )
-async def get_tenant_config(tenantId: str) -> TenantConfig:
-    """Get active configuration parameters (CAD) for the tenant workspace."""
-    # Check L1 cache first (Redis)
-    cached_config = await config_cache.get_cached_config(tenantId)
-    if cached_config:
-        return cached_config
-        
-    # Cache miss - fetch from DB
-    config = await tenant_registry.get_config(tenantId)
-    if not config:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Configuration not found for active tenant workspace.",
-        )
-        
-    # Write back to L1 Cache
-    await config_cache.set_cached_config(tenantId, config)
-    return config
+async def get_tenant_config(tenantId: str) -> TenantConfiguration:
+    """Get configuration settings for the tenant workspace (secrets redacted)."""
+    config = await config_service.get_tenant_config(tenantId)
+    return config.redact_secrets()
 
 
 @app.post(
@@ -198,4 +198,5 @@ async def generate_api_key(
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "Retriever Core Platform API. Visit /docs for Swagger UI."}
+
 

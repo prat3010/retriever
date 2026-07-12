@@ -1,8 +1,8 @@
 from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from src.main import app
-from src.domain.abstractions.identity import UserContext, ApiKeyMetadata
-from src.domain.abstractions.tenant import Tenant, TenantConfig
+from src.domain.abstractions.identity import UserContext
+from src.domain.abstractions.tenant import Tenant
 
 client = TestClient(app)
 
@@ -38,75 +38,6 @@ def test_create_tenant_unauthorized() -> None:
     )
     assert response.status_code == 401
     assert "Invalid administrative master key" in response.json()["detail"]
-
-
-@patch("src.domain.identity.security.identity_provider.validate_token", new_callable=AsyncMock)
-def test_get_config_cache_hit(mock_validate) -> None:
-    tenant_id = "tnt_800f72a0-0a20-475f-b2e2-f1eaeffc2a58"
-    mock_validate.return_value = UserContext(
-        user_id="user_123",
-        tenant_id=tenant_id,
-        roles=["integrator"],
-        scopes=["query:execute"],
-    )
-
-    mock_config = TenantConfig(
-        tenant_id=tenant_id,
-        active_model="claude-3-5-sonnet",
-        temperature=0.2,
-        chunk_size=500,
-        chunk_overlap=100,
-        system_prompt_template="Test instruction set",
-    )
-
-    with patch("src.main.config_cache.get_cached_config", new_callable=AsyncMock) as mock_cache_get, \
-         patch("src.main.tenant_registry.get_config", new_callable=AsyncMock) as mock_db_get:
-        
-        mock_cache_get.return_value = mock_config
-        
-        headers = {"Authorization": "Bearer ret_live_validkey.secretpart"}
-        response = client.get(f"/v1/tenants/{tenant_id}/config", headers=headers)
-        
-        assert response.status_code == 200
-        assert response.json()["active_model"] == "claude-3-5-sonnet"
-        mock_cache_get.assert_called_once_with(tenant_id)
-        mock_db_get.assert_not_called()
-
-
-@patch("src.domain.identity.security.identity_provider.validate_token", new_callable=AsyncMock)
-def test_get_config_cache_miss(mock_validate) -> None:
-    tenant_id = "tnt_800f72a0-0a20-475f-b2e2-f1eaeffc2a58"
-    mock_validate.return_value = UserContext(
-        user_id="user_123",
-        tenant_id=tenant_id,
-        roles=["integrator"],
-        scopes=["query:execute"],
-    )
-
-    mock_config = TenantConfig(
-        tenant_id=tenant_id,
-        active_model="claude-3-5-sonnet",
-        temperature=0.2,
-        chunk_size=500,
-        chunk_overlap=100,
-        system_prompt_template="Test instruction set",
-    )
-
-    with patch("src.main.config_cache.get_cached_config", new_callable=AsyncMock) as mock_cache_get, \
-         patch("src.main.tenant_registry.get_config", new_callable=AsyncMock) as mock_db_get, \
-         patch("src.main.config_cache.set_cached_config", new_callable=AsyncMock) as mock_cache_set:
-        
-        mock_cache_get.return_value = None
-        mock_db_get.return_value = mock_config
-        
-        headers = {"Authorization": "Bearer ret_live_validkey.secretpart"}
-        response = client.get(f"/v1/tenants/{tenant_id}/config", headers=headers)
-        
-        assert response.status_code == 200
-        assert response.json()["system_prompt_template"] == "Test instruction set"
-        mock_cache_get.assert_called_once_with(tenant_id)
-        mock_db_get.assert_called_once_with(tenant_id)
-        mock_cache_set.assert_called_once_with(tenant_id, mock_config)
 
 
 @patch("src.domain.identity.security.identity_provider.validate_token", new_callable=AsyncMock)

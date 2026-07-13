@@ -4,13 +4,13 @@ Implements the Tracer port using OpenTelemetry SDK with OTLP export
 and FastAPI request lifecycle instrumentation.
 """
 
-import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator, Optional
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME, DEPLOYMENT_ENVIRONMENT
+from opentelemetry.sdk.resources import DEPLOYMENT_ENVIRONMENT, SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
@@ -51,7 +51,7 @@ class OTelTracer(Tracer):
 
     @contextmanager
     def start_span(
-        self, name: str, attributes: Optional[dict[str, str]] = None
+        self, name: str, attributes: dict[str, str] | None = None
     ) -> Generator[Any, None, None]:
         """Start a span as a context manager."""
         with self._tracer.start_as_current_span(name) as span:

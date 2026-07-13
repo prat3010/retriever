@@ -1,5 +1,7 @@
 import sys
+
 from sqlalchemy import text
+
 from src.adapters.database.connection import engine
 from src.adapters.database.models import Base
 

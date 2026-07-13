@@ -5,24 +5,25 @@ InferenceLogWriter ports using SQLAlchemy ORM with RLS enforcement.
 """
 
 import uuid
-from typing import Optional, Any
-from sqlalchemy import select, delete
+
+from sqlalchemy import select
+
+from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import (
+    ChatMessageDb,
+    ChatSessionDb,
+    InferenceLogDb,
+    PromptTemplateDb,
+)
 from src.domain.abstractions.inference import (
     ChatMessage,
     ChatSessionInfo,
+    ChatSessionRepository,
     InferenceLog,
+    InferenceLogWriter,
     PromptTemplate,
     PromptTemplateRegistry,
-    ChatSessionRepository,
-    InferenceLogWriter,
 )
-from src.adapters.database.models import (
-    PromptTemplateDb,
-    ChatSessionDb,
-    ChatMessageDb,
-    InferenceLogDb,
-)
-from src.adapters.database.connection import tenant_session
 
 
 class SqlPromptTemplateRegistry(PromptTemplateRegistry):
@@ -30,7 +31,7 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
 
     async def get_template(
         self, tenant_id: str, name: str
-    ) -> Optional[PromptTemplate]:
+    ) -> PromptTemplate | None:
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
@@ -95,7 +96,7 @@ class SqlChatSessionRepository(ChatSessionRepository):
 
     async def get_session(
         self, session_id: str, tenant_id: str
-    ) -> Optional[ChatSessionInfo]:
+    ) -> ChatSessionInfo | None:
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = select(ChatSessionDb).where(
                 ChatSessionDb.session_id == uuid.UUID(session_id),
@@ -112,12 +113,13 @@ class SqlChatSessionRepository(ChatSessionRepository):
             )
 
     async def add_message(
-        self, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage
     ) -> None:
-        async with tenant_session(tenant_id=None) as session:
+        async with tenant_session(tenant_id=tenant_id) as session:
             session.add(
                 ChatMessageDb(
                     session_id=uuid.UUID(session_id),
+                    tenant_id=uuid.UUID(tenant_id),
                     role=message.role,
                     content=message.content,
                     tool_calls=(
@@ -129,12 +131,15 @@ class SqlChatSessionRepository(ChatSessionRepository):
             await session.flush()
 
     async def get_messages(
-        self, session_id: str
+        self, tenant_id: str, session_id: str
     ) -> list[ChatMessage]:
-        async with tenant_session(tenant_id=None) as session:
+        async with tenant_session(tenant_id=tenant_id) as session:
             stmt = (
                 select(ChatMessageDb)
-                .where(ChatMessageDb.session_id == uuid.UUID(session_id))
+                .where(
+                    ChatMessageDb.session_id == uuid.UUID(session_id),
+                    ChatMessageDb.tenant_id == uuid.UUID(tenant_id),
+                )
                 .order_by(ChatMessageDb.created_at)
             )
             result = await session.execute(stmt)

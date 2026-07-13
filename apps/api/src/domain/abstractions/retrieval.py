@@ -5,7 +5,8 @@ embedding, and reranking subsystems. Contains zero infrastructure imports.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 

@@ -6,15 +6,16 @@ reranking. Depends only on domain abstractions — no infrastructure imports.
 """
 
 import time
+
 from src.domain.abstractions.retrieval import (
-    SearchQuery,
-    SearchResult,
-    SearchResponse,
-    SearchMeta,
-    VectorSearchProvider,
-    KeywordSearchProvider,
     EmbeddingProvider,
+    KeywordSearchProvider,
     RerankerProvider,
+    SearchMeta,
+    SearchQuery,
+    SearchResponse,
+    SearchResult,
+    VectorSearchProvider,
 )
 
 

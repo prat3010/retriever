@@ -122,17 +122,16 @@ def test_publisher_publish(mock_connection) -> None:
 # ── 3. Integration: Upload endpoint publishes event ──────────────────────────
 
 
-@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.declare_topology")
-@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.publish")
+@patch("src.adapters.broker.celery_publisher.celery_app.send_task")
 @patch(
     "src.adapters.api.security.identity_provider.validate_token",
     new_callable=AsyncMock,
 )
 @patch("src.main.tenant_session")
 def test_upload_publishes_event(
-    mock_session_ctx, mock_validate, mock_publish, mock_declare
+    mock_session_ctx, mock_validate, mock_send_task
 ) -> None:
-    """Verify document upload publishes a DocumentUploadedEvent."""
+    """Verify document upload submits a Celery processing task."""
     from fastapi.testclient import TestClient
 
     from src.main import app
@@ -169,11 +168,10 @@ def test_upload_publishes_event(
     assert "documentId" in body
     assert "fileHash" in body
 
-    # Verify event was published
-    mock_publish.assert_called_once()
-    call_args = mock_publish.call_args
-    envelope = call_args[0][0]
-    assert envelope.eventType == "DOCUMENT_UPLOADED"
-    assert envelope.payload.documentId == body["documentId"]
+    # Verify Celery task was submitted
+    mock_send_task.assert_called_once()
+    call_args = mock_send_task.call_args
+    assert call_args[0][0] == "process_document"
+    assert call_args[1]["args"][0] == body["documentId"]
 
 

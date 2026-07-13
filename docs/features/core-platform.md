@@ -4,13 +4,16 @@
 
 ## 1. Product Overview
 
-Retriever is a headless, multi-tenant AI Knowledge Platform designed to serve as the permanent, secure memory layer for enterprise AI applications. The platform decouples corporate knowledge from cognitive engines (Large Language Models), enabling downstream systems to query, search, and synthesize proprietary data across multiple modalities without being tied to specific LLMs, vector stores, or cloud vendors. 
+Retriever is a reusable RAG engine that powers client-specific frontends. A coaching institute uploads its textbooks → the coaching portal answers students in the teacher's style. A CA firm configures their data → their automation tool retrieves client records instantly. An advocate uploads case law → their legal assistant finds relevant precedents.
 
-At its core, Retriever provides standard APIs and SDKs to ingest unstructured documentation, decompose it into semantic chunks, construct hierarchical relationships, execute high-performance hybrid queries, and orchestrate grounded generative answers with strict citation enforcement and security boundaries.
+Each frontend is a unique product. Retriever is the shared engine behind all of them — accessed through a single API key and an `X-User-ID` header. It handles document ingestion, chunking, indexing, hybrid search, and LLM generation. It never manages user authentication, sessions, or the frontend's UI decisions — that's the frontend's job.
+
+At its core, Retriever provides a standard REST API to ingest unstructured documentation, decompose it into semantic chunks, execute high-performance hybrid queries, and orchestrate grounded generative answers with strict citation enforcement and security boundaries.
 
 ### 1.1 Out of Scope (What Retriever is NOT)
 To maintain architectural focus and prevent scope creep, Retriever explicitly excludes:
 *   **Default User Interface:** No static chatbot interface or document dashboard is provided in the core platform; Retriever is API-driven (reference implementations exist separately).
+*   **User Authentication:** Retriever does not authenticate end users. Client frontends authenticate their own users and pass `X-User-ID` to scope data access. Retriever trusts this header.
 *   **Workflow Automation:** Retriever does not orchestrate business logic flows, conditional system integrations, or multi-app actions.
 *   **Business Intelligence (BI):** Retriever does not generate reporting charts, metrics dashboards, or data aggregation analytics.
 *   **Model Training or Hosting:** Retriever does not train, fine-tune, or host base LLMs or embedding models; it connects to external endpoints via abstraction adapters.
@@ -19,13 +22,14 @@ To maintain architectural focus and prevent scope creep, Retriever explicitly ex
 
 ## 2. Primary User Personas
 
-The platform serves three primary distinct user personas.
+The platform serves two distinct user personas.
 
 | Persona | Role | Primary Objective | Key Requirements |
 |---|---|---|---|
-| **SaaS Developer (Consumer)** | Integrates Retriever APIs into downstream corporate apps (e.g., custom Slack bots, internal search, CRM side panels). | Retrieve highly relevant contexts and generated answers for end users. | - Stable, well-documented REST APIs<br>- Client SDKs (Python/TypeScript)<br>- Low-latency query pathways<br>- Consistent JSON schemas |
-| **Tenant Administrator (Admin)** | Manages a specific workspace/tenant's data boundaries, configurations, and permissions. | Configure business-specific knowledge bases, prompt guidelines, and models. | - Runtime configuration API<br>- Document status dashboards<br>- Secret/API key management<br>- Prompt registry control |
-| **Platform Engineer (Operator)** | Deploys, monitors, and operates the global Retriever installation. | Ensure high availability, strict tenant isolation, scalability, and operational security. | - Detailed telemetry (OpenTelemetry)<br>- Multi-tenant resource caps<br>- Row-level isolation validation<br>- Asynchronous queue monitoring |
+| **Platform Operator (You)** | Builds and operates the Retriever engine, creates tenants, generates API keys, monitors usage. | Deliver a reliable RAG engine that powers client products. | - Admin API for tenant CRUD, key management, config<br>- Telemetry and observability<br>- Data isolation guarantees<br>- Async queue monitoring |
+| **Client (Tenant)** | The customer. Signs up, configures prompts/models, uploads documents, builds a frontend (or uses Retriever directly). | Add RAG-powered search and LLM generation to their product. | - Stable REST API with API key auth<br>- Per-user isolation via `X-User-ID`<br>- Configurable prompts and models per tenant<br>- SDKs for common languages |
+
+A client can be a solo practitioner (they ARE the end user, `X-User-ID` is their own) or an organization with many end users (frontend authenticates users, passes `X-User-ID` on each request). Retriever treats both identically — `X-User-ID` scopes chat sessions and logs irrespective of who the user is.
 
 ---
 
@@ -36,38 +40,39 @@ The diagram below details the operational sequence from tenant initialization to
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Tenant Administrator
-    actor Developer as SaaS Developer
+    actor Operator as Platform Operator
+    actor Client as Client App
     actor User as End User
     participant Platform as Retriever Platform
 
     %% Phase 1: Onboarding
     rect rgb(240, 245, 250)
-        Note over Admin, Platform: Phase 1: Tenant Provisioning & Configuration
-        Admin->>Platform: Register Tenant Workspace
-        Platform-->>Admin: Provision isolated storage partition
-        Admin->>Platform: Create active configuration (Set models, prompts, chunk limits)
-        Admin->>Platform: Generate API credentials
+        Note over Operator, Platform: Phase 1: Tenant Provisioning & Configuration
+        Operator->>Platform: Register new tenant
+        Platform-->>Operator: Tenant ID
+        Operator->>Platform: Create client API key (scoped to tenant)
+        Platform-->>Operator: API Key (X-API-Key)
+        Operator->>Platform: Configure prompts, model, chunk limits
     end
 
-    %% Phase 2: Ingestion
-    rect rgb(245, 245, 245)
-        Note over Developer, Platform: Phase 2: Asynchronous Document Ingestion
-        Developer->>Platform: Upload raw corporate documents (PDF, DOCX, HTML)
-        Platform-->>Developer: Return 202 Accepted (Document ID, Status: Pending)
-        Note over Platform: System calculates hashes, parses layouts, redacts PII, generates hierarchical chunks & vectors
-        Developer->>Platform: Request ingestion status
-        Platform-->>Developer: Status: INDEXED
+    %% Phase 2: Client Integration
+    rect rgb(245, 240, 250)
+        Note over Client, Platform: Phase 2: Client Onboards Their Frontend
+        Operator->>Client: Give API Key + Tenant ID
+        Note over Client: Client builds their frontend<br/>Authenticates their own users
+        Client->>Platform: Upload documents (PDF, DOCX, HTML) with API key
+        Platform-->>Client: Return 202 Accepted (Document ID)
+        Note over Platform: Parses, chunks, indexes, vectorizes
     end
 
     %% Phase 3: Query & Grounding
     rect rgb(240, 250, 240)
-        Note over User, Platform: Phase 3: Grounded Query & Chat Interaction
-        User->>Developer: Submit prompt via downstream client application
-        Developer->>Platform: POST /queries (Query text + Session history)
-        Note over Platform: 1. Resolves tenant configurations dynamically<br/>2. Runs parallel vector & sparse database search<br/>3. Appends RRF and Reranker filters<br/>4. Packs prompt template & streams response
-        Platform-->>Developer: Stream tokens (SSE) + Verified inline citations & usage stats
-        Developer-->>User: Render grounded answer with clickable citations
+        Note over User, Platform: Phase 3: Grounded Query with User Isolation
+        User->>Client: Submit question via frontend
+        Client->>Platform: POST /v1/search with X-API-Key + X-User-ID
+        Note over Platform: Resolves tenant from API key<br/>Filters results to user's documents<br/>Runs hybrid search + RRF + reranking<br/>Packs prompt with tenant template & streams
+        Platform-->>Client: Stream tokens (SSE) + inline citations
+        Client-->>User: Render grounded answer with citations
     end
 ```
 
@@ -149,16 +154,16 @@ Retriever's capabilities are divided into five logical feature groups:
 
 ---
 
-## 7. Permissions and User Roles
+## 7. Permissions and API Key Scoping
 
-Retriever enforces access controls across four defined roles.
+Retriever enforces access controls via two API key roles.
 
 | Role | Scope | Permissions | Constraints |
 |---|---|---|---|
-| **Global Administrator** | System-wide | - Provision new tenants<br>- Suspend or terminate tenants<br>- Adjust global billing tiers<br>- View system-wide telemetry | Cannot read raw document chunks or query text within individual tenant databases. |
-| **Tenant Administrator** | Tenant-specific | - Generate and revoke API keys<br>- Edit prompt templates in the registry<br>- Configure active models and parameters<br>- View tenant billing and usage data | Cannot access data or configurations of other tenants. |
-| **Application Integrator** | API Access | - Upload and delete documents<br>- Trigger document chunking<br>- Query the search engine<br>- Open inference chat sessions | Restricted to calling authenticated endpoints; cannot modify tenant configurations or security rules. |
-| **End User** | Client-level | - Submit queries to a downstream application<br>- View generated responses and citations | Access is mediated by downstream apps; direct Retriever API access is prohibited. |
+| **admin** | System-wide | - Provision and suspend tenants<br>- CRUD any tenant's config<br>- Generate and revoke any tenant's API keys<br>- View system telemetry | Cannot read raw document chunks or query text within individual tenant databases. |
+| **client** | Single tenant | - Upload and delete documents<br>- Query search and chat endpoints<br>- Open inference sessions | Scoped to a single tenant. All queries auto-filtered by `tenant_id`. `X-User-ID` further scopes chat sessions and logs to a specific user. Cannot modify tenant config or manage keys. |
+
+End users never hold a Retriever API key. The client frontend authenticates users and passes `X-User-ID` on their behalf.
 
 ---
 
@@ -171,17 +176,24 @@ erDiagram
     TENANT ||--o{ TENANT_CONFIG : has
     TENANT ||--o{ DOCUMENT : owns
     TENANT ||--o{ CHAT_SESSION : maintains
+    TENANT ||--o{ USER : has
+    TENANT ||--o{ API_KEY : has
     DOCUMENT ||--o{ CHUNK : contains
     CHUNK ||--|| VECTOR_RECORD : materializes
     TENANT ||--o{ PROMPT_TEMPLATE : registers
     CHAT_SESSION ||--o{ CHAT_MESSAGE : records
     CHAT_SESSION ||--o{ INFERENCE_LOG : logs
+    USER ||--o{ CHAT_SESSION : initiates
 ```
 
 *   **Tenant:** Represents isolated enterprise workspace bounds.
     *   *Fields:* `tenantId` (UUID), `status` (`Active`, `Suspended`, `Terminated`), `tier` (`Standard`, `Enterprise`), `allowedModels` (List), `createdAt` (Timestamp).
 *   **TenantConfig:** Runtime behavior settings for each tenant.
     *   *Fields:* `tenantId` (UUID), `activeModel` (String), `temperature` (Float), `chunkSize` (Integer), `chunkOverlap` (Integer), `rrfWeights` (JSON), `rerankingThreshold` (Float), `systemPromptTemplateId` (UUID).
+*   **User:** Sub-client identity scoped to a tenant.
+    *   *Fields:* `userId` (UUID), `tenantId` (UUID), `externalId` (String), `metadata` (JSON), `createdAt` (Timestamp).
+*   **ApiKey:** Named credentials with role scoping.
+    *   *Fields:* `keyId` (UUID), `tenantId` (UUID, nullable for admin keys), `name` (String), `keyHash` (String), `role` (`admin`, `client`), `isActive` (Boolean), `createdAt` (Timestamp).
 *   **Document:** Raw document tracking metadata.
     *   *Fields:* `documentId` (UUID), `tenantId` (UUID), `fileName` (String), `fileHash` (String), `storagePath` (String), `mimeType` (String), `status` (`Pending`, `Parsing`, `Indexing`, `Indexed`, `Failed`), `createdAt` (Timestamp).
 *   **Chunk:** Text snippets extracted from documents.
@@ -190,12 +202,12 @@ erDiagram
     *   *Fields:* `chunkId` (UUID), `tenantId` (UUID), `embedding` (Array of Floats), `payload` (JSON).
 *   **PromptTemplate:** Dynamic instructions stored in the database.
     *   *Fields:* `promptId` (UUID), `tenantId` (UUID), `name` (String), `content` (Text), `isSystemPrompt` (Boolean), `createdAt` (Timestamp).
-*   **ChatSession:** Chat tracking record.
-    *   *Fields:* `sessionId` (UUID), `tenantId` (UUID), `createdAt` (Timestamp).
+*   **ChatSession:** Chat tracking record, scoped to a user.
+    *   *Fields:* `sessionId` (UUID), `tenantId` (UUID), `userId` (UUID), `createdAt` (Timestamp).
 *   **ChatMessage:** Conversational text steps.
-    *   *Fields:* `messageId` (UUID), `sessionId` (UUID), `role` (`System`, `User`, `Assistant`, `Tool`), `content` (Text), `toolCalls` (JSON), `createdAt` (Timestamp).
+    *   *Fields:* `messageId` (UUID), `sessionId` (UUID), `userId` (UUID), `role` (`System`, `User`, `Assistant`, `Tool`), `content` (Text), `toolCalls` (JSON), `createdAt` (Timestamp).
 *   **InferenceLog:** Operational log for cost and audit tracing.
-    *   *Fields:* `logId` (UUID), `tenantId` (UUID), `sessionId` (UUID), `modelUsed` (String), `inputTokens` (Integer), `outputTokens` (Integer), `latencyMs` (Integer), `createdAt` (Timestamp).
+    *   *Fields:* `logId` (UUID), `tenantId` (UUID), `sessionId` (UUID), `userId` (UUID), `modelUsed` (String), `inputTokens` (Integer), `outputTokens` (Integer), `latencyMs` (Integer), `createdAt` (Timestamp).
 
 ---
 
@@ -224,7 +236,7 @@ The table below defines how the system handles critical error states:
 
 ### 10.2 Asynchronous Document Ingestion Pipeline
 *   [ ] **AC 2.1:** Uploading a document MUST write a database record with status `PENDING` and return an HTTP `202 Accepted` response with the document ID.
-*   [ ] **AC 2.2:** Uploading a duplicate file MUST skip parsing and return HTTP `200 OK` with the existing document's ID.
+*   [ ] **AC 2.2:** Uploading a duplicate file MUST skip parsing and return HTTP `202 Accepted` with the existing document's ID (same status as first upload, differing response body).
 *   [ ] **AC 2.3:** Document parsing failures MUST transition the document status to `FAILED` and log error details to the database.
 
 ### 10.3 Knowledge Indexing & Chunk Management
@@ -242,6 +254,13 @@ The table below defines how the system handles critical error states:
 *   [ ] **AC 5.2:** Generated responses containing unresolvable citations MUST be rejected.
 *   [ ] **AC 5.3:** Outputs violating target JSON schemas or safety guardrails MUST be blocked.
 *   [ ] **AC 5.4:** The system MUST compress prompt inputs when total tokens exceed 95% of target model context limits.
+
+### 10.6 Client Integration & Sub-Client Isolation
+*   [ ] **AC 6.1:** Requests with an `admin` API key MUST bypass user scoping and return data for the entire tenant.
+*   [ ] **AC 6.2:** Requests with a `client` API key MUST auto-filter all results to the key's tenant.
+*   [ ] **AC 6.3:** Chat sessions and messages created with `X-User-ID` set MUST be scoped to that user. Queries without `X-User-ID` MUST be rejected for `client` keys.
+*   [ ] **AC 6.4:** Admin endpoints (tenant CRUD, key management, config) MUST reject `client` API keys with HTTP `403 Forbidden`.
+*   [ ] **AC 6.5:** Missing or invalid API keys MUST be rejected with HTTP `401 Unauthorized`.
 
 ---
 

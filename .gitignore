@@ -18,6 +18,12 @@ Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
+
+# Tooling
+opencode.json
+package.json
+package-lock.json
+node_modules/
 *.sln
 *.sw?
 

@@ -1,4 +1,5 @@
 from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,20 +20,23 @@ class Settings(BaseSettings):
 
     # Storage Settings
     STORAGE_BUCKET: str = "retriever-documents"
-    STORAGE_ENDPOINT: str = "http://localhost:9000"
-    STORAGE_ACCESS_KEY: str = "minioadmin"
-    STORAGE_SECRET_KEY: str = "minioadmin"
 
     # Cognitive Provider Keys
     COHERE_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""
 
+    # CORS
+    CORS_ORIGINS: str = "*"
+
     # Observability & Telemetry
     OTLP_ENDPOINT: str = ""
     RATE_LIMIT_ENABLED: bool = False
     RATE_LIMIT_WINDOW_SECONDS: int = 60
     RATE_LIMIT_MAX_REQUESTS: int = 100
+
+    # Error Tracking
+    SENTRY_DSN: str = ""
 
 
 settings = Settings()

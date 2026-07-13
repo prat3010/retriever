@@ -1,23 +1,27 @@
 import hashlib
-import sys
 import json
-from typing import Optional
-from fastapi import Depends, HTTPException, Security, status, Header
+import sys
+
+from fastapi import Depends, Header, HTTPException, Security, status
 from fastapi.security import APIKeyHeader, SecurityScopes
-from src.config import settings
-from src.domain.abstractions.exceptions import AuthenticationError, TenantIsolationViolationError
-from src.domain.abstractions.identity import UserContext
-from src.adapters.database.identity_repository import SqlIdentityProvider
-from src.adapters.database.connection import tenant_session
 from sqlalchemy import update
+
+from src.adapters.database.connection import tenant_session
+from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.models import ApiKeyDb
+from src.config import settings
+from src.domain.abstractions.exceptions import (
+    AuthenticationError,
+    TenantIsolationViolationError,
+)
+from src.domain.abstractions.identity import UserContext
 
 # Header key selector
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 identity_provider = SqlIdentityProvider()
 
 
-async def get_current_user(token: Optional[str] = Security(api_key_header)) -> UserContext:
+async def get_current_user(token: str | None = Security(api_key_header)) -> UserContext:
     """Validate incoming Bearer API key token and return active UserContext."""
     if not token:
         raise HTTPException(
@@ -35,13 +39,13 @@ async def get_current_user(token: Optional[str] = Security(api_key_header)) -> U
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-        )
+        ) from e
 
 
 async def verify_tenant_isolation(
     tenantId: str,
     user_context: UserContext = Depends(get_current_user),
-    token: Optional[str] = Security(api_key_header),
+    token: str | None = Security(api_key_header),
 ) -> None:
     """Compare authenticated context tenant_id against path parameters.
 

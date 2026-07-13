@@ -3,17 +3,14 @@ metric recording, and rate-limit enforcement.
 """
 
 import time
-from typing import Callable, Awaitable
+from collections.abc import Awaitable, Callable
+
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
 from src.adapters.telemetry.logger import get_logger
 from src.adapters.telemetry.prometheus_metrics import (
     HTTP_REQUEST_LATENCY,
-    TOKEN_CONSUMPTION,
-    QUEUE_BACKPRESSURE,
-    RLS_VIOLATIONS,
 )
 
 logger = get_logger(__name__)

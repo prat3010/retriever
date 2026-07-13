@@ -7,79 +7,56 @@ on:
     branches: [ main ]
 
 jobs:
-  # Backend API Checks & Tests
   backend-api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv package manager
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: |
-          cd apps/api
-          uv pip install --system -r pyproject.toml
-          # Install dev dependencies
-          uv pip install --system pytest ruff mypy
+        working-directory: apps/api
+        run: uv sync --frozen
 
-      - name: Run Ruff Linter
-        run: |
-          cd apps/api
-          ruff check src/ tests/
+      - name: Ruff check
+        working-directory: apps/api
+        run: uv run ruff check src/ tests/
 
-      - name: Run pytest Suite
-        run: |
-          cd apps/api
-          python -m pytest tests/
+      - name: pytest
+        working-directory: apps/api
+        run: uv run python -m pytest tests/ -q
 
-  # Background Workers Checks
   background-workers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv package manager
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: |
-          cd workers
-          uv pip install --system -r pyproject.toml
-          uv pip install --system ruff
+        working-directory: workers
+        run: uv sync --frozen
 
-      - name: Run Ruff Linter
-        run: |
-          cd workers
-          ruff check src/
+      - name: Ruff check
+        working-directory: workers
+        run: uv run ruff check src/
 
-  # Frontend Web Checks
   frontend-web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          cd apps/web
-          npm ci
+        working-directory: apps/web
+        run: npm ci
 
-      - name: Run Next.js Linter
-        run: |
-          cd apps/web
-          npm run lint
+      - name: Next.js lint
+        working-directory: apps/web
+        run: npm run lint

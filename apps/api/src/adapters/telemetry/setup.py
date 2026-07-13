@@ -7,12 +7,12 @@ and registers FastAPI middleware.
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 
-from src.config import settings
-from src.adapters.telemetry.logger import setup_logging, get_logger
+from src.adapters.telemetry.logger import get_logger, setup_logging
+from src.adapters.telemetry.middleware import setup_middleware
 from src.adapters.telemetry.otel_tracer import OTelTracer
 from src.adapters.telemetry.prometheus_metrics import PrometheusMetricsRegistry
 from src.adapters.telemetry.rate_limiter import RedisSlidingWindowRateLimiter
-from src.adapters.telemetry.middleware import setup_middleware
+from src.config import settings
 
 logger = get_logger(__name__)
 

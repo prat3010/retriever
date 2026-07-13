@@ -1,5 +1,7 @@
 from typing import Any
+
 import tiktoken
+
 from src.domain.abstractions.ingestion import TextChunker
 
 

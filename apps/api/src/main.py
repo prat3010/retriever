@@ -1,51 +1,83 @@
-from typing import Optional, Any
-import uuid
 import hashlib
-import time
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status, HTTPException, Header, Depends, Security, UploadFile, File
+from typing import Any
+
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Security,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import text, select, delete
+from sqlalchemy import delete, select, text
 
-from src.config import settings
-from src.domain.abstractions.exceptions import TenantIsolationViolationError, AuthenticationError
-from src.domain.abstractions.tenant import Tenant
-from src.domain.abstractions.config import TenantConfiguration
-from src.domain.abstractions.retrieval import SearchQuery, SearchResponse
-from src.adapters.api.security import verify_tenant_isolation, verify_admin_key, verify_scopes
-from src.adapters.database.tenant_repository import SqlTenantRegistry
-from src.adapters.database.identity_repository import SqlIdentityProvider
-from src.adapters.database.config_repository import SqlConfigRegistry
-from src.domain.config.config_service import ConfigurationService
-from src.domain.retrieval.search_service import HybridSearchService
-from src.adapters.database.connection import engine, tenant_session
-from src.adapters.cache.config_cache import redis_client, RedisTenantConfigCache
-from src.adapters.storage.local_storage import LocalStorage
-from src.adapters.database.models import DocumentDb, DocumentChunkDb
-from src.adapters.vector.vector_repository import PgVectorSearchAdapter
-from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
+from src.adapters.api.security import (
+    verify_admin_key,
+    verify_scopes,
+    verify_tenant_isolation,
+)
+from src.adapters.broker.celery_publisher import celery_app
+from src.adapters.cache.config_cache import RedisTenantConfigCache, redis_client
 from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
-from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
+from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
+from src.adapters.database.config_repository import SqlConfigRegistry
+from src.adapters.database.connection import engine, tenant_session
+from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.inference_repository import (
     SqlChatSessionRepository,
-    SqlPromptTemplateRegistry,
     SqlInferenceLogWriter,
+    SqlPromptTemplateRegistry,
 )
-from src.domain.inference.prompt_builder import PromptBuilder
+from src.adapters.database.models import DocumentChunkDb, DocumentDb
+from src.adapters.database.tenant_repository import SqlTenantRegistry
+from src.adapters.storage.local_storage import LocalStorage
+from src.adapters.telemetry.rate_limiter_dep import rate_limit
+from src.adapters.telemetry.setup import init_telemetry
+from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
+from src.adapters.vector.vector_repository import PgVectorSearchAdapter
+from src.config import settings
+from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.exceptions import (
+    AuthenticationError,
+    TenantIsolationViolationError,
+)
+from src.domain.abstractions.retrieval import SearchQuery
+from src.domain.abstractions.tenant import Tenant
+from src.domain.config.config_service import ConfigurationService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
-from src.adapters.telemetry.setup import init_telemetry
-from src.adapters.telemetry.rate_limiter_dep import rate_limit
-from src.adapters.broker.rabbitmq_event_publisher import RabbitMQEventPublisher, ROUTING_UPLOADED
-from src.domain.abstractions.events import EventEnvelope, DocumentEventPayload
+from src.domain.inference.prompt_builder import PromptBuilder
+from src.domain.retrieval.search_service import HybridSearchService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.SENTRY_DSN:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.ENVIRONMENT,
+            traces_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 1.0,
+            send_default_pii=False,
+            integrations=[
+                FastApiIntegration(),
+                OpenTelemetryIntegration(),
+            ],
+        )
     yield
     # Flush pending telemetry on shutdown
+    if settings.SENTRY_DSN:
+        import sentry_sdk
+        sentry_sdk.flush()
     try:
         from src.adapters.telemetry.setup import get_tracer
         tracer = get_tracer()
@@ -68,7 +100,7 @@ init_telemetry(app)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,7 +114,6 @@ config_service = ConfigurationService(
     cache=RedisTenantConfigCache()
 )
 local_storage = LocalStorage()
-event_publisher = RabbitMQEventPublisher(amqp_url=settings.RABBITMQ_URL)
 
 # Initialize search service
 search_service = HybridSearchService(
@@ -142,7 +173,7 @@ class CreateTenantRequest(BaseModel):
 
 class CreateApiKeyRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    expires_in_days: Optional[int] = Field(default=None, ge=1)
+    expires_in_days: int | None = Field(default=None, ge=1)
 
 
 class ApiKeyCreatedResponse(BaseModel):
@@ -151,7 +182,7 @@ class ApiKeyCreatedResponse(BaseModel):
     tenantId: str
     prefix: str
     status: str
-    expiresAt: Optional[str] = None
+    expiresAt: str | None = None
 
 
 class DocumentResponse(BaseModel):
@@ -214,8 +245,8 @@ async def readiness_probe() -> HealthResponse:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Readiness check failed: {str(e)}",
-        )
+            detail=f"Readiness check failed: {e!s}",
+        ) from e
 
 
 @app.post(
@@ -349,7 +380,7 @@ async def upload_document(
 
     # 3. Create document database entry
     import datetime
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     doc_id = uuid.uuid4()
     async with tenant_session(tenant_id=tenantId) as session:
         db_doc = DocumentDb(
@@ -368,19 +399,12 @@ async def upload_document(
         await session.commit()
         created_str = db_doc.created_at.isoformat()
 
-    # 4. Publish DocumentUploadedEvent
-    envelope = EventEnvelope(
-        eventType="DOCUMENT_UPLOADED",
-        payload=DocumentEventPayload(
-            documentId=str(doc_id),
-            tenantId=tenantId,
-            fileName=file.filename,
-            storagePath=storage_path,
-            mimeType=file.content_type or "application/octet-stream",
-        ),
+    # 4. Submit to Celery worker for parsing and embedding
+    celery_app.send_task(
+        "process_document",
+        args=[str(doc_id), tenantId, storage_path],
+        queue="ingestion.parse",
     )
-    await event_publisher.declare_topology()
-    await event_publisher.publish(envelope, ROUTING_UPLOADED)
 
     return {
         "documentId": str(doc_id),

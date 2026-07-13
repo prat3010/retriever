@@ -10,19 +10,20 @@ Usage::
         ...
 """
 
-from typing import Optional
-from fastapi import Depends, HTTPException, Request, status
+
+from fastapi import HTTPException, Request, status
+
 from src.adapters.telemetry.setup import get_rate_limiter
 
 
-def rate_limit(scope: str = "default", max_requests: Optional[int] = None) -> callable:
+def rate_limit(scope: str = "default", max_requests: int | None = None) -> callable:
     """Return a FastAPI dependency that enforces per-tenant rate limits.
 
     Args:
         scope: Logical scope name (e.g. 'search', 'chat', 'ingest').
         max_requests: Override the default max requests for this scope.
     """
-    async def dependency(request: Request, tenantId: Optional[str] = None) -> None:
+    async def dependency(request: Request, tenantId: str | None = None) -> None:
         limiter = get_rate_limiter()
         if limiter is None:
             return  # Rate limiting disabled

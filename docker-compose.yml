@@ -69,23 +69,45 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # Background Workers
+  # Background Workers (Celery — ADR-004)
   worker:
     build:
-      context: ./workers
-      dockerfile: Dockerfile.worker
+      context: .
+      dockerfile: workers/Dockerfile.worker
     container_name: retriever-worker
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/retriever
-      - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
+  # Celery Beat — periodic task scheduler
+  beat:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile.worker
+    container_name: retriever-beat
+    command: ["celery", "-A", "workers.src.celery_app", "beat", "--loglevel=info"]
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/retriever
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - worker
+
+  # Flower — Celery monitoring dashboard
+  flower:
+    image: mher/flower:2.0
+    container_name: retriever-flower
+    command: ["celery", "flower", "--broker=amqp://guest:guest@rabbitmq:5672//"]
+    ports:
+      - "5555:5555"
+    depends_on:
+      - worker
 
 volumes:
   postgres_data:

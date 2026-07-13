@@ -1,8 +1,9 @@
 import json
-from typing import Optional
+
 import redis.asyncio as redis
+
 from src.config import settings
-from src.domain.abstractions.config import TenantConfiguration, ConfigCache
+from src.domain.abstractions.config import ConfigCache, TenantConfiguration
 
 # Initialize async Redis client pool
 redis_client: redis.Redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -17,7 +18,7 @@ class RedisTenantConfigCache(ConfigCache):
     def _get_global_key() -> str:
         return "config:global"
 
-    async def get_cached_config(self, tenant_id: str) -> Optional[TenantConfiguration]:
+    async def get_cached_config(self, tenant_id: str) -> TenantConfiguration | None:
         """Fetch cached tenant configurations, returning None if cache misses."""
         try:
             key = self._get_key(tenant_id)
@@ -38,7 +39,7 @@ class RedisTenantConfigCache(ConfigCache):
         except Exception:
             pass
 
-    async def get_cached_global_config(self) -> Optional[TenantConfiguration]:
+    async def get_cached_global_config(self) -> TenantConfiguration | None:
         """Fetch cached global configurations, returning None if cache misses."""
         try:
             key = self._get_global_key()

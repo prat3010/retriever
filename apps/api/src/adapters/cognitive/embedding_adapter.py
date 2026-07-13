@@ -6,12 +6,10 @@ configurable model, exponential backoff with jitter, and request timeout.
 
 import asyncio
 import random
-from typing import Optional
 
 import openai
 
 from src.domain.abstractions.retrieval import EmbeddingProvider
-
 
 DEFAULT_MODEL = "text-embedding-3-small"
 DEFAULT_DIMENSION = 1536
@@ -38,7 +36,7 @@ class OpenAIEmbeddingAdapter(EmbeddingProvider):
         self._model = model
         self._base_url = base_url
         self._dimension = dimension
-        self._client: Optional[openai.AsyncOpenAI] = None
+        self._client: openai.AsyncOpenAI | None = None
 
     @property
     def client(self) -> openai.AsyncOpenAI:
@@ -73,7 +71,7 @@ class OpenAIEmbeddingAdapter(EmbeddingProvider):
                 )
                 sorted_data = sorted(response.data, key=lambda x: x.index)
                 return [item.embedding for item in sorted_data]
-            except (openai.APIError, openai.APITimeoutError, openai.RateLimitError) as e:
+            except (openai.APIError, openai.APITimeoutError, openai.RateLimitError):
                 if attempt == max_retries:
                     raise
                 sleep_seconds = (2 ** attempt) + random.uniform(0, 1)

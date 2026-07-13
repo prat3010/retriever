@@ -1,11 +1,13 @@
-"""Event Consumer — pika-based listener for the document processing queues.
+"""DEPRECATED — pika-based listener replaced by Celery worker.
 
-Listens on ``ingestion.parse`` and ``knowledge.embed`` queues, dispatches
-to the appropriate handler, and publishes follow-up events.
+Kept as a local-development fallback. For production use
+``celery -A workers.src.celery_app worker`` instead.
 """
 
+import asyncio
 import json
 import os
+import threading
 import pika
 
 from workers.src.tasks import process_document_async, _generate_embeddings_async
@@ -20,6 +22,45 @@ QUEUE_EMBED = "knowledge.embed"
 ROUTING_UPLOADED = "document.event.uploaded"
 ROUTING_PARSED = "document.event.parsed"
 ROUTING_FAILED = "document.event.failed"
+
+
+class AsyncLoopManager:
+    """Holds a single long-lived asyncio event loop on a daemon thread."""
+
+    def __init__(self) -> None:
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> asyncio.AbstractEventLoop:
+        loop = asyncio.new_event_loop()
+        self._loop = loop
+        self._thread = threading.Thread(
+            target=loop.run_forever, daemon=True, name="async-loop"
+        )
+        self._thread.start()
+        return loop
+
+    def stop(self) -> None:
+        if self._loop:
+            self._loop.call_soon_threadsafe(self._loop.stop)
+        if self._thread:
+            self._thread.join(timeout=5)
+
+    def run_async(self, coro) -> None:
+        if self._loop is None:
+            raise RuntimeError("AsyncLoopManager not started")
+        asyncio.run_coroutine_threadsafe(coro, self._loop)
+
+    def ensure_ack(self, channel, delivery_tag) -> None:
+        """Schedule an ack on the async loop thread to be safe."""
+        if self._loop is None:
+            return
+        self._loop.call_soon_threadsafe(
+            channel.basic_ack, delivery_tag=delivery_tag
+        )
+
+
+_loop_manager = AsyncLoopManager()
 
 
 def _declare_topology(channel: pika.channel.Channel) -> None:
@@ -54,35 +95,46 @@ def _declare_topology(channel: pika.channel.Channel) -> None:
 
 
 def _handle_uploaded(channel, method, properties, body) -> None:
-    """Handle DocumentUploadedEvent — trigger document parsing."""
-    import asyncio
     envelope = json.loads(body)
     payload = envelope["payload"]
     doc_id = payload["documentId"]
     tenant_id = payload["tenantId"]
     storage_path = payload.get("storagePath", "")
 
-    asyncio.run(process_document_async(doc_id, tenant_id, storage_path))
-    channel.basic_ack(delivery_tag=method.delivery_tag)
+    _loop_manager.run_async(_process(doc_id, tenant_id, storage_path, channel, method))
 
 
 def _handle_parsed(channel, method, properties, body) -> None:
-    """Handle DocumentParsedEvent — trigger embedding generation."""
-    import asyncio
     envelope = json.loads(body)
     payload = envelope["payload"]
     doc_id = payload["documentId"]
     tenant_id = payload["tenantId"]
 
-    asyncio.run(_generate_embeddings_async(doc_id, tenant_id))
-    channel.basic_ack(delivery_tag=method.delivery_tag)
+    _loop_manager.run_async(_embed(doc_id, tenant_id, channel, method))
+
+
+async def _process(doc_id, tenant_id, storage_path, channel, method) -> None:
+    try:
+        await process_document_async(doc_id, tenant_id, storage_path)
+    except Exception:
+        # already handled inside process_document_async
+        pass
+    finally:
+        _loop_manager.ensure_ack(channel, method.delivery_tag)
+
+
+async def _embed(doc_id, tenant_id, channel, method) -> None:
+    try:
+        await _generate_embeddings_async(doc_id, tenant_id)
+    except Exception:
+        pass
+    finally:
+        _loop_manager.ensure_ack(channel, method.delivery_tag)
 
 
 def start_consumer() -> None:
-    """Start the event consumer, listening on all processing queues.
-
-    This replaces the Celery-only worker for event-driven task dispatch.
-    """
+    """Start the event consumer, listening on all processing queues."""
+    _loop_manager.start()
     params = pika.URLParameters(RABBITMQ_URL)
     connection = pika.BlockingConnection(params)
     channel = connection.channel()
@@ -99,6 +151,7 @@ def start_consumer() -> None:
         channel.stop_consuming()
     finally:
         connection.close()
+        _loop_manager.stop()
 
 
 if __name__ == "__main__":

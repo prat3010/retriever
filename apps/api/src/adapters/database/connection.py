@@ -1,7 +1,9 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.config import settings
 
 # Create async engine supporting asyncpg
@@ -21,7 +23,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 @asynccontextmanager
 async def tenant_session(
-    tenant_id: Optional[str] = None, bypass_rls: bool = False
+    tenant_id: str | None = None, bypass_rls: bool = False
 ) -> AsyncGenerator[AsyncSession, None]:
     """Provide a transactional session context enforcing RLS settings.
 

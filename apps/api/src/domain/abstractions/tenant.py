@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -17,7 +17,7 @@ class TenantConfig(BaseModel):
     temperature: float = Field(default=0.2)
     chunk_size: int = Field(default=500)
     chunk_overlap: int = Field(default=100)
-    system_prompt_template: str = Field(default="You are a helpful grounding assistant.")
+    system_prompt_template: str = Field(default="")
 
 
 class TenantRegistry(ABC):
@@ -29,7 +29,7 @@ class TenantRegistry(ABC):
         pass
 
     @abstractmethod
-    async def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+    async def get_tenant(self, tenant_id: str) -> Tenant | None:
         """Retrieve tenant metadata by tenant ID."""
         pass
 
@@ -39,6 +39,6 @@ class TenantRegistry(ABC):
         pass
 
     @abstractmethod
-    async def get_config(self, tenant_id: str) -> Optional[TenantConfig]:
+    async def get_config(self, tenant_id: str) -> TenantConfig | None:
         """Retrieve dynamic configuration parameters for the tenant."""
         pass

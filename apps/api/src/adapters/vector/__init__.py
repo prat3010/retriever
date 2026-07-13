@@ -1,1 +1,1 @@
-"""pgvector and Qdrant similarity search vector store adapters."""
+"""pgvector similarity search and keyword search adapters."""

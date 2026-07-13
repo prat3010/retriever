@@ -21,15 +21,15 @@ The monorepo separates runtime applications, background workers, and shared depe
 │   ├── api/                     # Gateway & serving API application (FastAPI)
 │   └── web/                     # Client Web playground UI application (Next.js)
 ├── packages/
-│   ├── core-types/              # Shared data transfer structures and schemas
-│   ├── sdk-js/                  # Frontend TS client library
+│   ├── processing-core/         # Shared processing primitives (PDF parse, chunk, embed)
+│   ├── sdk-js/                  # Frontend TS client library (placeholder — M9)
 │   └── sdk-python/              # Backend Python client library
 ├── workers/                     # Async ingestion, OCR, and reindexing tasks
 └── docs/                        # Static specifications, ADRs, and configurations
 ```
 
 * **No Cross-App Imports:** Files in `apps/api` MUST NOT import code directly from `apps/web`. Sharing parameters or definitions requires moving them to a package within `packages/`.
-* **Shared Package Restrictions:** The `packages/core-types` package houses JSON schemas and static TypeScript interfaces. It MUST NOT import libraries or define network connections.
+* **Shared Package Restrictions:** Packages under `packages/` house shared primitives (e.g., `processing-core`) or SDK stubs. They MUST NOT import libraries that pull in framework dependencies or define network connections beyond their SDK scope.
 
 ### 1.2 Module Boundaries & Dependency Flow
 
@@ -57,24 +57,24 @@ To maintain logical isolation and enforce architectural boundaries, all imports 
 
 | Layer | May Import | Must Never Import |
 |---|---|---|
-| **Domain** (`domain/core/`) | `domain/abstractions/` (Ports), `packages/core-types` | `adapters/`, `apps/api/routers/`, `workers/`, framework libraries (FastAPI, Next.js), database client drivers (SQLAlchemy, pgvector). |
-| **Ports** (`domain/abstractions/`) | `packages/core-types` | All other layers. Ports must be purely abstract and contain zero implementation dependencies. |
-| **Adapters** (`adapters/`) | `domain/abstractions/` (Ports), `packages/core-types`, framework libraries, database clients, third-party SDKs. | Direct implementations of other adapters, core domain logic implementation (`domain/core/`). |
-| **API Gateway** (`apps/api/`) | `domain/abstractions/` (Ports), `packages/core-types`, framework routing libraries (FastAPI). | Direct raw database connections bypassing adapters, internal code of other applications, frontend packages. |
-| **Workers** (`workers/`) | `domain/abstractions/` (Ports), `packages/core-types`, storage drivers. | API gateway HTTP routes, frontend files, core domain logic implementation (must interact through Ports). |
+| **Domain** (`domain/`) | `domain/abstractions/` (Ports) | `adapters/`, `apps/api/routers/`, `workers/`, framework libraries (FastAPI, Next.js), database client drivers (SQLAlchemy, pgvector). |
+| **Ports** (`domain/abstractions/`) | Python stdlib, domain types | All other layers. Ports must be purely abstract and contain zero implementation dependencies. |
+| **Adapters** (`adapters/`) | `domain/abstractions/` (Ports), framework libraries, database clients, third-party SDKs. | Direct implementations of other adapters, core domain logic implementation (`domain/`). |
+| **API Gateway** (`apps/api/src/`) | `domain/abstractions/` (Ports), framework routing libraries (FastAPI). | Direct raw database connections bypassing adapters, internal code of other applications, frontend packages. |
+| **Workers** (`workers/src/`) | `workers.src.celery_app`, `packages/processing-core`, storage drivers. | API gateway HTTP routes, frontend files, core domain logic implementation (must interact through Ports). |
 | **Packages** (`packages/`) | Other utility packages (only if acyclic and strictly versioned). | Application code inside `apps/`, backend adapters, database client instances. |
-| **Frontend** (`apps/web/`) | `packages/sdk-js` (via client network requests). | API Gateway inner modules, database/SQL engines, backend adapters, system files. |
+| **Frontend** (`apps/web/`) | HTTP calls to API Gateway at `apps/api/`. | API Gateway inner modules, database/SQL engines, backend adapters, system files. |
 
 #### 1.3.1 Valid Dependency Direction Examples
-* **Core-to-Port Call:** A file at `apps/api/src/domain/core/ingestion/processor.py` imports a storage abstraction from `domain.abstractions.storage.StorageProvider` to fetch document files, satisfying inward-bound design.
-* **Adapter-to-Port Implementation:** A database interface at `apps/api/src/adapters/database/postgres_adapter.py` imports the abstract port `domain.abstractions.vector.VectorDatabaseProvider` and implements its search methods.
-* **API-to-Port Integration:** The API route `apps/api/src/routers/query.py` invokes search commands by calling methods on `domain.abstractions.retrieval.RetrievalProvider`.
+* **Core-to-Port Call:** `apps/api/src/domain/retrieval/search_service.py` imports `domain.abstractions.retrieval.VectorSearchProvider` to execute hybrid search, satisfying inward-bound design.
+* **Adapter-to-Port Implementation:** `apps/api/src/adapters/vector/vector_repository.py` implements `VectorSearchProvider` from `domain.abstractions.retrieval`.
+* **API-to-Port Integration:** `apps/api/src/main.py` calls methods on adapters through FastAPI dependency injection, never directly importing domain logic.
 
 #### 1.3.2 Invalid Dependency Direction Examples (Build-Blocking)
-* **Domain Coupling to Adapter:** A chunking engine at `domain/core/knowledge/chunker.py` attempts to import `adapters.database.postgres_adapter.PostgresAdapter` (Domain importing infrastructure).
-* **Domain Coupling to Framework:** An authentication logic handler at `domain/core/identity/auth.py` imports `fastapi.HTTPException` (Domain logic depending on presentation framework).
-* **Frontend Bypassing API:** A component at `apps/web/src/components/Chat.tsx` directly imports `apps/api/src/domain/inference/orchestrator.py` (Frontend importing server code).
-* **Package Coupling to Infrastructure:** A type definition at `packages/core-types/index.ts` imports `adapters/cache/redis_adapter.ts` (Schema package importing infrastructure adapter).
+* **Domain Coupling to Adapter:** A domain service at `domain/inference/orchestrator.py` attempts to import `adapters.database.connection.get_session` (Domain importing infrastructure).
+* **Domain Coupling to Framework:** A domain service at `domain/config/config_service.py` imports `fastapi.HTTPException` (Domain logic depending on presentation framework).
+* **Frontend Bypassing API:** `apps/web/src/app/page.tsx` directly imports `apps/api/src/domain/inference/orchestrator.py` (Frontend importing server code).
+* **Package Coupling to Infrastructure:** `packages/processing-core/src/processing_core/chunker.py` imports `adapters.database.models.DocumentDb` (Shared library importing infrastructure adapter).
 
 ---
 
@@ -86,9 +86,9 @@ No third-party SDK, database driver, ORM library, or communication framework may
        +--------------------------------------------------------------+
        |                      Infrastructure Layer                    |
        |                                                              |
-       |  +--------------+    +---------------+    +---------------+  |
-       |  |  FastAPI App |    | pgvector Conn |    | S3 AWS Client |  |
-       |  +-------|------+    +-------|-------+    +-------|-------+  |
+|  +--------------+    +---------------+    +---------------+  |
+|  |  FastAPI App |    | PgVectorSrch  |    | LocalStorage  |  |
+|  +-------|------+    +-------|-------+    +-------|-------+  |
        +----------|-------------------|--------------------|----------+
                   |                   |                    |
                   | (HTTP Call)       | (SQL execution)    | (API Call)
@@ -96,7 +96,7 @@ No third-party SDK, database driver, ORM library, or communication framework may
        +--------------------------------------------------------------+
        |                         Ports Layer                          |
        |                                                              |
-       |   [IngestionPort]      [VectorStorePort]   [StoragePort]     |
+       |   [DocumentStorage]    [VectorSearchProv]  [ConfigRegistry]  |
        +------------------------------|-------------------------------+
                                       |
                                       v
@@ -111,10 +111,10 @@ No third-party SDK, database driver, ORM library, or communication framework may
 
 * **Ports:** Interfaces and abstract definitions defining the system's runtime capability requirements.
   * *Location:* `domain/abstractions/`
-  * *Naming Pattern:* `[Service]Provider` (e.g. `LlmProvider`, `VectorDatabaseProvider`).
+  * *Naming Pattern:* `[Service]Provider` (e.g. `LlmProvider`, `VectorSearchProvider`).
 * **Adapters:** Concrete implementations of ports interacting with physical infrastructure (databases, caches, third-party APIs).
   * *Location:* `adapters/`
-  * *Naming Pattern:* `[Technology][Service]Adapter` (e.g. `QdrantVectorDatabaseAdapter`, `S3StorageProviderAdapter`).
+   * *Naming Pattern:* `[Technology][Service]Adapter` (e.g. `PgVectorSearchAdapter`, `S3StorageProviderAdapter`).
 * **Forbidden Dependencies Rule:** The import of SQL models, SQLAlchemy sessions, Boto3 S3 clients, OpenAI SDK libraries, or FastAPI parameters inside files located under `domain/` is strictly forbidden. The automated project build checks will fail immediately on violations.
 
 ---
@@ -123,7 +123,7 @@ No third-party SDK, database driver, ORM library, or communication framework may
 
 All endpoints exposed by serving applications must be RESTful and use JSON formats.
 
-* **Path Naming:** Use plural nouns and kebab-case for URL segments (e.g. `/v1/chat/sessions/{sessionId}/messages`).
+* **Path Naming:** Use plural nouns and kebab-case for URL segments (e.g. `/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages`).
 * **JSON Properties Naming:** Use `camelCase` for JSON request/response keys.
 * **Versioning Strategy:** URLs contain the major version segment: `/v{major}/`. Breaking changes increment the URL index, while non-breaking additions are introduced under minor version flags.
 * **Idempotency Requirements:** All write path operations (HTTP `POST` and `PUT`) must support safe client retries. Clients must provide an `Idempotency-Key` header with a UUID v4 payload:
@@ -288,7 +288,7 @@ Latency budgets are enforced across all operations, monitored through traces.
 | Operation Layer | Latency Budget | Action on Breach |
 |---|---|---|
 | Ingress Authentication | <= 30ms | Optimize database indexing / Cache lookups |
-| Vector DB Similarity Search | <= 80ms | Tune Qdrant HNSW parameters |
+| Vector DB Similarity Search | <= 80ms | Tune pgvector HNSW parameters |
 | BM25 Text Search | <= 50ms | Optimize GIN text index |
 | Context Reranking | <= 50ms | Upgrade cross-encoder worker threads |
 | SSE Time-To-First-Token | <= 500ms | Flag model routing timeouts |
@@ -338,13 +338,32 @@ The codebase requires clean, explicit implementations to ensure readability for 
 * *Types:* `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`.
 * *Example:* `feat(retrieval): implement reciprocal rank fusion logic`
 
-### 13.3 Pull Request Checklist
+### 13.3 Architectural Governance — Hybrid Strategy
+
+The codebase uses two mechanisms to keep architecture honest without treating docs as a mirror:
+
+**1. Automated conformance tests (`tests/test_architecture.py`)**
+Run with every `pytest` invocation. Currently checks:
+- Domain files never import adapters, FastAPI, SQLAlchemy, or other infra
+- No hardcoded system prompt constants exist
+Extend this file when adding new architectural rules — it's cheaper than docs.
+
+**2. ADR Ritual — record intentional divergences**
+When code must deviate from the constitution/master-vision.md:
+- Don't soften the constitution (it stays the permanent north star)
+- Write an ADR in `docs/decisions/` explaining the trade-off, the context, and the conditions under which you'd revert
+- Reference the ADR in the code with a comment (`# see ADR-00X`)
+
+The constitution sets the target. ADRs chronicle the map. Tests enforce the hard lines.
+
+### 13.4 Pull Request Checklist
 Before opening a pull request, verify:
 * [ ] The code is formatted using Ruff / Prettier, and all linter checks pass.
 * [ ] Unit test coverage on modified domain code is **100%**.
 * [ ] Database migrations include both up and down scripts.
 * [ ] Security policies (RLS) are active on all new customer tables.
 * [ ] Dynamic prompts are stored in registry configurations, not hardcoded.
+* [ ] Architecture conformance tests (`test_architecture.py`) still pass — new commits should not introduce violations.
 
 ---
 
@@ -356,5 +375,6 @@ A feature task is considered complete only when it meets the following criteria:
 * **Performance Validation:** Metrics verify that query pipelines meet latency budgets under concurrent load conditions.
 * **Security Verification:** Row-Level Security checks are active, and input validation schemas sanitize parameters before processing.
 * **Telemetry Monitoring:** Performance spans are registered, and Prometheus counter metrics track usage and latencies.
+* **Error Tracking:** Sentry is initialized in both the API lifespan and Celery worker process (via `worker_process_init` signal) for exception grouping, release tracking, and breadcrumbs. Sentry integrates with OpenTelemetry so spans from both systems appear in one view. **Parser sandbox workers are excluded** from Sentry due to their zero-egress security model. Configure via `SENTRY_DSN` environment variable; Sentry is skipped entirely when the DSN is empty.
 * **Documentation:** API specifications are updated in OpenAPI docs, and internal architecture plans or README configurations are updated.
 * **Peer Verification:** The code passes review checks and automated CI builds successfully without warning flags.

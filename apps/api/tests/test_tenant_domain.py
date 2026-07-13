@@ -1,8 +1,10 @@
 from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
-from src.main import app
+
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.tenant import Tenant
+from src.main import app
 
 client = TestClient(app)
 

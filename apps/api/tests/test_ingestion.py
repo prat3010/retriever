@@ -1,16 +1,15 @@
 import os
 import shutil
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-import json
-import sqlalchemy as sa
-from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
-from src.main import app
-from src.domain.abstractions.identity import UserContext
-from src.domain.abstractions.events import EventEnvelope, DocumentEventPayload
-from src.adapters.database.models import DocumentDb
 from workers.src.tasks import process_document_async
+
+from src.adapters.database.models import DocumentDb
+from src.domain.abstractions.identity import UserContext
+from src.main import app
 
 client = TestClient(app)
 
@@ -26,10 +25,9 @@ def clean_storage() -> None:
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.declare_topology")
-@patch("src.adapters.broker.rabbitmq_event_publisher.RabbitMQEventPublisher.publish")
+@patch("src.adapters.broker.celery_publisher.celery_app.send_task")
 @patch("src.main.tenant_session")
-def test_document_upload_success(mock_session_ctx, mock_publish, mock_declare, mock_validate) -> None:
+def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
         user_id="user_123",
@@ -71,12 +69,10 @@ def test_document_upload_success(mock_session_ctx, mock_publish, mock_declare, m
     mock_db_session.add.assert_called_once()
     mock_db_session.commit.assert_called_once()
 
-    # Verify event published
-    mock_publish.assert_called_once()
-    call_args = mock_publish.call_args
-    envelope = call_args[0][0]
-    assert envelope.eventType == "DOCUMENT_UPLOADED"
-    assert envelope.payload.documentId == doc_id
+    # Verify Celery task submitted
+    mock_send_task.assert_called_once()
+    call_args = mock_send_task.call_args
+    assert call_args[1]["args"][0] == doc_id
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
@@ -106,8 +102,8 @@ def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
         file_size=100,
         mime_type="text/plain",
         status="INDEXED",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
-        updated_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
+        updated_at=datetime.datetime.now(datetime.UTC),
     )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = existing_doc
@@ -152,8 +148,8 @@ def test_document_list_and_get(mock_session_ctx, mock_validate) -> None:
         file_size=200,
         mime_type="text/plain",
         status="INDEXED",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
-        updated_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
+        updated_at=datetime.datetime.now(datetime.UTC),
     )
     # Mock list query return values
     mock_result = MagicMock()
@@ -202,8 +198,8 @@ def test_document_delete(mock_session_ctx, mock_validate) -> None:
         file_size=10,
         mime_type="text/plain",
         status="INDEXED",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
-        updated_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
+        updated_at=datetime.datetime.now(datetime.UTC),
     )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_doc

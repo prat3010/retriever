@@ -1,13 +1,15 @@
-from typing import Optional, Any
 import uuid
+from typing import Any
+
 from sqlalchemy import select
-from src.domain.abstractions.config import ConfigRegistry
-from src.adapters.database.models import ConfigurationDb
+
 from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import ConfigurationDb
+from src.domain.abstractions.config import ConfigRegistry
 
 
 class SqlConfigRegistry(ConfigRegistry):
-    async def get_raw_config(self, tenant_id: Optional[str]) -> Optional[dict[str, Any]]:
+    async def get_raw_config(self, tenant_id: str | None) -> dict[str, Any] | None:
         """Retrieve raw configuration dictionary from database."""
         ctx_tenant = tenant_id if tenant_id else None
         bypass = True if tenant_id is None else False
@@ -21,7 +23,7 @@ class SqlConfigRegistry(ConfigRegistry):
                 )
             else:
                 stmt = select(ConfigurationDb).where(
-                    ConfigurationDb.tenant_id == None,
+                    ConfigurationDb.tenant_id.is_(None),
                     ConfigurationDb.key == "config_payload",
                     ConfigurationDb.is_deleted == False,
                 )
@@ -31,7 +33,7 @@ class SqlConfigRegistry(ConfigRegistry):
                 return None
             return db_config.value
 
-    async def save_raw_config(self, tenant_id: Optional[str], config_data: dict[str, Any]) -> None:
+    async def save_raw_config(self, tenant_id: str | None, config_data: dict[str, Any]) -> None:
         """Persist raw configuration dictionary to database, versioning changes."""
         ctx_tenant = tenant_id if tenant_id else None
         bypass = True if tenant_id is None else False
@@ -45,7 +47,7 @@ class SqlConfigRegistry(ConfigRegistry):
                 )
             else:
                 stmt = select(ConfigurationDb).where(
-                    ConfigurationDb.tenant_id == None,
+                    ConfigurationDb.tenant_id.is_(None),
                     ConfigurationDb.key == "config_payload",
                     ConfigurationDb.is_deleted == False,
                 )

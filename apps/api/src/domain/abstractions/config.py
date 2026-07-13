@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FeatureFlags(BaseModel):
@@ -11,21 +12,21 @@ class FeatureFlags(BaseModel):
 
 class AIProviderConfig(BaseModel):
     provider_name: str = "openai"
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
+    api_key: str | None = None
+    base_url: str | None = None
     default_model: str = "gpt-4o"
 
 
 class EmbeddingProviderConfig(BaseModel):
     provider_name: str = "openai"
-    api_key: Optional[str] = None
+    api_key: str | None = None
     model_name: str = "text-embedding-3-small"
     dimension: int = 1536
 
 
 class StorageProviderConfig(BaseModel):
     provider_type: str = "local"
-    bucket_name: Optional[str] = None
+    bucket_name: str | None = None
     local_path: str = "./storage"
 
 
@@ -46,7 +47,7 @@ class RateLimits(BaseModel):
 
 
 class TenantConfiguration(BaseModel):
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
     feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
     ai_provider: AIProviderConfig = Field(default_factory=AIProviderConfig)
     embedding_provider: EmbeddingProviderConfig = Field(default_factory=EmbeddingProviderConfig)
@@ -69,19 +70,19 @@ class TenantConfiguration(BaseModel):
 
 class ConfigRegistry(ABC):
     @abstractmethod
-    async def get_raw_config(self, tenant_id: Optional[str]) -> Optional[dict[str, Any]]:
+    async def get_raw_config(self, tenant_id: str | None) -> dict[str, Any] | None:
         """Retrieve raw configuration dictionary from database."""
         pass
 
     @abstractmethod
-    async def save_raw_config(self, tenant_id: Optional[str], config_data: dict[str, Any]) -> None:
+    async def save_raw_config(self, tenant_id: str | None, config_data: dict[str, Any]) -> None:
         """Persist raw configuration dictionary to database."""
         pass
 
 
 class ConfigCache(ABC):
     @abstractmethod
-    async def get_cached_config(self, tenant_id: str) -> Optional[TenantConfiguration]:
+    async def get_cached_config(self, tenant_id: str) -> TenantConfiguration | None:
         """Fetch cached tenant configurations, returning None if cache misses."""
         pass
 
@@ -91,7 +92,7 @@ class ConfigCache(ABC):
         pass
 
     @abstractmethod
-    async def get_cached_global_config(self) -> Optional[TenantConfiguration]:
+    async def get_cached_global_config(self) -> TenantConfiguration | None:
         """Fetch cached global configurations, returning None if cache misses."""
         pass
 

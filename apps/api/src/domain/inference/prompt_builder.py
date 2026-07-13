@@ -5,9 +5,9 @@ chunks, and enforces token budget limits via compression.
 Depends only on domain abstractions — no infrastructure imports.
 """
 
+from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.inference import (
     ChatMessage,
-    PromptTemplate,
     PromptTemplateRegistry,
 )
 
@@ -83,18 +83,10 @@ class PromptBuilder:
     async def _resolve_system_prompt(
         self, tenant_id: str, name: str
     ) -> str:
-        """Fetch system prompt from the template registry.
-
-        Raises:
-            ValueError: If no template is found for the given name and tenant.
-        """
+        """Fetch system prompt from the template registry. Fail if missing."""
         template = await self.template_registry.get_template(tenant_id, name)
         if not template:
-            raise ValueError(
-                f"System prompt template '{name}' not found for tenant {tenant_id}. "
-                "Prompt templates must be loaded from the database — hardcoded prompts "
-                "are not permitted."
-            )
+            raise PromptTemplateNotFoundError(tenant_id, name)
         return template.content
 
     def _compress(

@@ -1,14 +1,25 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Any
-from sqlalchemy import Column, String, Float, Integer, DateTime, ForeignKey, Text, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import DeclarativeBase, relationship
+from datetime import UTC, datetime
+
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
@@ -42,7 +53,7 @@ class TenantConfigDb(Base):
     temperature = Column(Float, nullable=False, default=0.2)
     chunk_size = Column(Integer, nullable=False, default=500)
     chunk_overlap = Column(Integer, nullable=False, default=100)
-    system_prompt_template = Column(Text, nullable=False, default="You are a helpful grounding assistant.")
+    system_prompt_template = Column(Text, nullable=False, default="")
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="config")
@@ -189,6 +200,9 @@ class PromptTemplateDb(Base):
 
 class ChatSessionDb(Base):
     __tablename__ = "chat_sessions"
+    __table_args__ = (
+        UniqueConstraint("session_id", "tenant_id", name="uq_chat_sessions_session_tenant"),
+    )
 
     session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(
@@ -207,11 +221,24 @@ class ChatSessionDb(Base):
 
 class ChatMessageDb(Base):
     __tablename__ = "chat_messages"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["session_id", "tenant_id"],
+            ["chat_sessions.session_id", "chat_sessions.tenant_id"],
+            name="fk_chat_messages_session_tenant",
+            ondelete="CASCADE",
+        ),
+    )
 
     message_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("chat_sessions.session_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

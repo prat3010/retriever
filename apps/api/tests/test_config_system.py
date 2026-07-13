@@ -1,9 +1,11 @@
 import os
 from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
-from src.main import app
+
+from src.domain.abstractions.config import FeatureFlags, TenantConfiguration
 from src.domain.abstractions.identity import UserContext
-from src.domain.abstractions.config import TenantConfiguration, FeatureFlags
+from src.main import app
 
 client = TestClient(app)
 
@@ -63,8 +65,9 @@ def test_tenant_config_inheritance_override(mock_validate) -> None:
 
 
 def test_env_resolution_fallback_logic() -> None:
-    from src.domain.config.config_service import ConfigurationService
     from unittest.mock import MagicMock
+
+    from src.domain.config.config_service import ConfigurationService
     service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
 
     config = TenantConfiguration()
@@ -78,8 +81,9 @@ def test_env_resolution_fallback_logic() -> None:
 
 
 def test_merge_configurations_overlay() -> None:
-    from src.domain.config.config_service import ConfigurationService
     from unittest.mock import MagicMock
+
+    from src.domain.config.config_service import ConfigurationService
     service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
 
     base_config = TenantConfiguration(

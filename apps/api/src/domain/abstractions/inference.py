@@ -6,9 +6,9 @@ validation, and session tracking. Contains zero infrastructure imports.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Any
-from pydantic import BaseModel, Field
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # ── Domain Models ──────────────────────────────────────────────────────────
 
@@ -22,15 +22,15 @@ class ToolCall(BaseModel):
 class ChatMessage(BaseModel):
     role: str
     content: str
-    name: Optional[str] = None
+    name: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
 
 
 class InferenceRequest(BaseModel):
     messages: list[ChatMessage]
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
-    json_schema: Optional[dict[str, Any]] = None
+    max_tokens: int | None = None
+    json_schema: dict[str, Any] | None = None
     tools: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -47,8 +47,8 @@ class InferenceResponse(BaseModel):
 
 
 class PromptTemplate(BaseModel):
-    prompt_id: Optional[str] = None
-    tenant_id: Optional[str] = None
+    prompt_id: str | None = None
+    tenant_id: str | None = None
     name: str = "default"
     content: str = ""
     is_system_prompt: bool = False
@@ -61,9 +61,9 @@ class ChatSessionInfo(BaseModel):
 
 
 class InferenceLog(BaseModel):
-    log_id: Optional[str] = None
+    log_id: str | None = None
     tenant_id: str
-    session_id: Optional[str] = None
+    session_id: str | None = None
     model_used: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
@@ -101,7 +101,7 @@ class PromptTemplateRegistry(ABC):
     @abstractmethod
     async def get_template(
         self, tenant_id: str, name: str
-    ) -> Optional[PromptTemplate]:
+    ) -> PromptTemplate | None:
         """Retrieve a named prompt template for a tenant."""
         pass
 
@@ -126,22 +126,22 @@ class ChatSessionRepository(ABC):
     @abstractmethod
     async def get_session(
         self, session_id: str, tenant_id: str
-    ) -> Optional[ChatSessionInfo]:
+    ) -> ChatSessionInfo | None:
         """Retrieve a chat session by ID, scoped to tenant."""
         pass
 
     @abstractmethod
     async def add_message(
-        self, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage
     ) -> None:
-        """Append a message to a session's history."""
+        """Append a message to a tenant-scoped session's history."""
         pass
 
     @abstractmethod
     async def get_messages(
-        self, session_id: str
+        self, tenant_id: str, session_id: str
     ) -> list[ChatMessage]:
-        """Retrieve all messages for a session in chronological order."""
+        """Retrieve all messages for a tenant-scoped session in chronological order."""
         pass
 
 

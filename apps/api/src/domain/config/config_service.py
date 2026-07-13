@@ -1,6 +1,10 @@
 import os
-from typing import Optional, Any
-from src.domain.abstractions.config import TenantConfiguration, ConfigRegistry, ConfigCache
+
+from src.domain.abstractions.config import (
+    ConfigCache,
+    ConfigRegistry,
+    TenantConfiguration,
+)
 
 
 class ConfigurationService:

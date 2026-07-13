@@ -37,14 +37,14 @@ graph TB
     subgraph AsynchronousProcessing["Event Bus & Background Workers"]
         EventBroker["Message Broker (RabbitMQ)"]
         DLQ["Dead Letter Queue (DLQ)"]
-        ParserSandbox["Parsing Workers (Sandboxed Containers)"]
+        ParserSandbox["Parsing Workers"]
         EmbeddingWorker["Embedding & Sync Workers"]
     end
 
     subgraph StorageLayer["Persistence & Database Layer"]
-        Storage["Storage Adapter (MinIO / S3)"]
+        Storage["Storage Adapter (local filesystem)"]
         RelationalDB["Primary Relational DB (PostgreSQL RLS)"]
-        VectorDB["Vector Database (pgvector / Qdrant)"]
+        VectorDB["Vector Database (pgvector)"]
     end
 
     %% Client and Gateway routing
@@ -87,7 +87,7 @@ graph TB
 
 ### 1.2 Request Lifecycle
 
-#### 1.2.1 Synchronous Grounded Query Path (`POST /v1/chat/sessions/{sessionId}/messages`)
+#### 1.2.1 Synchronous Grounded Query Path (`POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages`)
 1. **Ingress:** Client initiates an HTTP POST request targeting the SSE stream message route.
 2. **Context Resolution Middleware:** Gateway intercepts request, extracts the `Authorization` header, computes a SHA-256 hash of the API key, and queries the L1 Cache (Redis). If cache misses, the registry queries the PostgreSQL database. Mismatches or expired keys terminate requests with an HTTP `401 Unauthorized` or `403 Forbidden` response.
 3. **Trace Propagation:** The Gateway generates a unique `Trace ID` (W3C Trace Context standard) and binds it to the asynchronous execution thread context.
@@ -103,7 +103,7 @@ graph TB
 9. **Cognitive Generation & SSE Stream:** The `Inference Orchestrator` invokes the external `LlmProvider` stream adapter. Deltas are received, routed through the validation rules (citation checking, JSON schema syntax validation, and output guardrails), and flushed to the client socket as Server-Sent Events.
 10. **Finalize & Record:** The Gateway registers final token counts, computes total latency, and writes an `InferenceLog` record to PostgreSQL.
 
-#### 1.2.2 Asynchronous Document Ingestion Path (`POST /v1/documents`)
+#### 1.2.2 Asynchronous Document Ingestion Path (`POST /v1/tenants/{tenantId}/documents`)
 1. **Ingress:** Multipart form-data containing the document binary and metadata parameters arrives at the Gateway.
 2. **Verification & Idempotency Check:** The system verifies the authentication scope. An MD5/SHA-256 hash of the binary file is calculated and compared against database indices. If duplicate detected, processing is bypassed and references are linked.
 3. **Durable File Upload:** The gateway routes the raw binary stream to the active storage adapter (e.g., S3/MinIO bucket partition isolated by `tenantId`).
@@ -214,16 +214,18 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 │   ├── api/                     # Backend REST API Serving Node (FastAPI Application)
 │   │   ├── src/
 │   │   │   ├── domain/          # Hexagonal Application Core (Isolated logical layers)
-│   │   │   │   ├── identity/    # Tenant isolation, auth, and credential validation
-│   │   │   │   ├── ingestion/   # Files validation & mapping to sandbox jobs
-│   │   │   │   ├── knowledge/   # Hierarchical chunking & text indexing logic
-│   │   │   │   ├── retrieval/   # Hybrid search & cross-encoder ranking algorithms
-│   │   │   │   └── inference/   # Token compression, prompt templating, and SSE pipelines
+│   │   │   │   ├── abstractions/ # Port interfaces (contracts between layers)
+│   │   │   │   ├── config/       # Configuration-as-Data service
+│   │   │   │   ├── identity/     # Tenant isolation, auth, and credential validation
+│   │   │   │   ├── ingestion/    # Files validation & mapping to sandbox jobs
+│   │   │   │   ├── knowledge/    # Hierarchical chunking & text indexing logic
+│   │   │   │   ├── retrieval/    # Hybrid search & cross-encoder ranking algorithms
+│   │   │   │   └── inference/    # Token compression, prompt templating, and SSE pipelines
 │   │   │   ├── adapters/        # Concrete infrastructure implementations (Physical)
 │   │   │   │   ├── database/    # PostgreSQL client interface (SQLAlchemy & RLS rules)
-│   │   │   │   ├── vector/      # pgvector & Qdrant query abstraction adapters
-│   │   │   │   ├── storage/     # AWS S3 / MinIO API storage drivers
-│   │   │   │   ├── cognitive/   # OpenAI, Anthropic, and self-hosted LLM connectors
+│   │   │   │   ├── vector/      # pgvector query abstraction adapters
+│   │   │   │   ├── storage/     # Local filesystem and external storage drivers
+│   │   │   │   ├── cognitive/   # OpenAI, Cohere, and embedding connectors
 │   │   │   │   ├── broker/      # RabbitMQ task publishers and consumers
 │   │   │   │   ├── cache/       # Redis configuration cache and semantic caches
 │   │   │   │   └── telemetry/   # OpenTelemetry span exporters and metrics registers
@@ -234,40 +236,22 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 │   │
 │   └── web/                     # Client Web UI Reference Playground (Next.js Application)
 │       ├── src/
-│       │   ├── app/             # Next.js App Router endpoints and page layouts
-│       │   ├── components/      # UI components (Vanilla CSS, Outfit and Inter fonts)
-│       │   └── hooks/           # SSE streaming stream hooks & active session context
+│       │   └── app/             # Next.js App Router endpoints and page layouts
 │       ├── package.json         # UI dependencies configuration
-│       └── package-lock.json    # Explicit Web build lockfile
+│       └── tsconfig.json        # TypeScript configuration
 │
-├── packages/
-│   ├── core-types/              # Shared data contracts (JSON Schema & TS Types)
-│   │   ├── schemas/             # JSON Schema schemas (Tenant, Document, Message API)
-│   │   └── ts-types/            # Generated TS definitions
-│   ├── sdk-js/                  # TypeScript SDK client implementation
-│   │   ├── src/
-│   │   └── package.json
-│   └── sdk-python/              # Python SDK client implementation
-│       ├── src/
-│       └── pyproject.toml
-│
-├── workers/                     # Asynchronous Job Daemon Containers (Celery / Python Workers)
+├── workers/                     # Asynchronous background workers (Celery — ADR-004)
 │   ├── src/
-│   │   ├── tasks/               # Background task definitions (Parsing, Embedding, Cleanups)
-│   │   ├── sandbox/             # Isolated subprocess logic for unverified file parsing
-│   │   └── main.py              # Worker initialization loop
+│   │   ├── tasks/               # Celery task definitions (parsing, embedding, periodic)
+│   │   ├── celery_app.py        # Celery application configuration
+│   │   └── event_consumer.py    # Legacy pika consumer (deprecated)
 │   ├── Dockerfile.worker        # Docker configuration for Worker daemon
 │   ├── pyproject.toml
 │   └── uv.lock
 │
-├── infrastructure/              # Infrastructure-as-code files
-│   ├── terraform/               # Cloud infrastructure scripts (AWS / GCP setup)
-│   ├── docker/                  # Development compose configs (Postgres, RabbitMQ, Redis)
-│   └── k8s/                     # Kubernetes manifests & Helm charts
-│
 ├── docs/                        # Project documentation
 │   ├── constitution/            # Immutable manifesto and core developer laws
-│   ├── adr/                     # Architectural Decision Records
+│   ├── decisions/               # Architectural Decision Records
 │   └── implementation/          # System design documents & integration specifications
 │       └── system-design.md     # This document
 ```
@@ -345,7 +329,7 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 * **Responsibility:** Write vector coordinates to isolated tenant indices and execute similarity queries.
 * **Inputs:** List of `VectorEntity` objects, vector search queries.
 * **Outputs:** Sorted candidate indices (`chunkId` list, similarity values).
-* **Dependencies:** Vector Store Adapter (pgvector / Qdrant).
+* **Dependencies:** Vector Store Adapter (pgvector).
 * **Failure Modes:**
   * *Vector DB Connection Failure:* Open circuit breaker, fall back to relational sparse search degraded mode.
 
@@ -548,36 +532,58 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
 * **Relationships:** Many-to-One with `tenants`.
 * **Retention Strategy:** Permanent version history; old prompt versions are flagged inactive.
 
-#### 4.1.8 `chat_sessions`
-* **Primary Key:** `session_id` (UUIDv4)
+#### 4.1.8 `users`
+* **Primary Key:** `user_id` (UUIDv4)
 * **Foreign Keys:** `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
 * **Important Indexes:**
   * Index on `tenant_id`
+  * Index on `user_id`
+* **Columns:** `display_name`, `is_active`, `created_at`
+* **RLS:** Filtered by `tenant_id`. Users are owned by the client tenant, not managed by Retriever — the client frontend authenticates its own users and passes `X-User-ID` on every request.
+* **Relationships:** Many-to-One with `tenants`, One-to-Many with `chat_sessions`.
+
+#### 4.1.9 `chat_sessions`
+* **Primary Key:** `session_id` (UUIDv4)
+* **Foreign Keys:** 
+  * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
+  * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE CASCADE)
+* **Important Indexes:**
+  * Index on `tenant_id`
+  * Index on `user_id`
   * Index on `created_at`
-* **Relationships:** Many-to-One with `tenants`, One-to-Many with `chat_messages` (ON DELETE CASCADE).
+* **RLS:** Filtered by `tenant_id` + `user_id`. Each user sees only their own sessions.
+* **Relationships:** Many-to-One with `tenants`, Many-to-One with `users`, One-to-Many with `chat_messages` (ON DELETE CASCADE).
 * **Retention Strategy:** Stored for 90 days by default, unless configured otherwise in tenant TTL settings.
 
-#### 4.1.9 `chat_messages`
+#### 4.1.10 `chat_messages`
 * **Primary Key:** `message_id` (UUIDv4)
-* **Foreign Keys:** `session_id` (UUIDv4, FK referencing `chat_sessions.session_id` ON DELETE CASCADE)
+* **Foreign Keys:** 
+  * `session_id` (UUIDv4, FK referencing `chat_sessions.session_id` ON DELETE CASCADE)
+  * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
+  * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE CASCADE)
 * **Important Indexes:**
   * Index on `session_id`
+  * Index on `tenant_id`
+  * Index on `user_id`
   * Index on `created_at`
-* **Relationships:** Many-to-One with `chat_sessions`.
-* **Retention Strategy:** Cascade deleted when matching sessions are removed.
+* **RLS:** Filtered by `tenant_id` + `user_id`. Cascade deleted when matching sessions are removed.
+* **Relationships:** Many-to-One with `chat_sessions`, Many-to-One with `tenants`, Many-to-One with `users`.
 
-#### 4.1.10 `inference_logs`
+#### 4.1.11 `inference_logs`
 * **Primary Key:** `log_id` (UUIDv4)
 * **Foreign Keys:** 
   * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
   * `session_id` (UUIDv4, FK referencing `chat_sessions.session_id` ON DELETE SET NULL)
+  * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE SET NULL)
 * **Important Indexes:**
   * Index on `tenant_id`
+  * Index on `user_id`
   * Index on `created_at`
-* **Relationships:** Many-to-One with `tenants`, Many-to-One with `chat_sessions`.
+* **RLS:** Filtered by `tenant_id` + `user_id`. Admin bypasses user filter.
+* **Relationships:** Many-to-One with `tenants`, Many-to-One with `users`, Many-to-One with `chat_sessions`.
 * **Retention Strategy:** Retained for 180 days for auditing and billing verification, then archived to cold storage.
 
-#### 4.1.11 `audit_logs`
+#### 4.1.12 `audit_logs`
 * **Primary Key:** `log_id` (UUIDv4)
 * **Foreign Keys:** `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
 * **Important Indexes:**
@@ -649,7 +655,7 @@ Every request MUST provide header trace variables and client authorization keys.
 
 #### 5.1.2 Document Ingestion
 
-##### `POST /v1/documents`
+##### `POST /v1/tenants/{tenantId}/documents`
 * **Method:** `POST`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Request Headers:** `Content-Type: multipart/form-data`
@@ -667,7 +673,7 @@ Every request MUST provide header trace variables and client authorization keys.
   * `409 Conflict` (Duplicate file hash already uploaded)
   * `413 Payload Too Large` (File size exceeds limits)
 
-##### `GET /v1/documents/{documentId}`
+##### `GET /v1/tenants/{tenantId}/documents/{documentId}`
 * **Method:** `GET`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Response Schema (200 OK):**
@@ -683,7 +689,7 @@ Every request MUST provide header trace variables and client authorization keys.
 * **Error Responses:**
   * `404 Not Found` (Document not found / Tenant access violation)
 
-##### `DELETE /v1/documents/{documentId}`
+##### `DELETE /v1/tenants/{tenantId}/documents/{documentId}`
 * **Method:** `DELETE`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Response Schema (200 OK):**
@@ -698,7 +704,7 @@ Every request MUST provide header trace variables and client authorization keys.
 
 #### 5.1.3 Search & Retrieval
 
-##### `POST /v1/retrieval/search`
+##### `POST /v1/tenants/{tenantId}/search`
 * **Method:** `POST`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Request Schema:**
@@ -735,7 +741,7 @@ Every request MUST provide header trace variables and client authorization keys.
 
 #### 5.1.4 Chat & Inference
 
-##### `POST /v1/chat/sessions`
+##### `POST /v1/tenants/{tenantId}/chat/sessions`
 * **Method:** `POST`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Request Schema:** None (or optional session metadata tags)
@@ -747,7 +753,7 @@ Every request MUST provide header trace variables and client authorization keys.
 }
 ```
 
-##### `POST /v1/chat/sessions/{sessionId}/messages`
+##### `POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages`
 * **Method:** `POST`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Request Headers:** `Accept: text/event-stream`
@@ -775,7 +781,7 @@ data: {"event": "done", "usage": {"inputTokens": 350, "outputTokens": 45, "laten
   * `429 Too Many Requests` (Rate limit breached)
   * `503 Service Unavailable` (LLM gateway connection failure)
 
-##### `POST /v1/chat/sessions/{sessionId}/approve`
+##### `POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/approve`
 * **Method:** `POST`
 * **Authentication:** Tenant API Key (Bearer Token)
 * **Request Schema:**
@@ -1009,11 +1015,12 @@ This section outlines recovery protocols for system outages and failure scenario
 * **Failure Condition:** Vector database loss or index corruption.
 * **Protocol:**
   1. Route retrieval queries to degraded mode, falling back to PostgreSQL BM25 text search to keep search services active.
-  2. Execute the index reconstruction script:
+   2. Execute the index reconstruction script (planned for M12):
 ```bash
-python -m workers.reindex --tenant-id all --rebuild-hnsw
+# TODO — index reconstruction script not yet implemented (tracked in M12)
+celery -A workers.src.celery_app call workers.src.tasks.rebuild_indexes
 ```
-  3. The script reads raw chunk text from PostgreSQL, re-generates embeddings, and upserts them to the vector store.
+   3. The script reads raw chunk text from PostgreSQL, re-generates embeddings, and upserts them to the vector store.
 
 #### 11.1.4 LLM API Outage
 * **Failure Condition:** Provider endpoints return timeouts or HTTP `429` / `5xx` errors.
@@ -1031,11 +1038,44 @@ python -m workers.reindex --tenant-id all --rebuild-hnsw
 
 ---
 
-## 12. Development Roadmap
+## 12. Client Integration Model
+
+### 12.1 Frontend → Retriever Flow
+
+```
+Client Frontend (coaching portal, CA app, legal tool, custom app)
+  │
+  │  Every API call:
+  │  ├── Header: X-API-Key = sk_client_abc123
+  │  ├── Header: X-User-ID  = user_42  (optional for admin keys)
+  │  └── Body: standard REST payload
+  │
+  ▼
+Retriever Gateway
+  ├── Resolves API key → tenant_id + scope (admin | client)
+  ├── Sets RLS context: app.current_tenant_id, app.current_user_id
+  └── Routes to domain logic
+```
+
+### 12.2 Key Design Decisions
+- **User identity owned by frontend:** Retriever never manages login, passwords, or sessions. The frontend authenticates its own users and passes the resolved `user_id` as `X-User-ID`.
+- **Client API key scoped to tenant:** A client key can only access data within its own tenant. Admin keys (for the dashboard) can access all tenants.
+- **Per-tenant LLM key resolved server-side:** Configured via admin API, stored encrypted in DB. Frontends don't need to know about it.
+- **Override header:** A frontend can pass `X-LLM-Key` to use its own provider without admin involvement.
+
+### 12.3 Data Isolation Boundaries
+| Data | Scoped By | Access |
+|---|---|---|
+| Documents, chunks, configs, prompts | `tenant_id` | All users within client + admin |
+| Chat sessions, messages, logs | `tenant_id` + `user_id` | Only the owning user + admin |
+
+---
+
+## 13. Development Roadmap
 
 Implementation is divided into five phases. Each phase establishes a functional layer, validating system components before proceeding.
 
-### 12.1 Timeline
+### 13.1 Timeline
 
 ```
 PHASE 1: Foundation (Core Setup & Identity)
@@ -1064,9 +1104,9 @@ PHASE 5: Operational Hardening
     [EXIT CRITERIA: Production metrics logged & baseline met]
 ```
 
-### 12.2 Phase Profiles
+### 13.2 Phase Profiles
 
-#### 12.2.1 Phase 1: Foundation (Core & Identity)
+#### 13.2.1 Phase 1: Foundation (Core & Identity)
 * **Goal:** Set up the monorepo workspace, database schemas, and multi-tenant authentication middleware.
 * **Deliverables:**
   * Root configurations and dependency lockfiles.
@@ -1075,16 +1115,16 @@ PHASE 5: Operational Hardening
 * **Dependencies:** None.
 * **Exit Criteria:** Automated tests verify that requests using invalid keys are rejected, and RLS policies prevent queries from reading other tenants' database records.
 
-#### 12.2.2 Phase 2: Ingestion Pipeline & Parsing Sandbox
+#### 13.2.2 Phase 2: Ingestion Pipeline & Parsing Sandbox
 * **Goal:** Implement secure document ingestion, worker queue management, and isolated file parsing.
 * **Deliverables:**
   * Storage adapter interface and file upload service.
   * Celery worker daemons and RabbitMQ task queues.
-  * Isolated Docker parsing container, layout parsing logic, and content hashing logic.
+  * Parsing logic and content hashing. Sandboxed container isolation is aspirational.
 * **Dependencies:** Phase 1.
-* **Exit Criteria:** Uploading a document uploads the file, inserts a `PENDING` record, and completes parsing within the sandbox worker, updating status fields to `PARSED`.
+* **Exit Criteria:** Uploading a document uploads the file, inserts a `PENDING` record, and completes parsing, updating status fields to `PARSED`.
 
-#### 12.2.3 Phase 3: Hybrid Retrieval & Fusion
+#### 13.2.3 Phase 3: Hybrid Retrieval & Fusion
 * **Goal:** Implement the parallel search pipeline, fusion logic, and cross-encoder reranking models.
 * **Deliverables:**
   * Embedding service adapter.
@@ -1093,20 +1133,20 @@ PHASE 5: Operational Hardening
 * **Dependencies:** Phase 2.
 * **Exit Criteria:** Hybrid searches return sorted chunk candidates, filtering out records outside the target tenant's database partition within the 150ms latency budget.
 
-#### 12.2.4 Phase 4: Generative Inference & Citations
+#### 13.2.4 Phase 4: Generative Inference & Citations
 * **Goal:** Build prompt compilation logic, SSE streaming interfaces, and citation validation systems.
 * **Deliverables:**
   * Prompt template registry and token compression engine.
   * SSE stream controller and provider adapters.
-  * Citation validation engine and input/output guardrails.
+  * Citation validation engine. Input/output guardrails are aspirational.
 * **Dependencies:** Phase 3.
 * **Exit Criteria:** Querying the chat endpoint returns Server-Sent Event token streams with validated inline citations.
 
-#### 12.2.5 Phase 5: Production Hardening & Evaluation
+#### 13.2.5 Phase 5: Production Hardening & Evaluation
 * **Goal:** Set up telemetry monitoring, scaling configurations, and evaluation benchmarks.
 * **Deliverables:**
   * OpenTelemetry span exporters and Prometheus metric dashboards.
-  * Auto-scaling thresholds, retry queues, and backup recovery scripts.
-  * Ragas-based evaluation test suite and golden test dataset.
+  * Rate limiter, health checks, and architecture conformance tests.
+  * Ragas-based evaluation test suite and golden test dataset (aspirational).
 * **Dependencies:** Phase 4.
-* **Exit Criteria:** Telemetry dashboards log performance metrics, and the golden dataset evaluation meets baseline scores, passing CI/CD pipelines.
+* **Exit Criteria:** Telemetry dashboards log performance metrics, tests pass in CI, architecture boundaries are enforced.

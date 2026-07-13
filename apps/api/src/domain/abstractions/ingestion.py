@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -23,7 +24,7 @@ class DocumentChunk(BaseModel):
     content: str
     token_count: int
     chunk_index: int
-    parent_chunk_id: Optional[str] = None
+    parent_chunk_id: str | None = None
     meta_data: dict[str, Any] = Field(default_factory=dict)
     created_at: str
 

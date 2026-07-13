@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -17,7 +17,7 @@ class ApiKeyMetadata(BaseModel):
     prefix: str
     status: str
     created_at: str
-    expires_at: Optional[str] = None
+    expires_at: str | None = None
 
 
 class IdentityProvider(ABC):
@@ -32,7 +32,7 @@ class IdentityProvider(ABC):
 
     @abstractmethod
     async def create_api_key(
-        self, tenant_id: str, name: str, expires_in_days: Optional[int] = None
+        self, tenant_id: str, name: str, expires_in_days: int | None = None
     ) -> tuple[str, ApiKeyMetadata]:
         """Generate a new API key, hash it, save to DB, and return (raw_key, metadata)."""
         pass

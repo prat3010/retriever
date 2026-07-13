@@ -1,4 +1,5 @@
 import pdfplumber
+
 from src.domain.abstractions.ingestion import DocumentParser
 
 
@@ -15,5 +16,5 @@ class LayoutPdfParser(DocumentParser):
                         text_runs.append(page_text)
             return "\n--- Page Break ---\n".join(text_runs)
         else:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 return f.read()

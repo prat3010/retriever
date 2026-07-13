@@ -1,14 +1,24 @@
+"""Celery task definitions for Retriever background processing.
+
+Process lifecycle:
+  DocumentUploadedEvent (API) -> process_document [queue: ingestion.parse]
+    -> DocumentParsedEvent (self-published) -> generate_embeddings [queue: knowledge.embed]
+      -> DocumentIndexedEvent (self-published)
+"""
+
 import asyncio
 import json
 import os
-import uuid
-import random
+import uuid as _uuid
+from datetime import datetime, timezone
+
 import pika
-import pdfplumber
-import tiktoken
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import create_async_engine
-from workers.src.main import app
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from celery import Task
+
+from processing_core import extract_text_from_file, chunk_text, embed_with_retry
+from workers.src.celery_app import celery_app
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"
@@ -21,8 +31,10 @@ ROUTING_INDEXED = "document.event.indexed"
 ROUTING_FAILED = "document.event.failed"
 
 
+# ── Event publishing helpers (keep pika here — Celery tasks self-publish) ──
+
+
 def _publish_event(envelope: dict, routing_key: str) -> None:
-    """Publish a structured event to the document.processing exchange."""
     params = pika.URLParameters(RABBITMQ_URL)
     connection = pika.BlockingConnection(params)
     try:
@@ -41,8 +53,6 @@ def _publish_event(envelope: dict, routing_key: str) -> None:
 
 
 def _build_envelope(event_type: str, payload: dict, trace_id: str = "") -> dict:
-    import uuid as _uuid
-    from datetime import datetime, timezone
     return {
         "eventId": f"evt_{_uuid.uuid4().hex}",
         "eventType": event_type,
@@ -52,13 +62,38 @@ def _build_envelope(event_type: str, payload: dict, trace_id: str = "") -> dict:
     }
 
 
-async def process_document_async(document_id: str, tenant_id: str, storage_path: str) -> None:
-    engine = create_async_engine(DATABASE_URL)
+# ── Celery tasks ──────────────────────────────────────────────────────────
+
+
+# Module-level engine — one per worker process. Swap via set_engine() for tests.
+_engine: AsyncEngine | None = None
+
+
+def get_engine() -> AsyncEngine:
+    global _engine
+    if _engine is None:
+        _engine = create_async_engine(DATABASE_URL)
+    return _engine
+
+
+def set_engine(engine: AsyncEngine) -> None:
+    global _engine
+    _engine = engine
+
+
+class DatabaseTask(Task):
+    """Base task that provides DB engine access and UTC now."""
+    pass
+
+
+async def _run_process_document(document_id: str, tenant_id: str, storage_path: str) -> None:
+    engine = get_engine()
 
     async with engine.begin() as conn:
         await conn.execute(
             sa.text(
-                "UPDATE documents SET status = 'PARSING', updated_at = NOW() WHERE document_id = :doc_id"
+                "UPDATE documents SET status = 'PARSING', updated_at = NOW() "
+                "WHERE document_id = :doc_id"
             ),
             {"doc_id": document_id},
         )
@@ -71,7 +106,9 @@ async def process_document_async(document_id: str, tenant_id: str, storage_path:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             res = await conn.execute(
                 sa.text(
-                    "SELECT value FROM configurations WHERE (tenant_id = :tenant_id OR tenant_id IS NULL) AND key = 'retrieval' ORDER BY tenant_id NULLS LAST LIMIT 1"
+                    "SELECT value FROM configurations "
+                    "WHERE (tenant_id = :tenant_id OR tenant_id IS NULL) "
+                    "AND key = 'retrieval' ORDER BY tenant_id NULLS LAST LIMIT 1"
                 ),
                 {"tenant_id": tenant_id},
             )
@@ -83,47 +120,15 @@ async def process_document_async(document_id: str, tenant_id: str, storage_path:
                 chunk_size = config_val.get("chunk_size", chunk_size)
                 chunk_overlap = config_val.get("chunk_overlap", chunk_overlap)
 
-        text_content = ""
-        if storage_path.lower().endswith(".pdf"):
-            text_runs = []
-            with pdfplumber.open(storage_path) as pdf:
-                for page in pdf.pages:
-                    page_text = page.extract_text(layout=True)
-                    if page_text:
-                        text_runs.append(page_text)
-            text_content = "\n--- Page Break ---\n".join(text_runs)
-        else:
-            with open(storage_path, "r", encoding="utf-8", errors="ignore") as f:
-                text_content = f.read()
-
-        encoding = tiktoken.get_encoding("cl100k_base")
-        tokens = encoding.encode(text_content)
-
-        chunks_to_insert = []
-        chunk_ids = []
-        start = 0
-        chunk_index = 0
-
-        while start < len(tokens):
-            end = min(start + chunk_size, len(tokens))
-            chunk_tokens = tokens[start:end]
-            chunk_content = encoding.decode(chunk_tokens)
-            cid = str(uuid.uuid4())
-            chunk_ids.append(cid)
-
-            chunks_to_insert.append({
-                "chunk_id": cid,
-                "document_id": document_id,
-                "tenant_id": tenant_id,
-                "content": chunk_content,
-                "token_count": len(chunk_tokens),
-                "chunk_index": chunk_index,
-                "meta_data": json.dumps({"token_start": start, "token_end": end}),
-            })
-
-            chunk_index += 1
-            step = max(1, chunk_size - chunk_overlap)
-            start += step
+        text_content = extract_text_from_file(storage_path)
+        chunks_to_insert = chunk_text(
+            text=text_content,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            document_id=document_id,
+            tenant_id=tenant_id,
+        )
+        chunk_ids = [c["chunk_id"] for c in chunks_to_insert]
 
         async with engine.begin() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
@@ -132,22 +137,23 @@ async def process_document_async(document_id: str, tenant_id: str, storage_path:
                     sa.text(
                         """
                         INSERT INTO document_chunks
-                        (chunk_id, document_id, tenant_id, content, token_count, chunk_index, meta_data, created_at)
-                        VALUES
-                        (:chunk_id, :document_id, :tenant_id, :content, :token_count, :chunk_index, CAST(:meta_data AS jsonb), NOW())
-                    """
+                        (chunk_id, document_id, tenant_id, content, token_count,
+                         chunk_index, meta_data, created_at)
+                        VALUES (:chunk_id, :document_id, :tenant_id, :content,
+                                :token_count, :chunk_index, CAST(:meta_data AS jsonb), NOW())
+                        """
                     ),
                     chunk,
                 )
 
             await conn.execute(
                 sa.text(
-                    "UPDATE documents SET status = 'INDEXING', updated_at = NOW() WHERE document_id = :doc_id"
+                    "UPDATE documents SET status = 'INDEXING', updated_at = NOW() "
+                    "WHERE document_id = :doc_id"
                 ),
                 {"doc_id": document_id},
             )
 
-        # Publish DocumentParsedEvent
         parsed_payload = {
             "documentId": document_id,
             "tenantId": tenant_id,
@@ -160,11 +166,11 @@ async def process_document_async(document_id: str, tenant_id: str, storage_path:
         async with engine.begin() as conn:
             await conn.execute(
                 sa.text(
-                    "UPDATE documents SET status = 'FAILED', updated_at = NOW() WHERE document_id = :doc_id"
+                    "UPDATE documents SET status = 'FAILED', updated_at = NOW() "
+                    "WHERE document_id = :doc_id"
                 ),
                 {"doc_id": document_id},
             )
-        # Publish DocumentFailedEvent
         failed_payload = {
             "documentId": document_id,
             "tenantId": tenant_id,
@@ -173,20 +179,27 @@ async def process_document_async(document_id: str, tenant_id: str, storage_path:
         }
         envelope = _build_envelope("DOCUMENT_FAILED", failed_payload)
         _publish_event(envelope, ROUTING_FAILED)
-        raise e
-    finally:
-        await engine.dispose()
+        raise
+
+# Keep async function importable for tests and legacy event_consumer
+process_document_async = _run_process_document
 
 
-@app.task(name="tasks.parse_document", max_retries=3, default_retry_delay=10,
-          autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, retry_jitter=True)
-def parse_document(document_id: str, tenant_id: str, storage_path: str) -> str:
-    asyncio.run(process_document_async(document_id, tenant_id, storage_path))
-    return f"Document parsed: {document_id} for Tenant: {tenant_id}"
+@celery_app.task(
+    bind=True,
+    base=DatabaseTask,
+    max_retries=3,
+    default_retry_delay=10,
+    autoretry_for=(Exception,),
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def process_document(self, document_id: str, tenant_id: str, storage_path: str) -> None:
+    asyncio.run(_run_process_document(document_id, tenant_id, storage_path))
 
 
-async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
-    engine = create_async_engine(DATABASE_URL)
+async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
+    engine = get_engine()
     embedding_model = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
     try:
@@ -194,7 +207,8 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             result = await conn.execute(
                 sa.text(
-                    "SELECT chunk_id, content FROM document_chunks WHERE document_id = :doc_id ORDER BY chunk_index"
+                    "SELECT chunk_id, content FROM document_chunks "
+                    "WHERE document_id = :doc_id ORDER BY chunk_index"
                 ),
                 {"doc_id": document_id},
             )
@@ -214,7 +228,8 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
         async with engine.begin() as conn:
             await conn.execute(
                 sa.text(
-                    "UPDATE documents SET status = 'INDEXING', updated_at = NOW() WHERE document_id = :doc_id"
+                    "UPDATE documents SET status = 'INDEXING', updated_at = NOW() "
+                    "WHERE document_id = :doc_id"
                 ),
                 {"doc_id": document_id},
             )
@@ -224,7 +239,7 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i + batch_size]
             texts = [row[1] for row in batch]
-            embedding_data = await _embed_with_retry(client, texts, embedding_model)
+            embedding_data = await embed_with_retry(client, texts, embedding_model)
             for chunk_row, emb in zip(batch, embedding_data):
                 all_embeddings.append((str(chunk_row[0]), emb))
 
@@ -240,17 +255,21 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
                         ON CONFLICT (chunk_id) DO UPDATE SET embedding = :embedding::vector
                         """
                     ),
-                    {"chunk_id": chunk_id, "tenant_id": tenant_id, "embedding": embedding_str},
+                    {
+                        "chunk_id": chunk_id,
+                        "tenant_id": tenant_id,
+                        "embedding": embedding_str,
+                    },
                 )
 
             await conn.execute(
                 sa.text(
-                    "UPDATE documents SET status = 'INDEXED', updated_at = NOW() WHERE document_id = :doc_id"
+                    "UPDATE documents SET status = 'INDEXED', updated_at = NOW() "
+                    "WHERE document_id = :doc_id"
                 ),
                 {"doc_id": document_id},
             )
 
-        # Publish DocumentIndexedEvent
         indexed_payload = {
             "documentId": document_id,
             "tenantId": tenant_id,
@@ -264,11 +283,11 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
         async with engine.begin() as conn:
             await conn.execute(
                 sa.text(
-                    "UPDATE documents SET status = 'FAILED', updated_at = NOW() WHERE document_id = :doc_id"
+                    "UPDATE documents SET status = 'FAILED', updated_at = NOW() "
+                    "WHERE document_id = :doc_id"
                 ),
                 {"doc_id": document_id},
             )
-        # Publish DocumentFailedEvent
         failed_payload = {
             "documentId": document_id,
             "tenantId": tenant_id,
@@ -277,32 +296,59 @@ async def _generate_embeddings_async(document_id: str, tenant_id: str) -> None:
         }
         envelope = _build_envelope("DOCUMENT_FAILED", failed_payload)
         _publish_event(envelope, ROUTING_FAILED)
-        raise e
-    finally:
-        await engine.dispose()
+        raise
+
+# Keep async function importable for legacy event_consumer
+_generate_embeddings_async = _run_generate_embeddings
 
 
-async def _embed_with_retry(
-    client, texts: list[str], model: str, max_retries: int = 5
-) -> list[list[float]]:
-    import openai
-
-    for attempt in range(max_retries + 1):
-        try:
-            response = await client.embeddings.create(input=texts, model=model, timeout=30)
-            sorted_data = sorted(response.data, key=lambda x: x.index)
-            return [item.embedding for item in sorted_data]
-        except (openai.APIError, openai.APITimeoutError, openai.RateLimitError):
-            if attempt == max_retries:
-                raise
-            sleep_seconds = (2 ** attempt) + random.uniform(0, 1)
-            await asyncio.sleep(sleep_seconds)
-
-
-@app.task(
-    name="tasks.generate_embeddings", max_retries=5, default_retry_delay=2,
-    autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, retry_jitter=True,
+@celery_app.task(
+    bind=True,
+    base=DatabaseTask,
+    max_retries=5,
+    default_retry_delay=2,
+    autoretry_for=(Exception,),
+    acks_late=True,
+    reject_on_worker_lost=True,
 )
-def generate_embeddings(document_id: str, tenant_id: str) -> str:
-    asyncio.run(_generate_embeddings_async(document_id, tenant_id))
-    return f"Embeddings generated for document: {document_id}"
+def generate_embeddings(self, document_id: str, tenant_id: str) -> None:
+    asyncio.run(_run_generate_embeddings(document_id, tenant_id))
+
+
+# ── Periodic / maintenance tasks ──────────────────────────────────────────
+
+
+@celery_app.task(base=DatabaseTask)
+def reconcile_stalled() -> None:
+    """Re-publish tasks for documents stuck in PENDING or INDEXING > 15 min."""
+    engine = get_engine()
+
+    async def _run():
+        async with engine.begin() as conn:
+            await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
+            result = await conn.execute(
+                sa.text(
+                    """
+                    SELECT document_id, tenant_id, storage_path, status
+                    FROM documents
+                    WHERE status IN ('PENDING', 'INDEXING')
+                      AND updated_at < NOW() - INTERVAL '15 minutes'
+                    """
+                ),
+            )
+            stalled = result.fetchall()
+
+        for row in stalled:
+            doc_id, t_id, s_path, status = row
+            if status == "PENDING":
+                process_document.delay(doc_id, t_id, s_path)
+            elif status == "INDEXING":
+                generate_embeddings.delay(doc_id, t_id)
+
+    asyncio.run(_run())
+
+
+@celery_app.task(base=DatabaseTask)
+def warm_caches() -> None:
+    """Periodic cache warming — placeholder for Redis pre-heat logic."""
+    pass

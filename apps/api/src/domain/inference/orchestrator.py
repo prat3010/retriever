@@ -6,21 +6,22 @@ logging. Depends only on domain abstractions.
 """
 
 import time
-from typing import AsyncIterator, Optional
+from collections.abc import AsyncIterator
+
+from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.inference import (
     ChatMessage,
     ChatSessionInfo,
+    ChatSessionRepository,
+    InferenceLog,
+    InferenceLogWriter,
     InferenceRequest,
     InferenceResponse,
-    InferenceLog,
     LlmProvider,
-    ChatSessionRepository,
-    InferenceLogWriter,
 )
 from src.domain.abstractions.retrieval import SearchResult
-from src.domain.abstractions.config import TenantConfiguration
-from src.domain.inference.prompt_builder import PromptBuilder
 from src.domain.inference.citation_validator import CitationValidator
+from src.domain.inference.prompt_builder import PromptBuilder
 
 
 class InferenceOrchestrator:
@@ -48,21 +49,21 @@ class InferenceOrchestrator:
 
     async def get_session(
         self, session_id: str, tenant_id: str
-    ) -> Optional[ChatSessionInfo]:
+    ) -> ChatSessionInfo | None:
         """Get a chat session, scoped to tenant."""
         return await self.session_repo.get_session(session_id, tenant_id)
 
     async def add_message(
-        self, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage
     ) -> None:
         """Persist a message to session history."""
-        await self.session_repo.add_message(session_id, message)
+        await self.session_repo.add_message(tenant_id, session_id, message)
 
     async def get_history(
-        self, session_id: str
+        self, tenant_id: str, session_id: str
     ) -> list[ChatMessage]:
         """Retrieve session message history."""
-        return await self.session_repo.get_messages(session_id)
+        return await self.session_repo.get_messages(tenant_id, session_id)
 
     async def generate(
         self,
@@ -82,7 +83,7 @@ class InferenceOrchestrator:
         """
         start = time.monotonic()
 
-        history = await self.session_repo.get_messages(session_id)
+        history = await self.session_repo.get_messages(tenant_id, session_id)
 
         chunks_dict = [
             {"chunk_id": c.chunk_id, "content": c.content, "score": c.score}
@@ -137,10 +138,12 @@ class InferenceOrchestrator:
 
         # Persist user message and assistant response
         await self.session_repo.add_message(
-            session_id, ChatMessage(role="user", content=query)
+            tenant_id, session_id, ChatMessage(role="user", content=query)
         )
         await self.session_repo.add_message(
-            session_id, ChatMessage(role="assistant", content=response.content)
+            tenant_id,
+            session_id,
+            ChatMessage(role="assistant", content=response.content),
         )
 
         return response
@@ -162,7 +165,7 @@ class InferenceOrchestrator:
         """
         start = time.monotonic()
 
-        history = await self.session_repo.get_messages(session_id)
+        history = await self.session_repo.get_messages(tenant_id, session_id)
 
         chunks_dict = [
             {"chunk_id": c.chunk_id, "content": c.content, "score": c.score}
@@ -189,7 +192,6 @@ class InferenceOrchestrator:
         )
 
         full_content: list[str] = []
-        citations_checked = False
 
         async for chunk in self.llm.generate_stream(
             request, {"model": model_config.default_model}
@@ -216,10 +218,10 @@ class InferenceOrchestrator:
 
         # Persist messages
         await self.session_repo.add_message(
-            session_id, ChatMessage(role="user", content=query)
+            tenant_id, session_id, ChatMessage(role="user", content=query)
         )
         await self.session_repo.add_message(
-            session_id, ChatMessage(role="assistant", content=final_text)
+            tenant_id, session_id, ChatMessage(role="assistant", content=final_text)
         )
 
         usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}

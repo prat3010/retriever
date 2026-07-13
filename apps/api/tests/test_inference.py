@@ -9,22 +9,23 @@ Verifies:
 """
 
 import uuid
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
-from src.main import app
+
+from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import (
     ChatMessage,
-    InferenceRequest,
     InferenceResponse,
-    Usage,
     PromptTemplate,
+    Usage,
 )
-from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.retrieval import SearchResult
-from src.domain.inference.prompt_builder import PromptBuilder
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
+from src.domain.inference.prompt_builder import PromptBuilder
+from src.main import app
 
 client = TestClient(app)
 
@@ -33,13 +34,15 @@ client = TestClient(app)
 
 
 @pytest.mark.asyncio
-async def test_prompt_builder_raises_when_no_template() -> None:
-    """Verify builder raises ValueError when no system prompt template is found."""
+async def test_prompt_builder_fails_when_no_template() -> None:
+    """Verify builder raises when no template is found in DB."""
+    from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
+
     mock_registry = AsyncMock()
     mock_registry.get_template.return_value = None
 
     builder = PromptBuilder(template_registry=mock_registry)
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(PromptTemplateNotFoundError):
         await builder.build_messages(
             tenant_id="t1",
             query="test query",
@@ -219,7 +222,15 @@ async def test_orchestrator_generate_success() -> None:
 
     assert "Budget is $450k." in response.content
     mock_llm.generate.assert_called_once()
-    mock_session_repo.add_message.assert_called()
+    mock_session_repo.get_messages.assert_awaited_once_with("t1", "ses_001")
+    mock_session_repo.add_message.assert_any_await(
+        "t1", "ses_001", ChatMessage(role="user", content="What's the budget?")
+    )
+    mock_session_repo.add_message.assert_any_await(
+        "t1",
+        "ses_001",
+        ChatMessage(role="assistant", content="Budget is $450k. [Source: chk_001]"),
+    )
     mock_log_writer.write_log.assert_called_once()
 
 
@@ -290,7 +301,7 @@ def test_chat_message_endpoint_non_streaming(
 ) -> None:
     """Verify POST chat/messages returns non-streaming response."""
     from src.domain.abstractions.config import TenantConfiguration
-    from src.domain.abstractions.retrieval import SearchResponse, SearchMeta
+    from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
 
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -345,7 +356,6 @@ def test_chat_message_requires_auth(mock_get_session, mock_validate) -> None:
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None:
     """Verify chat message returns 404 for non-existent session."""
-    from src.domain.abstractions.exceptions import TenantIsolationViolationError
 
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(

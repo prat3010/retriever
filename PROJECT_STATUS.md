@@ -6,26 +6,28 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-* **Current Milestone**: Milestone 5: Retrieval, Fusion & Rerank
-* **Last Completed Milestone**: Milestone 4: Document Ingestion & Storage
-* **Build Status**: Passing (All integration and unit checks pass locally)
-* **Next Recommended Milestone**: Milestone 5: Retrieval, Fusion & Rerank
+* **Current Milestone**: Milestone 9: Client Hierarchy & Admin API
+* **Last Completed Milestone**: Milestone 8: Production Hardening
+* **Build Status**: Passing (78/78 unit tests pass)
+* **Next Recommended Milestone**: Milestone 10: Admin Dashboard
 
 ---
 
 ## 2. Health Indicators
 
 ### Architecture Health: **Green**
-- **Hexagonal Architecture Compliance**: Strict segregation of concerns. Core domains contain no database or framework imports.
-- **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all configurations, tenant configs, api keys, audit logs, documents, and document_chunks.
+- **Hexagonal Architecture Compliance**: Enforced by `tests/test_architecture.py` on every test run. Core domains contain no database or framework imports.
+- **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all customer-data tables.
 - **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
 - **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
-- **Audit Remediation**: Resolved Hexagonal dependency violations, configured Alembic database migrations tracking, enforced OAuth2 scopes (RBAC), and implemented stateful readiness probes.
+- **No Hardcoded Prompts**: Enforced by conformance test and `PromptTemplateNotFoundError`.
+- **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: `tests/test_ingestion.py` verifies document uploads, status tracking, deletions cascade, and background parsing workers.
-- **Adapter Validation**: `tests/test_database_adapters.py` verifies database repository session overrides and RLS variable bindings.
-- **Total Tests**: 17/17 passing tests.
+- **Unit Test Coverage**: 11 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, and architecture conformance.
+- **Adapter Validation**: Database adapters, broker events, telemetry, caching, and RLS enforcement.
+- **Architecture Conformance**: `tests/test_architecture.py` enforces hexagonal import boundaries and no hardcoded prompts.
+- **Total Tests**: 78/78 passing tests.
 
 ### Documentation Health: **Green**
 - **Blueprints**: Master Architecture, Core specifications, and System Design outlines are complete.
@@ -36,4 +38,4 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 3. Outstanding Blockers & Issues
 
-- None. All audit findings and document ingestion milestones are fully verified.
+- None. M8 completed, M9 in progress. See ROADMAP.md for detailed milestone targets.

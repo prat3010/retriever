@@ -4,7 +4,7 @@ Implements a sliding-window counter algorithm for per-tenant rate limiting.
 """
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 from src.domain.abstractions.telemetry import RateLimiter
 
@@ -38,7 +38,6 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
         Uses a Lua script for atomic sliding-window check-and-add.
         """
         now = time.time()
-        window_start = now - self._window
 
         script = """
         local key = KEYS[1]

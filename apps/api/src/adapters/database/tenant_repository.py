@@ -1,9 +1,10 @@
-from typing import Optional
 import uuid
+
 from sqlalchemy import select
-from src.domain.abstractions.tenant import TenantRegistry, Tenant, TenantConfig
-from src.adapters.database.models import TenantDb, TenantConfigDb
+
 from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import TenantConfigDb, TenantDb
+from src.domain.abstractions.tenant import Tenant, TenantConfig, TenantRegistry
 
 
 class SqlTenantRegistry(TenantRegistry):
@@ -29,7 +30,7 @@ class SqlTenantRegistry(TenantRegistry):
                 temperature=0.2,
                 chunk_size=500,
                 chunk_overlap=100,
-                system_prompt_template="You are a helpful grounding assistant.",
+                system_prompt_template="",
             )
             session.add(db_config)
             await session.flush()
@@ -42,7 +43,7 @@ class SqlTenantRegistry(TenantRegistry):
                 created_at=db_tenant.created_at.isoformat(),
             )
 
-    async def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+    async def get_tenant(self, tenant_id: str) -> Tenant | None:
         """Retrieve tenant metadata by tenant ID."""
         async with tenant_session(bypass_rls=True) as session:
             stmt = select(TenantDb).where(TenantDb.tenant_id == uuid.UUID(tenant_id))
@@ -75,7 +76,7 @@ class SqlTenantRegistry(TenantRegistry):
             db_config.system_prompt_template = config.system_prompt_template
             await session.flush()
 
-    async def get_config(self, tenant_id: str) -> Optional[TenantConfig]:
+    async def get_config(self, tenant_id: str) -> TenantConfig | None:
         """Retrieve dynamic configuration parameters for the tenant."""
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = select(TenantConfigDb).where(TenantConfigDb.tenant_id == uuid.UUID(tenant_id))

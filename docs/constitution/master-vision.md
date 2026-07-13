@@ -5,17 +5,20 @@
 ## 1. The Retriever Manifesto & Guiding Principles
 
 ### 1.1 Core Ethos
-As the founding Principal Architects and Engineering Directors of the Retriever project, we establish this Constitution as the supreme technical law of our platform. This document defines the immutable architectural boundaries, operational constraints, design guidelines, and engineering philosophies that MUST govern all development, refactoring, and AI-assisted changes.
+As the founding architect of the Retriever project, we establish this Constitution as the supreme technical law of our platform. This document defines immutable architectural boundaries, operational constraints, design guidelines, and engineering philosophies that MUST govern all development, refactoring, and AI-assisted changes.
 
-We write code in a landscape defined by rapid commoditization of cognitive models and continuous shifts in data storage technologies. In this environment, raw intelligence is a utility. The permanent value of an enterprise platform lies in its **data orchestrations, security boundaries, multi-tenant isolation, architectural abstraction layers, and the resilience with which it ingests, indexes, and synthesizes context**. Retriever MUST serve as the permanent, secure memory layer of the enterprise.
+Retriever is a **reusable RAG engine** that powers client-specific frontends. It is not a single assistant, not a chat UI, not a turnkey SaaS product. It is the modular backend that coaching portals, CA assistants, legal tools, and custom apps all talk to through a simple API key. Each frontend is its own product with its own branding, user auth, and UX — Retriever handles the data ingestion, indexing, search, and generation.
+
+The permanent value of Retriever lies in its **data orchestrations, security boundaries, multi-tenant isolation, architectural abstraction layers, and the resilience with which it ingests, indexes, and synthesizes context**. It MUST serve as the reliable, reusable engine behind every client app.
 
 ### 1.2 Core Manifestos
-Every engineer, contributor, and AI coding agent MUST adhere to the following five foundational truths:
+Every engineer, contributor, and AI coding agent MUST adhere to the following foundational truths:
 *   **Decoupling MUST Be Absolute:** Vendor integration MUST be hidden behind abstract interfaces. No third-party SDK, database client, or LLM-specific interface shall leak into core business logic.
 *   **Code MUST Serve Two Intellects:** Code MUST be structured with obvious, flat composition to ensure readability for both human software engineers and parsing correctness for AI coding agents.
 *   **Tenancy is an Inviolable Sanctuary:** The separation between tenant data spaces is absolute. Any cross-tenant data leakage, logic overlap, or configuration bleed MUST be treated as a system-critical, build-blocking failure.
 *   **Performance is a Core Quality Attribute:** High-performance indexing, parallel query resolution, and fast response times are functional requirements, not secondary optimizations.
 *   **Configuration Determines Personality:** The platform MUST remain fully headless and configurable at runtime. Behavior variations (such as prompts, models, chunks, and brand themes) MUST resolve dynamically from the configuration store per tenant, without modifying static code.
+*   **API Key Is the Contract:** A single API key authenticates a client frontend. User identity within that frontend is the frontend's responsibility — passed as `X-User-ID` on every request. Retriever never manages user login, sessions, or passwords.
 
 ### 1.3 Guiding Principles
 *   **Fail Fast and Loudly:** The system MUST fail immediately and throw explicit, structured errors at the point of failure, rather than passing null values downstream or hiding exceptions.
@@ -43,14 +46,21 @@ Under no circumstances MUST a lower-priority concern compromise or override a hi
 ## 2. Vision & Mission
 
 ### 2.1 Vision Statement
-To establish Retriever as the industry-standard, multi-tenant AI Knowledge Platform. We envision a future where corporate knowledge is completely decoupled from the cognitive engines that reason over it. Retriever serves as the secure, high-performance, and resilient memory layer for all enterprise AI applications, enabling any downstream client to query, search, and synthesize proprietary data instantly across multiple modalities, independent of underlying vector databases, LLM engines, or cloud deployment providers.
+Retriever is the reusable backend engine that powers client-specific AI applications. A coaching institute uploads its textbooks → the coaching portal uses Retriever's RAG pipeline to answer students in the teacher's style. A CA firm configures their data → their automation tool retrieves client records instantly. An advocate uploads case law → their legal assistant finds relevant precedents.
 
-As cognitive models transition from simple chat interfaces to autonomous, multi-step agentic systems, Retriever shall remain the primary interface through which those agents interact with corporate knowledge. By structuring context as a first-class citizen, Retriever ensures that future agent systems operate within strict grounding boundaries, eliminating hallucinations, enforcing corporate compliance, and maintaining data privacy.
+Each frontend is a unique product. Retriever is the shared engine behind all of them, accessed through a single API key.
+
+The platform must abstract document ingestion, indexing, retrieval, and generation into a simple API — so frontend developers can integrate it in one line of config and never think about embeddings, chunk boundaries, or vector search.
 
 ### 2.2 Mission Statement
-Our mission is to construct a modular, provider-agnostic, and configuration-driven platform that abstracts document ingestion, chunking, indexing, retrieval, and inference orchestration. We provide downstream teams with standard APIs, SDKs, and event-driven interfaces to instantiate secure, isolated, and domain-specific AI SaaS products in minutes, purely through metadata definition and prompt layering.
+Our mission is to build a modular, provider-agnostic, configuration-driven RAG engine that:
 
-To achieve this, we commit to building an engineering ecosystem that prioritizes structural predictability, strict type enforcement, rigorous security models, and thorough performance budgeting. We reject short-term convenience in favor of long-term architectural stability.
+1. **Ingests, indexes, and retrieves** any client's data — documents, text, structured records.
+2. **Isolates every client** (and their sub-clients) with strict RLS boundaries.
+3. **Resolves all per-client configuration at runtime** — prompts, LLM keys, chunking, models — from the database, never from code.
+4. **Exposes a simple REST API** that any frontend can call with one API key and an `X-User-ID` header.
+
+We reject short-term convenience in favor of long-term architectural stability. Every engineering decision must ask: *does this make Retriever easier to integrate, harder to leak data across tenants, and simpler to deploy for a new client?*
 
 ---
 
@@ -91,30 +101,37 @@ Retriever is a reusable, multi-tenant AI Knowledge Platform. It consists of:
 
 ### 3.2 What Retriever Is NOT
 To prevent scope creep, we define what Retriever is not:
-*   **Not a CA (Credit Analyst) Assistant:** Retriever is not a single-purpose tool built for credit analysis, legal document parsing, or medical diagnostic summarization. It is the platform upon which those specific assistants are constructed.
-*   **Not a Hardcoded User Interface:** Retriever is not a static web chat application. While we provide reference interfaces using Next.js and shadcn/ui, the core product is the headless context and inference engine.
-*   **Not a Wrapper-as-a-Service:** We do not simply forward raw HTTP requests to OpenAI or Anthropic. We build internal intelligence around chunking hierarchies, retrieval algorithms, and schema-enforced output generation.
-*   **Not a Model Hosting Provider:** Retriever does not train or host base foundation models. We interface with external model providers (commercial APIs and self-hosted open-weights engines) through standardized adapter layers.
-*   **Not an ETL/Data Warehouse:** Retriever is not designed to perform bulk analytics or data warehouse computations. It does not replace Snowflake, BigQuery, or transactional systems. It is an indexer and context synthesizer optimized for reasoning.
+*   **Not a Client-Specific Assistant:** Retriever is not a coaching assistant, a CA (Credit Analyst) tool, a legal document parser, or a medical diagnostic summarizer. It is the *engine* upon which those specific assistants are constructed. Client frontends own the UX, branding, and user auth. Retriever owns the data pipeline and RAG logic.
+*   **Not a Frontend or User Interface:** Retriever has no client-facing UI, no login page, no signup flow. It has an admin dashboard (for platform management) and a REST API. Client frontends are separate products built by you or your clients.
+*   **Not a Wrapper-as-a-Service:** We do not simply forward raw HTTP requests to OpenAI. We build internal intelligence around chunking hierarchies, retrieval algorithms, and schema-enforced output generation.
+*   **Not a Model Hosting Provider:** Retriever does not train or host base foundation models. We interface with external model providers through standardized adapter layers.
+*   **Not an ETL/Data Warehouse:** Retriever is not designed to perform bulk analytics or data warehouse computations. It is an indexer and context synthesizer optimized for reasoning.
 
 ---
 
 ## 4. Goals & Non-Goals
 
-### 4.1 Long-Term Goals (5+ Years)
+### 4.1 Short-Term Goals (Next 3 Milestones)
+1.  **Client Hierarchy & Admin API:** Introduce a `users` table with `user_id` and `tenant_id`. Chat data isolated by `user_id` within a tenant. Admin API scoping (admin keys bypass user filter, client keys are scoped to their tenant). Per-tenant LLM key storage (encrypted) configurable via admin API.
+2.  **Admin Dashboard:** A Next.js admin UI for platform management — create tenants, manage users, configure prompt templates, set per-client LLM keys and models, browse documents uploaded by each client, preview RAG responses using a tenant's current config.
+3.  **Client SDK & API Surface:** A lightweight JS/TS `RetrieverClient` that frontend developers integrate in one line. Cursor-based pagination, rate limit headers, OpenAPI 3.1 spec.
+
+### 4.2 Long-Term Goals (1+ Years)
 1.  **API Stability & Longevity:** The core contracts and APIs of Retriever must remain structurally backward-compatible for at least five years, ensuring downstream applications can run without code churn.
 2.  **Sub-100ms Ingestion-to-Search Availability:** Documents ingested into the platform must be processed, embedded, indexed, and queryable in less than 100 milliseconds at scale.
-3.  **Decoupled Data Sovereignty:** The platform must allow enterprise customers to store their vector indexes and raw document chunks in their own cloud accounts (e.g., their own PostgreSQL database or S3 bucket) while utilizing Retriever's central orchestration engine.
-4.  **Autonomous Self-Optimization:** The platform will feature automated pipelines that continuously analyze retrieval success, dynamically adjusting chunk boundaries and reranking thresholds based on user feedback loops.
-5.  **Multimodal Foundation Ready:** The system must seamlessly ingest, index, and retrieve contexts containing mixed modalities (text, structured tables, layouts, vector elements, and raw image schemas) without modifying core domain interfaces.
+3.  **Production Storage:** Swap local filesystem for S3/MinIO with tenant-prefixed buckets. Encrypted LLM key persistence. Connection pool auto-tuning.
+4.  **Multi-Industry Configurability:** Per-tenant chunking strategies, metadata extractors, input/output guardrails, citation formatting, and model routing — all configured at runtime, not hardcoded.
+5.  **Performance & Scale:** HNSW index tuning, semantic query cache, bulk document ingest, SSE lifecycle management. Handle 200 concurrent search requests under 150ms latency budget.
+6.  **Enterprise Readiness:** Audit log writer, SSO/OIDC, RBAC expansion, data retention/backup/restore, immutable audit trail. SOC2 alignment for regulated clients.
 
-### 4.2 Non-Goals
+### 4.3 Non-Goals
 1.  **Building Custom Core Infrastructure:** We will not write custom vector database engines or custom parsing libraries from scratch. We leverage existing high-quality open-source and cloud infrastructure.
 2.  **Serving General-Purpose Web Pages:** Retriever will not serve standard web pages, marketing sites, or user blogs. It is strictly an API-driven knowledge platform.
 3.  **Direct Integration with Legacy ERP/CRM Systems:** Retriever will not build hundreds of bespoke connectors for legacy enterprise software. Instead, it defines a standard webhook and ingestion API format, pushing the responsibility of push-based synchronization to the data source or middleware.
-4.  **Training Custom Base Models:** We do not engage in the research, training, or base fine-tuning of generative language models. We orchestrate existing models.
+4.  **User Authentication or Session Management:** Retriever does not manage user login, passwords, sessions, or MFA. Client frontends own their authentication. Retriever requires only an API key (identifies the client tenant) and an `X-User-ID` header (identifies the user within that tenant).
+5.  **Training Custom Base Models:** We do not engage in the research, training, or base fine-tuning of generative language models. We orchestrate existing models.
 
-### 4.3 Architectural Anti-Goals
+### 4.4 Architectural Anti-Goals
 To prevent long-term scope creep and maintain architectural focus, Retriever MUST NOT evolve into any of the following systems:
 *   **A Workflow Automation Platform:** Retriever MUST NOT implement dynamic visual workflow builders, business process orchestration layers, or multi-app integration triggers.
 *   **A Business Intelligence (BI) Platform:** Retriever MUST NOT provide charting dashboards, analytical reporting tools, aggregators, or custom metrics engines.
@@ -130,10 +147,11 @@ Features, pull requests, or proposed modifications that steer the platform towar
 ## 5. Product & Design Philosophy
 
 ### 5.1 Product Philosophy
-We build Retriever with a product philosophy centered on composability, developer enablement, and configuration-driven systems.
+*   **Platform + Client App Model:** Retriever is the engine. Client frontends are the products. Each frontend integrates via a single API key + `X-User-ID` header. Retriever never manages user auth, sessions, or the frontend's UI decisions.
 *   **Composability:** Every domain component MUST be structured to function independently. Downstream teams MUST be able to utilize our ingestion pipeline without using our inference engine, or use our retrieval domain with their own custom UI orchestration.
 *   **Developer-First Design:** The APIs, SDKs, and configuration schemas are our core products. They MUST be intuitive, self-documenting, and strongly typed.
 *   **Configuration Over Code:** System changes MUST be driven by data stored in configurations, not code modifications. Prompt revisions, chunking variations, similarity weights, and LLM routes MUST be adjustable in the database at runtime.
+*   **API Key Is the Contract:** A client frontend authenticates with a single API key. That key identifies the tenant. The frontend passes `X-User-ID` to distinguish sub-clients. Per-tenant LLM keys and model selection are stored in the database, configurable via admin API — the frontend doesn't need to know about them. On override: a frontend can pass `X-LLM-Key` to use their own provider without admin involvement.
 
 ### 5.2 Design Principles for Reference UIs
 Although Retriever is headless, we provide starter applications and playground UIs. These reference systems MUST follow these visual design rules:
@@ -256,7 +274,20 @@ Every external service, database, or API MUST connect to the core through abstra
 
 ### 7.2 Core Interface Contracts
 
-#### 1. Cognitive Service Interface (`domain.abstractions.llm`)
+The actual port interfaces live in `apps/api/src/domain/abstractions/`. Below are the target interface signatures — aspirational design contracts that the codebase grows toward. The actual Python classes may have fewer methods; see the individual files for the current implementation.
+
+**Current port locations:**
+- LLM/Cognitive: `domain/abstractions/inference.py` (`LlmProvider`)
+- Vector Store: `domain/abstractions/retrieval.py` (`VectorSearchProvider`, `EmbeddingProvider`, `RerankerProvider`)
+- File Storage: `domain/abstractions/ingestion.py` (`DocumentStorage`)
+- Identity & Tenant: `domain/abstractions/identity.py` (`IdentityProvider`, `UserContext`)
+- Configuration: `domain/abstractions/config.py` (`ConfigRegistry`, `TenantConfiguration`)
+- Events: `domain/abstractions/events.py` (`EventPublisher`)
+- Telemetry: `domain/abstractions/telemetry.py` (`Tracer`, `MetricsRegistry`, `RateLimiter`)
+
+**Aspirational target interfaces:**
+
+#### 1. Cognitive Service Interface (`domain.abstractions.inference`)
 ```typescript
 export interface ChatMessage {
   readonly role: 'system' | 'user' | 'assistant' | 'tool';
@@ -265,100 +296,33 @@ export interface ChatMessage {
   readonly toolCalls?: readonly ToolCall[];
 }
 
-export interface ToolCall {
-  readonly id: string;
-  readonly type: 'function';
-  readonly function: {
-    readonly name: string;
-    readonly arguments: string;
-  };
-}
-
-export interface InferenceRequest {
-  readonly messages: readonly ChatMessage[];
-  readonly temperature: number;
-  readonly maxTokens?: number;
-  readonly jsonSchema?: Record<string, any>;
-  readonly tools?: readonly Record<string, any>[];
-}
-
-export interface InferenceResponse {
-  readonly content: string;
-  readonly usage: {
-    readonly inputTokens: number;
-    readonly outputTokens: number;
-    readonly totalTokens: number;
-  };
-  readonly finishReason: 'stop' | 'length' | 'tool_calls' | 'content_filter';
-}
-
 export interface LlmProvider {
-  generate(request: InferenceRequest, configuration: Record<string, any>): Promise<InferenceResponse>;
-  generateStream(request: InferenceRequest, configuration: Record<string, any>): AsyncIterable<string>;
+  generate(request: InferenceRequest): Promise<InferenceResponse>;
+  generateStream(request: InferenceRequest): AsyncIterable<string>;
 }
 ```
 
-#### 2. Vector Store Interface (`domain.abstractions.vector`)
+#### 2. Vector Store Interface (`domain.abstractions.retrieval`)
 ```typescript
-export interface VectorEntity {
-  readonly id: string;
-  readonly vector: readonly number[];
-  readonly payload: Record<string, any>;
-  readonly tenantId: string;
-}
-
-export interface VectorQuery {
-  readonly vector: readonly number[];
-  readonly limit: number;
-  readonly tenantId: string;
-  readonly filters?: Record<string, any>;
-  readonly minSimilarityScore?: number;
-}
-
-export interface VectorDatabaseProvider {
-  upsertVectors(collection: string, entities: readonly VectorEntity[]): Promise<void>;
-  searchVectors(collection: string, query: VectorQuery): Promise<readonly VectorEntity[]>;
-  deleteVectors(collection: string, ids: readonly string[]): Promise<void>;
-  createCollectionIfMissing(collection: string, dimensions: number): Promise<void>;
+export interface VectorSearchProvider {
+  searchSimilar(query: VectorQuery): Promise<readonly SearchResult[]>;
 }
 ```
 
-#### 3. File Storage Interface (`domain.abstractions.storage`)
+#### 3. File Storage Interface (`domain.abstractions.ingestion`)
 ```typescript
-export interface FileUploadRequest {
-  readonly path: string;
-  readonly content: Buffer;
-  readonly contentType: string;
-  readonly tenantId: string;
-}
-
-export interface StorageProvider {
-  uploadFile(request: FileUploadRequest): Promise<string>;
-  downloadFile(path: string, tenantId: string): Promise<Buffer>;
-  deleteFile(path: string, tenantId: string): Promise<void>;
-  getPresignedUrl(path: string, tenantId: string, ttlSeconds: number): Promise<string>;
+export interface DocumentStorage {
+  save_file(path: string, content: bytes, tenant_id: str) -> str;
+  delete_file(path: string, tenant_id: str) -> None;
 }
 ```
 
 #### 4. Identity & Access Interface (`domain.abstractions.identity`)
 ```typescript
-export interface TenantIdentity {
-  readonly tenantId: string;
-  readonly status: 'active' | 'suspended' | 'terminated';
-  readonly tier: 'standard' | 'enterprise';
-  readonly allowedModels: readonly string[];
-}
-
-export interface UserContext {
-  readonly userId: string;
-  readonly tenantId: string;
-  readonly roles: readonly string[];
-  readonly scopes: readonly string[];
-}
-
 export interface IdentityProvider {
-  validateToken(token: string): Promise<UserContext>;
-  getTenantContext(tenantId: string): Promise<TenantIdentity>;
+  validate_token(token: str) -> UserContext;
+  create_api_key(tenant_id: str, scope: str) -> ApiKey;
+  revoke_api_key(key_id: str) -> None;
 }
 ```
 
@@ -378,7 +342,7 @@ Retriever is designed as an AI infrastructure platform, not a simple wrapper for
 
 ### 8.1 Ingestion, Knowledge, and Retrieval Engine
 The write path handles unstructured text transformation, while the read path handles real-time contextual synthesis.
-*   **Ingestion Pipeline:** Binary documents MUST be parsed within an isolated sandbox environment. Parsing converts files to standard intermediate formats, extracts metadata, identifies structural layouts, and redacts PII.
+*   **Ingestion Pipeline:** Binary documents are parsed in-process by default. A sandboxed parsing environment (container-based isolation) is planned for untrusted document handling in production.
 *   **Knowledge Indexing:** Text chunks MUST be organized hierarchically. Parent-child relationships MUST link small chunks (e.g., 200 tokens) to larger context blocks (e.g., 1000 tokens), allowing precise semantic matches to retrieve surrounding context.
 *   **Hybrid Search:** Queries MUST run keyword search (sparse BM25 indexing) and semantic search (dense vector indexing) in parallel. The results MUST be merged using Reciprocal Rank Fusion (RRF) and metadata filters before reranking.
 
@@ -540,18 +504,25 @@ These values represent design performance budgets, not rigid runtime guarantees.
 ## 14. Security, Privacy, & Compliance Philosophy
 
 ### 14.1 Tenant Isolation Models
-Retriever MUST support three tiers of tenant isolation, selectable via configuration:
+Retriever uses PostgreSQL Row-Level Security (RLS) for tenant isolation — the only isolation tier currently implemented. Schema-level and physical isolation are aspirational targets for enterprise clients.
 
-| Isolation Tier | Description | Use Case | Implementation Details |
+| Isolation Tier | Status | Description | Implementation Details |
 |---|---|---|---|
-| **Logical Isolation** | Single database, shared schemas. Row-Level Security (RLS) filters all reads and writes. | Standard SaaS / Low-cost tier | PostgreSQL RLS enabled on all tables. Queries MUST use `tenant_id` context. |
-| **Schema Isolation** | Single database, isolated logical schemas per tenant. | Mid-market Enterprise | Dynamically created database schemas. Connection pool switches schema context per request. |
-| **Physical Isolation** | Dedicated database clusters per tenant. | High-security Enterprise | Configuration maps tenant ID to distinct connection strings. |
+| **Logical Isolation** | **Implemented** | Single database, shared schemas. RLS filters all reads and writes. | PostgreSQL RLS enabled on all customer-data tables. Queries run through `tenant_session()` context setting `app.current_tenant_id` and `app.current_user_id`. |
+| **Schema Isolation** | Planned | Single database, isolated schemas per tenant. | Dynamically created database schemas. Connection pool switches schema context per request. |
+| **Physical Isolation** | Planned | Dedicated database clusters per tenant. | Configuration maps tenant ID to distinct connection strings. |
 
 > [!CAUTION]
 > **RLS Bypass Prevention:** All database queries MUST run through transaction contexts that explicitly set the user and tenant variables. Direct connection to the database with the superuser role is strictly forbidden in application runtime.
 
-### 14.2 Privacy by Design & Compliance Readiness
+### 14.2 User-Level Isolation (Sub-Client Model)
+Within a tenant, individual users have private chat data:
+*   **Data scoped by `user_id`:** `chat_sessions`, `chat_messages`, and `inference_logs` are filtered by `user_id` within the tenant.
+*   **Documents remain at tenant level:** All users within a client tenant share access to the client's knowledge base.
+*   **Admin API bypasses user filter:** Admin-scoped API keys see all users' data. Client-scoped keys see their tenant's data, filtered by the `X-User-ID` header value.
+*   **Frontend owns user identity:** Retriever never creates, authenticates, or manages users. The client frontend passes `X-User-ID` on every request.
+
+### 14.3 Privacy by Design & Compliance Readiness
 *   **PII Sanitization:** The ingestion pipeline MUST scan incoming documents for PII (Personally Identifiable Information) and apply dynamic redaction rules before text is vectorized and stored.
 *   **Data Lifecycle Policies (Data Retention & TTL):** Customer data MUST have configurable Time-To-Live (TTL) values. Expired documents, chunks, and chat history MUST be scrubbed automatically from relational tables and vector databases.
 *   **Erasure Requests:** The storage and retrieval domains MUST implement API endpoints to support "Right to be Forgotten" requests, ensuring complete removal of a user's data from vector indexes, cached buffers, and primary storage systems.
@@ -599,12 +570,13 @@ If the system detects that a query context, document chunk, or database operatio
 3.  **Invalidate authentication credentials.** Instantly block the API key or authentication token associated with the caller immediately.
 4.  **Raise a TenantIsolationViolationError.** Return a generic `403 Forbidden` response to the client.
 
-### 17.2 Automated Architectural Linter
-An automated architectural linter MUST run on every pull request. The build pipeline will block if:
-*   Core domain business logic directly imports external database libraries or service SDKs.
-*   Circular package dependencies are detected.
-*   An API endpoint lacks matching unit or integration tests.
-*   A dependency lockfile contains mismatching packages or duplicate version listings.
+### 17.2 Architecture Conformance Tests
+Architecture conformance tests live in `tests/test_architecture.py` and run as part of `pytest tests/`. These enforce:
+*   Domain files must not import adapters, FastAPI, SQLAlchemy, or other infrastructure frameworks.
+*   No hardcoded system prompt strings exist in source code.
+*   (Extend this file when adding new architectural rules — it's cheaper than docs.)
+
+The CI pipeline runs all tests on every push. Architecture violations block the build.
 
 ### 17.3 The Fifteen Non-Negotiable Rules
 1.  **Every Integration MUST Be Abstracted:** No raw vendor SDK imports are allowed in business logic.
@@ -627,4 +599,6 @@ An automated architectural linter MUST run on every pull request. The build pipe
 
 ## 18. The North Star Statement
 
-Retriever succeeds when downstream engineering teams can construct and deploy secure, enterprise-grade AI applications without needing to understand embeddings, vector distance metrics, retrieval pipelines, prompt engineering, or cognitive model providers. The ultimate purpose of Retriever is to abstract the complex, shifting landscape of AI infrastructure into a stable, secure, composable, and future-proof interface. By shielding developers from the mechanics of context assembly and model integration, Retriever enables organizations to focus on their domain logic, confident that their enterprise knowledge is managed under strict isolation, performance budgets, and architectural discipline.
+Retriever succeeds when you can spin up a new client frontend — coaching portal, CA assistant, legal tool — by creating a tenant, generating an API key, and pointing the frontend at the API. No code changes. No new deployments. No understanding of embeddings, vector search, or prompt engineering required from the frontend developer.
+
+The ultimate purpose of Retriever is to abstract the complex landscape of RAG infrastructure into a stable, secure, reusable API. By shielding every frontend from the mechanics of context assembly and model integration, Retriever enables you to focus on building client-specific products, confident that data isolation, prompt configurability, and architectural discipline are enforced at the engine level.

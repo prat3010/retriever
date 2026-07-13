@@ -17,16 +17,6 @@ def setup_logging(environment: str = "development", log_level: str = "INFO") -> 
     In production, output newline-delimited JSON for log aggregators.
     In development, output coloured human-readable lines.
     """
-    shared_processors: list[Any] = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.dev.ConsoleRenderer() if environment == "development"
-        else structlog.processors.JSONRenderer(),
-    ]
-
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,

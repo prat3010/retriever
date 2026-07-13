@@ -4,13 +4,15 @@ Implements the LlmProvider port using the OpenAI API for both
 synchronous generation and SSE-compatible streaming.
 """
 
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
+
 from openai import AsyncOpenAI
 
 from src.domain.abstractions.inference import (
-    LlmProvider,
     InferenceRequest,
     InferenceResponse,
+    LlmProvider,
     Usage,
 )
 

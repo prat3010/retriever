@@ -9,13 +9,15 @@ Comprehensive mock-based tests verifying:
 """
 
 import uuid
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
-from src.main import app
+
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.retrieval import SearchQuery, SearchResult
 from src.domain.retrieval.search_service import HybridSearchService
+from src.main import app
 
 client = TestClient(app)
 
@@ -212,7 +214,7 @@ def test_search_endpoint_success(
 ) -> None:
     """Verify POST /v1/tenants/{tenantId}/search returns correct response."""
     from src.domain.abstractions.config import TenantConfiguration
-    from src.domain.abstractions.retrieval import SearchResponse, SearchMeta
+    from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
 
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(

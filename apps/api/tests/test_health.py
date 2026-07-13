@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 client = TestClient(app)
@@ -10,7 +11,8 @@ def test_liveness_endpoint() -> None:
     assert response.json()["status"] == "alive"
 
 
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
+
 
 @patch("src.main.redis_client.ping", new_callable=AsyncMock)
 @patch("src.main.engine")

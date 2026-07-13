@@ -8,8 +8,9 @@ Verifies:
 - Retry exhaustion raises the original exception
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.mark.asyncio
@@ -62,9 +63,9 @@ async def test_embed_batch_returns_ordered_results() -> None:
 @pytest.mark.asyncio
 async def test_embed_retry_on_api_error() -> None:
     """Verify retry logic on transient API error."""
-    from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
-
     import openai
+
+    from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 
     mock_http_request = MagicMock()
     mock_http_response = MagicMock(spec=["status_code", "headers", "request"])
@@ -93,9 +94,9 @@ async def test_embed_retry_on_api_error() -> None:
 @pytest.mark.asyncio
 async def test_embed_retry_exhaustion() -> None:
     """Verify retry exhaustion raises the original exception."""
-    from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
-
     import openai
+
+    from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 
     mock_http_request = MagicMock()
     mock_http_response = MagicMock(spec=["status_code", "headers", "request"])

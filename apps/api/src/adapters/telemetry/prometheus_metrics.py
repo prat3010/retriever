@@ -4,12 +4,10 @@ Implements the MetricsRegistry port using prometheus_client, exposing
 a ``/metrics`` endpoint for scraping.
 """
 
-from typing import Optional
 
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
+from prometheus_client import REGISTRY, Counter, Gauge, Histogram, generate_latest
 
 from src.domain.abstractions.telemetry import MetricsRegistry
-
 
 # ── Pre-defined metric descriptors ──────────────────────────────────────────
 
@@ -42,13 +40,13 @@ RLS_VIOLATIONS = Counter(
 class PrometheusMetricsRegistry(MetricsRegistry):
     """Prometheus-backed metrics registry."""
 
-    def increment(self, name: str, value: float = 1, labels: Optional[dict[str, str]] = None) -> None:
+    def increment(self, name: str, value: float = 1, labels: dict[str, str] | None = None) -> None:
         _get_or_create_counter(name, labels or {}).inc(value)
 
-    def observe(self, name: str, value: float, labels: Optional[dict[str, str]] = None) -> None:
+    def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         _get_or_create_histogram(name, labels or {}).observe(value)
 
-    def set_gauge(self, name: str, value: float, labels: Optional[dict[str, str]] = None) -> None:
+    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         _get_or_create_gauge(name, labels or {}).set(value)
 
     @staticmethod

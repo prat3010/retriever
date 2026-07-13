@@ -60,7 +60,7 @@ By maintaining a strict hexagonal boundary, we ensure that changes in external i
                |                  Infrastructure Adapters                    |
                |                                                             |
                |   +-------------+      +-------------+      +-----------+   |
-               |   |  pgvector   |      | Supabase Auth|     |OpenAI/Anth|   |
+               |   |  pgvector   |      | SqlIdentity  |     |OpenAI/Cohere|  |
                |   +-------------+      +-------------+      +-----------+   |
                +-------------------------------------------------------------+
 ```
@@ -185,16 +185,19 @@ No third-party SDK or infrastructure library may leak into the core domains. Dec
        +-----------------------------------------------------------------+
        |                       Adapters Layer                            |
        |                                                                 |
-       |  +---------------+.   +---------------+.     +---------------+  |
-       |  | OpenAIAdapter |    | pgvectorAdap. |     |  S3Adapter    |  |
-       |  +---------------+    +---------------+     +---------------+  |
-       |  +---------------+.   +---------------+.                       |
-       |  | AnthropicAdap |    | QdrantAdapter |                        |
-       |  +---------------+    +---------------+                        |
+        |  +---------------------------+   +-------------------+       |
+        |  | OpenAILLMAdapter         |   | PgVectorSearch    |       |
+        |  +---------------------------+   +-------------------+       |
+        |  +---------------------------+   +-------------------+       |
+        |  | CohereRerankerAdapter    |   | LocalStorage      |       |
+        |  +---------------------------+   +-------------------+       |
+        |  +----------------------------+                              |
+        |  | RedisTenantConfigCache     |                              |
+        |  +----------------------------+                              |
        +-----------------------------------------------------------------+
 ```
 
-#### 3.1 Cognitive Service Interface (`domain.abstractions.llm`)
+#### 3.1 Cognitive Service Interface (`domain.abstractions.inference`)
 ```typescript
 export interface ChatMessage {
   readonly role: 'system' | 'user' | 'assistant' | 'tool';
@@ -236,7 +239,7 @@ export interface LlmProvider {
 }
 ```
 
-#### 3.2 Vector Store Interface (`domain.abstractions.vector`)
+#### 3.2 Vector Store Interface (`domain.abstractions.retrieval`)
 ```typescript
 export interface VectorEntity {
   readonly id: string;
@@ -261,7 +264,7 @@ export interface VectorDatabaseProvider {
 }
 ```
 
-#### 3.3 File Storage Interface (`domain.abstractions.storage`)
+#### 3.3 File Storage Interface (`domain.abstractions.ingestion`)
 ```typescript
 export interface FileUploadRequest {
   readonly path: string;
@@ -357,7 +360,7 @@ sequenceDiagram
 
     rect rgb(240, 240, 240)
         Note over Client, API: Phase 1: Ingestion API Ingress (Synchronous)
-        Client->>API: POST /v1/documents (Binary Stream, Metadata)
+        Client->>API: POST /v1/tenants/{tenantId}/documents (Binary Stream, Metadata)
         API->>Auth: Validate Request Context (Token)
         Auth-->>API: UserContext (TenantId, scopes)
         
@@ -418,7 +421,7 @@ sequenceDiagram
 
     rect rgb(240, 240, 240)
         Note over Client, Cache: Phase 1: Authentication & Configuration Dynamic Setup
-        Client->>API: POST /v1/queries (SSE Query Stream Request)
+        Client->>API: POST /v1/tenants/{tenantId}/search (Query, filters)
         API->>Auth: Validate Token & Scope
         Auth-->>API: UserContext (TenantId)
 
@@ -473,7 +476,7 @@ To keep the platform headless and customizable, all tenant-specific behaviors ar
 ```mermaid
 sequenceDiagram
     autonumber
-    Client Request->>API Gateway: GET /v1/chat/message (Headers: API Key)
+    Client Request->>API Gateway: POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages (Headers: API Key)
     API Gateway->>Identity Domain: validateToken(API Key)
     Identity Domain-->>API Gateway: UserContext (TenantId: T-800)
     
@@ -530,33 +533,31 @@ Retriever is structured as a monorepo to maintain strong typing across client-se
 │   ├── api/                     # API Serving Node (FastAPI implementation example)
 │   │   ├── src/
 │   │   │   ├── domain/          # Hexagonal Application Core (Logical Domains)
-│   │   │   │   ├── ingestion/
-│   │   │   │   ├── knowledge/
-│   │   │   │   ├── retrieval/
-│   │   │   │   ├── inference/
-│   │   │   │   └── identity/
+│   │   │   │   ├── abstractions/ # Port interfaces (contracts between layers)
+│   │   │   │   ├── config/       # Configuration-as-Data service
+│   │   │   │   ├── identity/     # Tenant isolation, auth, and credential validation
+│   │   │   │   ├── ingestion/    # Document upload and validation
+│   │   │   │   ├── knowledge/    # Chunking and text indexing logic
+│   │   │   │   ├── retrieval/    # Hybrid search and reranking
+│   │   │   │   └── inference/    # Prompt templating, citation, SSE pipelines
 │   │   │   ├── adapters/        # Database, LLM, and storage adapters (Physical)
 │   │   │   └── main.py          # API entrypoint
 │   │   ├── pyproject.toml
 │   │   └── uv.lock
 │   │
-│   └── web/                     # Frontend Reference Interface (Next.js/shadcn example)
+│   └── web/                     # Frontend Reference Interface (Next.js)
 │       ├── src/
-│       │   ├── app/             # Web Router layouts and pages
-│       │   ├── components/      # UI components (Tailwind/CSS modules)
-│       │   └── hooks/
+│       │   └── app/             # Web Router layouts and pages
 │       ├── package.json
-│       └── package-lock.json
+│       └── tsconfig.json
 │
 ├── packages/
-│   ├── core-types/              # Shared JSON Schema & TypeScript interfaces
-│   ├── sdk-js/                  # TypeScript client SDK
-│   └── sdk-python/              # Python client SDK
+│   └── processing-core/         # Shared processing primitives (PDF parse, chunk, embed)
 │
 ├── docs/
 │   ├── constitution/            # Master Vision and engineering rules
 │   │   └── master-vision.md
-│   ├── adr/                     # Architecture Decision Records
+│   ├── decisions/               # Architecture Decision Records
 │   └── architecture.md          # Canonical Architectural Blueprint
 ```
 
@@ -654,6 +655,7 @@ graph TB
 
     subgraph StateLayer["Data Storage & Event Clusters (Stateful)"]
         RedisCluster["Redis Cache (Tenant Config & Traces)"]
+        RabbitMQ["RabbitMQ Broker (Task Queue)"]
         PostgresCluster["Primary Relational DB (PostgreSQL RLS)"]
         VectorStoreCluster["Vector Storage DB"]
     end
@@ -669,10 +671,10 @@ graph TB
     APIPod1 --> PostgresCluster
     APIPod2 --> PostgresCluster
     
-    %% Async parsing trigger
-    APIPod1 -->|Publish tasks| RedisCluster
-    WorkerPod1 -->|Consume tasks| RedisCluster
-    WorkerPod2 -->|Consume tasks| RedisCluster
+    %% Async parsing trigger via RabbitMQ (ADR-004)
+    APIPod1 -->|Publish tasks| RabbitMQ
+    WorkerPod1 -->|Consume tasks| RabbitMQ
+    WorkerPod2 -->|Consume tasks| RabbitMQ
     
     %% Workers to DB
     WorkerPod1 --> PostgresCluster
@@ -710,6 +712,7 @@ To trace requests across asynchronous queues and LLM API completions:
     *   Reranker confidence indices.
     *   Cognitive provider response times.
 *   **OpenTelemetry Exports:** Spans MUST export to OpenTelemetry collectors, allowing integration with observability platforms (e.g., Datadog, Prometheus, or Jaeger).
+*   **Error Tracking:** Sentry is initialized in the API and Celery worker processes (via `worker_process_init` signal) for exception grouping, release tracking, and breadcrumbs. Sentry integrates with OpenTelemetry so traces and errors appear in one view. Configured via `SENTRY_DSN`; skipped when DSN is empty. Parser sandbox containers are excluded from Sentry to maintain zero-egress security.
 
 #### 12.2 Scalability Bottlenecks & Caching Architecture
 *   **SSE Connection Management:** High concurrent streaming loads exhaust API server thread pools. The gateway MUST route SSE connections through asynchronous network workers, decoupling request threads from stream lifecycles.
@@ -753,8 +756,60 @@ To guarantee alignment, this architecture design maps directly back to the [Engi
 | Hexagonal application core architecture | Section 6.1 (Architectural Philosophy) | Core domains (`ingestion`, `knowledge`, `retrieval`, `inference`) interact with external databases and providers only through abstract ports, ensuring the platform remains provider-agnostic. |
 | Ingestion parsing sandboxing | Section 8.1 (Ingestion, Knowledge, and Retrieval Engine) & Section 17.3 (Rule 15) | Binary parsing operations run inside isolated containers to prevent processing exploits from compromising main serving APIs. |
 | CQRS Read/Write isolation | Section 6.4 (Command Query Responsibility Segregation (CQRS)) | Separate ingestion worker pipelines (Write path) from parallel retrieval engines (Read path), protecting search latency budgets. |
-| Dynamic dynamic configuration cache | Section 9.1 (Configuration Philosophy) | All prompt strings and model routes are resolved dynamically from database tables based on tenant ID context. Hardcoded prompts are prohibited. |
+| Dynamic configuration cache | Section 9.1 (Configuration Philosophy) | All prompt strings and model routes are resolved dynamically from database tables based on tenant ID context. Hardcoded prompts are prohibited. |
 | PostgreSQL RLS mapping | Section 14.1 (Tenant Isolation Models) | Logical data tables utilize PostgreSQL Row-Level Security policies to prevent cross-tenant access. |
 | Tenancy Kill-Switch adapter validation | Section 17.1 (The Tenancy Breach Kill-Switch) | Database and vector store adapters verify the request tenant context against retrieved records. Any mismatch terminates the database connection. |
 | OpenTelemetry trace tracking | Section 17.3 (Rule 8) | Trace IDs are generated at the API ingress and propagated across background queues and LLM client adapters to track performance. |
 | Manual validation hooks | Section 8.4 (Model Routing, Guardrails, & Tool Execution) | The Inference engine pauses tool executions and registers verification tokens in the database, waiting for user approval. |
+
+---
+
+## 15. Client Integration Model
+
+### 15.1 How Frontends Connect
+
+Retriever is a headless RAG engine. Every client frontend — coaching portal, CA assistant, legal tool — connects through the same simple contract:
+
+```
+Client Frontend (Next.js, React, mobile app, etc.)
+  │
+  │  POST /v1/tenants/{tenantId}/chat/sessions
+  │  Headers:
+  │    X-API-Key: sk_client_abc123
+  │    X-User-ID: user_42
+  │    Content-Type: application/json
+  │
+  ▼
+Retriever API
+  ├── 1. Validate API key → resolve tenant_id, scope (admin | client)
+  ├── 2. Set RLS context: app.current_tenant_id = tenant_id
+  ├── 3. If client-scoped key: set app.current_user_id from X-User-ID
+  ├── 4. Execute RAG pipeline (retrieve → rerank → prompt → LLM → stream)
+  └── 5. Return SSE stream or JSON response
+```
+
+### 15.2 Authentication & Authorization
+
+| Credential | Who carries it | What it grants |
+|---|---|---|
+| **Admin API Key** | Admin dashboard | Full CRUD across all tenants. Bypasses user filter. Can manage configs, prompts, keys. |
+| **Client API Key** | Client frontend | Scoped to one tenant. `X-User-ID` header filters chat data. Cannot access other tenants. |
+| **`X-User-ID` header** | Client frontend (passed per-request) | Identifies which user within the tenant is acting. The frontend is responsible for authenticating its own users. Retriever never creates or verifies user accounts. |
+
+### 15.3 Data Isolation Boundaries
+
+| Data | Scoped By | Accessible By |
+|---|---|---|
+| Documents, chunks, configs, prompts | `tenant_id` | All users within the client tenant + admin |
+| Chat sessions, messages, inference logs | `tenant_id` + `user_id` | Only the owning user + admin (bypasses user filter) |
+| API keys, tenant metadata | `tenant_id` (admin: all) | Admin sees all; client sees own |
+
+### 15.4 Per-Client LLK Key Resolution
+
+LLM API keys are resolved in the following priority (first match wins):
+
+1. **Request header** `X-LLM-Key` — frontend override (for advanced clients who bring their own key)
+2. **Tenant config** `llm_api_key` — stored encrypted in DB, configured via admin API
+3. **Environment variable** `OPENAI_API_KEY` — deployment-wide fallback
+
+This means a coaching portal can use the coaching institute's own OpenAI key, while the admin dashboard uses the platform key, and an advanced client can override per-request. All without code changes.

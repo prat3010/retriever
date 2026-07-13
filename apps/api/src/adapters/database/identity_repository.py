@@ -1,13 +1,18 @@
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
-from typing import Optional
 import uuid
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import select
-from src.domain.abstractions.exceptions import AuthenticationError
-from src.domain.abstractions.identity import IdentityProvider, UserContext, ApiKeyMetadata
-from src.adapters.database.models import ApiKeyDb
+
 from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import ApiKeyDb
+from src.domain.abstractions.exceptions import AuthenticationError
+from src.domain.abstractions.identity import (
+    ApiKeyMetadata,
+    IdentityProvider,
+    UserContext,
+)
 
 
 class SqlIdentityProvider(IdentityProvider):
@@ -36,11 +41,11 @@ class SqlIdentityProvider(IdentityProvider):
 
             # Validate expiration timestamp
             if db_key.expires_at:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 # Convert db_key.expires_at to timezone-aware UTC if it is naive
                 expires_at = db_key.expires_at
                 if expires_at.tzinfo is None:
-                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                    expires_at = expires_at.replace(tzinfo=UTC)
                 if now > expires_at:
                     raise AuthenticationError("API key token has expired.")
 
@@ -53,7 +58,7 @@ class SqlIdentityProvider(IdentityProvider):
             )
 
     async def create_api_key(
-        self, tenant_id: str, name: str, expires_in_days: Optional[int] = None
+        self, tenant_id: str, name: str, expires_in_days: int | None = None
     ) -> tuple[str, ApiKeyMetadata]:
         """Generate a new API key, hash it, save to DB, and return (raw_key, metadata)."""
         # Prefix format: ret_live_<random>
@@ -65,9 +70,9 @@ class SqlIdentityProvider(IdentityProvider):
         key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
         key_id = uuid.uuid4()
 
-        expires_at: Optional[datetime] = None
+        expires_at: datetime | None = None
         if expires_in_days:
-            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
+            expires_at = datetime.now(UTC) + timedelta(days=expires_in_days)
 
         async with tenant_session(tenant_id=tenant_id) as session:
             db_key = ApiKeyDb(

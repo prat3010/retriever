@@ -11,12 +11,13 @@ Verifies:
 - Middleware request timing
 """
 
-import pytest
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
+
+from src.domain.abstractions.telemetry import MetricsRegistry, RateLimiter, Tracer
 from src.main import app
-from src.domain.abstractions.telemetry import Tracer, MetricsRegistry, RateLimiter
 
 client = TestClient(app)
 
@@ -118,10 +119,6 @@ def test_prometheus_generate_latest():
 def test_prometheus_predefined_metrics():
     """Verify predefined metric descriptors are registered."""
     from src.adapters.telemetry.prometheus_metrics import (
-        HTTP_REQUEST_LATENCY,
-        TOKEN_CONSUMPTION,
-        QUEUE_BACKPRESSURE,
-        RLS_VIOLATIONS,
         PrometheusMetricsRegistry,
     )
 
@@ -249,7 +246,7 @@ async def test_rate_limit_dependency_disabled(mock_get_limiter):
 
 def test_setup_logging_configures_structlog():
     """Verify setup_logging configures structlog without errors."""
-    from src.adapters.telemetry.logger import setup_logging, get_logger
+    from src.adapters.telemetry.logger import get_logger, setup_logging
 
     setup_logging(environment="testing", log_level="DEBUG")
     log = get_logger("test_logger")

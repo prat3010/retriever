@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/hooks/use-query-client";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Retriever Playground",
-  description: "Grounded memory layer and query playground UI",
+  title: "Retriever Admin",
+  description: "Retriever platform administration dashboard",
 };
 
 export default function RootLayout({
@@ -12,9 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <main>{children}</main>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

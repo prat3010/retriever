@@ -57,6 +57,7 @@ class PromptTemplate(BaseModel):
 class ChatSessionInfo(BaseModel):
     session_id: str
     tenant_id: str
+    user_id: str | None = None
     created_at: str = ""
 
 
@@ -64,6 +65,7 @@ class InferenceLog(BaseModel):
     log_id: str | None = None
     tenant_id: str
     session_id: str | None = None
+    user_id: str | None = None
     model_used: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
@@ -100,16 +102,26 @@ class PromptTemplateRegistry(ABC):
 
     @abstractmethod
     async def get_template(
-        self, tenant_id: str, name: str
+        self, tenant_id: str, name: str, bypass_rls: bool = False
     ) -> PromptTemplate | None:
         """Retrieve a named prompt template for a tenant."""
         pass
 
     @abstractmethod
     async def save_template(
-        self, tenant_id: str, template: PromptTemplate
+        self, tenant_id: str, template: PromptTemplate, bypass_rls: bool = False
     ) -> None:
         """Persist a prompt template."""
+        pass
+
+    @abstractmethod
+    async def list_templates(self, tenant_id: str, bypass_rls: bool = False) -> list[PromptTemplate]:
+        """List all prompt templates for a tenant."""
+        pass
+
+    @abstractmethod
+    async def delete_template(self, tenant_id: str, name: str, bypass_rls: bool = False) -> bool:
+        """Delete a named prompt template. Returns True if found and deleted."""
         pass
 
 
@@ -118,7 +130,7 @@ class ChatSessionRepository(ABC):
 
     @abstractmethod
     async def create_session(
-        self, tenant_id: str
+        self, tenant_id: str, user_id: str | None = None
     ) -> ChatSessionInfo:
         """Create a new chat session and return its metadata."""
         pass
@@ -132,7 +144,7 @@ class ChatSessionRepository(ABC):
 
     @abstractmethod
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
     ) -> None:
         """Append a message to a tenant-scoped session's history."""
         pass

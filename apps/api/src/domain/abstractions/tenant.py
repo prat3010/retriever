@@ -34,6 +34,16 @@ class TenantRegistry(ABC):
         pass
 
     @abstractmethod
+    async def list_tenants(self, search: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list[Tenant], int]:
+        """List tenants with optional search, pagination. Returns (items, total)."""
+        pass
+
+    @abstractmethod
+    async def deactivate_tenant(self, tenant_id: str) -> bool:
+        """Deactivate (suspend) a tenant. Returns True if found and deactivated."""
+        pass
+
+    @abstractmethod
     async def update_config(self, tenant_id: str, config: TenantConfig) -> None:
         """Update configuration settings for the tenant."""
         pass

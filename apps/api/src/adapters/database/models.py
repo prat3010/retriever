@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     Text,
@@ -39,6 +40,7 @@ class TenantDb(Base):
     config = relationship("TenantConfigDb", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
     api_keys = relationship("ApiKeyDb", back_populates="tenant", cascade="all, delete")
     sessions = relationship("ChatSessionDb", backref="tenant", cascade="all, delete")
+    users = relationship("UserDb", back_populates="tenant", cascade="all, delete")
 
 
 class TenantConfigDb(Base):
@@ -54,6 +56,7 @@ class TenantConfigDb(Base):
     chunk_size = Column(Integer, nullable=False, default=500)
     chunk_overlap = Column(Integer, nullable=False, default=100)
     system_prompt_template = Column(Text, nullable=False, default="")
+    llm_api_key_encrypted = Column(Text, nullable=True)
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="config")
@@ -71,12 +74,37 @@ class ApiKeyDb(Base):
     name = Column(String(255), nullable=False)
     prefix = Column(String(50), nullable=False)
     key_hash = Column(String(255), unique=True, nullable=False, index=True)
+    role = Column(String(50), nullable=False, default="client")
     status = Column(String(50), nullable=False, default="active")
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     expires_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="api_keys")
+
+
+class UserDb(Base):
+    __tablename__ = "users"
+
+    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    external_id = Column(String(255), nullable=False)
+    display_name = Column(String(255), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "external_id", name="uq_users_tenant_external"),
+    )
+
+    # Relationships
+    tenant = relationship("TenantDb", back_populates="users")
+    sessions = relationship("ChatSessionDb", back_populates="user", cascade="all, delete")
 
 
 class AuditLogDb(Base):
@@ -202,6 +230,7 @@ class ChatSessionDb(Base):
     __tablename__ = "chat_sessions"
     __table_args__ = (
         UniqueConstraint("session_id", "tenant_id", name="uq_chat_sessions_session_tenant"),
+        Index("ix_chat_sessions_user_id", "user_id"),
     )
 
     session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -211,12 +240,19 @@ class ChatSessionDb(Base):
         nullable=False,
         index=True,
     )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     messages = relationship(
         "ChatMessageDb", back_populates="session",
         cascade="all, delete-orphan", order_by="ChatMessageDb.created_at"
     )
+    user = relationship("UserDb", back_populates="sessions")
 
 
 class ChatMessageDb(Base):
@@ -228,6 +264,7 @@ class ChatMessageDb(Base):
             name="fk_chat_messages_session_tenant",
             ondelete="CASCADE",
         ),
+        Index("ix_chat_messages_user_id", "user_id"),
     )
 
     message_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -242,8 +279,15 @@ class ChatMessageDb(Base):
         nullable=False,
         index=True,
     )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     role = Column(String(50), nullable=False)
     content = Column(Text, nullable=False)
+    name = Column(String(255), nullable=True)
     tool_calls = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
@@ -263,6 +307,12 @@ class InferenceLogDb(Base):
     session_id = Column(
         UUID(as_uuid=True),
         ForeignKey("chat_sessions.session_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )

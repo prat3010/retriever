@@ -23,6 +23,7 @@ from src.domain.abstractions.inference import (
     InferenceLogWriter,
     PromptTemplate,
     PromptTemplateRegistry,
+    ToolCall,
 )
 
 
@@ -30,9 +31,9 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
     """SQLAlchemy-backed prompt template registry."""
 
     async def get_template(
-        self, tenant_id: str, name: str
+        self, tenant_id: str, name: str, bypass_rls: bool = False
     ) -> PromptTemplate | None:
-        async with tenant_session(tenant_id=tenant_id) as session:
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
                 PromptTemplateDb.name == name,
@@ -50,9 +51,9 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
             )
 
     async def save_template(
-        self, tenant_id: str, template: PromptTemplate
+        self, tenant_id: str, template: PromptTemplate, bypass_rls: bool = False
     ) -> None:
-        async with tenant_session(tenant_id=tenant_id) as session:
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
                 PromptTemplateDb.name == template.name,
@@ -73,24 +74,58 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                 )
             await session.flush()
 
+    async def list_templates(self, tenant_id: str, bypass_rls: bool = False) -> list[PromptTemplate]:
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+            stmt = select(PromptTemplateDb).where(
+                PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
+            ).order_by(PromptTemplateDb.name)
+            result = await session.execute(stmt)
+            return [
+                PromptTemplate(
+                    prompt_id=str(row.prompt_id),
+                    tenant_id=str(row.tenant_id),
+                    name=row.name,
+                    content=row.content,
+                    is_system_prompt=row.is_system_prompt,
+                )
+                for row in result.scalars().all()
+            ]
+
+    async def delete_template(self, tenant_id: str, name: str, bypass_rls: bool = False) -> bool:
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+            stmt = select(PromptTemplateDb).where(
+                PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
+                PromptTemplateDb.name == name,
+            )
+            result = await session.execute(stmt)
+            row = result.scalar_one_or_none()
+            if not row:
+                return False
+            await session.delete(row)
+            await session.flush()
+            return True
+
 
 class SqlChatSessionRepository(ChatSessionRepository):
     """SQLAlchemy-backed chat session and message repository."""
 
     async def create_session(
-        self, tenant_id: str
+        self, tenant_id: str, user_id: str | None = None
     ) -> ChatSessionInfo:
         session_id = uuid.uuid4()
+        user_uuid = uuid.UUID(user_id) if user_id else None
         async with tenant_session(tenant_id=tenant_id) as session:
             db_session = ChatSessionDb(
                 session_id=session_id,
                 tenant_id=uuid.UUID(tenant_id),
+                user_id=user_uuid,
             )
             session.add(db_session)
             await session.flush()
             return ChatSessionInfo(
                 session_id=str(db_session.session_id),
                 tenant_id=str(db_session.tenant_id),
+                user_id=str(db_session.user_id) if db_session.user_id else None,
                 created_at=db_session.created_at.isoformat(),
             )
 
@@ -109,19 +144,23 @@ class SqlChatSessionRepository(ChatSessionRepository):
             return ChatSessionInfo(
                 session_id=str(row.session_id),
                 tenant_id=str(row.tenant_id),
+                user_id=str(row.user_id) if row.user_id else None,
                 created_at=row.created_at.isoformat(),
             )
 
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
     ) -> None:
+        user_uuid = uuid.UUID(user_id) if user_id else None
         async with tenant_session(tenant_id=tenant_id) as session:
             session.add(
                 ChatMessageDb(
                     session_id=uuid.UUID(session_id),
                     tenant_id=uuid.UUID(tenant_id),
+                    user_id=user_uuid,
                     role=message.role,
                     content=message.content,
+                    name=message.name,
                     tool_calls=(
                         [tc.model_dump() for tc in message.tool_calls]
                         if message.tool_calls else None
@@ -148,6 +187,10 @@ class SqlChatSessionRepository(ChatSessionRepository):
                 ChatMessage(
                     role=row.role,
                     content=row.content,
+                    name=row.name,
+                    tool_calls=[
+                        ToolCall(**tc) for tc in row.tool_calls
+                    ] if row.tool_calls else [],
                 )
                 for row in rows
             ]
@@ -162,6 +205,7 @@ class SqlInferenceLogWriter(InferenceLogWriter):
                 InferenceLogDb(
                     tenant_id=uuid.UUID(log.tenant_id),
                     session_id=uuid.UUID(log.session_id) if log.session_id else None,
+                    user_id=uuid.UUID(log.user_id) if log.user_id else None,
                     model_used=log.model_used,
                     input_tokens=log.input_tokens,
                     output_tokens=log.output_tokens,

@@ -20,7 +20,8 @@ Before performing any code generation, modification, or research task, agents mu
          (Read selectively on demand when working on specific areas)
           ├── docs/features/core-platform.md  <── Read for feature specs
           ├── docs/implementation/system-design.md <── Read for database/API schema reference
-          └── docs/decisions/ADR-*.md         <── Read for tech stack constraints
+                    └── docs/decisions/ADR-*.md         <── Read for tech stack constraints
+                    └── docs/features/admin-dashboard.md <── Read when working on the admin dashboard
 ```
 
 ### 1.1 Mandatory Reading (The Platform Laws)
@@ -56,6 +57,7 @@ To avoid context exhaustion and ensure code correctness, agents must follow stri
 | **Infrastructure Work** | ADRs (`docs/decisions/`) | 1. Target adapter file (`adapters/`) <br>2. Docker Compose / Dockerfile | Check ADR constraints $\rightarrow$ Implement adapter matching Port parameters $\rightarrow$ Configure Docker/K8s deployment variables. |
 | **AI Pipeline Work** | [engineering-playbook.md](file:///Users/prateeksharma/Developer/retriever/docs/engineering/engineering-playbook.md) | 1. Prompt template DB config mapping<br>2. `domain/inference/` files | Verify prompt dynamic loading patterns $\rightarrow$ Check LLM model abstract interface $\rightarrow$ Write streaming token adapters. |
 | **Admin API Work** | [master-vision.md](file:///Users/prateeksharma/Developer/retriever/docs/constitution/master-vision.md) §14.2<br>[ROADMAP.md](file:///Users/prateeksharma/Developer/retriever/ROADMAP.md) M9 | 1. `domain/abstractions/` (ports)<br>2. API key scoping in `security.py`<br>3. RLS policies in `connection.py` | Read constitution on user-level isolation $\rightarrow$ Add `user_id` to chat tables $\rightarrow$ Extend RLS $\rightarrow$ Build admin CRUD endpoints $\rightarrow$ Run `test_architecture.py` to verify no regression. |
+| **Admin Dashboard Work** | [admin-dashboard.md](file:///Users/prateeksharma/Developer/retriever/docs/features/admin-dashboard.md)<br>[ROADMAP.md](file:///Users/prateeksharma/Developer/retriever/ROADMAP.md) M10 | 1. `apps/web/src/` (Next.js app)<br>2. Existing hooks/components | Read admin-dashboard.md for all patterns → build using shadcn/ui + TanStack Query + Zustand patterns → match existing component API → build-verify with `npm run build`. |
 | **Client Onboarding** | [architecture.md](file:///Users/prateeksharma/Developer/retriever/docs/architecture.md) §15<br>[master-vision.md](file:///Users/prateeksharma/Developer/retriever/docs/constitution/master-vision.md) §5.1 | 1. Tenant CRUD in admin API<br>2. API key generation endpoint<br>3. Prompt template seeding | Create tenant $\rightarrow$ Generate API key (admin or client scope) $\rightarrow$ Configure LLM key + model $\rightarrow$ Seed default prompt template $\rightarrow$ Provide frontend with `apiKey` + `tenantId`. |
 | **Database Changes** | [system-design.md](file:///Users/prateeksharma/Developer/retriever/docs/implementation/system-design.md) | 1. Database adapter files<br>2. SQL migrations folder | Check schema mappings $\rightarrow$ Generate Alembic migration $\rightarrow$ Add corresponding RLS schema policies $\rightarrow$ Verify down migration. |
 

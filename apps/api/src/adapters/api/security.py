@@ -1,5 +1,6 @@
 import hashlib
 import json
+import secrets
 import sys
 
 from fastapi import Depends, Header, HTTPException, Security, status
@@ -42,6 +43,24 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
         ) from e
 
 
+async def get_current_user_id(
+    x_user_id: str | None = Header(None, alias="X-User-ID"),
+    user_context: UserContext = Depends(get_current_user),
+) -> str | None:
+    """Extract X-User-ID from request headers.
+
+    Returns None for admin API keys (bypass user scoping).
+    Raises 401 if X-User-ID is missing for client API keys.
+    """
+    is_admin = "admin" in user_context.roles
+    if not is_admin and not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="X-User-ID header is required for client API keys.",
+        )
+    return x_user_id
+
+
 async def verify_tenant_isolation(
     tenantId: str,
     user_context: UserContext = Depends(get_current_user),
@@ -51,6 +70,9 @@ async def verify_tenant_isolation(
 
     Triggers the Tenancy Breach Kill-Switch on mismatches.
     """
+    if "admin" in user_context.roles:
+        return
+
     if user_context.tenant_id != tenantId:
         # LOG CRITICAL SECURITY BREACH (Structured JSON out to stderr)
         log_payload = {
@@ -87,6 +109,9 @@ async def verify_scopes(
     user_context: UserContext = Depends(get_current_user),
 ) -> None:
     """Enforce Role-Based Access Control (RBAC) scopes checks on key permissions."""
+    if "admin" in user_context.roles:
+        return
+
     if security_scopes.scopes:
         for scope in security_scopes.scopes:
             if scope not in user_context.scopes:
@@ -100,7 +125,7 @@ async def verify_admin_key(
     x_admin_master_key: str = Header(..., alias="X-Admin-Master-Key"),
 ) -> None:
     """Enforce administrative master key verification checks (System-wide Admin)."""
-    if x_admin_master_key != settings.ADMIN_MASTER_KEY:
+    if not secrets.compare_digest(x_admin_master_key, settings.ADMIN_MASTER_KEY):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid administrative master key credential.",

@@ -38,12 +38,22 @@ class OpenAILLMAdapter(LlmProvider):
             self._async_client = AsyncOpenAI(**kwargs)
         return self._async_client
 
+    def _client_for_key(self, api_key: str | None) -> AsyncOpenAI:
+        """Create or return a client for the given API key."""
+        if api_key and api_key != self._api_key:
+            kwargs: dict[str, Any] = {"api_key": api_key}
+            if self._base_url:
+                kwargs["base_url"] = self._base_url
+            return AsyncOpenAI(**kwargs)
+        return self.client
+
     async def generate(
         self, request: InferenceRequest, configuration: dict[str, Any]
     ) -> InferenceResponse:
         """Execute a synchronous non-streaming generation."""
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
+        client = self._client_for_key(configuration.get("api_key"))
 
         kwargs: dict[str, Any] = {
             "model": model,
@@ -53,7 +63,7 @@ class OpenAILLMAdapter(LlmProvider):
         if request.max_tokens:
             kwargs["max_tokens"] = request.max_tokens
 
-        response = await self.client.chat.completions.create(
+        response = await client.chat.completions.create(
             **kwargs, stream=False
         )
 
@@ -74,6 +84,7 @@ class OpenAILLMAdapter(LlmProvider):
         """Execute a streaming generation yielding delta dicts."""
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
+        client = self._client_for_key(configuration.get("api_key"))
 
         kwargs: dict[str, Any] = {
             "model": model,
@@ -85,7 +96,7 @@ class OpenAILLMAdapter(LlmProvider):
         if request.max_tokens:
             kwargs["max_tokens"] = request.max_tokens
 
-        stream = await self.client.chat.completions.create(**kwargs)
+        stream = await client.chat.completions.create(**kwargs)
 
         async for chunk in stream:
             choice = chunk.choices[0] if chunk.choices else None
@@ -94,5 +105,11 @@ class OpenAILLMAdapter(LlmProvider):
             if choice and choice.finish_reason:
                 yield {"finish_reason": choice.finish_reason}
                 break
-
-        yield {"finish_reason": "stop"}
+            if chunk.usage:
+                yield {
+                    "usage": {
+                        "input_tokens": chunk.usage.prompt_tokens or 0,
+                        "output_tokens": chunk.usage.completion_tokens or 0,
+                        "total_tokens": chunk.usage.total_tokens or 0,
+                    }
+                }

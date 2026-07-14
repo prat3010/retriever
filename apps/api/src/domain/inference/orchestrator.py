@@ -42,10 +42,10 @@ class InferenceOrchestrator:
         self.log_writer = log_writer
 
     async def create_session(
-        self, tenant_id: str
+        self, tenant_id: str, user_id: str | None = None
     ) -> ChatSessionInfo:
         """Create a new chat session."""
-        return await self.session_repo.create_session(tenant_id)
+        return await self.session_repo.create_session(tenant_id, user_id)
 
     async def get_session(
         self, session_id: str, tenant_id: str
@@ -54,10 +54,10 @@ class InferenceOrchestrator:
         return await self.session_repo.get_session(session_id, tenant_id)
 
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage
+        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
     ) -> None:
         """Persist a message to session history."""
-        await self.session_repo.add_message(tenant_id, session_id, message)
+        await self.session_repo.add_message(tenant_id, session_id, message, user_id)
 
     async def get_history(
         self, tenant_id: str, session_id: str
@@ -72,6 +72,7 @@ class InferenceOrchestrator:
         query: str,
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
+        user_id: str | None = None,
     ) -> InferenceResponse:
         """Execute a complete non-streaming inference pipeline.
 
@@ -111,7 +112,7 @@ class InferenceOrchestrator:
         )
 
         response = await self.llm.generate(
-            request, {"model": model_config.default_model}
+            request, {"model": model_config.default_model, "api_key": model_config.api_key}
         )
 
         # Validate citations
@@ -129,6 +130,7 @@ class InferenceOrchestrator:
             InferenceLog(
                 tenant_id=tenant_id,
                 session_id=session_id,
+                user_id=user_id,
                 model_used=model_config.default_model,
                 input_tokens=response.usage.input_tokens,
                 output_tokens=response.usage.output_tokens,
@@ -138,12 +140,13 @@ class InferenceOrchestrator:
 
         # Persist user message and assistant response
         await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="user", content=query)
+            tenant_id, session_id, ChatMessage(role="user", content=query), user_id
         )
         await self.session_repo.add_message(
             tenant_id,
             session_id,
             ChatMessage(role="assistant", content=response.content),
+            user_id,
         )
 
         return response
@@ -155,6 +158,7 @@ class InferenceOrchestrator:
         query: str,
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
+        user_id: str | None = None,
     ) -> AsyncIterator[dict]:
         """Execute streaming inference, yielding token delta events.
 
@@ -192,9 +196,11 @@ class InferenceOrchestrator:
         )
 
         full_content: list[str] = []
+        input_tokens = 0
+        output_tokens = 0
 
         async for chunk in self.llm.generate_stream(
-            request, {"model": model_config.default_model}
+            request, {"model": model_config.default_model, "api_key": model_config.api_key}
         ):
             delta = chunk.get("delta", chunk if isinstance(chunk, str) else "")
             if delta:
@@ -204,6 +210,11 @@ class InferenceOrchestrator:
             finish = chunk.get("finish_reason")
             if finish:
                 break
+
+            usage = chunk.get("usage")
+            if usage:
+                input_tokens = usage.get("input_tokens", 0)
+                output_tokens = usage.get("output_tokens", 0)
 
         # Final response for citation check
         final_text = "".join(full_content)
@@ -218,15 +229,27 @@ class InferenceOrchestrator:
 
         # Persist messages
         await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="user", content=query)
+            tenant_id, session_id, ChatMessage(role="user", content=query), user_id
         )
         await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="assistant", content=final_text)
+            tenant_id, session_id, ChatMessage(role="assistant", content=final_text), user_id
         )
 
-        usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+        await self.log_writer.write_log(
+            InferenceLog(
+                tenant_id=tenant_id,
+                session_id=session_id,
+                user_id=user_id,
+                model_used=model_config.default_model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                latency_ms=elapsed,
+            )
+        )
+
+        total = input_tokens + output_tokens
         yield {
             "event": "done",
-            "usage": usage,
+            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": total},
             "latency_ms": elapsed,
         }

@@ -16,8 +16,8 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M6** | Generative Inference & Citations | LLM adapters, prompt orchestrations, context window packing, citation audits | **Completed** | Q3 2026 |
 | **M7** | Observability & Hardening | Structured logging, Prometheus metrics, OTel tracing, rate limiting | **Completed** | Q4 2026 |
 | **M8** | Production Hardening | DB bootstrap fixes, worker consolidation, shared packages, architecture tests | **Completed** | Q4 2026 |
-| **M9** | Client Hierarchy & Admin API | Users table, sub-client RLS, per-tenant LLM keys, admin API scoping, CRUD endpoints | **Next** | Q4 2026 |
-| **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, prompts, docs) | *Planned* | Q1 2027 |
+| **M9** | Client Hierarchy & Admin API | Users table, sub-client RLS, per-tenant LLM keys, admin API scoping, CRUD endpoints | **Completed** | Q4 2026 |
+| **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, onboarding, playground) | *In Progress* | Q1 2027 |
 | **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | *Planned* | Q1 2027 |
 | **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | *Planned* | Q2 2027 |
 | **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | *Planned* | Q2 2027 |
@@ -123,7 +123,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 10: Admin Dashboard
+### [In Progress] Milestone 10: Admin Dashboard
 
 **Objective:** Build a Next.js admin UI that consumes the M9 admin API. One place to manage everything — no SQL, no terminal.
 
@@ -133,22 +133,37 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Dependencies:** M9
 
-**Expected Outcome:** You can create tenants, manage users, configure prompts, set LLM keys, browse documents, and preview RAG responses — all from a web dashboard.
+**Expected Outcome:** You can create tenants, manage users, configure prompts, set LLM keys, browse documents, preview RAG responses, and onboard new clients — all from a web dashboard.
 
-**Targets:**
-- Tenant list: view all tenants, status (active/suspended), document count, user count.
-- Tenant detail: manage name, status, LLM config (model, API key), chunk params.
-- User management per tenant: list, add, deactivate users.
-- Prompt template editor: create/edit prompts per tenant with preview (rendered output).
-- Document browser: list/search all documents for a tenant, view chunk count, status.
-- RAG sandbox: simulate a query using a tenant's current config — see what the LLM would return.
-- API key management: generate and revoke keys per tenant, view key metadata (name, scope, last used).
-- Platform metrics: basic dashboard showing total tenants, documents, queries per day.
+**Completed Targets:**
+- ✅ Scaffold: Next.js 14, shadcn/ui + Tailwind v4, TanStack Query, Zustand, sonner toasts
+- ✅ Auth: admin master key login, sessionStorage + cookie, middleware guard
+- ✅ App shell: sidebar navigation, topbar, ErrorBoundary wrapper
+- ✅ Domain hooks: tenants, users, API keys, config (queries + mutations with cache invalidation)
+- ✅ Dashboard home: stats overview (total, active, suspended tenants)
+- ✅ Tenant list: table with deactivate dialog
+- ✅ Tenant detail: 4 tabs (Overview, Users, API Keys, Config) with full CRUD
+- ✅ Client onboarding wizard: 3-step flow (tenant info → API key → credentials summary with curl examples)
+- ✅ API Playground: per-tenant endpoint test console (documents, search, config, API keys, users)
+- ✅ Reference client (`apps/client-reference/`): standalone Next.js app demonstrating `X-API-Key` + `X-User-ID` integration with Chat (SSE), Search, Documents tabs
+- ✅ Error boundary + toast notifications + date formatting utilities
+- ✅ Build verified: all pages compile, lint clean, 94/94 API tests pass
+
+**Remaining Targets:**
+- [ ] Tenant list: pagination + search/filter
+- [ ] Tenant detail: document browser tab (list/search documents, view chunk count)
+- [ ] Tenant detail: RAG sandbox tab (simulate query with tenant config)
+- [ ] Global config page: system-wide settings (AI provider defaults, retrieval settings)
+- [ ] Audit log viewer: recent activity across tenants
+- [ ] Theme toggle: dark/light mode
+- [ ] Responsive sidebar: collapse on mobile
+- [ ] Prompt template editor: create/edit prompts per tenant
 
 **Acceptance Criteria:**
 - Onboarding a new client takes 2 minutes through the dashboard — no terminal commands.
 - Admin can verify a tenant's RAG response before the client sees it.
 - All dashboard actions call the same M9 admin API (dashboard is just a client).
+- Reference client serves as a reusable template for client frontend teams.
 
 ---
 

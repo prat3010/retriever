@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import TenantConfigDb, TenantDb
@@ -58,6 +58,43 @@ class SqlTenantRegistry(TenantRegistry):
                 tier=db_tenant.tier,
                 created_at=db_tenant.created_at.isoformat(),
             )
+
+    async def list_tenants(self, search: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list[Tenant], int]:
+        """List tenants with optional search and pagination. Returns (items, total)."""
+        async with tenant_session(bypass_rls=True) as session:
+            base = select(TenantDb)
+            count_base = select(func.count(TenantDb.tenant_id))
+            if search:
+                pattern = f"%{search}%"
+                base = base.where(TenantDb.name.ilike(pattern))
+                count_base = count_base.where(TenantDb.name.ilike(pattern))
+            total_result = await session.execute(count_base)
+            total = total_result.scalar() or 0
+            stmt = base.order_by(TenantDb.created_at.desc()).offset(offset).limit(limit)
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+            return [
+                Tenant(
+                    tenant_id=str(r.tenant_id),
+                    name=r.name,
+                    status=r.status,
+                    tier=r.tier,
+                    created_at=r.created_at.isoformat() if r.created_at else "",
+                )
+                for r in rows
+            ], total
+
+    async def deactivate_tenant(self, tenant_id: str) -> bool:
+        """Deactivate (suspend) a tenant. Returns True if found and deactivated."""
+        async with tenant_session(bypass_rls=True) as session:
+            stmt = select(TenantDb).where(TenantDb.tenant_id == uuid.UUID(tenant_id))
+            result = await session.execute(stmt)
+            db_tenant = result.scalar_one_or_none()
+            if not db_tenant:
+                return False
+            db_tenant.status = "suspended"
+            await session.flush()
+            return True
 
     async def update_config(self, tenant_id: str, config: TenantConfig) -> None:
         """Update configuration settings for the tenant."""

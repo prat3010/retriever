@@ -52,3 +52,7 @@ __pycache__/
 venv/
 ENV/
 env/
+*.egg-info/
+
+# Next.js build output
+.next/

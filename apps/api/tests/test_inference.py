@@ -224,12 +224,13 @@ async def test_orchestrator_generate_success() -> None:
     mock_llm.generate.assert_called_once()
     mock_session_repo.get_messages.assert_awaited_once_with("t1", "ses_001")
     mock_session_repo.add_message.assert_any_await(
-        "t1", "ses_001", ChatMessage(role="user", content="What's the budget?")
+        "t1", "ses_001", ChatMessage(role="user", content="What's the budget?"), None
     )
     mock_session_repo.add_message.assert_any_await(
         "t1",
         "ses_001",
         ChatMessage(role="assistant", content="Budget is $450k. [Source: chk_001]"),
+        None,
     )
     mock_log_writer.write_log.assert_called_once()
 
@@ -255,7 +256,7 @@ async def test_orchestrator_create_session() -> None:
 
     session = await orchestrator.create_session("t1")
     assert session.session_id == "ses_001"
-    mock_session_repo.create_session.assert_called_once_with("t1")
+    mock_session_repo.create_session.assert_called_once_with("t1", None)
 
 
 # ── 5. Chat API Endpoints ──────────────────────────────────────────────────
@@ -271,14 +272,14 @@ def test_create_chat_session_endpoint(
     mock_validate.return_value = UserContext(
         user_id="user_123",
         tenant_id=tenant_id,
-        roles=["integrator"],
+        roles=["client"],
         scopes=["document:write"],
     )
     mock_create_session.return_value = MagicMock(
         session_id="ses_001", tenant_id=tenant_id, created_at="2026-01-01T00:00:00"
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions",
         headers=headers,
@@ -307,7 +308,7 @@ def test_chat_message_endpoint_non_streaming(
     mock_validate.return_value = UserContext(
         user_id="user_123",
         tenant_id=tenant_id,
-        roles=["integrator"],
+        roles=["client"],
         scopes=["document:write"],
     )
     mock_get_session.return_value = MagicMock(
@@ -325,7 +326,7 @@ def test_chat_message_endpoint_non_streaming(
         finish_reason="stop",
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/ses_001/messages",
         json={"query": "test", "stream": False},
@@ -361,12 +362,12 @@ def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None
     mock_validate.return_value = UserContext(
         user_id="user_123",
         tenant_id=tenant_id,
-        roles=["integrator"],
+        roles=["client"],
         scopes=["document:write"],
     )
     mock_get_session.return_value = None
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/nonexistent/messages",
         json={"query": "test"},

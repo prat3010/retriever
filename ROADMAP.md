@@ -29,6 +29,12 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M19** | Smart Model Failover | Auto-retry on provider downtime, multi-LLM dynamic translation routing | **Planned** | Q1 2028 |
 | **M20** | Token Cost Optimization | Long chat history summarization compression, token billing tracking | **Planned** | Q2 2028 |
 | **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Planned** | Q2 2028 |
+| **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Planned** | Q3 2028 |
+| **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Planned** | Q3 2028 |
+| **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Planned** | Q4 2028 |
+| **M25** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q4 2028 |
+| **M26** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q1 2029 |
+| **M27** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q1 2029 |
 
 ---
 
@@ -415,6 +421,114 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Acceptance Criteria:**
 - Queries on topics not present in local documents trigger web search.
 - LLM references the web search chunks using standard citation guidelines.
+
+---
+
+### [Planned] Milestone 22: Structured Data Extraction
+
+**Objective:** Extract clean, structured JSON payloads directly from unstructured documents using client-specified JSON schemas.
+
+**Complexity:** Medium
+
+**Dependencies:** M11, M13
+
+**Targets:**
+- Create dynamic schema parsing utilities on FastAPI endpoints.
+- Implement structured inference extraction route: `POST /v1/tenants/{tenantId}/documents/{documentId}/extract`.
+- Support JSON Schema inputs mapping to LLM tool-calling or structural output modes.
+
+**Acceptance Criteria:**
+- Extraction API returns valid JSON output conforming 100% to input schemas.
+
+---
+
+### [Planned] Milestone 23: Multi-Modal Processing
+
+**Objective:** Add OCR and vision support for scanned PDFs and image files during worker ingestion.
+
+**Complexity:** Large
+
+**Dependencies:** M4, M12
+
+**Targets:**
+- Integrate local OCR libraries (Tesseract) and cloud multi-modal LLM vision adapters in Celery worker pipeline.
+- Implement file-type checks on ingestion queues; trigger visual descriptions for PDF pages yielding zero raw text.
+- Extract, chunk, and index text descriptions from charts, diagrams, and tables.
+
+**Acceptance Criteria:**
+- Photographed invoices and scanned document PDFs are successfully processed, chunked, and retrievable via vector search.
+
+---
+
+### [Planned] Milestone 24: Self-Querying Retrieval
+
+**Objective:** Convert natural language search queries into structured database metadata filters.
+
+**Complexity:** Medium
+
+**Dependencies:** M5, M18
+
+**Targets:**
+- Implement query translation step in `HybridSearchService` using light LLM parsing.
+- Compile natural language filter intent (e.g. "written in 2024") into structured JSONB search query parameters.
+- Combine vector search similarity queries with compiled SQL metadata filters.
+
+**Acceptance Criteria:**
+- Querying "Show invoices from 2025" compiles to a vector search with a strict `{"publish_year": 2025}` SQL filter.
+
+---
+
+### [Planned] Milestone 25: SaaS Tenant Resource Quotas
+
+**Objective:** Enforce SaaS resource limits (file counts, storage volumes, token budgets) at the tenant API level.
+
+**Complexity:** Medium
+
+**Dependencies:** M9, M15
+
+**Targets:**
+- Add limits configuration schemas (`max_documents`, `max_storage_bytes`, `monthly_token_budget`) to `tenant_configs` DB table.
+- Implement quota validation hooks on document upload and chat message API endpoints.
+- Trigger `402 Payment Required` or `429 Quota Exceeded` exceptions when thresholds are crossed.
+
+**Acceptance Criteria:**
+- Uploading documents beyond the tenant's configured limit is blocked and throws 402.
+
+---
+
+### [Planned] Milestone 26: Multi-Workspace Collections
+
+**Objective:** Allow tenants to partition their documents into isolated collections/workspaces.
+
+**Complexity:** Medium
+
+**Dependencies:** M9, M13, M18
+
+**Targets:**
+- Add `collection_id` uuid column to `documents`, `document_chunks`, and `vector_records`.
+- Update API endpoints to accept optional `collection_id` scoping parameters.
+- Restrict vector and hybrid search queries to matching collection boundaries.
+
+**Acceptance Criteria:**
+- Search and chat queries within collection "Legal" never return search chunks from collection "HR".
+
+---
+
+### [Planned] Milestone 27: Interactive Chunking Auditor
+
+**Objective:** Provide administrative users with a visual preview sandbox to audit document chunking splits before indexing.
+
+**Complexity:** Medium
+
+**Dependencies:** M10, M13
+
+**Targets:**
+- Implement chunk preview API: `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview`.
+- Calculate character and token bounds for different parsing algorithms (character, semantic, recursive) dynamically.
+- Build visual highlighting highlighting chunk dividers in the Admin Dashboard playground.
+
+**Acceptance Criteria:**
+- Auditor endpoint returns exact split positions and token size estimations for visual dashboard rendering.
 
 ---
 

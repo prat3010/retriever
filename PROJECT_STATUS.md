@@ -8,7 +8,7 @@ Operational overview of the Retriever platform's current engineering status.
 
 - **Current Milestone**: Milestone 14: Performance & Scale (Planned)
 - **Last Completed Milestone**: Milestone 13: Multi-Industry Configurability
-- **Build Status**: Passing (136/136 unit tests pass)
+- **Build Status**: Passing (137/137 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
@@ -29,7 +29,7 @@ Operational overview of the Retriever platform's current engineering status.
 ### Testing Status: **Green**
 - **Unit Test Coverage**: 17 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), and custom splitting/metadata/guardrails pipelines (Milestone 13).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 136/136 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 7 pipeline configurability tests in Milestone 13).
+- **Total Tests**: 137/137 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 

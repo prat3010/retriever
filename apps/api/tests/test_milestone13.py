@@ -239,3 +239,70 @@ def test_chat_with_citation_formatting(
     content = response.json()["content"]
     assert "[Doc: contract.pdf, idx: 1]" in content
     assert "[Doc: addendum.pdf, idx: 2]" in content
+
+
+@pytest.mark.asyncio
+@patch("workers.src.tasks._publish_event", autospec=True)
+@patch("workers.src.tasks.create_async_engine", autospec=True)
+async def test_worker_task_with_recursive_chunking_and_metadata_extractor(mock_create_engine, mock_publish_event) -> None:
+    from workers.src.tasks import process_document_async
+    import workers.src.tasks
+    workers.src.tasks._engine = None
+    import os
+    
+    tenant_id = str(uuid.uuid4())
+    doc_id = str(uuid.uuid4())
+    
+    mock_conn = AsyncMock()
+    mock_engine = MagicMock()
+    mock_engine.dispose = AsyncMock()
+    mock_create_engine.return_value = mock_engine
+    
+    mock_ctx = MagicMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_ctx.__aexit__ = AsyncMock(return_value=None)
+    mock_engine.begin.return_value = mock_ctx
+    
+    # Mock configuration payload fetch returning recursive chunking + metadata extractors
+    config_dict = {
+        "chunking_settings": {
+            "strategy": "recursive",
+            "chunk_size": 15,
+            "chunk_overlap": 2
+        },
+        "metadata_extractors": [
+            {
+                "name": "agreement_date",
+                "extractor_type": "regex",
+                "pattern": r"signed on\s*(\d{4}-\d{2}-\d{2})"
+            }
+        ]
+    }
+    
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = [json.dumps(config_dict)]
+    mock_conn.execute.return_value = mock_result
+    
+    test_file = "./sample_m13_test.txt"
+    with open(test_file, "w", encoding="utf-8") as f:
+        f.write("This contract was signed on 2026-07-14. It has multiple sentences to trigger recursive splitting boundaries.")
+        
+    try:
+        await process_document_async(doc_id, tenant_id, test_file)
+    finally:
+        if os.path.exists(test_file):
+            os.remove(test_file)
+            
+    # Verify that database inserts were run and contains recursive strategy and extracted metadata
+    db_insert_calls = []
+    for call in mock_conn.execute.call_args_list:
+        arg = call[0][0]
+        if hasattr(arg, "text") and "INSERT INTO document_chunks" in arg.text:
+            db_insert_calls.append(call[0][1])
+            
+    assert len(db_insert_calls) >= 1
+    
+    # Check that metadata was updated with the regex match result
+    meta = json.loads(db_insert_calls[0]["meta_data"])
+    assert meta["strategy"] == "recursive"
+    assert meta["agreement_date"] == "2026-07-14"

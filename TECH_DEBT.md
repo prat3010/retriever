@@ -1,7 +1,17 @@
 # Tech Debt & Future Work
 
-Items identified during the M1-M9 audit that were deferred. Fix when
+Items identified during audits that were deferred. Fix when
 they start blocking you — not before.
+
+## Fixed in M10 cleanup
+
+| Item | Commit |
+|------|--------|
+| `verify_admin_key` returns 422 instead of 401 | `a6f49a0` |
+| `verify_scopes` silently succeeds when used without `Security()` | `a6f49a0` |
+| `redact_secrets` truthy check → `is not None` | `a6f49a0` |
+| No UUID validation on `X-User-ID` header | `a6f49a0` |
+| Streaming `finish_reason` double-yield dead code | `a6f49a0` |
 
 ## Architecture
 
@@ -26,7 +36,7 @@ silently missed.
 
 Fix: inject the provider and call it instead.
 
-### `verify_scopes` silently succeeds when used without `Security()`
+### ~~`verify_scopes` silently succeeds when used without `Security()`~~ (Fixed in `a6f49a0`)
 **File:** `apps/api/src/adapters/api/security.py:115`
 
 If someone writes `Depends(verify_scopes)` instead of
@@ -38,7 +48,7 @@ if not security_scopes.scopes:
     raise HTTPException(500, "verify_scopes used without scopes")
 ```
 
-### `verify_admin_key` returns 422 instead of 401 when header is missing
+### ~~`verify_admin_key` returns 422 instead of 401 when header is missing~~ (Fixed in `a6f49a0`)
 **File:** `apps/api/src/adapters/api/security.py:125`
 
 `Header(...)` with ellipsis makes it required — FastAPI returns 422
@@ -121,7 +131,7 @@ Client keys are granted `"query:execute"` but no endpoint checks it
 (the search endpoint uses `"document:read"`). Remove the dead scope
 or enforce it.
 
-### No UUID validation on `X-User-ID` header
+### ~~No UUID validation on `X-User-ID` header~~ (Fixed in `a6f49a0`)
 **File:** `apps/api/src/adapters/api/security.py:46-61`
 
 Malformed UUID → `uuid.UUID(user_id)` raises `ValueError` → 500.
@@ -162,7 +172,7 @@ model but the migration (`3e9a1b2c4d5f`) only alters them if they're
 still at the old width. Once all environments are migrated, remove
 the IF EXISTS guards.
 
-### Streaming `finish_reason` double-yield (dead code)
+### ~~Streaming `finish_reason` double-yield (dead code)~~ (Fixed in `a6f49a0`)
 **File:** `apps/api/src/adapters/cognitive/openai_adapter.py:109`
 
 Code yields `{"finish_reason": "stop"}` after the stream loop breaks
@@ -170,7 +180,7 @@ on the actual finish reason. Currently never consumed (orchestrator
 breaks on the first finish_reason). Either remove it or wire it as a
 fallback.
 
-### `redact_secrets` uses truthy check instead of `is not None`
+### ~~`redact_secrets` uses truthy check instead of `is not None`~~ (Fixed in `a6f49a0`)
 **File:** `apps/api/src/domain/abstractions/config.py:64,66`
 
 `if key:` should be `if key is not None:`. Empty string redaction

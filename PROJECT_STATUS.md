@@ -80,6 +80,13 @@ Operational overview of the Retriever platform's current engineering status.
 - 111/111 API tests passing (was 94)
 - Ruff clean, web build clean
 
+### Security fixes (M10 cleanup)
+- `verify_admin_key`: missing header returns 401 (was 422)
+- `verify_scopes`: guard prevents silent bypass with `Depends()`
+- `X-User-ID`: UUID format validation, 422 on malformed input
+- `redact_secrets`: `is not None` instead of truthy check
+- Streaming `finish_reason`: removed dead-code double-yield
+
 ---
 
 ## 4. Outstanding Blockers & Issues

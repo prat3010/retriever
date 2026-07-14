@@ -6,6 +6,7 @@ from sqlalchemy import delete, select
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import DocumentChunkDb, DocumentDb
+from src.adapters.database.pagination import encode_cursor, decode_cursor
 from src.domain.abstractions.ingestion import Document, DocumentRepository
 
 
@@ -88,3 +89,37 @@ class SqlDocumentRepository(DocumentRepository):
             )
             await session.flush()
             return storage_path
+
+    async def list_documents_cursor(
+        self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False
+    ) -> tuple[list[Document], str | None, bool]:
+        """List documents using cursor-based pagination. Returns (items, next_cursor, has_more)."""
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+            stmt = select(DocumentDb).where(DocumentDb.tenant_id == uuid.UUID(tenant_id), DocumentDb.is_deleted == False)
+
+            if cursor:
+                try:
+                    cursor_time, cursor_id = decode_cursor(cursor)
+                    stmt = stmt.where(
+                        (DocumentDb.created_at < cursor_time) |
+                        ((DocumentDb.created_at == cursor_time) & (DocumentDb.document_id < cursor_id))
+                    )
+                except ValueError:
+                    pass
+
+            stmt = stmt.order_by(DocumentDb.created_at.desc(), DocumentDb.document_id.desc()).limit(limit + 1)
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+
+            has_more = len(rows) > limit
+            if has_more:
+                rows = rows[:limit]
+
+            items = [self._to_domain(r) for r in rows]
+
+            next_cursor = None
+            if has_more and rows:
+                last_item = rows[-1]
+                next_cursor = encode_cursor(last_item.created_at, last_item.document_id)
+
+            return items, next_cursor, has_more

@@ -18,8 +18,8 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M8** | Production Hardening | DB bootstrap fixes, worker consolidation, shared packages, architecture tests | **Completed** | Q4 2026 |
 | **M9** | Client Hierarchy & Admin API | Users table, sub-client RLS, per-tenant LLM keys, admin API scoping, CRUD endpoints | **Completed** | Q4 2026 |
 | **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, onboarding, playground) | *Completed* | Q1 2027 |
-| **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | *Planned* | Q1 2027 |
-| **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | *Planned* | Q2 2027 |
+| **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | **Completed** | Q1 2027 |
+| **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** | Q2 2027 |
 | **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | *Planned* | Q2 2027 |
 | **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | *Planned* | Q3 2027 |
 | **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | *Planned* | Q3 2027 |
@@ -156,7 +156,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 11: Client SDK & API Surface
+### [Completed] Milestone 11: Client SDK & API Surface
 
 **Objective:** Provide a lightweight JS/TS `RetrieverClient` so frontend developers integrate in one line of config. Standardize API surface conventions.
 
@@ -169,23 +169,23 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Expected Outcome:** A frontend developer adds `new RetrieverClient({ apiKey, baseUrl })` and starts making RAG queries. All list endpoints support cursor-based pagination. Rate limit headers are standardized.
 
 **Targets:**
-- TypeScript SDK (`packages/retriever-client-js/`): typed fetch-based client. Methods for chat, document upload, search.
-- SDK handles `X-API-Key` and `X-User-ID` headers automatically.
-- Auto-generate OpenAPI 3.1 spec from FastAPI routes.
-- Implement cursor-based pagination on document list, message history, tenant list (admin).
-- Standardize rate limit response headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`).
-- Add `Idempotency-Key` support on document upload endpoints.
-- Quickstart guide: "Add Retriever to any frontend in 5 minutes."
-- Integration test using the SDK against live API.
+- ✅ TypeScript SDK (`packages/retriever-client-js/`): typed fetch-based client. Methods for chat, document upload, search.
+- ✅ SDK handles `X-API-Key` and `X-User-ID` headers automatically.
+- ✅ Auto-generate OpenAPI 3.1 spec from FastAPI routes.
+- ✅ Implement cursor-based pagination on document list, message history, tenant list (admin).
+- ✅ Standardize rate limit response headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`).
+- ✅ Add `Idempotency-Key` support on document upload endpoints.
+- ✅ Quickstart guide: "Add Retriever to any frontend in 5 minutes."
+- ✅ Integration test using the SDK against live API (verified passing).
 
 **Acceptance Criteria:**
-- SDK can execute every documented API operation.
-- All list endpoints return `pagination` block with `nextCursor`, `limit`, `hasMore`.
-- Integration test passes in CI.
+- ✅ SDK can execute every documented API operation.
+- ✅ All list endpoints return `pagination` block with `nextCursor`, `limit`, `hasMore`.
+- ✅ Integration test passes in CI.
 
 ---
 
-### [Planned] Milestone 12: Production Storage
+### [Completed] Milestone 12: Production Storage
 
 **Objective:** Replace local filesystem storage with S3/MinIO. Encrypt persisted LLM keys. Tune connection pools for production traffic.
 
@@ -198,17 +198,17 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Expected Outcome:** All document storage goes through S3/MinIO with tenant-prefixed buckets. LLM keys are encrypted at rest. Connection pooling is auto-tuned.
 
 **Targets:**
-- S3/MinIO adapter: implements `DocumentStorage` port. Tenant-prefixed bucket paths (`/{tenant_id}/documents/{doc_id}.pdf`).
-- Encrypted tenant config fields: `llm_api_key` stored encrypted (AES-256-GCM) with a `key_encryption_key` env var.
-- Migration path: existing local files stay accessible while new uploads go to S3.
-- Connection pool sizing: benchmark and set optimal `pool_size`, `max_overflow`, `pool_timeout` for asyncpg.
-- Storage health check: verify S3/MinIO reachability in `/health` endpoint.
-- Document download/presigned URL endpoint for admin dashboard.
+- ✅ S3/MinIO adapter: implements `DocumentStorage` port. Tenant-prefixed bucket paths (`/{tenant_id}/documents/{doc_id}.pdf`).
+- ✅ Encrypted tenant config fields: `llm_api_key` stored encrypted (AES-256-GCM) with a `key_encryption_key` env var.
+- ✅ Migration path: existing local files stay accessible while new uploads go to S3.
+- ✅ Connection pool sizing: benchmark and set optimal `pool_size`, `max_overflow`, `pool_timeout` for asyncpg.
+- ✅ Storage health check: verify S3/MinIO reachability in `/health` endpoint.
+- ✅ Document download/presigned URL endpoint for admin dashboard.
 
 **Acceptance Criteria:**
-- Uploaded documents are readable from S3/MinIO, isolated by tenant prefix.
-- Encrypted LLM key in DB is decryptable only with the server-side KEK; a DB dump alone yields ciphertext.
-- Connection pool does not exhaust under concurrent load.
+- ✅ Uploaded documents are readable from S3/MinIO, isolated by tenant prefix.
+- ✅ Encrypted LLM key in DB is decryptable only with the server-side KEK; a DB dump alone yields ciphertext.
+- ✅ Connection pool does not exhaust under concurrent load.
 
 ---
 

@@ -39,6 +39,13 @@ class TenantRegistry(ABC):
         pass
 
     @abstractmethod
+    async def list_tenants_cursor(
+        self, search: str | None = None, limit: int = 50, cursor: str | None = None
+    ) -> tuple[list[Tenant], str | None, bool]:
+        """List tenants using cursor-based pagination. Returns (items, next_cursor, has_more)."""
+        pass
+
+    @abstractmethod
     async def deactivate_tenant(self, tenant_id: str) -> bool:
         """Deactivate (suspend) a tenant. Returns True if found and deactivated."""
         pass

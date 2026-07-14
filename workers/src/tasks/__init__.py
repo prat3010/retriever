@@ -108,7 +108,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 sa.text(
                     "SELECT value FROM configurations "
                     "WHERE (tenant_id = :tenant_id OR tenant_id IS NULL) "
-                    "AND key = 'retrieval' ORDER BY tenant_id NULLS LAST LIMIT 1"
+                    "AND key = 'config_payload' ORDER BY tenant_id NULLS LAST LIMIT 1"
                 ),
                 {"tenant_id": tenant_id},
             )
@@ -117,10 +117,44 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 config_val = row[0]
                 if isinstance(config_val, str):
                     config_val = json.loads(config_val)
-                chunk_size = config_val.get("chunk_size", chunk_size)
-                chunk_overlap = config_val.get("chunk_overlap", chunk_overlap)
+                retrieval = config_val.get("retrieval_settings", {})
+                chunk_size = retrieval.get("chunk_size", chunk_size)
+                chunk_overlap = retrieval.get("chunk_overlap", chunk_overlap)
 
-        text_content = extract_text_from_file(storage_path)
+        local_path = None
+        if storage_path.startswith("s3://"):
+            import tempfile
+            import boto3
+            from botocore.config import Config
+
+            path_parts = storage_path[5:].split("/", 1)
+            bucket = path_parts[0]
+            key = path_parts[1]
+
+            endpoint_url = os.environ.get("S3_ENDPOINT_URL")
+            client_opts = {}
+            if endpoint_url:
+                client_opts["endpoint_url"] = endpoint_url
+                client_opts["config"] = Config(signature_version="s3v4", s3={"addressing_style": "path"})
+
+            s3 = boto3.client("s3", **client_opts)
+            _, ext = os.path.splitext(key)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                local_path = tmp.name
+
+            s3.download_file(bucket, key, local_path)
+            parse_target_path = local_path
+        else:
+            parse_target_path = storage_path
+
+        try:
+            text_content = extract_text_from_file(parse_target_path)
+        finally:
+            if local_path and os.path.exists(local_path):
+                try:
+                    os.remove(local_path)
+                except Exception:
+                    pass
         chunks_to_insert = chunk_text(
             text=text_content,
             chunk_size=chunk_size,
@@ -201,8 +235,37 @@ def process_document(self, document_id: str, tenant_id: str, storage_path: str) 
 async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
     engine = get_engine()
     embedding_model = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    api_key = os.environ.get("OPENAI_API_KEY", "")
 
     try:
+        async with engine.connect() as conn:
+            await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
+            res = await conn.execute(
+                sa.text(
+                    "SELECT value FROM configurations "
+                    "WHERE (tenant_id = :tenant_id OR tenant_id IS NULL) "
+                    "AND key = 'config_payload' ORDER BY tenant_id NULLS LAST LIMIT 1"
+                ),
+                {"tenant_id": tenant_id},
+            )
+            row = res.fetchone()
+            if row:
+                config_val = row[0]
+                if isinstance(config_val, str):
+                    config_val = json.loads(config_val)
+                embed_cfg = config_val.get("embedding_provider", {})
+                embedding_model = embed_cfg.get("model_name", embedding_model)
+                api_key = embed_cfg.get("api_key", api_key)
+                if api_key and api_key != "********":
+                    from processing_core import ConfigEncrypter
+                    enc = ConfigEncrypter()
+                    api_key = enc.decrypt(api_key)
+
+                if not api_key or api_key == "********":
+                    provider = embed_cfg.get("provider_name", "openai").upper()
+                    env_key = f"{provider}_API_KEY"
+                    api_key = os.environ.get(env_key, os.environ.get("OPENAI_API_KEY", ""))
+
         async with engine.connect() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             result = await conn.execute(
@@ -219,7 +282,6 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
 
         import openai
 
-        api_key = os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
             return
 

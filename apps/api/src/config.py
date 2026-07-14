@@ -15,11 +15,23 @@ class Settings(BaseSettings):
 
     # Infrastructure connection strings
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
     REDIS_URL: str = "redis://localhost:6379/0"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672//"
 
     # Storage Settings
+    STORAGE_PROVIDER: Literal["local", "s3"] = "local"
     STORAGE_BUCKET: str = "retriever-documents"
+    S3_ENDPOINT_URL: str | None = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_REGION: str | None = None
+
+    # Cryptography
+    KEY_ENCRYPTION_KEY: str = "dev-key-encryption-key-must-be-32-bytes-long="
 
     # Cognitive Provider Keys
     COHERE_API_KEY: str = ""

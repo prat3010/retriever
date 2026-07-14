@@ -13,6 +13,8 @@ export interface TenantConfig {
     top_k: number;
     rrf_k: number;
     reranking_threshold: number;
+    chunk_size: number;
+    chunk_overlap: number;
   };
   feature_flags: Record<string, boolean>;
   security_settings: {

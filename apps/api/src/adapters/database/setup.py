@@ -20,7 +20,7 @@ async def initialize_database() -> None:
             "tenant_configs", "api_keys", "audit_logs",
             "documents", "document_chunks", "vector_records",
             "prompt_templates", "chat_sessions", "chat_messages",
-            "inference_logs",
+            "inference_logs", "users",
         ]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))

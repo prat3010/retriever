@@ -44,13 +44,24 @@ class MetricsRegistry(ABC):
         pass
 
 
+class RateLimitResult:
+    def __init__(self, allowed: bool, limit: int, remaining: int, reset_after: int) -> None:
+        self.allowed = allowed
+        self.limit = limit
+        self.remaining = remaining
+        self.reset_after = reset_after
+
+    def __bool__(self) -> bool:
+        return self.allowed
+
+
 class RateLimiter(ABC):
     """Port for rate limiting — token-bucket / sliding-window checks."""
 
     @abstractmethod
-    async def acquire(self, key: str, cost: float = 1.0) -> bool:
+    async def acquire(self, key: str, cost: float = 1.0) -> RateLimitResult:
         """Attempt to consume *cost* tokens for *key*.
 
-        Returns True if allowed, False if rate-limited.
+        Returns RateLimitResult containing allowed status and metrics.
         """
         pass

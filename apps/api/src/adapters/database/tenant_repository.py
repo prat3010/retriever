@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import TenantConfigDb, TenantDb
+from src.adapters.database.pagination import encode_cursor, decode_cursor
 from src.domain.abstractions.tenant import Tenant, TenantConfig, TenantRegistry
 
 
@@ -129,3 +130,49 @@ class SqlTenantRegistry(TenantRegistry):
                 chunk_overlap=db_config.chunk_overlap,
                 system_prompt_template=db_config.system_prompt_template,
             )
+
+    async def list_tenants_cursor(
+        self, search: str | None = None, limit: int = 50, cursor: str | None = None
+    ) -> tuple[list[Tenant], str | None, bool]:
+        """List tenants using cursor-based pagination. Returns (items, next_cursor, has_more)."""
+        async with tenant_session(bypass_rls=True) as session:
+            stmt = select(TenantDb)
+            if search:
+                pattern = f"%{search}%"
+                stmt = stmt.where(TenantDb.name.ilike(pattern))
+
+            if cursor:
+                try:
+                    cursor_time, cursor_id = decode_cursor(cursor)
+                    stmt = stmt.where(
+                        (TenantDb.created_at < cursor_time) |
+                        ((TenantDb.created_at == cursor_time) & (TenantDb.tenant_id < cursor_id))
+                    )
+                except ValueError:
+                    pass
+
+            stmt = stmt.order_by(TenantDb.created_at.desc(), TenantDb.tenant_id.desc()).limit(limit + 1)
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+
+            has_more = len(rows) > limit
+            if has_more:
+                rows = rows[:limit]
+
+            items = [
+                Tenant(
+                    tenant_id=str(r.tenant_id),
+                    name=r.name,
+                    status=r.status,
+                    tier=r.tier,
+                    created_at=r.created_at.isoformat() if r.created_at else "",
+                )
+                for r in rows
+            ]
+
+            next_cursor = None
+            if has_more and rows:
+                last_item = rows[-1]
+                next_cursor = encode_cursor(last_item.created_at, last_item.tenant_id)
+
+            return items, next_cursor, has_more

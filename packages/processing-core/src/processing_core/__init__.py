@@ -1,6 +1,7 @@
 from processing_core.pdf_parser import extract_text_from_pdf, extract_text_from_file
 from processing_core.chunker import chunk_text, tokenize_text
 from processing_core.embedding import embed_with_retry
+from processing_core.encryption import ConfigEncrypter
 
 __all__ = [
     "extract_text_from_pdf",
@@ -8,4 +9,5 @@ __all__ = [
     "chunk_text",
     "tokenize_text",
     "embed_with_retry",
+    "ConfigEncrypter",
 ]

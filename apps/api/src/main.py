@@ -1,4 +1,5 @@
 import hashlib
+import asyncio
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -42,6 +43,7 @@ from src.adapters.database.inference_repository import (
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.storage.local_storage import LocalStorage
+from src.adapters.storage.s3_storage import S3Storage
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.adapters.telemetry.setup import init_telemetry
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
@@ -125,7 +127,16 @@ config_service = ConfigurationService(
     cache=RedisTenantConfigCache(),
     env_secrets=dict(os.environ),
 )
-local_storage = LocalStorage()
+if settings.STORAGE_PROVIDER == "s3":
+    local_storage = S3Storage(
+        bucket_name=settings.STORAGE_BUCKET,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_REGION,
+        endpoint_url=settings.S3_ENDPOINT_URL,
+    )
+else:
+    local_storage = LocalStorage()
 
 # Initialize search service
 search_service = HybridSearchService(
@@ -283,7 +294,7 @@ async def liveness_probe() -> HealthResponse:
 
 @app.get("/health/readiness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
 async def readiness_probe() -> HealthResponse:
-    """Readiness probe to confirm database and cache infrastructure connection endpoints are alive."""
+    """Readiness probe to confirm database, cache, and storage infrastructure connection endpoints are alive."""
     try:
         # Stateful query check on Postgres engine pool
         async with engine.connect() as conn:
@@ -291,6 +302,12 @@ async def readiness_probe() -> HealthResponse:
         
         # Stateful ping check on Redis cluster connection pool
         await redis_client.ping()
+
+        # Stateful reachability check on S3 bucket
+        if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "client"):
+            def _probe_s3() -> None:
+                local_storage.client.head_bucket(Bucket=local_storage.bucket_name)
+            await asyncio.to_thread(_probe_s3)
 
         return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
     except Exception as e:
@@ -405,29 +422,52 @@ async def generate_api_key(
 @app.get(
     "/v1/admin/tenants",
     status_code=status.HTTP_200_OK,
-    response_model=PaginatedTenantList,
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_list_tenants(
     search: str | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> PaginatedTenantList:
+    cursor: str | None = None,
+) -> Any:
     """List all tenants with optional search and pagination (System-wide Admin)."""
-    tenants, total = await tenant_registry.list_tenants(search=search, limit=limit, offset=offset)
-    return PaginatedTenantList(
-        items=[
-            TenantListItem(
-                tenantId=str(t.tenant_id),
-                name=t.name,
-                status=t.status,
-                tier=t.tier,
-                createdAt=t.created_at,
-            )
-            for t in tenants
-        ],
-        total=total,
-    )
+    if cursor is not None:
+        query_cursor = cursor if cursor != "" else None
+        items, next_cursor, has_more = await tenant_registry.list_tenants_cursor(
+            search=search, limit=limit, cursor=query_cursor
+        )
+        return {
+            "items": [
+                TenantListItem(
+                    tenantId=str(t.tenant_id),
+                    name=t.name,
+                    status=t.status,
+                    tier=t.tier,
+                    createdAt=t.created_at,
+                )
+                for t in items
+            ],
+            "pagination": {
+                "nextCursor": next_cursor,
+                "limit": limit,
+                "hasMore": has_more
+            }
+        }
+    else:
+        tenants, total = await tenant_registry.list_tenants(search=search, limit=limit, offset=offset)
+        return {
+            "items": [
+                TenantListItem(
+                    tenantId=str(t.tenant_id),
+                    name=t.name,
+                    status=t.status,
+                    tier=t.tier,
+                    createdAt=t.created_at,
+                )
+                for t in tenants
+            ],
+            "total": total,
+        }
 
 
 @app.get(
@@ -583,6 +623,48 @@ async def admin_list_documents(tenantId: str) -> list[DocumentResponse]:
     """List all documents for a tenant (System-wide Admin)."""
     docs = await document_repository.list_documents(tenantId, bypass_rls=True)
     return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/documents/{documentId}/download",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_document_download_url(tenantId: str, documentId: str) -> dict[str, str]:
+    """Generate a temporary pre-signed URL or download link for a tenant's document."""
+    doc = await document_repository.get_document(documentId, bypass_rls=True)
+    if not doc or str(doc.tenant_id) != tenantId:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "generate_presigned_url"):
+        try:
+            url = local_storage.generate_presigned_url(doc.storage_path)
+            return {"downloadUrl": url}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}")
+    else:
+        return {"downloadUrl": f"/v1/admin/tenants/{tenantId}/documents/{documentId}/file"}
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/documents/{documentId}/file",
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_download_document_file(tenantId: str, documentId: str):
+    """Download the raw document file directly (System-wide Admin)."""
+    from fastapi.responses import FileResponse
+    doc = await document_repository.get_document(documentId, bypass_rls=True)
+    if not doc or str(doc.tenant_id) != tenantId:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    if not os.path.exists(doc.storage_path):
+        raise HTTPException(status_code=404, detail="Physical file not found on local storage.")
+
+    return FileResponse(
+        path=doc.storage_path,
+        filename=doc.filename,
+        media_type=doc.mime_type,
+    )
 
 
 @app.get(
@@ -746,20 +828,34 @@ async def admin_preview_prompt(tenantId: str, payload: PreviewPromptRequest) -> 
 async def upload_document(
     tenantId: str,
     file: UploadFile = File(...),
+    x_idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ) -> dict:
     """Upload and schedule document text chunking extraction pipeline."""
+    # Check Redis for idempotency key cache
+    if x_idempotency_key:
+        redis_key = f"idempotency:{tenantId}:{x_idempotency_key}"
+        cached = await redis_client.get(redis_key)
+        if cached:
+            import json
+            return json.loads(cached)
+
     content = await file.read()
     file_hash = hashlib.sha256(content).hexdigest()
 
     # 1. Deduplication: Check for active duplicates within the same tenant workspace
     existing = await document_repository.find_by_hash(tenantId, file_hash)
     if existing:
-        return {
+        response_payload = {
             "documentId": existing.document_id,
             "status": "pending",
             "fileHash": file_hash,
             "createdAt": existing.created_at,
         }
+        if x_idempotency_key:
+            redis_key = f"idempotency:{tenantId}:{x_idempotency_key}"
+            import json
+            await redis_client.setex(redis_key, 86400, json.dumps(response_payload))
+        return response_payload
 
     # 2. Save file to isolated tenant folder
     storage_path = await local_storage.save_file(tenantId, file.filename, content)
@@ -789,24 +885,70 @@ async def upload_document(
         queue="ingestion.parse",
     )
 
-    return {
+    response_payload = {
         "documentId": str(doc_id),
         "status": "pending",
         "fileHash": file_hash,
         "createdAt": doc.created_at,
     }
 
+    if x_idempotency_key:
+        redis_key = f"idempotency:{tenantId}:{x_idempotency_key}"
+        import json
+        await redis_client.setex(redis_key, 86400, json.dumps(response_payload))
+
+    return response_payload
+
 
 @app.get(
     "/v1/tenants/{tenantId}/documents",
     status_code=status.HTTP_200_OK,
-    response_model=list[DocumentResponse],
     dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
 )
-async def list_documents(tenantId: str) -> list[DocumentResponse]:
+async def list_documents(
+    tenantId: str,
+    limit: int | None = None,
+    cursor: str | None = None,
+) -> Any:
     """List all ingestion records belonging to the tenant."""
-    docs = await document_repository.list_documents(tenantId)
-    return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
+    if limit is not None or cursor is not None:
+        limit_val = limit if limit is not None else 50
+        items, next_cursor, has_more = await document_repository.list_documents_cursor(
+            tenantId, limit=limit_val, cursor=cursor
+        )
+        return {
+            "items": [
+                DocumentResponse(
+                    documentId=d.document_id,
+                    filename=d.filename,
+                    fileSize=d.file_size,
+                    mimeType=d.mime_type,
+                    status=d.status,
+                    createdAt=d.created_at,
+                    updatedAt=d.updated_at
+                )
+                for d in items
+            ],
+            "pagination": {
+                "nextCursor": next_cursor,
+                "limit": limit_val,
+                "hasMore": has_more
+            }
+        }
+    else:
+        docs = await document_repository.list_documents(tenantId)
+        return [
+            DocumentResponse(
+                documentId=d.document_id,
+                filename=d.filename,
+                fileSize=d.file_size,
+                mimeType=d.mime_type,
+                status=d.status,
+                createdAt=d.created_at,
+                updatedAt=d.updated_at
+            )
+            for d in docs
+        ]
 
 
 @app.get(
@@ -998,6 +1140,48 @@ async def send_chat_message(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.get(
+    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def list_session_messages(
+    tenantId: str,
+    sessionId: str,
+    limit: int = 50,
+    cursor: str | None = None,
+) -> Any:
+    """Retrieve message history for a chat session with cursor-based pagination."""
+    # Verify session belongs to tenant
+    session = await inference_orchestrator.get_session(sessionId, tenantId)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    items, next_cursor, has_more = await session_repo.get_messages_cursor(
+        tenant_id=tenantId, session_id=sessionId, limit=limit, cursor=cursor
+    )
+
+    return {
+        "items": [
+            {
+                "messageId": m.message_id,
+                "sessionId": m.session_id,
+                "tenantId": m.tenant_id,
+                "role": m.role,
+                "content": m.content,
+                "name": m.name,
+                "createdAt": m.created_at,
+            }
+            for m in items
+        ],
+        "pagination": {
+            "nextCursor": next_cursor,
+            "limit": limit,
+            "hasMore": has_more,
+        }
+    }
 
 
 @app.get("/")

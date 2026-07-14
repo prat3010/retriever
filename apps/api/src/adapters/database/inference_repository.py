@@ -15,8 +15,10 @@ from src.adapters.database.models import (
     InferenceLogDb,
     PromptTemplateDb,
 )
+from src.adapters.database.pagination import encode_cursor, decode_cursor
 from src.domain.abstractions.inference import (
     ChatMessage,
+    ChatMessageInfo,
     ChatSessionInfo,
     ChatSessionRepository,
     InferenceLog,
@@ -194,6 +196,56 @@ class SqlChatSessionRepository(ChatSessionRepository):
                 )
                 for row in rows
             ]
+
+    async def get_messages_cursor(
+        self, tenant_id: str, session_id: str, limit: int = 50, cursor: str | None = None
+    ) -> tuple[list[ChatMessageInfo], str | None, bool]:
+        """Retrieve messages for a session using cursor-based pagination."""
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = select(ChatMessageDb).where(
+                ChatMessageDb.session_id == uuid.UUID(session_id),
+                ChatMessageDb.tenant_id == uuid.UUID(tenant_id),
+            )
+
+            if cursor:
+                try:
+                    cursor_time, cursor_id = decode_cursor(cursor)
+                    stmt = stmt.where(
+                        (ChatMessageDb.created_at < cursor_time) |
+                        ((ChatMessageDb.created_at == cursor_time) & (ChatMessageDb.message_id < cursor_id))
+                    )
+                except ValueError:
+                    pass
+
+            stmt = stmt.order_by(ChatMessageDb.created_at.desc(), ChatMessageDb.message_id.desc()).limit(limit + 1)
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+
+            has_more = len(rows) > limit
+            if has_more:
+                rows = rows[:limit]
+
+            rows_chrono = list(reversed(rows))
+
+            items = [
+                ChatMessageInfo(
+                    message_id=str(row.message_id),
+                    session_id=str(row.session_id),
+                    tenant_id=str(row.tenant_id),
+                    role=row.role,
+                    content=row.content,
+                    name=row.name,
+                    created_at=row.created_at.isoformat() if row.created_at else "",
+                )
+                for row in rows_chrono
+            ]
+
+            next_cursor = None
+            if has_more and rows:
+                last_fetched = rows[-1]
+                next_cursor = encode_cursor(last_fetched.created_at, last_fetched.message_id)
+
+            return items, next_cursor, has_more
 
 
 class SqlInferenceLogWriter(InferenceLogWriter):

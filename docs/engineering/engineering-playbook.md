@@ -22,8 +22,7 @@ The monorepo separates runtime applications, background workers, and shared depe
 │   └── web/                     # Client Web playground UI application (Next.js)
 ├── packages/
 │   ├── processing-core/         # Shared processing primitives (PDF parse, chunk, embed)
-│   ├── sdk-js/                  # Frontend TS client library (placeholder — M9)
-│   └── sdk-python/              # Backend Python client library
+│   └── retriever-client-js/     # Frontend JS/TS client SDK (Milestone 11)
 ├── workers/                     # Async ingestion, OCR, and reindexing tasks
 └── docs/                        # Static specifications, ADRs, and configurations
 ```

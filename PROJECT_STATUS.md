@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 10: Admin Dashboard (tech debt sprint complete)
-- **Last Completed Milestone**: Milestone 9: Client Hierarchy & Admin API
-- **Build Status**: Passing (118/118 unit tests pass)
+- **Current Milestone**: Milestone 13: Multi-Industry Configurability (Planned)
+- **Last Completed Milestone**: Milestone 12: Production Storage
+- **Build Status**: Passing (129/129 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: M11 (Client SDK)
+- **Next Recommended Milestone**: M13 (Multi-Industry Configurability)
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 14 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, and admin API.
+- **Unit Test Coverage**: 16 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), and production storage/encryption adapter features (Milestone 12).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 118/118 passing (111 unit + 7 error-path tests added in tech debt sprint).
+- **Total Tests**: 129/129 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -92,10 +92,42 @@ Operational overview of the Retriever platform's current engineering status.
 - `verify_scopes`: guard prevents silent bypass with `Depends()`
 - `X-User-ID`: UUID format validation, 422 on malformed input
 - `redact_secrets`: `is not None` instead of truthy check
-- Streaming `finish_reason`: removed dead-code double-yield
+- `streaming_finish_reason`: removed dead-code double-yield
 
 ---
 
-## 4. Outstanding Blockers & Issues
+## 4. M11 Client SDK & API Surface — Completed
+
+### API Surface
+- Implemented sortable, URL-safe Base64 pagination cursors resolving tie-breakers by database UUID.
+- Added `GET /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages` chat history backwards-scrolling paginated endpoint.
+- Updated `GET /v1/admin/tenants` and `GET /v1/tenants/{tenantId}/documents` to support cursor-based responses alongside legacy compatibility fallbacks.
+- Re-architected Redis Lua sliding-window rate limiter to return exact capacity metrics (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers).
+- Enforced 24-hour Redis idempotency caches on upload requests to prevent celery processing duplicates.
+- Exporter script outputting updated specs to `docs/openapi.json`.
+
+### Client SDK
+- Built and published `@prat3010/retriever-client-js` TypeScript SDK compiles cleanly in Node/Browser environments.
+- Native fetch wrapper injecting auth keys, headers, and SSE generators.
+
+---
+
+## 5. M12 Production Storage — Completed
+
+### Document Storage
+- Developed standard `S3Storage` adapter in [s3_storage.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/storage/s3_storage.py) using boto3.
+- Wired dynamic storage switches (`STORAGE_PROVIDER` = `"s3"` vs `"local"`) seamlessly into `main.py`.
+- Updated Celery background worker tasks to download S3 files to local temp paths on-demand and clean up after text-extraction is complete.
+
+### Security Hardening
+- Implemented `ConfigEncrypter` cryptography utility in `processing-core` utilizing AES-256-GCM.
+- Applied transparent encryption/decryption on provider API keys at database boundary in `SqlConfigRegistry` and decryption inside worker tasks.
+- Enabled dynamic async connection pooling config (`DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, etc.) inside `connection.py`.
+- Extended `/health/readiness` readiness checks to probe active S3/MinIO connections.
+- Added admin document download pre-signed S3 URL generator endpoints.
+
+---
+
+## 6. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

@@ -38,6 +38,13 @@ class DocumentRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_documents_cursor(
+        self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False
+    ) -> tuple[list[Document], str | None, bool]:
+        """List documents using cursor-based pagination. Returns (items, next_cursor, has_more)."""
+        pass
+
+    @abstractmethod
     async def get_document(self, tenant_id: str, document_id: str, bypass_rls: bool = False) -> Document | None:
         """Get a single document by ID, scoped to tenant."""
         pass

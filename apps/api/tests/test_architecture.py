@@ -44,6 +44,7 @@ CUSTOMER_TABLES = {
     "prompt_templates",
     "inference_logs",
     "tenants",
+    "users",
 }
 
 MIGRATIONS_DIR = API_SRC / "adapters" / "database" / "migrations" / "versions"

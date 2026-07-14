@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.domain.abstractions.telemetry import MetricsRegistry, RateLimiter, Tracer
+from src.domain.abstractions.telemetry import MetricsRegistry, RateLimiter, RateLimitResult, Tracer
 from src.main import app
 
 client = TestClient(app)
@@ -138,7 +138,7 @@ async def test_rate_limiter_allows_within_limit():
     from src.adapters.telemetry.rate_limiter import RedisSlidingWindowRateLimiter
 
     mock_redis = AsyncMock()
-    mock_redis.eval.return_value = 1
+    mock_redis.eval.return_value = [1, 10, 9, 60]
 
     limiter = RedisSlidingWindowRateLimiter(
         redis_client=mock_redis,
@@ -147,7 +147,7 @@ async def test_rate_limiter_allows_within_limit():
     )
 
     result = await limiter.acquire("test_key")
-    assert result is True
+    assert bool(result) is True
     mock_redis.eval.assert_called_once()
 
 
@@ -157,7 +157,7 @@ async def test_rate_limiter_rejects_over_limit():
     from src.adapters.telemetry.rate_limiter import RedisSlidingWindowRateLimiter
 
     mock_redis = AsyncMock()
-    mock_redis.eval.return_value = 0
+    mock_redis.eval.return_value = [0, 10, 0, 60]
 
     limiter = RedisSlidingWindowRateLimiter(
         redis_client=mock_redis,
@@ -166,7 +166,7 @@ async def test_rate_limiter_rejects_over_limit():
     )
 
     result = await limiter.acquire("test_key")
-    assert result is False
+    assert bool(result) is False
 
 
 @pytest.mark.asyncio
@@ -184,7 +184,7 @@ async def test_rate_limiter_fails_open():
     )
 
     result = await limiter.acquire("test_key")
-    assert result is True
+    assert bool(result) is True
 
 
 # ── 5. Rate Limit Dependency ────────────────────────────────────────────────
@@ -195,7 +195,7 @@ async def test_rate_limiter_fails_open():
 async def test_rate_limit_dependency_allows(mock_get_limiter):
     """Verify rate_limit dependency calls limiter.acquire."""
     mock_limiter = AsyncMock()
-    mock_limiter.acquire.return_value = True
+    mock_limiter.acquire.return_value = RateLimitResult(allowed=True, limit=50, remaining=49, reset_after=60)
     mock_get_limiter.return_value = mock_limiter
 
     from src.adapters.telemetry.rate_limiter_dep import rate_limit
@@ -214,7 +214,7 @@ async def test_rate_limit_dependency_rejects(mock_get_limiter):
     from fastapi import HTTPException
 
     mock_limiter = AsyncMock()
-    mock_limiter.acquire.return_value = False
+    mock_limiter.acquire.return_value = RateLimitResult(allowed=False, limit=50, remaining=0, reset_after=60)
     mock_get_limiter.return_value = mock_limiter
 
     from src.adapters.telemetry.rate_limiter_dep import rate_limit

@@ -136,6 +136,24 @@ export function ConfigTab({ tenantId }: Props) {
               onChange={(e) => handleChange("retrieval_settings.reranking_threshold", e.target.value)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="chunkSize">Chunk Size (tokens)</Label>
+            <Input
+              id="chunkSize"
+              type="number"
+              value={form.retrieval_settings.chunk_size ?? 500}
+              onChange={(e) => handleChange("retrieval_settings.chunk_size", e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="chunkOverlap">Chunk Overlap (tokens)</Label>
+            <Input
+              id="chunkOverlap"
+              type="number"
+              value={form.retrieval_settings.chunk_overlap ?? 100}
+              onChange={(e) => handleChange("retrieval_settings.chunk_overlap", e.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
 

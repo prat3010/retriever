@@ -34,6 +34,8 @@ class RetrievalSettings(BaseModel):
     top_k: int = 10
     rrf_k: int = 60
     reranking_threshold: float = 0.7
+    chunk_size: int = 500
+    chunk_overlap: int = 100
 
 
 class SecuritySettings(BaseModel):

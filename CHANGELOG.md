@@ -2,6 +2,22 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-07-14
+### Added
+- **S3 Storage Adapter**: Created standard `S3Storage` adapter using boto3, allowing documents to be stored in cloud object storage (AWS S3, MinIO, Cloudflare R2).
+- **At-Rest Config Credentials Encryption**: Implemented AES-256-GCM encryption on tenant AI/embedding API keys in database JSONB configurations, utilizing a server Key Encryption Key (KEK).
+- **Dynamic Database Connection Pooling**: Enabled configurable async engine pooling settings (`DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, etc.).
+- **S3 Connectivity Health Probe**: Added bucket reachability verification checks inside FastAPI readiness probes.
+- **Admin Document Download Endpoint**: Created pre-signed URL download generators and local file streaming endpoints.
+
+## [0.6.0] - 2026-07-14
+### Added
+- **Cursor-Based Pagination**: Created base64 JSON cursors encoding timestamps and UUIDs. Added cursor paginated queries to list tenants, list documents, and list session messages.
+- **X-RateLimit Response Headers**: Modified sliding-window Redis Lua script and FastAPI dependencies to inject `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers dynamically.
+- **Upload Idempotency Keys**: Implemented 24-hour Redis response caches on `POST /v1/tenants/{id}/documents` to prevent duplicate files and parsing worker triggers.
+- **TypeScript Client SDK**: Created `@prat3010/retriever-client-js` packages in monorepo, supporting buffer/blob uploads, hybrid search, paginated listings, and SSE streaming iterators.
+- **OpenAPI Schema Exporter**: Created a script `scripts/generate_openapi.py` to dump Swagger schemas to `docs/openapi.json`.
+
 ## [0.5.1] - 2026-07-14
 ### Added
 - **Integration Test Scaffold**: `docker-compose.test.yml` (postgres+pgvector:5433, redis:6380, rabbitmq:5673), 4 adapter-level tests covering DB/Redis connectivity, tenant CRUD, and document CRUD against real services. Requires `INTEGRATION_TEST=1` env var.

@@ -21,8 +21,6 @@ Thumbs.db
 
 # Tooling
 opencode.json
-package.json
-package-lock.json
 node_modules/
 *.sln
 *.sw?
@@ -56,3 +54,11 @@ env/
 
 # Next.js build output
 .next/
+
+# Local file storage
+apps/api/storage/
+
+# Build artifacts
+**/dist/
+.pytest_cache/
+.ruff_cache/

@@ -189,7 +189,7 @@ No third-party SDK or infrastructure library may leak into the core domains. Dec
         |  | OpenAILLMAdapter         |   | PgVectorSearch    |       |
         |  +---------------------------+   +-------------------+       |
         |  +---------------------------+   +-------------------+       |
-        |  | CohereRerankerAdapter    |   | LocalStorage      |       |
+         |  | CohereRerankerAdapter    |   | Local / S3Storage |       |
         |  +---------------------------+   +-------------------+       |
         |  +----------------------------+                              |
         |  | RedisTenantConfigCache     |                              |

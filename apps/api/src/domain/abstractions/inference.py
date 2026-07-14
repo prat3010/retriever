@@ -125,6 +125,16 @@ class PromptTemplateRegistry(ABC):
         pass
 
 
+class ChatMessageInfo(BaseModel):
+    message_id: str
+    session_id: str
+    tenant_id: str
+    role: str
+    content: str
+    name: str | None = None
+    created_at: str
+
+
 class ChatSessionRepository(ABC):
     """Port for chat session and message persistence."""
 
@@ -154,6 +164,13 @@ class ChatSessionRepository(ABC):
         self, tenant_id: str, session_id: str
     ) -> list[ChatMessage]:
         """Retrieve all messages for a tenant-scoped session in chronological order."""
+        pass
+
+    @abstractmethod
+    async def get_messages_cursor(
+        self, tenant_id: str, session_id: str, limit: int = 50, cursor: str | None = None
+    ) -> tuple[list[ChatMessageInfo], str | None, bool]:
+        """Retrieve messages for a session using cursor-based pagination."""
         pass
 
 

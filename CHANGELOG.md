@@ -2,6 +2,22 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-07-14
+### Added
+- **Integration Test Scaffold**: `docker-compose.test.yml` (postgres+pgvector:5433, redis:6380, rabbitmq:5673), 4 adapter-level tests covering DB/Redis connectivity, tenant CRUD, and document CRUD against real services. Requires `INTEGRATION_TEST=1` env var.
+- **7 Error-Path Tests**: readiness 503, doc GET/DELETE 404, missing file 422, config missing auth 401, invalid payload 422, streaming chat SSE.
+- **`autospec=True`**: Added to 53 `@patch` decorators across 10 test files (excludes `AsyncMock` and `audit_logger.list`).
+- **greenlet dependency**: Required by SQLAlchemy async engine.
+
+### Fixed
+- **Duplicate index in models.py**: `ChatSessionDb.user_id` and `ChatMessageDb.user_id` had both `index=True` on Column AND explicit `Index()` in `__table_args__`, causing `DuplicateTableError` on `initialize_database()`. Removed `index=True` from both columns.
+- **SET LOCAL with parameterized query**: PostgreSQL's `SET` doesn't support `$N` parameters — switched from bindparam to f-string in `connection.py:41`.
+- **Shared mutable state in tests**: `tenant_id`/`key_id` moved to fixtures in `test_admin_api.py`; `clean_temp_files` fixture replaces module-level `clean_storage` in `test_ingestion.py`.
+
+### Changed
+- Integration tests now test repository adapters directly (not via HTTP) to avoid anyio/Starlette event-loop conflicts.
+- CI runs pytest with `-m "not integration"` to skip integration tests.
+
 ## [0.5.0] - 2026-07-14
 ### Added
 - **DocumentRepository Port**: Extracted `DocumentRepository` port in `domain/abstractions/ingestion.py` with 5 methods (list_documents, get_document, find_by_hash, create_document, soft_delete).

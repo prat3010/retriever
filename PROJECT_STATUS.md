@@ -6,11 +6,12 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 10: Admin Dashboard
+- **Current Milestone**: Milestone 10: Admin Dashboard (tech debt sprint complete)
 - **Last Completed Milestone**: Milestone 9: Client Hierarchy & Admin API
-- **Build Status**: Passing (111/111 unit tests pass)
+- **Build Status**: Passing (118/118 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
+- **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
 - **Next Recommended Milestone**: M11 (Client SDK)
 
 ---
@@ -28,7 +29,9 @@ Operational overview of the Retriever platform's current engineering status.
 ### Testing Status: **Green**
 - **Unit Test Coverage**: 14 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, and admin API.
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 111/111 passing tests.
+- **Total Tests**: 118/118 passing (111 unit + 7 error-path tests added in tech debt sprint).
+- **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
+- **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
 ### Documentation Health: **Green**
 - **Blueprints**: Master Architecture, Core specifications, System Design outlines, and Admin Dashboard guide are complete.
@@ -78,8 +81,11 @@ Operational overview of the Retriever platform's current engineering status.
 - Tabs: Config, Chat (SSE streaming), Search, Documents
 
 ### Quality
-- 111/111 API tests passing (was 94)
+- 118/118 API tests passing (was 94)
 - Ruff clean, web build clean
+- 53 `@patch` decorators with `autospec=True`
+- Shared mutable state removed from test modules
+- 4 integration tests green against real Postgres/Redis
 
 ### Security fixes (M10 cleanup)
 - `verify_admin_key`: missing header returns 401 (was 422)

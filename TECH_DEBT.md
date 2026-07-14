@@ -3,7 +3,7 @@
 Items identified during audits that were deferred. Fix when
 they start blocking you — not before.
 
-## Fixed in M10 cleanup
+## Fixed
 
 | Item | Commit |
 |------|--------|
@@ -12,11 +12,17 @@ they start blocking you — not before.
 | `redact_secrets` truthy check → `is not None` | `a6f49a0` |
 | No UUID validation on `X-User-ID` header | `a6f49a0` |
 | Streaming `finish_reason` double-yield dead code | `a6f49a0` |
-| `backref` → `back_populates` consistency | `(this commit)` |
-| `"query:execute"` dead scope removed | `(this commit)` |
-| Column width IF EXISTS guards → bare `alter_column` | `(this commit)` |
-| `os.getenv()` in domain → injected env_secrets | `(this commit)` |
-| Breach kill-switch bypasses `IdentityProvider` port | `(this commit)` |
+| `backref` → `back_populates` consistency | M10 cleanup |
+| `"query:execute"` dead scope removed | M10 cleanup |
+| Column width IF EXISTS guards → bare `alter_column` | M10 cleanup |
+| `os.getenv()` in domain → injected env_secrets | M10 cleanup |
+| Breach kill-switch bypasses `IdentityProvider` port | M10 cleanup |
+| No `autospec=True` on mocks (53 patches updated) | `f760f68` |
+| Missed error-path tests (7 added) | `f760f68` |
+| Shared mutable state in tests (admin_api + ingestion) | `f760f68` |
+| Duplicate `index=True` on `ChatSessionDb.user_id` / `ChatMessageDb.user_id` | `f760f68` |
+| `SET LOCAL` uses bindparam instead of f-string (PG doesn't support `$N` params in SET) | `f760f68` |
+| `greenlet` dependency missing (SQLAlchemy async requirement) | `12c301a` |
 
 ## Architecture
 
@@ -65,13 +71,6 @@ construction instead.
 
 ## Test Coverage
 
-### No `autospec=True` on any mock
-**Files:** all `tests/` files
-
-Every `@patch` and `MagicMock`/`AsyncMock` lacks `autospec=True`.
-Mocks silently diverge from the real API. Dependency upgrades break
-in production, not in tests. Add `autospec=True` to every mock.
-
 ### 15+ source files with zero test coverage
 | File | Risk |
 |------|------|
@@ -85,27 +84,6 @@ in production, not in tests. Add `autospec=True` to every mock.
 | `domain/inference/orchestrator.py` (stream path) | Streaming bugs ship |
 | All `workers/` files (354 lines) | Async pipeline untested |
 | All `packages/processing-core/` files | Core chunking/parsing untested |
-
-### Missed error-path tests
-- `GET/POST/PUT /v1/admin/...` with invalid admin key (401)
-- `GET/PUT /v1/tenants/{id}/config` missing auth
-- `GET/DELETE /v1/tenants/{id}/documents/{id}` not found (404)
-- `POST /v1/tenants/{id}/documents` empty file upload
-- Readiness endpoint when DB/Redis down (503)
-- All stream=True chat paths
-- All scope-based 403 rejections
-- Input validation 422 errors
-
-### Shared mutable state in tests
-**File:** `tests/test_admin_api.py:24-25`
-
-Module-level `tenant_id = uuid.uuid4()` means tests share state.
-Breaks under `pytest-xdist`. Move to per-test fixtures.
-
-**File:** `tests/test_ingestion.py:241`
-
-Real filesystem I/O in tests (`./sample_test.txt`). Interrupted run
-leaks files. Delete: mock the filesystem instead.
 
 ## Observability
 

@@ -38,8 +38,7 @@ async def tenant_session(
             elif tenant_id:
                 # Set thread-local context variables for postgres row level security
                 await session.execute(
-                    text("SET LOCAL app.current_tenant_id = :tenant_id"),
-                    {"tenant_id": str(tenant_id)},
+                    text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"),
                 )
             else:
                 # Set empty setting to ensure RLS triggers restriction

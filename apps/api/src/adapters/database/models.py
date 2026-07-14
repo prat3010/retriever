@@ -244,7 +244,6 @@ class ChatSessionDb(Base):
         UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
@@ -284,7 +283,6 @@ class ChatMessageDb(Base):
         UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     role = Column(String(50), nullable=False)
     content = Column(Text, nullable=False)

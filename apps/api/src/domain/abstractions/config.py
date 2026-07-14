@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -36,6 +36,7 @@ class RetrievalSettings(BaseModel):
     reranking_threshold: float = 0.7
     chunk_size: int = 500
     chunk_overlap: int = 100
+    citation_template: str = "[{index}]"
 
 
 class SecuritySettings(BaseModel):
@@ -48,6 +49,27 @@ class RateLimits(BaseModel):
     tokens_per_minute: int = 100000
 
 
+class ChunkingSettings(BaseModel):
+    strategy: Literal["fixed_window", "recursive", "semantic"] = "fixed_window"
+    chunk_size: int = 500
+    chunk_overlap: int = 100
+    semantic_threshold: float = 0.95
+
+
+class MetadataExtractorConfig(BaseModel):
+    name: str
+    extractor_type: Literal["regex", "llm"]
+    pattern: str | None = None
+    schema_definition: dict[str, Any] | None = None
+
+
+class GuardrailConfig(BaseModel):
+    name: str
+    guard_type: Literal["pii_regex", "llm_safety"]
+    patterns: list[str] | None = None
+    llm_prompt_template: str | None = None
+
+
 class TenantConfiguration(BaseModel):
     tenant_id: str | None = None
     feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
@@ -57,6 +79,9 @@ class TenantConfiguration(BaseModel):
     retrieval_settings: RetrievalSettings = Field(default_factory=RetrievalSettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)
+    chunking_settings: ChunkingSettings = Field(default_factory=ChunkingSettings)
+    metadata_extractors: list[MetadataExtractorConfig] = Field(default_factory=list)
+    guardrails: list[GuardrailConfig] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
 

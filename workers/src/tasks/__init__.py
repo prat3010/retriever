@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from celery import Task
 
-from processing_core import extract_text_from_file, chunk_text, embed_with_retry
+from processing_core import extract_text_from_file, chunk_text, chunk_recursive, chunk_semantic, embed_with_retry
 from workers.src.celery_app import celery_app
 
 DATABASE_URL = os.environ.get(
@@ -101,6 +101,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
     try:
         chunk_size = 500
         chunk_overlap = 100
+        config_val = {}
 
         async with engine.begin() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
@@ -155,18 +156,128 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     os.remove(local_path)
                 except Exception:
                     pass
-        chunks_to_insert = chunk_text(
-            text=text_content,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            document_id=document_id,
-            tenant_id=tenant_id,
-        )
+        # Select splitter strategy
+        chunk_cfg = config_val.get("chunking_settings", {})
+        chunk_strategy = chunk_cfg.get("strategy", "fixed_window")
+        chunk_size = chunk_cfg.get("chunk_size", chunk_size)
+        chunk_overlap = chunk_cfg.get("chunk_overlap", chunk_overlap)
+        semantic_threshold = chunk_cfg.get("semantic_threshold", 0.95)
+
+        if chunk_strategy == "recursive":
+            chunks_to_insert = chunk_recursive(
+                text=text_content,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
+        elif chunk_strategy == "semantic":
+            # Setup openai client for embedding sentences
+            import openai
+            embed_cfg = config_val.get("embedding_provider", {})
+            embed_model = embed_cfg.get("model_name", "text-embedding-3-small")
+            embed_api_key = embed_cfg.get("api_key", "")
+            
+            if embed_api_key and embed_api_key != "********":
+                from processing_core import ConfigEncrypter
+                enc = ConfigEncrypter()
+                embed_api_key = enc.decrypt(embed_api_key)
+            if not embed_api_key or embed_api_key == "********":
+                embed_api_key = os.environ.get("OPENAI_API_KEY", "")
+            embed_base_url = embed_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
+            
+            client_opts = {"api_key": embed_api_key}
+            if embed_base_url:
+                client_opts["base_url"] = embed_base_url
+            
+            embed_client = openai.AsyncOpenAI(**client_opts)
+            
+            chunks_to_insert = await chunk_semantic(
+                text=text_content,
+                embed_client=embed_client,
+                embed_model=embed_model,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                semantic_threshold=semantic_threshold,
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
+        else:
+            chunks_to_insert = chunk_text(
+                text=text_content,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
+
+        # Metadata Extraction
+        extracted_metadata = {}
+        extractors_cfg = config_val.get("metadata_extractors", [])
+        for ext_cfg in extractors_cfg:
+            ext_name = ext_cfg.get("name")
+            ext_type = ext_cfg.get("extractor_type")
+            
+            if ext_type == "regex":
+                pattern = ext_cfg.get("pattern")
+                if pattern:
+                    match = re.search(pattern, text_content)
+                    if match:
+                        extracted_metadata[ext_name] = match.group(1) if match.groups() else match.group(0)
+            
+            elif ext_type == "llm":
+                schema_def = ext_cfg.get("schema_definition")
+                if schema_def:
+                    ai_cfg = config_val.get("ai_provider", {})
+                    ai_model = ai_cfg.get("default_model", "gpt-4o")
+                    ai_api_key = ai_cfg.get("api_key", "")
+                    
+                    if ai_api_key and ai_api_key != "********":
+                        from processing_core import ConfigEncrypter
+                        enc = ConfigEncrypter()
+                        ai_api_key = enc.decrypt(ai_api_key)
+                    if not ai_api_key or ai_api_key == "********":
+                        ai_api_key = os.environ.get("OPENAI_API_KEY", "")
+                    ai_base_url = ai_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
+                    
+                    import openai
+                    client_opts = {"api_key": ai_api_key}
+                    if ai_base_url:
+                        client_opts["base_url"] = ai_base_url
+                    
+                    ai_client = openai.AsyncOpenAI(**client_opts)
+                    
+                    system_prompt = (
+                        "You are an expert metadata extraction assistant. Extract the following metadata schema "
+                        f"from the document content: {json.dumps(schema_def)}. Return ONLY a valid JSON object matching this schema."
+                    )
+                    
+                    try:
+                        excerpt = text_content[:3000]
+                        response = await ai_client.chat.completions.create(
+                            model=ai_model,
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": excerpt}
+                            ],
+                            response_format={"type": "json_object"},
+                            temperature=0.0
+                        )
+                        raw_json = response.choices[0].message.content
+                        extracted_json = json.loads(raw_json)
+                        for k, v in extracted_json.items():
+                            extracted_metadata[f"{ext_name}_{k}"] = v
+                    except Exception:
+                        pass
+
         chunk_ids = [c["chunk_id"] for c in chunks_to_insert]
 
         async with engine.begin() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             for chunk in chunks_to_insert:
+                chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                chunk_meta.update(extracted_metadata)
+                
                 await conn.execute(
                     sa.text(
                         """
@@ -177,7 +288,15 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                                 :token_count, :chunk_index, CAST(:meta_data AS jsonb), NOW())
                         """
                     ),
-                    chunk,
+                    {
+                        "chunk_id": chunk["chunk_id"],
+                        "document_id": chunk["document_id"],
+                        "tenant_id": chunk["tenant_id"],
+                        "content": chunk["content"],
+                        "token_count": chunk["token_count"],
+                        "chunk_index": chunk["chunk_index"],
+                        "meta_data": json.dumps(chunk_meta),
+                    },
                 )
 
             await conn.execute(

@@ -2,6 +2,14 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-14
+### Added
+- **Multi-Strategy Text Splitters**: Integrated recursive character sliding splits and semantic topic-aware sentence chunking.
+- **Dynamic Ingestion Extractors**: Integrated local regex extractors and structured LLM JSON extractors on workers.
+- **Runtime Prompt Guardrails**: Implemented local PII regex scrubber and LLM prompt injection validator.
+- **Format-Aware Citation Replacer**: Implemented post-processed swappers formatting verified citations matching customizable templates (handles streaming & static completions).
+- **Admin Configuration Presets**: Defined templates for `legal`, `hr`, `medical`, and `finance` presets.
+
 ## [0.7.0] - 2026-07-14
 ### Added
 - **S3 Storage Adapter**: Created standard `S3Storage` adapter using boto3, allowing documents to be stored in cloud object storage (AWS S3, MinIO, Cloudflare R2).

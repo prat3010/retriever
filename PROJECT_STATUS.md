@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 13: Multi-Industry Configurability (Planned)
-- **Last Completed Milestone**: Milestone 12: Production Storage
-- **Build Status**: Passing (129/129 unit tests pass)
+- **Current Milestone**: Milestone 14: Performance & Scale (Planned)
+- **Last Completed Milestone**: Milestone 13: Multi-Industry Configurability
+- **Build Status**: Passing (136/136 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: M13 (Multi-Industry Configurability)
+- **Next Recommended Milestone**: M14 (Performance & Scale)
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 16 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), and production storage/encryption adapter features (Milestone 12).
+- **Unit Test Coverage**: 17 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), and custom splitting/metadata/guardrails pipelines (Milestone 13).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 129/129 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12).
+- **Total Tests**: 136/136 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 7 pipeline configurability tests in Milestone 13).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -128,6 +128,20 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 6. Outstanding Blockers & Issues
+## 6. M13 Multi-Industry Configurability — Completed
+
+### Pluggable Pipeline Components
+- Developed token-aware recursive character splitter and semantic embeddings similarity splitter in [chunker.py](file:///Users/prateeksharma/Developer/retriever/packages/processing-core/src/processing_core/chunker.py).
+- Implemented hybrid metadata extraction (regex filters + structured LLM schema extractor) on worker queues, saving data in document chunk records.
+- Implemented input guardrails (local regex PII scrubber + customizable safety templates prompt injection blocks) returning 400 Bad Request on unsafe prompts.
+- Added support for post-processed verified citations formatted to match the tenant's `citation_template` string (handles both streaming and static completions).
+
+### Configuration Presets
+- Packaged configuration templates for `legal`, `hr`, `medical`, and `finance` inside [presets.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/domain/config/presets.py).
+- Created `POST /v1/admin/tenants/{tenantId}/config/apply-preset` to deep-merge configurations.
+
+---
+
+## 7. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

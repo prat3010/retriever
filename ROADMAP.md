@@ -20,7 +20,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, onboarding, playground) | *Completed* | Q1 2027 |
 | **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | **Completed** | Q1 2027 |
 | **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** | Q2 2027 |
-| **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | *Planned* | Q2 2027 |
+| **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** | Q2 2027 |
 | **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | *Planned* | Q3 2027 |
 | **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | *Planned* | Q3 2027 |
 
@@ -212,7 +212,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 13: Multi-Industry Configurability
+### [Completed] Milestone 13: Multi-Industry Configurability
 
 **Objective:** Enable different clients (coaching, legal, CA) to run with different chunking, metadata, guardrails, and citation formats — all configured at runtime, no code changes.
 
@@ -225,18 +225,18 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Expected Outcome:** A legal tenant and a coaching tenant can use the same Retriever instance with completely different chunk granularity, metadata schemas, and prompt guardrails.
 
 **Targets:**
-- Pluggable chunking strategies per tenant (semantic splitting, recursive character, fixed-token sliding window).
-- Pluggable metadata extractors per document type (extract dates, case numbers, contract clauses).
-- Pluggable input/output guardrails per tenant (PII redaction, prompt injection detection, output content filtering).
-- Industry template packs: pre-built configuration bundles for legal, medical, finance, HR, education. Config only — no code changes.
-- Citation format customization per tenant (e.g., `[Source: doc_id, page N]` vs `(see exhibit A)`).
-- Per-tenant model routing: different LLM for different query intents (summarization vs analysis vs extraction).
-- Document type detection and routing to appropriate parser (PDF, DOCX, HTML, Markdown, code).
+- ✅ Pluggable chunking strategies per tenant (semantic splitting, recursive character, fixed-token sliding window).
+- ✅ Pluggable metadata extractors per document type (extract dates, case numbers, contract clauses).
+- ✅ Pluggable input/output guardrails per tenant (PII redaction, prompt injection detection, output content filtering).
+- ✅ Industry template packs: pre-built configuration bundles for legal, medical, finance, HR, education. Config only — no code changes.
+- ✅ Citation format customization per tenant (e.g., `[Source: doc_id, page N]` vs `(see exhibit A)`).
+- ✅ Per-tenant model routing: different LLM for different query intents (summarization vs analysis vs extraction).
+- ✅ Document type detection and routing to appropriate parser (PDF, DOCX, HTML, Markdown, code).
 
 **Acceptance Criteria:**
-- Two tenants with different industry profiles produce different chunk granularity for the same document.
-- A new document type is supported by adding a config entry and a parser adapter — no domain code changes.
-- Guardrail violations are logged per tenant and can trigger different actions (block, warn, redact).
+- ✅ Two tenants with different industry profiles produce different chunk granularity for the same document.
+- ✅ A new document type is supported by adding a config entry and a parser adapter — no domain code changes.
+- ✅ Guardrail violations are logged per tenant and can trigger different actions (block, warn, redact).
 
 ---
 

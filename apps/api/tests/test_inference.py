@@ -279,7 +279,8 @@ def test_create_chat_session_endpoint(
         session_id="ses_001", tenant_id=tenant_id, created_at="2026-01-01T00:00:00"
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
+    user_id = str(uuid.uuid4())
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions",
         headers=headers,
@@ -326,7 +327,8 @@ def test_chat_message_endpoint_non_streaming(
         finish_reason="stop",
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
+    user_id = str(uuid.uuid4())
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/ses_001/messages",
         json={"query": "test", "stream": False},
@@ -367,7 +369,8 @@ def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None
     )
     mock_get_session.return_value = None
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": "user_42"}
+    user_id = str(uuid.uuid4())
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/nonexistent/messages",
         json={"query": "test"},

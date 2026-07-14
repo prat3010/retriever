@@ -103,7 +103,6 @@ class OpenAILLMAdapter(LlmProvider):
             if choice and choice.delta and choice.delta.content:
                 yield {"delta": choice.delta.content}
             if choice and choice.finish_reason:
-                yield {"finish_reason": choice.finish_reason}
                 break
             if chunk.usage:
                 yield {

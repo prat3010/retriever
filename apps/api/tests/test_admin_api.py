@@ -35,7 +35,8 @@ key_id = str(uuid.uuid4())
 def test_admin_master_key_required() -> None:
     """Verify admin endpoints reject requests without X-Admin-Master-Key."""
     response = client.get("/v1/admin/tenants")
-    assert response.status_code == 422  # FastAPI required header validation
+    assert response.status_code == 401
+    assert "Missing administrative master key" in response.text
 
 
 # ── Tenant Endpoints ──────────────────────────────────────────────────────────

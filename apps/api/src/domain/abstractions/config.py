@@ -61,9 +61,9 @@ class TenantConfiguration(BaseModel):
     def redact_secrets(self) -> "TenantConfiguration":
         """Return a copy of the configuration with sensitive credentials masked."""
         copied = self.model_copy(deep=True)
-        if copied.ai_provider.api_key:
+        if copied.ai_provider.api_key is not None:
             copied.ai_provider.api_key = "********"
-        if copied.embedding_provider.api_key:
+        if copied.embedding_provider.api_key is not None:
             copied.embedding_provider.api_key = "********"
         return copied
 

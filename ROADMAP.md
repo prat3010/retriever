@@ -151,6 +151,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 - ✅ `httpx` → `httpx2` migration (Starlette deprecation fix)
 - ✅ 111 tests (94 → 111, +17 new admin API tests), Ruff clean, web build clean
 - ✅ `docs/features/admin-dashboard.md` — full agent guide
+- ✅ `DocumentRepository` port extracted (`domain/abstractions/ingestion.py` + `adapters/database/document_repository.py`), 5 inline SQLAlchemy blocks removed from `main.py`
 - ✅ All M10 items complete — milestone ready for deploy
 
 ---

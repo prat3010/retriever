@@ -13,7 +13,7 @@ Verifies all admin endpoints under /v1/admin/:
 import uuid
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -266,25 +266,25 @@ def test_admin_update_tenant_config(mock_update) -> None:
 # ── Document Endpoints ─────────────────────────────────────────────────────
 
 
-@patch("src.main.tenant_session")
-def test_admin_list_documents(mock_ts) -> None:
+@patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
+def test_admin_list_documents(mock_list) -> None:
     """GET /v1/admin/tenants/{id}/documents returns document list."""
-    db_session = AsyncMock()
-    mock_ts.return_value.__aenter__.return_value = db_session
-    mock_result = MagicMock()
+    from src.domain.abstractions.ingestion import Document
     now = datetime.now()
-    mock_result.scalars.return_value.all.return_value = [
-        SimpleNamespace(
-            document_id=uuid.uuid4(),
+    mock_list.return_value = [
+        Document(
+            document_id=str(uuid.uuid4()),
+            tenant_id=tenant_id,
             filename="report.pdf",
             file_size=2048,
             mime_type="application/pdf",
             status="completed",
-            created_at=now,
-            updated_at=now,
+            created_at=now.isoformat(),
+            updated_at=now.isoformat(),
+            file_hash="abc",
+            storage_path="/tmp/doc",
         )
     ]
-    db_session.execute = AsyncMock(return_value=mock_result)
     response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
     assert response.status_code == 200
     body = response.json()
@@ -294,14 +294,10 @@ def test_admin_list_documents(mock_ts) -> None:
     assert body[0]["status"] == "completed"
 
 
-@patch("src.main.tenant_session")
-def test_admin_list_documents_empty(mock_ts) -> None:
+@patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
+def test_admin_list_documents_empty(mock_list) -> None:
     """GET /v1/admin/tenants/{id}/documents returns empty list."""
-    db_session = AsyncMock()
-    mock_ts.return_value.__aenter__.return_value = db_session
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-    db_session.execute = AsyncMock(return_value=mock_result)
+    mock_list.return_value = []
     response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
     assert response.status_code == 200
     assert response.json() == []

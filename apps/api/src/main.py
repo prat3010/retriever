@@ -16,7 +16,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import delete, select, text
+from sqlalchemy import text
 
 from src.adapters.api.security import (
     get_current_user_id,
@@ -31,14 +31,14 @@ from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
-from src.adapters.database.connection import engine, tenant_session
+from src.adapters.database.connection import engine
+from src.adapters.database.document_repository import SqlDocumentRepository
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.inference_repository import (
     SqlChatSessionRepository,
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
 )
-from src.adapters.database.models import DocumentChunkDb, DocumentDb
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.storage.local_storage import LocalStorage
@@ -54,6 +54,7 @@ from src.domain.abstractions.exceptions import (
     TenantIsolationViolationError,
 )
 from src.domain.abstractions.inference import PromptTemplate
+from src.domain.abstractions.ingestion import Document
 from src.domain.abstractions.retrieval import SearchQuery
 from src.domain.abstractions.tenant import Tenant
 from src.domain.config.config_service import ConfigurationService
@@ -118,6 +119,7 @@ audit_logger = SqlAuditLogRepository()
 tenant_registry = SqlTenantRegistry()
 identity_provider = SqlIdentityProvider()
 user_repository = SqlUserRepository()
+document_repository = SqlDocumentRepository()
 config_service = ConfigurationService(
     registry=SqlConfigRegistry(),
     cache=RedisTenantConfigCache(),
@@ -579,25 +581,8 @@ async def admin_revoke_api_key(tenantId: str, keyId: str) -> dict[str, str]:
 )
 async def admin_list_documents(tenantId: str) -> list[DocumentResponse]:
     """List all documents for a tenant (System-wide Admin)."""
-    async with tenant_session(bypass_rls=True) as session:
-        stmt = select(DocumentDb).where(
-            DocumentDb.tenant_id == uuid.UUID(tenantId),
-            DocumentDb.is_deleted == False
-        ).order_by(DocumentDb.created_at.desc())
-        res = await session.execute(stmt)
-        docs = res.scalars().all()
-        return [
-            DocumentResponse(
-                documentId=str(d.document_id),
-                filename=d.filename,
-                fileSize=d.file_size,
-                mimeType=d.mime_type,
-                status=d.status,
-                createdAt=d.created_at.isoformat(),
-                updatedAt=d.updated_at.isoformat()
-            )
-            for d in docs
-        ]
+    docs = await document_repository.list_documents(tenantId, bypass_rls=True)
+    return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
 
 
 @app.get(
@@ -767,45 +752,35 @@ async def upload_document(
     file_hash = hashlib.sha256(content).hexdigest()
 
     # 1. Deduplication: Check for active duplicates within the same tenant workspace
-    async with tenant_session(tenant_id=tenantId) as session:
-        stmt = select(DocumentDb).where(
-            DocumentDb.tenant_id == uuid.UUID(tenantId),
-            DocumentDb.file_hash == file_hash,
-            DocumentDb.is_deleted == False
-        )
-        res = await session.execute(stmt)
-        existing = res.scalar_one_or_none()
-        if existing:
-            return {
-                "documentId": str(existing.document_id),
-                "status": "pending",
-                "fileHash": file_hash,
-                "createdAt": existing.created_at.isoformat(),
-            }
+    existing = await document_repository.find_by_hash(tenantId, file_hash)
+    if existing:
+        return {
+            "documentId": existing.document_id,
+            "status": "pending",
+            "fileHash": file_hash,
+            "createdAt": existing.created_at,
+        }
 
     # 2. Save file to isolated tenant folder
     storage_path = await local_storage.save_file(tenantId, file.filename, content)
 
     # 3. Create document database entry
-    import datetime
-    now = datetime.datetime.now(datetime.UTC)
-    doc_id = uuid.uuid4()
-    async with tenant_session(tenant_id=tenantId) as session:
-        db_doc = DocumentDb(
-            document_id=doc_id,
-            tenant_id=uuid.UUID(tenantId),
-            filename=file.filename,
-            file_hash=file_hash,
-            storage_path=storage_path,
-            file_size=len(content),
-            mime_type=file.content_type or "application/octet-stream",
-            status="PENDING",
-            created_at=now,
-            updated_at=now
-        )
-        session.add(db_doc)
-        await session.commit()
-        created_str = db_doc.created_at.isoformat()
+    from datetime import UTC, datetime
+    doc_id = str(uuid.uuid4())
+    now = datetime.now(UTC).isoformat()
+    doc = Document(
+        document_id=doc_id,
+        tenant_id=tenantId,
+        filename=file.filename,
+        file_hash=file_hash,
+        storage_path=storage_path,
+        file_size=len(content),
+        mime_type=file.content_type or "application/octet-stream",
+        status="PENDING",
+        created_at=now,
+        updated_at=now,
+    )
+    await document_repository.create_document(tenantId, doc)
 
     # 4. Submit to Celery worker for parsing and embedding
     celery_app.send_task(
@@ -818,7 +793,7 @@ async def upload_document(
         "documentId": str(doc_id),
         "status": "pending",
         "fileHash": file_hash,
-        "createdAt": created_str,
+        "createdAt": doc.created_at,
     }
 
 
@@ -830,26 +805,8 @@ async def upload_document(
 )
 async def list_documents(tenantId: str) -> list[DocumentResponse]:
     """List all ingestion records belonging to the tenant."""
-    async with tenant_session(tenant_id=tenantId) as session:
-        stmt = select(DocumentDb).where(
-            DocumentDb.tenant_id == uuid.UUID(tenantId),
-            DocumentDb.is_deleted == False
-        )
-        res = await session.execute(stmt)
-        docs = res.scalars().all()
-
-        return [
-            DocumentResponse(
-                documentId=str(d.document_id),
-                filename=d.filename,
-                fileSize=d.file_size,
-                mimeType=d.mime_type,
-                status=d.status,
-                createdAt=d.created_at.isoformat(),
-                updatedAt=d.updated_at.isoformat()
-            )
-            for d in docs
-        ]
+    docs = await document_repository.list_documents(tenantId)
+    return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
 
 
 @app.get(
@@ -860,26 +817,10 @@ async def list_documents(tenantId: str) -> list[DocumentResponse]:
 )
 async def get_document(tenantId: str, documentId: str) -> DocumentResponse:
     """Retrieve document metadata processing pipeline status."""
-    async with tenant_session(tenant_id=tenantId) as session:
-        stmt = select(DocumentDb).where(
-            DocumentDb.tenant_id == uuid.UUID(tenantId),
-            DocumentDb.document_id == uuid.UUID(documentId),
-            DocumentDb.is_deleted == False
-        )
-        res = await session.execute(stmt)
-        d = res.scalar_one_or_none()
-        if not d:
-            raise HTTPException(status_code=404, detail="Document not found.")
-
-        return DocumentResponse(
-            documentId=str(d.document_id),
-            filename=d.filename,
-            fileSize=d.file_size,
-            mimeType=d.mime_type,
-            status=d.status,
-            createdAt=d.created_at.isoformat(),
-            updatedAt=d.updated_at.isoformat()
-        )
+    d = await document_repository.get_document(tenantId, documentId)
+    if not d:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    return DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at)
 
 
 @app.delete(
@@ -889,30 +830,11 @@ async def get_document(tenantId: str, documentId: str) -> DocumentResponse:
 )
 async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     """Delete document source file, cascade chunks, and mark records deleted."""
-    async with tenant_session(tenant_id=tenantId) as session:
-        stmt = select(DocumentDb).where(
-            DocumentDb.tenant_id == uuid.UUID(tenantId),
-            DocumentDb.document_id == uuid.UUID(documentId),
-            DocumentDb.is_deleted == False
-        )
-        res = await session.execute(stmt)
-        d = res.scalar_one_or_none()
-        if not d:
-            raise HTTPException(status_code=404, detail="Document not found.")
-
-        # 1. Soft delete / update is_deleted flag in db
-        d.is_deleted = True
-
-        # 2. Delete raw storage file
-        await local_storage.delete_file(d.storage_path)
-
-        # 3. Hard delete associated chunks from document_chunks table
-        await session.execute(
-            delete(DocumentChunkDb).where(DocumentChunkDb.document_id == uuid.UUID(documentId))
-        )
-
-        await session.commit()
-        return {"status": "deleted", "documentId": documentId}
+    storage_path = await document_repository.soft_delete(tenantId, documentId)
+    if storage_path is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    await local_storage.delete_file(storage_path)
+    return {"status": "deleted", "documentId": documentId}
 
 
 # --- Search & Retrieval Endpoints ---

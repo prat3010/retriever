@@ -20,16 +20,11 @@ they start blocking you — not before.
 
 ## Architecture
 
-### `DocumentRepository` port
+### ~~`DocumentRepository` port~~ (Fixed)
 **File:** `apps/api/src/main.py:577-722`
 
-Document CRUD uses raw SQLAlchemy in route handlers. There's no
-`DocumentRepository` port in `apps/api/src/domain/abstractions/`. This
-makes the document layer untestable without a real DB and prevents
-swapping storage backends.
-
-Add: `domain/abstractions/ingestion.py` port, `adapters/database/document_repository.py`
-impl, wire into `main.py`.
+Document CRUD now uses `SqlDocumentRepository` via `DocumentRepository` port
+in `domain/abstractions/ingestion.py`, wired into `main.py`.
 
 ### ~~`security.py` bypasses `IdentityProvider` port during breach~~ (Fixed in `(this commit)`)
 **File:** `apps/api/src/adapters/api/security.py:96-99`

@@ -122,14 +122,15 @@ def test_publisher_publish(mock_connection) -> None:
 # ── 3. Integration: Upload endpoint publishes event ──────────────────────────
 
 
+@patch("src.main.document_repository.create_document", new_callable=AsyncMock)
+@patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task")
 @patch(
     "src.adapters.api.security.identity_provider.validate_token",
     new_callable=AsyncMock,
 )
-@patch("src.main.tenant_session")
 def test_upload_publishes_event(
-    mock_session_ctx, mock_validate, mock_send_task
+    mock_validate, mock_send_task, mock_find_by_hash, mock_create
 ) -> None:
     """Verify document upload submits a Celery processing task."""
     from fastapi.testclient import TestClient
@@ -145,15 +146,7 @@ def test_upload_publishes_event(
         scopes=["document:write"],
     )
 
-    mock_db_session = MagicMock()
-    mock_db_session.execute = AsyncMock()
-    mock_db_session.commit = AsyncMock()
-    mock_db_session.add = MagicMock()
-    mock_session_ctx.return_value.__aenter__.return_value = mock_db_session
-
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
-    mock_db_session.execute.return_value = mock_result
+    mock_find_by_hash.return_value = None
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.post(
@@ -168,7 +161,7 @@ def test_upload_publishes_event(
     assert "documentId" in body
     assert "fileHash" in body
 
-    # Verify Celery task was submitted
+    mock_create.assert_awaited_once()
     mock_send_task.assert_called_once()
     call_args = mock_send_task.call_args
     assert call_args[0][0] == "process_document"

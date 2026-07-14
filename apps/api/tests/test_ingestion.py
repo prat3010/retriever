@@ -7,8 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 from workers.src.tasks import process_document_async
 
-from src.adapters.database.models import DocumentDb
 from src.domain.abstractions.identity import UserContext
+from src.domain.abstractions.ingestion import Document
 from src.main import app
 
 client = TestClient(app)
@@ -25,9 +25,10 @@ def clean_storage() -> None:
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.create_document", new_callable=AsyncMock)
+@patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task")
-@patch("src.main.tenant_session")
-def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate) -> None:
+def test_document_upload_success(mock_send_task, mock_find_by_hash, mock_create, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
         user_id="user_123",
@@ -35,23 +36,10 @@ def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate
         roles=["integrator"],
         scopes=["document:write"],
     )
-
-    # Setup session mocks explicitly
-    mock_db_session = MagicMock()
-    mock_db_session.execute = AsyncMock()
-    mock_db_session.commit = AsyncMock()
-    mock_db_session.add = MagicMock()
-    mock_db_session.refresh = AsyncMock()
-    mock_session_ctx.return_value.__aenter__.return_value = mock_db_session
-
-    # Deduplication query returns None (no existing document)
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
-    mock_db_session.execute.return_value = mock_result
+    mock_find_by_hash.return_value = None
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     file_content = b"Sample text contents to parse and chunk."
-
     response = client.post(
         f"/v1/tenants/{tenant_id}/documents",
         files={"file": ("sample.txt", file_content, "text/plain")},
@@ -65,19 +53,15 @@ def test_document_upload_success(mock_session_ctx, mock_send_task, mock_validate
     assert "fileHash" in body
     doc_id = body["documentId"]
 
-    # Verify db save called
-    mock_db_session.add.assert_called_once()
-    mock_db_session.commit.assert_called_once()
-
-    # Verify Celery task submitted
+    mock_create.assert_awaited_once()
     mock_send_task.assert_called_once()
     call_args = mock_send_task.call_args
     assert call_args[1]["args"][0] == doc_id
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-@patch("src.main.tenant_session")
-def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
+@patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
+def test_document_upload_deduplication(mock_find_by_hash, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -86,28 +70,18 @@ def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
         roles=["integrator"],
         scopes=["document:write"],
     )
-
-    mock_db_session = MagicMock()
-    mock_db_session.execute = AsyncMock()
-    mock_session_ctx.return_value.__aenter__.return_value = mock_db_session
-
-    import datetime
-    # Mock return of an existing document matching file hash
-    existing_doc = DocumentDb(
-        document_id=uuid.UUID(doc_id),
-        tenant_id=uuid.UUID(tenant_id),
+    mock_find_by_hash.return_value = Document(
+        document_id=doc_id,
+        tenant_id=tenant_id,
         filename="existing.txt",
         file_hash="mockedhash",
         storage_path="/path/to/existing",
         file_size=100,
         mime_type="text/plain",
         status="INDEXED",
-        created_at=datetime.datetime.now(datetime.UTC),
-        updated_at=datetime.datetime.now(datetime.UTC),
+        created_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:00",
     )
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = existing_doc
-    mock_db_session.execute.return_value = mock_result
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.post(
@@ -116,15 +90,15 @@ def test_document_upload_deduplication(mock_session_ctx, mock_validate) -> None:
         headers=headers,
     )
 
-    # Status must be 202 and return the existing document metadata immediately
     assert response.status_code == 202
     assert response.json()["documentId"] == doc_id
     assert response.json()["status"] == "pending"
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-@patch("src.main.tenant_session")
-def test_document_list_and_get(mock_session_ctx, mock_validate) -> None:
+@patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
+@patch("src.main.document_repository.get_document", new_callable=AsyncMock)
+def test_document_list_and_get(mock_get, mock_list, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -134,46 +108,36 @@ def test_document_list_and_get(mock_session_ctx, mock_validate) -> None:
         scopes=["document:read"],
     )
 
-    mock_db_session = MagicMock()
-    mock_db_session.execute = AsyncMock()
-    mock_session_ctx.return_value.__aenter__.return_value = mock_db_session
-
-    import datetime
-    mock_doc = DocumentDb(
-        document_id=uuid.UUID(doc_id),
-        tenant_id=uuid.UUID(tenant_id),
+    mock_doc = Document(
+        document_id=doc_id,
+        tenant_id=tenant_id,
         filename="doc1.txt",
         file_hash="hash1",
         storage_path="/path",
         file_size=200,
         mime_type="text/plain",
         status="INDEXED",
-        created_at=datetime.datetime.now(datetime.UTC),
-        updated_at=datetime.datetime.now(datetime.UTC),
+        created_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:00",
     )
-    # Mock list query return values
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [mock_doc]
-    mock_result.scalar_one_or_none.return_value = mock_doc
-    mock_db_session.execute.return_value = mock_result
+    mock_list.return_value = [mock_doc]
+    mock_get.return_value = mock_doc
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
-    
-    # Test List
+
     response = client.get(f"/v1/tenants/{tenant_id}/documents", headers=headers)
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["documentId"] == doc_id
 
-    # Test GET status
     response = client.get(f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers)
     assert response.status_code == 200
     assert response.json()["status"] == "INDEXED"
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-@patch("src.main.tenant_session")
-def test_document_delete(mock_session_ctx, mock_validate) -> None:
+@patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
+def test_document_delete(mock_soft_delete, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -182,36 +146,14 @@ def test_document_delete(mock_session_ctx, mock_validate) -> None:
         roles=["integrator"],
         scopes=["document:write"],
     )
-
-    mock_db_session = MagicMock()
-    mock_db_session.execute = AsyncMock()
-    mock_db_session.commit = AsyncMock()
-    mock_session_ctx.return_value.__aenter__.return_value = mock_db_session
-
-    import datetime
-    mock_doc = DocumentDb(
-        document_id=uuid.UUID(doc_id),
-        tenant_id=uuid.UUID(tenant_id),
-        filename="doc.txt",
-        file_hash="hash",
-        storage_path="/path",
-        file_size=10,
-        mime_type="text/plain",
-        status="INDEXED",
-        created_at=datetime.datetime.now(datetime.UTC),
-        updated_at=datetime.datetime.now(datetime.UTC),
-    )
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = mock_doc
-    mock_db_session.execute.return_value = mock_result
+    mock_soft_delete.return_value = "/path"
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.delete(f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers)
 
     assert response.status_code == 200
     assert response.json()["status"] == "deleted"
-    assert mock_doc.is_deleted is True
-    mock_db_session.commit.assert_called()
+    mock_soft_delete.assert_awaited_once_with(tenant_id, doc_id)
 
 
 @pytest.mark.asyncio

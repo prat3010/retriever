@@ -68,8 +68,11 @@ apps/web/src/
 │   ├── error-boundary.tsx      # React error boundary component
 │   ├── ui/                     # shadcn/ui components (button, card, table, dialog, etc.)
 │   ├── tenant-overview.tsx     # Overview tab: tenant info + deactivate
+│   ├── tenant-documents.tsx    # Documents tab: list documents per tenant
 │   ├── tenant-users.tsx        # Users tab: list + create user
 │   ├── tenant-api-keys.tsx     # API Keys tab: list + generate + revoke
+│   ├── tenant-prompts.tsx      # Prompts tab: CRUD + preview prompt templates
+│   ├── tenant-sandbox.tsx      # Sandbox tab: RAG chat via SSE
 │   └── tenant-config.tsx       # Config tab: AI provider, retrieval, security forms
 ├── hooks/
 │   ├── use-query-client.tsx    # TanStack Query provider component
@@ -342,9 +345,6 @@ A standalone Next.js app that demonstrates how to integrate with the Retriever A
 
 - **Pagination** — TanStack Table + cursor-based pagination for tenant/user/document lists
 - **React Hook Form + Zod** — form validation for config forms, user creation
-- **Global config page** — system-wide settings UI
-- **Audit log viewer** — activity history across tenants
-- **Theme toggle** — dark/light mode switch
 - **User profile management** — within-tenant user editing
 - **Document viewer** — preview documents per tenant
 - **Responsive sidebar** — collapse on mobile

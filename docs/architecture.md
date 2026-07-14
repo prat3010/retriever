@@ -545,11 +545,15 @@ Retriever is structured as a monorepo to maintain strong typing across client-se
 │   │   ├── pyproject.toml
 │   │   └── uv.lock
 │   │
-│   └── web/                     # Frontend Reference Interface (Next.js)
-│       ├── src/
-│       │   └── app/             # Web Router layouts and pages
-│       ├── package.json
-│       └── tsconfig.json
+│   ├── web/                     # Admin Dashboard (Next.js)
+│   │   ├── src/
+│   │   │   └── app/             # Web Router layouts and pages
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── client-reference/        # Reference client integration example (Next.js)
+│
+├── workers/                     # Celery background workers (async ingestion)
 │
 ├── packages/
 │   └── processing-core/         # Shared processing primitives (PDF parse, chunk, embed)

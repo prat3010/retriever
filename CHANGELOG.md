@@ -2,6 +2,17 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-07-14
+### Added
+- **DocumentRepository Port**: Extracted `DocumentRepository` port in `domain/abstractions/ingestion.py` with 5 methods (list_documents, get_document, find_by_hash, create_document, soft_delete).
+- **SqlDocumentRepository Adapter**: Implemented in `adapters/database/document_repository.py`, wired into `main.py` replacing 5 inline SQLAlchemy blocks. Removed unused imports.
+
+### Fixed
+- **Ingestion Tests**: Migrated 7 tests from mocking `src.main.tenant_session` (removed) to mocking `document_repository` methods — all 111 tests passing again.
+
+### Changed
+- Cleaned up unused imports in `main.py`, `security.py`, and test files. Ruff clean.
+
 ## [0.4.0] - 2026-07-12
 ### Added
 - **Layout-Aware PDF Parser**: Integrated `pdfplumber` adapter extracting layout-preserved text segments from documents.

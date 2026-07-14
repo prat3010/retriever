@@ -29,6 +29,35 @@ class DocumentChunk(BaseModel):
     created_at: str
 
 
+class DocumentRepository(ABC):
+    """Port for document metadata CRUD."""
+
+    @abstractmethod
+    async def list_documents(self, tenant_id: str, bypass_rls: bool = False) -> list[Document]:
+        """List non-deleted documents for a tenant, newest first."""
+        pass
+
+    @abstractmethod
+    async def get_document(self, tenant_id: str, document_id: str, bypass_rls: bool = False) -> Document | None:
+        """Get a single document by ID, scoped to tenant."""
+        pass
+
+    @abstractmethod
+    async def find_by_hash(self, tenant_id: str, file_hash: str) -> Document | None:
+        """Find an active document by file hash (dedup check)."""
+        pass
+
+    @abstractmethod
+    async def create_document(self, tenant_id: str, doc: Document) -> None:
+        """Persist a new document record."""
+        pass
+
+    @abstractmethod
+    async def soft_delete(self, tenant_id: str, document_id: str) -> str | None:
+        """Mark a document as deleted, remove chunks. Returns storage_path for cleanup, or None if not found."""
+        pass
+
+
 class DocumentStorage(ABC):
     @abstractmethod
     async def save_file(self, tenant_id: str, filename: str, content: bytes) -> str:

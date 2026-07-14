@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
@@ -78,6 +79,11 @@ def test_env_resolution_fallback_logic() -> None:
 
     resolved = service._resolve_env_variables(config)
     assert resolved.ai_provider.api_key == "env-resolved-key-value"
+
+
+def test_tenant_config_missing_auth() -> None:
+    response = client.get(f"/v1/tenants/{uuid.uuid4()}/config")
+    assert response.status_code == 401
 
 
 def test_merge_configurations_overlay() -> None:

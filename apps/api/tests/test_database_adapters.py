@@ -11,7 +11,7 @@ from src.domain.abstractions.inference import ChatMessage
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.database.tenant_repository.tenant_session")
+@patch("src.adapters.database.tenant_repository.tenant_session", autospec=True)
 async def test_tenant_registry_get_config_sets_rls(mock_session_ctx) -> None:
     tenant_id = str(uuid.uuid4())
     mock_db_session = MagicMock()
@@ -44,7 +44,7 @@ async def test_tenant_registry_get_config_sets_rls(mock_session_ctx) -> None:
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.database.identity_repository.tenant_session")
+@patch("src.adapters.database.identity_repository.tenant_session", autospec=True)
 async def test_identity_provider_validate_token_bypasses_rls(mock_session_ctx) -> None:
     mock_db_session = MagicMock()
     mock_db_session.execute = AsyncMock()
@@ -64,7 +64,7 @@ async def test_identity_provider_validate_token_bypasses_rls(mock_session_ctx) -
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.database.inference_repository.tenant_session")
+@patch("src.adapters.database.inference_repository.tenant_session", autospec=True)
 async def test_chat_message_repository_scopes_writes_to_tenant(mock_session_ctx) -> None:
     tenant_id = str(uuid.uuid4())
     session_id = str(uuid.uuid4())
@@ -86,7 +86,7 @@ async def test_chat_message_repository_scopes_writes_to_tenant(mock_session_ctx)
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.database.inference_repository.tenant_session")
+@patch("src.adapters.database.inference_repository.tenant_session", autospec=True)
 async def test_chat_message_repository_scopes_reads_to_tenant(mock_session_ctx) -> None:
     tenant_id = str(uuid.uuid4())
     session_id = str(uuid.uuid4())

@@ -377,3 +377,45 @@ def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None
         headers=headers,
     )
     assert response.status_code == 404
+
+
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
+@patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
+@patch("src.main.search_service.search", new_callable=AsyncMock)
+@patch("src.main.inference_orchestrator.generate_stream")
+def test_chat_message_endpoint_streaming(
+    mock_generate_stream, mock_search, mock_get_config,
+    mock_get_session, mock_validate,
+) -> None:
+    from src.domain.abstractions.config import TenantConfiguration
+    from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
+
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123", tenant_id=tenant_id, roles=["client"], scopes=["document:write"],
+    )
+    mock_get_session.return_value = MagicMock(session_id="ses_001", tenant_id=tenant_id)
+    mock_get_config.return_value = TenantConfiguration(tenant_id=tenant_id)
+    mock_search.return_value = SearchResponse(
+        query="test", results=[],
+        search_meta=SearchMeta(strategy="none", total_candidates=0, returned_results=0, duration_ms=0),
+    )
+
+    async def _mock_stream(*args, **kwargs):
+        yield {"event": "token", "delta": "Hello "}
+        yield {"event": "token", "delta": "world!"}
+        yield {"event": "done", "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}}
+
+    mock_generate_stream.return_value = _mock_stream()
+
+    user_id = str(uuid.uuid4())
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
+    response = client.post(
+        f"/v1/tenants/{tenant_id}/chat/sessions/ses_001/messages",
+        json={"query": "test", "stream": True},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]

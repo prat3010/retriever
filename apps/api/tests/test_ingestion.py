@@ -1,5 +1,3 @@
-import os
-import shutil
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -15,19 +13,21 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def clean_storage() -> None:
-    storage_dir = "./storage"
-    if os.path.exists(storage_dir):
-        shutil.rmtree(storage_dir)
+def clean_temp_files() -> None:
     yield
-    if os.path.exists(storage_dir):
-        shutil.rmtree(storage_dir)
+    import os
+    import shutil
+    for f in ("./storage", "./sample_test.txt"):
+        if os.path.isfile(f):
+            os.remove(f)
+        elif os.path.isdir(f):
+            shutil.rmtree(f)
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
-@patch("src.adapters.broker.celery_publisher.celery_app.send_task")
+@patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
 def test_document_upload_success(mock_send_task, mock_find_by_hash, mock_create, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -156,9 +156,51 @@ def test_document_delete(mock_soft_delete, mock_validate) -> None:
     mock_soft_delete.assert_awaited_once_with(tenant_id, doc_id)
 
 
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.get_document", new_callable=AsyncMock)
+def test_document_get_not_found(mock_get, mock_validate) -> None:
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:read"],
+    )
+    mock_get.return_value = None
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    response = client.get(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    assert response.status_code == 404
+    assert "Document not found" in response.json()["detail"]
+
+
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
+def test_document_delete_not_found(mock_delete, mock_validate) -> None:
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:write"],
+    )
+    mock_delete.return_value = None
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    assert response.status_code == 404
+    assert "Document not found" in response.json()["detail"]
+
+
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+def test_document_upload_missing_file(mock_validate) -> None:
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:write"],
+    )
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    response = client.post(
+        f"/v1/tenants/{tenant_id}/documents",
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+
 @pytest.mark.asyncio
-@patch("workers.src.tasks._publish_event")
-@patch("workers.src.tasks.create_async_engine")
+@patch("workers.src.tasks._publish_event", autospec=True)
+@patch("workers.src.tasks.create_async_engine", autospec=True)
 async def test_worker_processing_task(mock_create_engine, mock_publish_event) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
@@ -184,20 +226,16 @@ async def test_worker_processing_task(mock_create_engine, mock_publish_event) ->
     with open(test_file, "w", encoding="utf-8") as f:
         f.write("Line 1 test content.\nLine 2 test content.")
 
-    try:
-        await process_document_async(doc_id, tenant_id, test_file)
+    await process_document_async(doc_id, tenant_id, test_file)
 
-        # Confirm database status updates were run
-        assert mock_conn.execute.call_count >= 4
-        
-        # Verify that SET LOCAL app.bypass_rls was executed
-        bypass_rls_called = False
-        for call in mock_conn.execute.call_args_list:
-            arg = call[0][0]
-            if hasattr(arg, "text") and "SET LOCAL app.bypass_rls = 'true'" in arg.text:
-                bypass_rls_called = True
-                break
-        assert bypass_rls_called, "SET LOCAL app.bypass_rls was not executed"
-    finally:
-        if os.path.exists(test_file):
-            os.remove(test_file)
+    # Confirm database status updates were run
+    assert mock_conn.execute.call_count >= 4
+    
+    # Verify that SET LOCAL app.bypass_rls was executed
+    bypass_rls_called = False
+    for call in mock_conn.execute.call_args_list:
+        arg = call[0][0]
+        if hasattr(arg, "text") and "SET LOCAL app.bypass_rls = 'true'" in arg.text:
+            bypass_rls_called = True
+            break
+    assert bypass_rls_called, "SET LOCAL app.bypass_rls was not executed"

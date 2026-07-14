@@ -15,6 +15,7 @@ from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
@@ -28,8 +29,15 @@ client = TestClient(app)
 ADMIN_KEY = "dev-admin-master-key-change-in-production"
 auth_header = {"X-Admin-Master-Key": ADMIN_KEY}
 
-tenant_id = str(uuid.uuid4())
-key_id = str(uuid.uuid4())
+
+@pytest.fixture
+def tenant_id() -> str:
+    return str(uuid.uuid4())
+
+
+@pytest.fixture
+def key_id() -> str:
+    return str(uuid.uuid4())
 
 
 def test_admin_master_key_required() -> None:
@@ -42,7 +50,7 @@ def test_admin_master_key_required() -> None:
 # ── Tenant Endpoints ──────────────────────────────────────────────────────────
 
 
-@patch("src.main.tenant_registry.list_tenants")
+@patch("src.main.tenant_registry.list_tenants", autospec=True)
 def test_admin_list_tenants(mock_list) -> None:
     """GET /v1/admin/tenants returns paginated tenant list."""
     mock_list.return_value = (
@@ -63,7 +71,7 @@ def test_admin_list_tenants(mock_list) -> None:
     assert body["items"][0]["createdAt"] == "2026-01-01T00:00:00"
 
 
-@patch("src.main.tenant_registry.list_tenants")
+@patch("src.main.tenant_registry.list_tenants", autospec=True)
 def test_admin_list_tenants_empty(mock_list) -> None:
     """GET /v1/admin/tenants returns empty list when no tenants."""
     mock_list.return_value = ([], 0)
@@ -74,8 +82,8 @@ def test_admin_list_tenants_empty(mock_list) -> None:
     assert body["items"] == []
 
 
-@patch("src.main.tenant_registry.get_tenant")
-def test_admin_get_tenant(mock_get) -> None:
+@patch("src.main.tenant_registry.get_tenant", autospec=True)
+def test_admin_get_tenant(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id} returns tenant details."""
     mock_get.return_value = Tenant(
         tenant_id=tenant_id, name="Test", status="active",
@@ -88,7 +96,7 @@ def test_admin_get_tenant(mock_get) -> None:
     assert body["createdAt"] == "2026-01-01T00:00:00"
 
 
-@patch("src.main.tenant_registry.get_tenant")
+@patch("src.main.tenant_registry.get_tenant", autospec=True)
 def test_admin_get_tenant_not_found(mock_get) -> None:
     """GET /v1/admin/tenants/{id} returns 404 when tenant missing."""
     mock_get.return_value = None
@@ -96,8 +104,8 @@ def test_admin_get_tenant_not_found(mock_get) -> None:
     assert response.status_code == 404
 
 
-@patch("src.main.tenant_registry.deactivate_tenant")
-def test_admin_deactivate_tenant(mock_deactivate) -> None:
+@patch("src.main.tenant_registry.deactivate_tenant", autospec=True)
+def test_admin_deactivate_tenant(mock_deactivate, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id} deactivates and returns status."""
     mock_deactivate.return_value = True
     response = client.delete(f"/v1/admin/tenants/{tenant_id}", headers=auth_header)
@@ -105,7 +113,7 @@ def test_admin_deactivate_tenant(mock_deactivate) -> None:
     assert response.json() == {"status": "deactivated", "tenantId": tenant_id}
 
 
-@patch("src.main.tenant_registry.deactivate_tenant")
+@patch("src.main.tenant_registry.deactivate_tenant", autospec=True)
 def test_admin_deactivate_tenant_not_found(mock_deactivate) -> None:
     """DELETE /v1/admin/tenants/{id} returns 404 for missing tenant."""
     mock_deactivate.return_value = False
@@ -116,8 +124,8 @@ def test_admin_deactivate_tenant_not_found(mock_deactivate) -> None:
 # ── User Endpoints ────────────────────────────────────────────────────────────
 
 
-@patch("src.main.user_repository.list_users")
-def test_admin_list_users(mock_list) -> None:
+@patch("src.main.user_repository.list_users", autospec=True)
+def test_admin_list_users(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/users returns user list."""
     mock_list.return_value = [
         UserInfo(
@@ -135,8 +143,8 @@ def test_admin_list_users(mock_list) -> None:
     assert body[0]["userId"] == "u1"
 
 
-@patch("src.main.user_repository.create_user")
-def test_admin_create_user(mock_create) -> None:
+@patch("src.main.user_repository.create_user", autospec=True)
+def test_admin_create_user(mock_create, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/users creates and returns 201."""
     mock_create.return_value = UserInfo(
         user_id="u1", tenant_id=tenant_id,
@@ -152,8 +160,8 @@ def test_admin_create_user(mock_create) -> None:
     assert response.json()["userId"] == "u1"
 
 
-@patch("src.main.user_repository.create_user")
-def test_admin_create_user_duplicate(mock_create) -> None:
+@patch("src.main.user_repository.create_user", autospec=True)
+def test_admin_create_user_duplicate(mock_create, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/users returns 409 on duplicate external_id."""
     mock_create.side_effect = ValueError(
         "User with external_id 'dup' already exists in tenant"
@@ -169,8 +177,8 @@ def test_admin_create_user_duplicate(mock_create) -> None:
 # ── API Key Endpoints ─────────────────────────────────────────────────────────
 
 
-@patch("src.main.identity_provider.list_api_keys")
-def test_admin_list_api_keys(mock_list) -> None:
+@patch("src.main.identity_provider.list_api_keys", autospec=True)
+def test_admin_list_api_keys(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/api-keys returns key list."""
     from src.domain.abstractions.identity import ApiKeyMetadata
     mock_list.return_value = [
@@ -190,8 +198,17 @@ def test_admin_list_api_keys(mock_list) -> None:
     assert body[0]["role"] == "client"
 
 
-@patch("src.main.identity_provider.create_api_key")
-def test_admin_create_api_key(mock_create) -> None:
+def test_admin_create_api_key_invalid_name(tenant_id) -> None:
+    response = client.post(
+        f"/v1/admin/tenants/{tenant_id}/api-keys",
+        json={"name": "x", "role": "client"},
+        headers=auth_header,
+    )
+    assert response.status_code == 422
+
+
+@patch("src.main.identity_provider.create_api_key", autospec=True)
+def test_admin_create_api_key(mock_create, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/api-keys creates and returns 201."""
     from src.domain.abstractions.identity import ApiKeyMetadata
     mock_create.return_value = (
@@ -213,8 +230,8 @@ def test_admin_create_api_key(mock_create) -> None:
     assert body["role"] == "admin"
 
 
-@patch("src.main.identity_provider.revoke_api_key")
-def test_admin_revoke_api_key(mock_revoke) -> None:
+@patch("src.main.identity_provider.revoke_api_key", autospec=True)
+def test_admin_revoke_api_key(mock_revoke, tenant_id, key_id) -> None:
     """DELETE /v1/admin/tenants/{id}/api-keys/{keyId} revokes and returns status."""
     mock_revoke.return_value = True
     response = client.delete(
@@ -224,8 +241,8 @@ def test_admin_revoke_api_key(mock_revoke) -> None:
     assert response.json() == {"status": "revoked", "keyId": key_id}
 
 
-@patch("src.main.identity_provider.revoke_api_key")
-def test_admin_revoke_api_key_not_found(mock_revoke) -> None:
+@patch("src.main.identity_provider.revoke_api_key", autospec=True)
+def test_admin_revoke_api_key_not_found(mock_revoke, tenant_id) -> None:
     """DELETE returns 404 when API key not found."""
     mock_revoke.return_value = False
     response = client.delete(
@@ -237,8 +254,8 @@ def test_admin_revoke_api_key_not_found(mock_revoke) -> None:
 # ── Config Endpoints ──────────────────────────────────────────────────────────
 
 
-@patch("src.main.config_service.get_tenant_config")
-def test_admin_get_tenant_config(mock_get) -> None:
+@patch("src.main.config_service.get_tenant_config", autospec=True)
+def test_admin_get_tenant_config(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/config returns config."""
     from src.domain.abstractions.config import TenantConfiguration
     mock_get.return_value = TenantConfiguration(tenant_id=tenant_id)
@@ -250,8 +267,8 @@ def test_admin_get_tenant_config(mock_get) -> None:
     assert body["tenant_id"] == tenant_id  # snake_case in response model
 
 
-@patch("src.main.config_service.update_tenant_config")
-def test_admin_update_tenant_config(mock_update) -> None:
+@patch("src.main.config_service.update_tenant_config", autospec=True)
+def test_admin_update_tenant_config(mock_update, tenant_id) -> None:
     """PUT /v1/admin/tenants/{id}/config updates and returns status."""
     mock_update.return_value = None
     response = client.put(
@@ -267,7 +284,7 @@ def test_admin_update_tenant_config(mock_update) -> None:
 
 
 @patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
-def test_admin_list_documents(mock_list) -> None:
+def test_admin_list_documents(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/documents returns document list."""
     from src.domain.abstractions.ingestion import Document
     now = datetime.now()
@@ -295,7 +312,7 @@ def test_admin_list_documents(mock_list) -> None:
 
 
 @patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
-def test_admin_list_documents_empty(mock_list) -> None:
+def test_admin_list_documents_empty(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/documents returns empty list."""
     mock_list.return_value = []
     response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
@@ -306,8 +323,8 @@ def test_admin_list_documents_empty(mock_list) -> None:
 # ── Prompt Template Endpoints ──────────────────────────────────────────────
 
 
-@patch("src.main.template_registry.list_templates")
-def test_admin_list_prompts(mock_list) -> None:
+@patch("src.main.template_registry.list_templates", autospec=True)
+def test_admin_list_prompts(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts returns prompt list."""
     mock_list.return_value = [
         PromptTemplate(name="qa", content="Answer the question.", is_system_prompt=True),
@@ -323,8 +340,8 @@ def test_admin_list_prompts(mock_list) -> None:
     assert body[0]["isSystemPrompt"] is True
 
 
-@patch("src.main.template_registry.list_templates")
-def test_admin_list_prompts_empty(mock_list) -> None:
+@patch("src.main.template_registry.list_templates", autospec=True)
+def test_admin_list_prompts_empty(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts returns empty list."""
     mock_list.return_value = []
     response = client.get(
@@ -334,9 +351,9 @@ def test_admin_list_prompts_empty(mock_list) -> None:
     assert response.json() == []
 
 
-@patch("src.main.template_registry.get_template")
-@patch("src.main.template_registry.save_template")
-def test_admin_create_prompt(mock_save, mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+@patch("src.main.template_registry.save_template", autospec=True)
+def test_admin_create_prompt(mock_save, mock_get, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/prompts creates and returns 201."""
     mock_get.return_value = None
     response = client.post(
@@ -349,8 +366,8 @@ def test_admin_create_prompt(mock_save, mock_get) -> None:
     mock_save.assert_awaited_once()
 
 
-@patch("src.main.template_registry.get_template")
-def test_admin_create_prompt_duplicate(mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+def test_admin_create_prompt_duplicate(mock_get, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/prompts returns 409 on duplicate name."""
     mock_get.return_value = PromptTemplate(name="dup", content="exists")
     response = client.post(
@@ -361,8 +378,8 @@ def test_admin_create_prompt_duplicate(mock_get) -> None:
     assert response.status_code == 409
 
 
-@patch("src.main.template_registry.get_template")
-def test_admin_get_prompt(mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+def test_admin_get_prompt(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts/{name} returns prompt."""
     mock_get.return_value = PromptTemplate(
         name="greeting", content="Hi {name}!", is_system_prompt=False,
@@ -377,8 +394,8 @@ def test_admin_get_prompt(mock_get) -> None:
     assert body["isSystemPrompt"] is False
 
 
-@patch("src.main.template_registry.get_template")
-def test_admin_get_prompt_not_found(mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+def test_admin_get_prompt_not_found(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts/{name} returns 404."""
     mock_get.return_value = None
     response = client.get(
@@ -387,9 +404,9 @@ def test_admin_get_prompt_not_found(mock_get) -> None:
     assert response.status_code == 404
 
 
-@patch("src.main.template_registry.get_template")
-@patch("src.main.template_registry.save_template")
-def test_admin_update_prompt(mock_save, mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+@patch("src.main.template_registry.save_template", autospec=True)
+def test_admin_update_prompt(mock_save, mock_get, tenant_id) -> None:
     """PUT /v1/admin/tenants/{id}/prompts/{name} updates and returns status."""
     mock_get.return_value = PromptTemplate(name="old", content="old")
     response = client.put(
@@ -402,8 +419,8 @@ def test_admin_update_prompt(mock_save, mock_get) -> None:
     mock_save.assert_awaited_once()
 
 
-@patch("src.main.template_registry.get_template")
-def test_admin_update_prompt_not_found(mock_get) -> None:
+@patch("src.main.template_registry.get_template", autospec=True)
+def test_admin_update_prompt_not_found(mock_get, tenant_id) -> None:
     """PUT /v1/admin/tenants/{id}/prompts/{name} returns 404."""
     mock_get.return_value = None
     response = client.put(
@@ -414,8 +431,8 @@ def test_admin_update_prompt_not_found(mock_get) -> None:
     assert response.status_code == 404
 
 
-@patch("src.main.template_registry.delete_template")
-def test_admin_delete_prompt(mock_delete) -> None:
+@patch("src.main.template_registry.delete_template", autospec=True)
+def test_admin_delete_prompt(mock_delete, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id}/prompts/{name} deletes and returns status."""
     mock_delete.return_value = True
     response = client.delete(
@@ -425,8 +442,8 @@ def test_admin_delete_prompt(mock_delete) -> None:
     assert response.json() == {"name": "to-delete", "status": "deleted"}
 
 
-@patch("src.main.template_registry.delete_template")
-def test_admin_delete_prompt_not_found(mock_delete) -> None:
+@patch("src.main.template_registry.delete_template", autospec=True)
+def test_admin_delete_prompt_not_found(mock_delete, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id}/prompts/{name} returns 404."""
     mock_delete.return_value = False
     response = client.delete(
@@ -435,8 +452,8 @@ def test_admin_delete_prompt_not_found(mock_delete) -> None:
     assert response.status_code == 404
 
 
-@patch("src.main.inference_orchestrator.prompt_builder.build_messages")
-def test_admin_preview_prompt(mock_build) -> None:
+@patch("src.main.inference_orchestrator.prompt_builder.build_messages", autospec=True)
+def test_admin_preview_prompt(mock_build, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/prompts/preview returns rendered messages."""
     mock_build.return_value = [
         SimpleNamespace(role="system", content="You are a helpful assistant."),
@@ -454,8 +471,8 @@ def test_admin_preview_prompt(mock_build) -> None:
     assert body["messages"][1]["content"] == "What is Paris?"
 
 
-@patch("src.main.inference_orchestrator.prompt_builder.build_messages")
-def test_admin_preview_prompt_not_found(mock_build) -> None:
+@patch("src.main.inference_orchestrator.prompt_builder.build_messages", autospec=True)
+def test_admin_preview_prompt_not_found(mock_build, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/prompts/preview returns 404 for missing template."""
     mock_build.side_effect = PromptTemplateNotFoundError(tenant_id, "missing")
     response = client.post(
@@ -470,7 +487,7 @@ def test_admin_preview_prompt_not_found(mock_build) -> None:
 
 
 @patch("src.main.audit_logger.list")
-def test_admin_list_audit_logs(mock_list) -> None:
+def test_admin_list_audit_logs(mock_list, tenant_id) -> None:
     """GET /v1/admin/audit-logs returns paginated audit entries."""
     mock_list.return_value = (
         [
@@ -493,7 +510,7 @@ def test_admin_list_audit_logs(mock_list) -> None:
 
 
 @patch("src.main.audit_logger.list")
-def test_admin_list_audit_logs_empty(mock_list) -> None:
+def test_admin_list_audit_logs_empty(mock_list, tenant_id) -> None:
     """GET /v1/admin/audit-logs returns empty list."""
     mock_list.return_value = ([], 0)
     response = client.get("/v1/admin/audit-logs", headers=auth_header)
@@ -502,7 +519,7 @@ def test_admin_list_audit_logs_empty(mock_list) -> None:
 
 
 @patch("src.main.audit_logger.list")
-def test_admin_list_audit_logs_filtered(mock_list) -> None:
+def test_admin_list_audit_logs_filtered(mock_list, tenant_id) -> None:
     """GET /v1/admin/audit-logs passes query params to repository."""
     mock_list.return_value = ([], 0)
     client.get(

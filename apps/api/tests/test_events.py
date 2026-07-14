@@ -64,7 +64,7 @@ def test_document_event_payload_defaults() -> None:
 # ── 2. RabbitMQ Event Publisher ──────────────────────────────────────────────
 
 
-@patch("pika.BlockingConnection")
+@patch("pika.BlockingConnection", autospec=True)
 def test_publisher_declare_topology(mock_connection) -> None:
     """Verify declare_topology creates exchange, DLX, queues, and bindings."""
     from src.adapters.broker.rabbitmq_event_publisher import RabbitMQEventPublisher
@@ -93,7 +93,7 @@ def test_publisher_declare_topology(mock_connection) -> None:
     assert "document.event.parsed" in routing_keys
 
 
-@patch("pika.BlockingConnection")
+@patch("pika.BlockingConnection", autospec=True)
 def test_publisher_publish(mock_connection) -> None:
     """Verify publish sends JSON to the exchange with correct routing key."""
     from src.adapters.broker.rabbitmq_event_publisher import (
@@ -124,7 +124,7 @@ def test_publisher_publish(mock_connection) -> None:
 
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
-@patch("src.adapters.broker.celery_publisher.celery_app.send_task")
+@patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
 @patch(
     "src.adapters.api.security.identity_provider.validate_token",
     new_callable=AsyncMock,

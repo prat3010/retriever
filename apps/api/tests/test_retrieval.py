@@ -299,7 +299,7 @@ def test_search_requires_tenant_isolation(mock_validate, mock_revoke) -> None:
 # --- 6. Adapter RLS Verification ---
 
 @pytest.mark.asyncio
-@patch("src.adapters.vector.vector_repository.tenant_session")
+@patch("src.adapters.vector.vector_repository.tenant_session", autospec=True)
 async def test_vector_repository_sets_rls(mock_session_ctx) -> None:
     """Verify PgVectorSearchAdapter calls tenant_session with tenant_id."""
     from src.adapters.vector.vector_repository import PgVectorSearchAdapter
@@ -324,7 +324,7 @@ async def test_vector_repository_sets_rls(mock_session_ctx) -> None:
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.vector.keyword_repository.tenant_session")
+@patch("src.adapters.vector.keyword_repository.tenant_session", autospec=True)
 async def test_keyword_repository_sets_rls(mock_session_ctx) -> None:
     """Verify PgKeywordSearchAdapter calls tenant_session with tenant_id."""
     from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter

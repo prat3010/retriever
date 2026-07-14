@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, patch
 
 
 @patch("src.main.redis_client.ping", new_callable=AsyncMock)
-@patch("src.main.engine")
+@patch("src.main.engine", autospec=True)
 def test_readiness_endpoint(mock_engine, mock_ping) -> None:
     # Setup async context manager mocks for database connection pool
     mock_conn = AsyncMock()
@@ -25,6 +25,15 @@ def test_readiness_endpoint(mock_engine, mock_ping) -> None:
     response = client.get("/health/readiness")
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+
+
+@patch("src.main.redis_client.ping", new_callable=AsyncMock)
+@patch("src.main.engine", autospec=True)
+def test_readiness_db_down(mock_engine, mock_ping) -> None:
+    mock_engine.connect.side_effect = Exception("DB unreachable")
+    response = client.get("/health/readiness")
+    assert response.status_code == 503
+    assert "Readiness check failed" in response.json()["detail"]
 
 
 def test_root_endpoint() -> None:

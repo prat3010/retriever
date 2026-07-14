@@ -45,8 +45,8 @@ def test_rate_limiter_is_abstract():
 # ── 2. OTel Tracer ──────────────────────────────────────────────────────────
 
 
-@patch("src.adapters.telemetry.otel_tracer.ConsoleSpanExporter")
-@patch("src.adapters.telemetry.otel_tracer.TracerProvider")
+@patch("src.adapters.telemetry.otel_tracer.ConsoleSpanExporter", autospec=True)
+@patch("src.adapters.telemetry.otel_tracer.TracerProvider", autospec=True)
 def test_otel_tracer_initialises(mock_provider, mock_exporter):
     """Verify OTelTracer creates a TracerProvider with correct resource."""
     from src.adapters.telemetry.otel_tracer import OTelTracer
@@ -55,8 +55,8 @@ def test_otel_tracer_initialises(mock_provider, mock_exporter):
     assert tracer._tracer is not None
 
 
-@patch("src.adapters.telemetry.otel_tracer.ConsoleSpanExporter")
-@patch("src.adapters.telemetry.otel_tracer.TracerProvider")
+@patch("src.adapters.telemetry.otel_tracer.ConsoleSpanExporter", autospec=True)
+@patch("src.adapters.telemetry.otel_tracer.TracerProvider", autospec=True)
 def test_otel_tracer_start_span(mock_provider, mock_exporter):
     """Verify start_span context manager works."""
     from src.adapters.telemetry.otel_tracer import OTelTracer
@@ -191,7 +191,7 @@ async def test_rate_limiter_fails_open():
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter")
+@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter", autospec=True)
 async def test_rate_limit_dependency_allows(mock_get_limiter):
     """Verify rate_limit dependency calls limiter.acquire."""
     mock_limiter = AsyncMock()
@@ -208,7 +208,7 @@ async def test_rate_limit_dependency_allows(mock_get_limiter):
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter")
+@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter", autospec=True)
 async def test_rate_limit_dependency_rejects(mock_get_limiter):
     """Verify rate_limit dependency raises 429 when over limit."""
     from fastapi import HTTPException
@@ -228,7 +228,7 @@ async def test_rate_limit_dependency_rejects(mock_get_limiter):
 
 
 @pytest.mark.asyncio
-@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter")
+@patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter", autospec=True)
 async def test_rate_limit_dependency_disabled(mock_get_limiter):
     """Verify rate_limit dependency is a no-op when limiter is None."""
     mock_get_limiter.return_value = None
@@ -267,7 +267,7 @@ def test_trace_context_injection():
 # ── 7. /metrics Endpoint ────────────────────────────────────────────────────
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token")
+@patch("src.adapters.api.security.identity_provider.validate_token", autospec=True)
 def test_metrics_endpoint_accessible(mock_validate):
     """Verify /metrics returns Prometheus-formatted text."""
     response = client.get("/metrics")

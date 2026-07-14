@@ -39,7 +39,7 @@ class TenantDb(Base):
     # Relationships
     config = relationship("TenantConfigDb", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
     api_keys = relationship("ApiKeyDb", back_populates="tenant", cascade="all, delete")
-    sessions = relationship("ChatSessionDb", backref="tenant", cascade="all, delete")
+    sessions = relationship("ChatSessionDb", back_populates="tenant", cascade="all, delete")
     users = relationship("UserDb", back_populates="tenant", cascade="all, delete")
 
 
@@ -253,6 +253,7 @@ class ChatSessionDb(Base):
         cascade="all, delete-orphan", order_by="ChatMessageDb.created_at"
     )
     user = relationship("UserDb", back_populates="sessions")
+    tenant = relationship("TenantDb", back_populates="sessions")
 
 
 class ChatMessageDb(Base):

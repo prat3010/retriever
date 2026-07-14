@@ -273,17 +273,12 @@ def test_search_requires_auth() -> None:
     assert response.status_code == 401
 
 
-@patch("src.adapters.api.security.tenant_session")
+@patch("src.adapters.api.security.identity_provider.revoke_api_key_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
-def test_search_requires_tenant_isolation(mock_validate, mock_tenant_session) -> None:
+def test_search_requires_tenant_isolation(mock_validate, mock_revoke) -> None:
     """Verify search endpoint rejects cross-tenant access attempts."""
     authenticated_tenant = str(uuid.uuid4())
     target_tenant = str(uuid.uuid4())
-
-    # Set up mock session context manager
-    mock_session = MagicMock()
-    mock_session.execute = AsyncMock()
-    mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
     mock_validate.return_value = UserContext(
         user_id="user_123",

@@ -53,7 +53,7 @@ class SqlIdentityProvider(IdentityProvider):
             scopes = (
                 ["admin:*"]
                 if db_key.role == "admin"
-                else ["document:write", "document:read", "query:execute"]
+                else ["document:write", "document:read"]
             )
 
             return UserContext(
@@ -119,6 +119,18 @@ class SqlIdentityProvider(IdentityProvider):
             if not db_key:
                 return False
 
+            db_key.status = "inactive"
+            await session.flush()
+            return True
+
+    async def revoke_api_key_by_hash(self, key_hash: str) -> bool:
+        """Revoke an API key by its SHA-256 hash. Bypasses RLS."""
+        async with tenant_session(bypass_rls=True) as session:
+            stmt = select(ApiKeyDb).where(ApiKeyDb.key_hash == key_hash)
+            result = await session.execute(stmt)
+            db_key = result.scalar_one_or_none()
+            if not db_key:
+                return False
             db_key.status = "inactive"
             await session.flush()
             return True

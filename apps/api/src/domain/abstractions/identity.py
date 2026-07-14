@@ -44,6 +44,11 @@ class IdentityProvider(ABC):
         pass
 
     @abstractmethod
+    async def revoke_api_key_by_hash(self, key_hash: str) -> bool:
+        """Revoke an API key by its SHA-256 hash. Bypasses RLS. Returns True if found and revoked."""
+        pass
+
+    @abstractmethod
     async def list_api_keys(self, tenant_id: str) -> list[ApiKeyMetadata]:
         """List all API keys for a tenant."""
         pass

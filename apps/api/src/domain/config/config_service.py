@@ -1,5 +1,3 @@
-import os
-
 from src.domain.abstractions.config import (
     ConfigCache,
     ConfigRegistry,
@@ -8,9 +6,10 @@ from src.domain.abstractions.config import (
 
 
 class ConfigurationService:
-    def __init__(self, registry: ConfigRegistry, cache: ConfigCache) -> None:
+    def __init__(self, registry: ConfigRegistry, cache: ConfigCache, env_secrets: dict[str, str] | None = None) -> None:
         self.registry = registry
         self.cache = cache
+        self.env_secrets = env_secrets or {}
 
     async def get_global_config(self) -> TenantConfiguration:
         """Fetch global configuration, integrating caching and environment defaults."""
@@ -84,13 +83,13 @@ class ConfigurationService:
         if resolved.ai_provider.api_key is None or resolved.ai_provider.api_key == "********":
             provider = resolved.ai_provider.provider_name.upper()
             env_key = f"{provider}_API_KEY"
-            resolved.ai_provider.api_key = os.getenv(env_key, resolved.ai_provider.api_key)
+            resolved.ai_provider.api_key = self.env_secrets.get(env_key, resolved.ai_provider.api_key)
 
         # Embedding provider credentials resolution
         if resolved.embedding_provider.api_key is None or resolved.embedding_provider.api_key == "********":
             provider = resolved.embedding_provider.provider_name.upper()
             env_key = f"{provider}_API_KEY"
-            resolved.embedding_provider.api_key = os.getenv(env_key, resolved.embedding_provider.api_key)
+            resolved.embedding_provider.api_key = self.env_secrets.get(env_key, resolved.embedding_provider.api_key)
 
         return resolved
 

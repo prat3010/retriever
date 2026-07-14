@@ -12,6 +12,11 @@ they start blocking you — not before.
 | `redact_secrets` truthy check → `is not None` | `a6f49a0` |
 | No UUID validation on `X-User-ID` header | `a6f49a0` |
 | Streaming `finish_reason` double-yield dead code | `a6f49a0` |
+| `backref` → `back_populates` consistency | `(this commit)` |
+| `"query:execute"` dead scope removed | `(this commit)` |
+| Column width IF EXISTS guards → bare `alter_column` | `(this commit)` |
+| `os.getenv()` in domain → injected env_secrets | `(this commit)` |
+| Breach kill-switch bypasses `IdentityProvider` port | `(this commit)` |
 
 ## Architecture
 
@@ -26,7 +31,7 @@ swapping storage backends.
 Add: `domain/abstractions/ingestion.py` port, `adapters/database/document_repository.py`
 impl, wire into `main.py`.
 
-### `security.py` bypasses `IdentityProvider` port during breach
+### ~~`security.py` bypasses `IdentityProvider` port during breach~~ (Fixed in `(this commit)`)
 **File:** `apps/api/src/adapters/api/security.py:96-99`
 
 `verify_tenant_isolation` executes `update(ApiKeyDb)` directly instead
@@ -55,7 +60,7 @@ if not security_scopes.scopes:
 before the function body runs. Change to `Header(None)` + explicit
 `if not x_admin_master_key: raise ...`.
 
-### `os.getenv()` in domain layer
+### ~~`os.getenv()` in domain layer~~ (Fixed in `(this commit)`)
 **File:** `apps/api/src/domain/config/config_service.py:87`
 
 `ConfigurationService._resolve_env_variables` reads environment
@@ -124,7 +129,7 @@ key metadata or accept the gap.
 
 ## Security
 
-### `verify_scopes` scope `"query:execute"` is never checked
+### ~~`verify_scopes` scope `"query:execute"` is never checked~~ (Fixed in `(this commit)`)
 **File:** `apps/api/src/adapters/database/identity_repository.py:56`
 
 Client keys are granted `"query:execute"` but no endpoint checks it
@@ -152,7 +157,7 @@ refactored to remove them. Harmless but untidy.
 Either drop them (if no code reads them) or add them back to the
 model. If dropped, preserve data by copying to app-level fields.
 
-### `backref` vs `back_populates` inconsistency
+### ~~`backref` vs `back_populates` inconsistency~~ (Fixed in `(this commit)`)
 **File:** `apps/api/src/adapters/database/models.py:42`
 
 `TenantDb.sessions` uses legacy `backref="tenant"`. Every other
@@ -165,7 +170,7 @@ Not urgent unless you write raw SQL queries against the DB.
 
 ## Product / scale
 
-### Column width limits may bite
+### ~~Column width IF EXISTS guards~~ (Fixed in `(this commit)`)
 `tenants.name`, `api_keys.name`, `api_keys.prefix`, and
 `api_keys.key_hash` were widened from 100/16/64 to 255/50/255 in the
 model but the migration (`3e9a1b2c4d5f`) only alters them if they're

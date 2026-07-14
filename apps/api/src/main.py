@@ -1,4 +1,5 @@
 import hashlib
+import os
 import uuid
 from contextlib import asynccontextmanager
 from typing import Any
@@ -119,7 +120,8 @@ identity_provider = SqlIdentityProvider()
 user_repository = SqlUserRepository()
 config_service = ConfigurationService(
     registry=SqlConfigRegistry(),
-    cache=RedisTenantConfigCache()
+    cache=RedisTenantConfigCache(),
+    env_secrets=dict(os.environ),
 )
 local_storage = LocalStorage()
 

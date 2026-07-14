@@ -1,4 +1,3 @@
-import os
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
@@ -68,16 +67,17 @@ def test_env_resolution_fallback_logic() -> None:
     from unittest.mock import MagicMock
 
     from src.domain.config.config_service import ConfigurationService
-    service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
+    service = ConfigurationService(
+        registry=MagicMock(), cache=MagicMock(),
+        env_secrets={"OPENAI_API_KEY": "env-resolved-key-value"},
+    )
 
     config = TenantConfiguration()
     config.ai_provider.provider_name = "openai"
     config.ai_provider.api_key = "********"  # placeholder
 
-    # Inject mock environment key
-    with patch.dict(os.environ, {"OPENAI_API_KEY": "env-resolved-key-value"}):
-        resolved = service._resolve_env_variables(config)
-        assert resolved.ai_provider.api_key == "env-resolved-key-value"
+    resolved = service._resolve_env_variables(config)
+    assert resolved.ai_provider.api_key == "env-resolved-key-value"
 
 
 def test_merge_configurations_overlay() -> None:

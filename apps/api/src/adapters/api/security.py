@@ -6,11 +6,8 @@ import sys
 
 from fastapi import Depends, Header, HTTPException, Security, status
 from fastapi.security import APIKeyHeader, SecurityScopes
-from sqlalchemy import update
 
-from src.adapters.database.connection import tenant_session
 from src.adapters.database.identity_repository import SqlIdentityProvider
-from src.adapters.database.models import ApiKeyDb
 from src.config import settings
 from src.domain.abstractions.exceptions import (
     AuthenticationError,
@@ -98,14 +95,7 @@ async def verify_tenant_isolation(
             if token.lower().startswith("bearer "):
                 clean_token = token[7:]
             key_hash = hashlib.sha256(clean_token.encode("utf-8")).hexdigest()
-
-            # Execute immediate update bypassing RLS context to deactivate key
-            async with tenant_session(bypass_rls=True) as session:
-                await session.execute(
-                    update(ApiKeyDb)
-                    .where(ApiKeyDb.key_hash == key_hash)
-                    .values(status="inactive")
-                )
+            await identity_provider.revoke_api_key_by_hash(key_hash)
 
         raise TenantIsolationViolationError(
             "Access Denied: Tenancy boundary violation detected."

@@ -179,66 +179,11 @@ def upgrade() -> None:
         """)
 
     # ── 5. Fix column width mismatches (model widened these, migration had narrower) ──
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name = 'tenants' AND column_name = 'name'
-                AND character_maximum_length = 100
-            ) THEN
-                ALTER TABLE tenants ALTER COLUMN name TYPE VARCHAR(255);
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name = 'tenant_configs' AND column_name = 'active_model'
-                AND character_maximum_length = 100
-            ) THEN
-                ALTER TABLE tenant_configs ALTER COLUMN active_model TYPE VARCHAR(255);
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name = 'api_keys' AND column_name = 'name'
-                AND character_maximum_length = 100
-            ) THEN
-                ALTER TABLE api_keys ALTER COLUMN name TYPE VARCHAR(255);
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name = 'api_keys' AND column_name = 'prefix'
-                AND character_maximum_length = 16
-            ) THEN
-                ALTER TABLE api_keys ALTER COLUMN prefix TYPE VARCHAR(50);
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name = 'api_keys' AND column_name = 'key_hash'
-                AND character_maximum_length = 64
-            ) THEN
-                ALTER TABLE api_keys ALTER COLUMN key_hash TYPE VARCHAR(255);
-            END IF;
-        END $$;
-    """)
+    op.alter_column("tenants", "name", type_=sa.String(255))
+    op.alter_column("tenant_configs", "active_model", type_=sa.String(255))
+    op.alter_column("api_keys", "name", type_=sa.String(255))
+    op.alter_column("api_keys", "prefix", type_=sa.String(50))
+    op.alter_column("api_keys", "key_hash", type_=sa.String(255))
 
 
 def downgrade() -> None:

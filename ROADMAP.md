@@ -23,6 +23,12 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** | Q2 2027 |
 | **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | **Completed** | Q3 2027 |
 | **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | **Completed** | Q3 2027 |
+| **M16** | User Feedback & Quality Loops | Thumbs up/down endpoints, rating logs, admin dashboard analytics | **Planned** | Q4 2027 |
+| **M17** | Secure Document Distribution | Client-scoped document download links, temporary presigned R2/S3 URLs | **Planned** | Q4 2027 |
+| **M18** | Metadata & Tag Filtering | Tag/Collection-based search filtering, advanced boolean queries | **Planned** | Q1 2028 |
+| **M19** | Smart Model Failover | Auto-retry on provider downtime, multi-LLM dynamic translation routing | **Planned** | Q1 2028 |
+| **M20** | Token Cost Optimization | Long chat history summarization compression, token billing tracking | **Planned** | Q2 2028 |
+| **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Planned** | Q2 2028 |
 
 ---
 
@@ -295,6 +301,120 @@ This document outlines the implementation phases and milestones for the Retrieve
 - ✅ SSO integration with at least one provider (Okta, Auth0, or Azure AD).
 - ✅ Backup/restore drill completes with zero data loss.
 - ✅ Data retention enforcement verified: expired documents are auto-deleted.
+
+---
+
+### [Next] Milestone 16: User Feedback & Quality Loops
+
+**Objective:** Capture and analyze end-user feedback on RAG replies directly in production, enabling quality analytics inside the Admin Dashboard.
+
+**Complexity:** Medium
+
+**Dependencies:** M9, M10, M11
+
+**Targets:**
+- Create `FeedbackDb` relational schema scoped by tenant and linked to `chat_messages`.
+- Implement client-scoped feedback submission endpoint: `POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages/{messageId}/feedback`.
+- Add feedback statistics (thumbs up/down ratio, common negative flags) and custom text comments search tool inside the Admin Dashboard.
+
+**Acceptance Criteria:**
+- Feedback submission validates the message exists and belongs to the active tenant/user.
+- Dashboard renders real-time quality curves based on logged ratings.
+
+---
+
+### [Planned] Milestone 17: Secure Document Distribution
+
+**Objective:** Safely serve source document downloads to authenticated mobile and web users using secure, temporary links, resolving citation file clicks.
+
+**Complexity:** Medium
+
+**Dependencies:** M12, M15
+
+**Targets:**
+- Implement client-scoped file access validation endpoint: `GET /v1/tenants/{tenantId}/documents/{documentId}/download-url`.
+- Implement `S3Storage.generate_presigned_url` method returning temporary access tokens (e.g. 5-minute expiry).
+- Integrate Cloudflare R2 signature policies for expiring downloads.
+
+**Acceptance Criteria:**
+- Requesting download URLs without valid user JWT fails with 401.
+- Generated URLs expire and refuse access immediately after configured timeout (e.g., 5 mins).
+
+---
+
+### [Planned] Milestone 18: Metadata & Tag Filtering
+
+**Objective:** Enable users to restrict search and chat queries to specific document tags, collections, or custom fields.
+
+**Complexity:** Medium
+
+**Dependencies:** M11, M13
+
+**Targets:**
+- Add `metadata_filter` JSONB field parsing to `SearchQuery` and `ChatMessageRequest` API models.
+- Update `SqlDocumentRepository` search queries to inject SQL WHERE clauses filtering by `document.tags` or custom metadata keys.
+- Optimize hybrid search performance on postgres by adding indexes on JSONB metadata fields.
+
+**Acceptance Criteria:**
+- Querying with `tags: ["financial_statements"]` returns only chunks belonging to matching documents.
+- Search queries with metadata filters maintain p95 latency < 150ms.
+
+---
+
+### [Planned] Milestone 19: Smart Model Failover
+
+**Objective:** Build high availability into the inference engine to dynamically recover from third-party LLM outages without client downtime.
+
+**Complexity:** Medium
+
+**Dependencies:** M6, M13
+
+**Targets:**
+- Implement fallback configuration schemas in `TenantConfiguration` defining primary, secondary, and tertiary model routes.
+- Implement auto-retry loop in `InferenceOrchestrator` catching API timeout or connection errors.
+- Build dynamic message translation layers (translating OpenAI message schemas to Anthropic or Cohere formatting on-the-fly).
+
+**Acceptance Criteria:**
+- Simulating a primary provider outage (e.g. throwing 500) triggers a fallback to secondary provider under 2 seconds.
+- Fallback events are logged in telemetry with warning statuses.
+
+---
+
+### [Planned] Milestone 20: Token Cost Optimization
+
+**Objective:** Control input token billing on long chat sessions by introducing context summarization compression.
+
+**Complexity:** Large
+
+**Dependencies:** M6, M14
+
+**Targets:**
+- Add token usage counters and alert triggers in config.
+- Implement conversational history summarizer inside `PromptBuilder` that automatically compresses chat blocks older than 15 turns into a single summary block.
+- Calculate and expose exact token costs based on model-specific input/output prices.
+
+**Acceptance Criteria:**
+- Chats extending to 50+ messages maintain low token footprints via summary roll-ups.
+- Token cost tracking maps to telemetry dashboard metrics.
+
+---
+
+### [Planned] Milestone 21: Web Search Grounding
+
+**Objective:** Fallback to live web search results when the local database does not contain relevant context chunks.
+
+**Complexity:** Large
+
+**Dependencies:** M5, M6
+
+**Targets:**
+- Build abstract WebSearchProvider port and concrete Tavily/Brave Search API adapters.
+- Implement context score evaluation inside `HybridSearchService`. If similarity scores fall below a configurable threshold (e.g. < 0.65), trigger live web lookup.
+- Parse, chunk, and embed temporary web search context fragments to compile into the LLM prompt.
+
+**Acceptance Criteria:**
+- Queries on topics not present in local documents trigger web search.
+- LLM references the web search chunks using standard citation guidelines.
 
 ---
 

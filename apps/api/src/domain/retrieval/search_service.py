@@ -16,6 +16,7 @@ from src.domain.abstractions.retrieval import (
     SearchResponse,
     SearchResult,
     VectorSearchProvider,
+    SemanticCacheProvider,
 )
 
 
@@ -28,11 +29,13 @@ class HybridSearchService:
         keyword_search: KeywordSearchProvider,
         embedder: EmbeddingProvider,
         reranker: RerankerProvider,
+        cache_provider: SemanticCacheProvider = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
         self.embedder = embedder
         self.reranker = reranker
+        self.cache_provider = cache_provider
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
@@ -41,12 +44,30 @@ class HybridSearchService:
         # 1. Generate query embedding
         query_embedding = await self.embedder.embed_text(query.query)
 
-        # 2. Fan-out: parallel dense + sparse searches
+        # 2. Check semantic cache table if cache provider is set
+        if self.cache_provider is not None:
+            try:
+                cached_results = await self.cache_provider.get_cached_search(query.tenant_id, query_embedding)
+                if cached_results is not None:
+                    return SearchResponse(
+                        query=query.query,
+                        results=cached_results,
+                        search_meta=SearchMeta(
+                            strategy="semantic_cache_hit",
+                            total_candidates=len(cached_results),
+                            returned_results=len(cached_results),
+                            duration_ms=0.0
+                        )
+                    )
+            except Exception:
+                pass
+
+        # 3. Fan-out: parallel dense + sparse searches
         vector_results, keyword_results = await self._fan_out_search(
             query, query_embedding
         )
 
-        # 3. Determine strategy and fuse results
+        # 4. Determine strategy and fuse results
         strategy = self._determine_strategy(
             query, vector_results, keyword_results
         )
@@ -54,17 +75,17 @@ class HybridSearchService:
             query, strategy, vector_results, keyword_results
         )
 
-        # 4. Optional reranking pass
+        # 5. Optional reranking pass
         if query.enable_reranking and fused:
             fused, strategy = await self._apply_reranking(
                 query, fused, strategy
             )
 
-        # 5. Trim to requested limit
+        # 6. Trim to requested limit
         final_results = fused[: query.top_k]
 
         elapsed_ms = (time.monotonic() - start_time) * 1000
-        return SearchResponse(
+        response = SearchResponse(
             query=query.query,
             results=final_results,
             search_meta=SearchMeta(
@@ -74,6 +95,20 @@ class HybridSearchService:
                 duration_ms=round(elapsed_ms, 2),
             ),
         )
+
+        # 7. Save results to semantic cache if cache provider is set
+        if self.cache_provider is not None:
+            try:
+                await self.cache_provider.cache_search(
+                    tenant_id=query.tenant_id,
+                    query_text=query.query,
+                    query_embedding=query_embedding,
+                    results=response.results
+                )
+            except Exception:
+                pass
+
+        return response
 
     async def _fan_out_search(
         self,

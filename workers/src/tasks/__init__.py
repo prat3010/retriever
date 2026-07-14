@@ -275,10 +275,21 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
         async with engine.begin() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
+            insert_params = []
             for chunk in chunks_to_insert:
                 chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
                 chunk_meta.update(extracted_metadata)
+                insert_params.append({
+                    "chunk_id": chunk["chunk_id"],
+                    "document_id": chunk["document_id"],
+                    "tenant_id": chunk["tenant_id"],
+                    "content": chunk["content"],
+                    "token_count": chunk["token_count"],
+                    "chunk_index": chunk["chunk_index"],
+                    "meta_data": json.dumps(chunk_meta),
+                })
                 
+            if insert_params:
                 await conn.execute(
                     sa.text(
                         """
@@ -289,15 +300,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                                 :token_count, :chunk_index, CAST(:meta_data AS jsonb), NOW())
                         """
                     ),
-                    {
-                        "chunk_id": chunk["chunk_id"],
-                        "document_id": chunk["document_id"],
-                        "tenant_id": chunk["tenant_id"],
-                        "content": chunk["content"],
-                        "token_count": chunk["token_count"],
-                        "chunk_index": chunk["chunk_index"],
-                        "meta_data": json.dumps(chunk_meta),
-                    },
+                    insert_params,
                 )
 
             await conn.execute(

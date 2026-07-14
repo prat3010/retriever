@@ -40,6 +40,7 @@ from src.adapters.database.inference_repository import (
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
 )
+from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.storage.local_storage import LocalStorage
@@ -57,7 +58,7 @@ from src.domain.abstractions.exceptions import (
 )
 from src.domain.abstractions.inference import PromptTemplate
 from src.domain.abstractions.ingestion import Document
-from src.domain.abstractions.retrieval import SearchQuery
+from src.domain.abstractions.retrieval import SearchQuery, SearchResponse, SearchResult, SearchMeta
 from src.domain.abstractions.tenant import Tenant
 from src.domain.config.config_service import ConfigurationService
 from src.domain.inference.citation_validator import CitationValidator
@@ -110,6 +111,15 @@ def _format_citations(text: str, context_chunks: list[Any], template: str) -> st
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import logging
+    logger = logging.getLogger("api")
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("Eagerly warmed up database connection pool.")
+    except Exception as e:
+        logger.error(f"Failed to warm up database connection pool: {e}")
+
     if settings.SENTRY_DSN:
         import sentry_sdk
         from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -189,6 +199,7 @@ search_service = HybridSearchService(
         base_url=settings.OPENAI_BASE_URL,
     ),
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
+    cache_provider=PgSemanticCacheAdapter(),
 )
 
 # Initialize inference service
@@ -1274,40 +1285,46 @@ async def send_chat_message(
     from fastapi.responses import StreamingResponse
 
     async def event_stream():
+        import logging
+        logger = logging.getLogger("api")
         buffer = ""
-        async for event in inference_orchestrator.generate_stream(
-            tenant_id=tenantId,
-            session_id=sessionId,
-            query=payload.query,
-            context_chunks=search_response.results,
-            tenant_config=tenant_config,
-            user_id=user_id,
-        ):
-            import json
-            if event.get("event") == "token":
-                delta = event.get("delta", "")
-                buffer += delta
-                
-                # Format complete matches in the buffer
-                buffer = _format_citations(buffer, search_response.results, citation_template)
-                
-                # Look for safe yield boundary to handle split brackets
-                last_bracket = buffer.rfind("[")
-                if last_bracket != -1 and ("source".startswith(buffer[last_bracket+1:last_bracket+8].lower()) or len(buffer) - last_bracket < 50):
-                    safe_to_yield = buffer[:last_bracket]
-                    buffer = buffer[last_bracket:]
+        try:
+            async for event in inference_orchestrator.generate_stream(
+                tenant_id=tenantId,
+                session_id=sessionId,
+                query=payload.query,
+                context_chunks=search_response.results,
+                tenant_config=tenant_config,
+                user_id=user_id,
+            ):
+                import json
+                if event.get("event") == "token":
+                    delta = event.get("delta", "")
+                    buffer += delta
+                    
+                    # Format complete matches in the buffer
+                    buffer = _format_citations(buffer, search_response.results, citation_template)
+                    
+                    # Look for safe yield boundary to handle split brackets
+                    last_bracket = buffer.rfind("[")
+                    if last_bracket != -1 and ("source".startswith(buffer[last_bracket+1:last_bracket+8].lower()) or len(buffer) - last_bracket < 50):
+                        safe_to_yield = buffer[:last_bracket]
+                        buffer = buffer[last_bracket:]
+                    else:
+                        safe_to_yield = buffer
+                        buffer = ""
+                    
+                    if safe_to_yield:
+                        event["delta"] = safe_to_yield
+                        yield f"data: {json.dumps(event)}\n\n"
                 else:
-                    safe_to_yield = buffer
-                    buffer = ""
-                
-                if safe_to_yield:
-                    event["delta"] = safe_to_yield
+                    if buffer and event.get("event") == "done":
+                        yield f"data: {json.dumps({'event': 'token', 'delta': buffer})}\n\n"
+                        buffer = ""
                     yield f"data: {json.dumps(event)}\n\n"
-            else:
-                if buffer and event.get("event") == "done":
-                    yield f"data: {json.dumps({'event': 'token', 'delta': buffer})}\n\n"
-                    buffer = ""
-                yield f"data: {json.dumps(event)}\n\n"
+        except asyncio.CancelledError:
+            logger.info(f"SSE client disconnected for session {sessionId} on tenant {tenantId}.")
+            raise
 
     return StreamingResponse(
         event_stream(),

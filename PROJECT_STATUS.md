@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 14: Performance & Scale (Planned)
-- **Last Completed Milestone**: Milestone 13: Multi-Industry Configurability
-- **Build Status**: Passing (137/137 unit tests pass)
+- **Current Milestone**: Milestone 15: Enterprise Readiness (Planned)
+- **Last Completed Milestone**: Milestone 14: Performance & Scale
+- **Build Status**: Passing (140/140 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: M14 (Performance & Scale)
+- **Next Recommended Milestone**: M15 (Enterprise Readiness)
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 17 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), and custom splitting/metadata/guardrails pipelines (Milestone 13).
+- **Unit Test Coverage**: 18 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), custom pipelines (Milestone 13), and semantic caching / worker batching (Milestone 14).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 137/137 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13).
+- **Total Tests**: 140/140 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13 + 3 caching/performance tests in Milestone 14).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -142,6 +142,22 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 7. Outstanding Blockers & Issues
+## 7. M14 Performance & Scale — Completed
+
+### Decoupled Semantic Query Cache
+- Implemented pure domain port `SemanticCacheProvider` in [retrieval.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/domain/abstractions/retrieval.py) and concrete database adapter `PgSemanticCacheAdapter` in [semantic_cache.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/database/semantic_cache.py) to preserve Hexagonal Architecture import constraints.
+- Declared the HNSW vector-indexed, RLS-active `semantic_cache` database table mapping.
+- Intercepted query embedding paths in `HybridSearchService` to returnCached results immediately on similarity threshold hits ($> 0.99$ cosine similarity).
+
+### Batched Transactions
+- Refactored chunk database inserts in background celery tasks in [__init__.py](file:///Users/prateeksharma/Developer/retriever/workers/src/tasks/__init__.py) to use batched parameter bindings, executing multi-inserts in single bulk operations.
+
+### API Lifespan Warmup & Streaming Controls
+- Warmed up async connection pool engines eagerly during FastAPI startup lifespan blocks in [main.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/main.py).
+- Intercepted `asyncio.CancelledError` inside event stream generation blocks to immediately release and release thread handles when client SSE connections disconnect.
+
+---
+
+## 8. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

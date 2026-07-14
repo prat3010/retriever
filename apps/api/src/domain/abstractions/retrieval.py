@@ -107,3 +107,27 @@ class RerankerProvider(ABC):
     ) -> list[SearchResult]:
         """Re-score and filter candidates using a cross-encoder model."""
         pass
+
+
+class SemanticCacheProvider(ABC):
+    """Port for query semantic cache store."""
+
+    @abstractmethod
+    async def get_cached_search(
+        self,
+        tenant_id: str,
+        query_embedding: list[float],
+    ) -> list[SearchResult] | None:
+        """Retrieve cached search results matching query embedding similarity."""
+        pass
+
+    @abstractmethod
+    async def cache_search(
+        self,
+        tenant_id: str,
+        query_text: str,
+        query_embedding: list[float],
+        results: list[SearchResult],
+    ) -> None:
+        """Cache search results matching query embedding."""
+        pass

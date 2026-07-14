@@ -21,7 +21,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | **Completed** | Q1 2027 |
 | **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** | Q2 2027 |
 | **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** | Q2 2027 |
-| **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | *Planned* | Q3 2027 |
+| **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | **Completed** | Q3 2027 |
 | **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | *Planned* | Q3 2027 |
 
 ---
@@ -240,7 +240,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 14: Performance & Scale
+### [Completed] Milestone 14: Performance & Scale
 
 **Objective:** Optimize for production traffic. Measure, find bottlenecks, fix them, verify with benchmarks.
 
@@ -253,19 +253,19 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Expected Outcome:** The platform handles 200 concurrent search requests under 150ms latency budget.
 
 **Targets:**
-- HNSW index tuning: benchmark `m` and `ef_construction` parameters for optimal recall/latency tradeoff.
-- Semantic query result cache: cache vector search results for semantically identical queries (cosine similarity > 0.99).
-- Connection pool sizing benchmarks and auto-tuning.
-- Chunk-level batch operations for bulk document ingest (reduce per-chunk transaction overhead).
-- SSE connection lifecycle management: handle client disconnect cleanup, backpressure on slow consumers.
-- Memory profiling under concurrent load: identify leaks in streaming responses, connection pools, async task accumulation.
-- Cold-start optimization: lazy adapter initialization, connection pooling warmup on boot.
-- Token budget compression benchmarks: measure latency savings vs quality impact of aggressive compression.
+- ✅ HNSW index tuning: benchmark `m` and `ef_construction` parameters for optimal recall/latency tradeoff.
+- ✅ Semantic query result cache: cache vector search results for semantically identical queries (cosine similarity > 0.99).
+- ✅ Connection pool sizing benchmarks and auto-tuning.
+- ✅ Chunk-level batch operations for bulk document ingest (reduce per-chunk transaction overhead).
+- ✅ SSE connection lifecycle management: handle client disconnect cleanup, backpressure on slow consumers.
+- ✅ Memory profiling under concurrent load: identify leaks in streaming responses, connection pools, async task accumulation.
+- ✅ Cold-start optimization: lazy adapter initialization, connection pooling warmup on boot.
+- ✅ Token budget compression benchmarks: measure latency savings vs quality impact of aggressive compression.
 
 **Acceptance Criteria:**
-- k6 benchmark: p95 latency < 150ms for search at 200 concurrent connections.
-- SSE streaming starts first token within 500ms (per latency budget).
-- Bulk ingest of 1000 documents completes without OOM or connection pool exhaustion.
+- ✅ k6 benchmark: p95 latency < 150ms for search at 200 concurrent connections.
+- ✅ SSE streaming starts first token within 500ms (per latency budget).
+- ✅ Bulk ingest of 1000 documents completes without OOM or connection pool exhaustion.
 
 ---
 

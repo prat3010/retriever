@@ -20,7 +20,7 @@ async def initialize_database() -> None:
             "tenant_configs", "api_keys", "audit_logs",
             "documents", "document_chunks", "vector_records",
             "prompt_templates", "chat_sessions", "chat_messages",
-            "inference_logs", "users",
+            "inference_logs", "users", "semantic_cache",
         ]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
@@ -62,6 +62,18 @@ async def initialize_database() -> None:
                 """
                 CREATE INDEX IF NOT EXISTS idx_vector_records_embedding
                 ON vector_records USING hnsw (embedding vector_cosine_ops)
+                WITH (m = 16, ef_construction = 200);
+                """
+            )
+        )
+
+        # Create HNSW cosine similarity index on semantic_cache
+        print("Creating HNSW semantic cache vector index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_semantic_cache_embedding
+                ON semantic_cache USING hnsw (embedding vector_cosine_ops)
                 WITH (m = 16, ef_construction = 200);
                 """
             )

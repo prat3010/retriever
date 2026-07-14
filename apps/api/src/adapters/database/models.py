@@ -320,3 +320,20 @@ class InferenceLogDb(Base):
     output_tokens = Column(Integer, nullable=False, default=0)
     latency_ms = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class SemanticCacheDb(Base):
+    __tablename__ = "semantic_cache"
+
+    cache_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    query_text = Column(Text, nullable=False)
+    embedding = Column(Vector(1536), nullable=False)
+    search_results = Column(JSONB, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    expires_at = Column(DateTime(timezone=True), nullable=False)

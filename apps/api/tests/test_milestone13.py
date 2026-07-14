@@ -303,6 +303,7 @@ async def test_worker_task_with_recursive_chunking_and_metadata_extractor(mock_c
     assert len(db_insert_calls) >= 1
     
     # Check that metadata was updated with the regex match result
-    meta = json.loads(db_insert_calls[0]["meta_data"])
+    # We access the first dictionary in the list of parameters passed to the bulk executor
+    meta = json.loads(db_insert_calls[0][0]["meta_data"])
     assert meta["strategy"] == "recursive"
     assert meta["agreement_date"] == "2026-07-14"

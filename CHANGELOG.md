@@ -2,6 +2,13 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-07-14
+### Added
+- **Hexagonal Semantic Cache**: Created abstract cache provider ports in domain layer and PgSemanticCacheAdapter database repository adapter in infrastructure layer.
+- **SQL Batch Writes**: Rewrote background worker ingestion tasks to insert document chunks utilizing database parameter list bindings.
+- **Eager Database Warmup**: Implemented eager SELECT 1 connections warmup during FastAPI startup.
+- **SSE Connection Disconnect Cleanup**: Handled asyncio client cancellations within streaming loops to immediately release open thread handles.
+
 ## [0.8.0] - 2026-07-14
 ### Added
 - **Multi-Strategy Text Splitters**: Integrated recursive character sliding splits and semantic topic-aware sentence chunking.

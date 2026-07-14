@@ -8,10 +8,10 @@ Operational overview of the Retriever platform's current engineering status.
 
 - **Current Milestone**: Milestone 10: Admin Dashboard
 - **Last Completed Milestone**: Milestone 9: Client Hierarchy & Admin API
-- **Build Status**: Passing (94/94 unit tests pass)
-- **Admin Dashboard Build**: Passing (all pages compile)
+- **Build Status**: Passing (111/111 unit tests pass)
+- **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
-- **Next Recommended Milestone**: M10 enhancements or M11 (Client SDK)
+- **Next Recommended Milestone**: M11 (Client SDK)
 
 ---
 
@@ -26,9 +26,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 13 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, and admin API.
-- **Admin API Tests**: 16 tests covering all 11 admin endpoints (tenants, users, API keys, config).
-- **Total Tests**: 94/94 passing tests.
+- **Unit Test Coverage**: 14 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, and admin API.
+- **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
+- **Total Tests**: 111/111 passing tests.
 
 ### Documentation Health: **Green**
 - **Blueprints**: Master Architecture, Core specifications, System Design outlines, and Admin Dashboard guide are complete.
@@ -38,33 +38,47 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 3. M10 Admin Dashboard — Current State
+## 3. M10 Admin Dashboard — Completed
 
-### Pages (6 routes)
+### Pages (9 routes)
 | Route | Description |
 |---|---|
 | `/login` | Admin master key authentication |
 | `/` | Dashboard home with stats overview |
 | `/onboard` | 3-step client onboarding wizard |
-| `/tenants` | Tenant list with deactivate |
-| `/tenants/[id]` | Tenant detail (4 tabs: overview, users, API keys, config) |
+| `/tenants` | Tenant list with search + pagination |
+| `/tenants/[id]` | Tenant detail (7 tabs: overview, documents, users, API keys, prompts, sandbox, config) |
 | `/tenants/[id]/playground` | API endpoint test console |
+| `/settings` | Global config editor (AI, embedding, retrieval, rate limits) |
+| `/audit-log` | Audit trail viewer with tenant/action filters |
 
-### Infrastructure
-- Tailwind v4 + shadcn/ui (13 components)
+### Backend
+- Admin-scoped documents list endpoint
+- Prompt templates CRUD + preview (no LLM call)
+- Paginated tenant list (`search`, `limit`, `offset` → `{items, total}`)
+- Audit log repository + list endpoint + write hooks at key mutation points
+- `bypass_rls` parameter on `PromptTemplateRegistry` (consistent with admin pattern)
+- `httpx` → `httpx2` migration (Starlette deprecation fix)
+
+### Frontend
+- Tailwind v4 + shadcn/ui (17 components)
 - TanStack Query with caching + mutations
-- Zustand auth store (sessionStorage)
-- Middleware auth guard
-- Error boundary wrapper
-- sonner toast notifications
+- Zustand auth store (sessionStorage) + cookie middleware
+- Theme toggle (dark/light, next-themes)
+- ErrorBoundary wrapper + sonner toast + date formatters
+- Topbar accepts action button children
+
+### Tabs (tenant detail)
+- Overview, Documents, Users, API Keys, Prompts, Sandbox (RAG chat), Config
 
 ### Reference Client
 - Standalone Next.js app at `apps/client-reference/`
-- Demonstrates `X-API-Key` + `X-User-ID` integration pattern
+- `RetrieverClient` class — listDocuments, search, chat (SSE), uploadDocument
 - Tabs: Config, Chat (SSE streaming), Search, Documents
 
-### Outstanding
-See `TECH_DEBT.md` and `ROADMAP.md` for planned enhancements.
+### Quality
+- 111/111 API tests passing (was 94)
+- Ruff clean, web build clean
 
 ---
 

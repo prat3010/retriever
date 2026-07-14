@@ -1,0 +1,10 @@
+name = "retriever-client-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-05-29"
+
+[vars]
+# Point to your live Retriever API (e.g. https://api.yourdomain.com)
+RETRIEVER_API_URL = "http://localhost:8000"
+
+# [vars] settings for development. 
+# Secrets should be uploaded via: wrangler secret put RETRIEVER_API_KEY

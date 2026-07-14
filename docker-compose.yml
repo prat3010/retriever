@@ -51,8 +51,8 @@ services:
   # FastAPI Web Serving API (ADR-003)
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: retriever-api
     ports:
       - "8000:8000"

@@ -20,11 +20,15 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin/:$PATH"
 
 # Copy package locks and install requirements
-COPY pyproject.toml ./
+COPY apps/api/pyproject.toml ./pyproject.toml
 RUN uv pip compile pyproject.toml -o requirements.txt && uv pip install --system -r requirements.txt
 
 # Copy application source
-COPY src/ ./src/
+COPY apps/api/src/ ./src/
+
+# Copy shared processing-core package
+COPY packages/processing-core /app/packages/processing-core
+ENV PYTHONPATH="/app/packages/processing-core/src:${PYTHONPATH}"
 
 EXPOSE 8000
 

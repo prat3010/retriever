@@ -73,6 +73,7 @@ class InferenceOrchestrator:
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
+        system_prompt_name: str = "default",
     ) -> InferenceResponse:
         """Execute a complete non-streaming inference pipeline.
 
@@ -102,7 +103,7 @@ class InferenceOrchestrator:
             history=history,
             context_chunks=chunks_dict,
             max_tokens=tenant_config.retrieval_settings.top_k * 500 or 4096,
-            system_prompt_name="default",
+            system_prompt_name=system_prompt_name,
         )
 
         request = InferenceRequest(
@@ -159,6 +160,7 @@ class InferenceOrchestrator:
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
+        system_prompt_name: str = "default",
     ) -> AsyncIterator[dict]:
         """Execute streaming inference, yielding token delta events.
 
@@ -187,7 +189,7 @@ class InferenceOrchestrator:
             history=history,
             context_chunks=chunks_dict,
             max_tokens=tenant_config.retrieval_settings.top_k * 500 or 4096,
-            system_prompt_name="default",
+            system_prompt_name=system_prompt_name,
         )
 
         request = InferenceRequest(

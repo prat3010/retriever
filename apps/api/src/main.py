@@ -1140,6 +1140,7 @@ class CreateSessionResponse(BaseModel):
 class ChatMessageRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=4000)
     stream: bool = True
+    system_prompt_name: str = "default"
 
 
 @app.post(
@@ -1273,6 +1274,7 @@ async def send_chat_message(
             context_chunks=search_response.results,
             tenant_config=tenant_config,
             user_id=user_id,
+            system_prompt_name=payload.system_prompt_name,
         )
         formatted_content = _format_citations(response.content, search_response.results, citation_template)
         return {
@@ -1296,6 +1298,7 @@ async def send_chat_message(
                 context_chunks=search_response.results,
                 tenant_config=tenant_config,
                 user_id=user_id,
+                system_prompt_name=payload.system_prompt_name,
             ):
                 import json
                 if event.get("event") == "token":

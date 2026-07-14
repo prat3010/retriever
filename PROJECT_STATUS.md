@@ -178,6 +178,24 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 9. Outstanding Blockers & Issues
+## 9. Frontend Preparation Sprint — Completed
+
+### Secure Client-Side Gateway (Cloudflare Worker Proxy)
+- Created a deployable Cloudflare Worker package (`packages/client-proxy-worker`) to proxy client requests securely.
+- Injects sensitive `X-API-Key` from Cloudflare secrets and routes queries dynamically based on decoded JWT claims (mapping `sub` -> `X-User-ID` and `tenant_id` context).
+- Natively supports CORS preflights and streaming responses (SSE).
+
+### Dynamic Custom Prompt Profiles
+- Updated `ChatMessageRequest` API schema and `InferenceOrchestrator` flow (`main.py` + `orchestrator.py`) to support `system_prompt_name`.
+- Allows client frontends to dynamically swap system prompt profiles (e.g. `default` vs. `exam_mode`) at request time.
+
+### Documentation & Guides
+- Wrote `docs/frontend-kickstart/client-proxy-guide.md` covering key security, deployment setup, and client-side streaming code examples (with RAG UX best practices).
+- Created `docs/frontend-kickstart/agent-startup-prompt.md` to bootstrap any new frontend developer agent environment.
+- Regenerated the main OpenAPI spec `docs/openapi.json` to include the updated schema fields.
+
+---
+
+## 10. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

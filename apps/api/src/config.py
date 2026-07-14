@@ -50,5 +50,10 @@ class Settings(BaseSettings):
     # Error Tracking
     SENTRY_DSN: str = ""
 
+    # OIDC Settings
+    OIDC_ISSUER_URL: str = ""
+    OIDC_JWKS_URI: str = ""
+    OIDC_AUDIENCE: str = ""
+
 
 settings = Settings()

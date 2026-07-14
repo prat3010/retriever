@@ -119,6 +119,8 @@ class AuditLogDb(Base):
     action = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     details = Column(Text, nullable=True)
+    entry_hash = Column(String(64), nullable=True)
+    previous_hash = Column(String(64), nullable=True)
 
 
 class ConfigurationDb(Base):

@@ -537,3 +537,58 @@ def reconcile_stalled() -> None:
 def warm_caches() -> None:
     """Periodic cache warming — placeholder for Redis pre-heat logic."""
     pass
+
+
+@celery_app.task(base=DatabaseTask)
+def cleanup_expired_data() -> None:
+    """Scan all tenants, read data retention TTLs, and delete expired documents and chat sessions."""
+    engine = get_engine()
+
+    async def _run():
+        async with engine.begin() as conn:
+            # Bypass RLS to perform system-wide maintenance
+            await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
+            
+            # Fetch all configurations
+            res = await conn.execute(
+                sa.text("SELECT tenant_id, config_data FROM configurations WHERE tenant_id IS NOT NULL")
+            )
+            rows = res.fetchall()
+            
+            for row in rows:
+                tenant_id, config_data_raw = row
+                if not config_data_raw:
+                    continue
+                try:
+                    config = json.loads(config_data_raw) if isinstance(config_data_raw, str) else config_data_raw
+                    security = config.get("security_settings", {})
+                    ttl_days = security.get("data_retention_ttl_days")
+                    
+                    if ttl_days is not None and int(ttl_days) > 0:
+                        # 1. Delete documents older than TTL
+                        await conn.execute(
+                            sa.text(
+                                """
+                                DELETE FROM documents 
+                                WHERE tenant_id = :tenant_id 
+                                AND created_at < NOW() - CAST(:ttl_interval AS interval)
+                                """
+                            ),
+                            {"tenant_id": tenant_id, "ttl_interval": f"{ttl_days} days"}
+                        )
+                        
+                        # 2. Delete chat sessions older than TTL
+                        await conn.execute(
+                            sa.text(
+                                """
+                                DELETE FROM chat_sessions 
+                                WHERE tenant_id = :tenant_id 
+                                AND updated_at < NOW() - CAST(:ttl_interval AS interval)
+                                """
+                            ),
+                            {"tenant_id": tenant_id, "ttl_interval": f"{ttl_days} days"}
+                        )
+                except Exception as e:
+                    print(f"Error purging expired data for tenant {tenant_id}: {str(e)}")
+                    
+    asyncio.run(_run())

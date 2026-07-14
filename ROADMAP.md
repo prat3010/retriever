@@ -22,7 +22,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** | Q2 2027 |
 | **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** | Q2 2027 |
 | **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | **Completed** | Q3 2027 |
-| **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | *Planned* | Q3 2027 |
+| **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | **Completed** | Q3 2027 |
 
 ---
 
@@ -269,7 +269,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 15: Enterprise Readiness
+### [Completed] Milestone 15: Enterprise Readiness
 
 **Objective:** Meet enterprise compliance, security, and operational requirements. SOC 2 alignment, SSO, RBAC expansion, data lifecycle management.
 
@@ -282,19 +282,19 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Expected Outcome:** The platform can be deployed in regulated environments with documented compliance posture.
 
 **Targets:**
-- SSO/OIDC integration: support external identity providers for admin dashboard login.
-- Role-based access expansion: read-only API keys, scope granularity (per-document-type, per-collection).
-- Data retention policies per tenant: auto-expire documents, sessions, inference logs based on configurable TTL.
-- Backup/restore procedures documented and tested: PostgreSQL dump/restore, Redis RDB snapshots, vector index rebuild from chunks.
-- Immutable audit trail: audit logs are append-only with cryptographic chain (hash-linked entries).
-- Encryption at rest verification: document storage encryption, database encryption.
-- Rate limit enforcement at tenant level (not just global).
+- ✅ SSO/OIDC integration: support external identity providers for admin dashboard login.
+- ✅ Role-based access expansion: read-only API keys, scope granularity (per-document-type, per-collection).
+- ✅ Data retention policies per tenant: auto-expire documents, sessions, inference logs based on configurable TTL.
+- ✅ Backup/restore procedures documented and tested: PostgreSQL dump/restore, Redis RDB snapshots, vector index rebuild from chunks.
+- ✅ Immutable audit trail: audit logs are append-only with cryptographic chain (hash-linked entries).
+- ✅ Encryption at rest verification: document storage encryption, database encryption.
+- ✅ Rate limit enforcement at tenant level (not just global).
 
 **Acceptance Criteria:**
-- SOC 2 evidence package can be generated from audit logs and deployment documentation.
-- SSO integration with at least one provider (Okta, Auth0, or Azure AD).
-- Backup/restore drill completes with zero data loss.
-- Data retention enforcement verified: expired documents are auto-deleted.
+- ✅ SOC 2 evidence package can be generated from audit logs and deployment documentation.
+- ✅ SSO integration with at least one provider (Okta, Auth0, or Azure AD).
+- ✅ Backup/restore drill completes with zero data loss.
+- ✅ Data retention enforcement verified: expired documents are auto-deleted.
 
 ---
 

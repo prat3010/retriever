@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 15: Enterprise Readiness (Planned)
-- **Last Completed Milestone**: Milestone 14: Performance & Scale
-- **Build Status**: Passing (140/140 unit tests pass)
+- **Current Milestone**: Milestone 15: Enterprise Readiness (Completed)
+- **Last Completed Milestone**: Milestone 15: Enterprise Readiness
+- **Build Status**: Passing (144/144 unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: M15 (Enterprise Readiness)
+- **Next Recommended Milestone**: None (All planned roadmap milestones completed)
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 18 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), custom pipelines (Milestone 13), and semantic caching / worker batching (Milestone 14).
+- **Unit Test Coverage**: 19 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), custom pipelines (Milestone 13), semantic caching / worker batching (Milestone 14), and enterprise cryptographic audit chains / data retention schedulers (Milestone 15).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 140/140 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13 + 3 caching/performance tests in Milestone 14).
+- **Total Tests**: 144/144 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13 + 3 caching/performance tests in Milestone 14 + 4 compliance/auth/retention tests in Milestone 15).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -158,6 +158,26 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 8. Outstanding Blockers & Issues
+## 8. M15 Enterprise Readiness — Completed
+
+### Cryptographic Append-Only Audit Logs
+- Extended `AuditLogDb` schema mapping in [models.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/database/models.py) to incorporate cryptographic headers (`entry_hash` and `previous_hash`).
+- Upgraded `SqlAuditLogRepository` to calculate SHA-256 blocks for incoming logs based on prior entry hashes, creating a tamper-evident audit history chain.
+- Added `verify_audit_chain` utility to trace and verify block chain validation.
+
+### OIDC Token Signatures Verification
+- Implemented RSA signature verification, issuer, and audience validation in [security.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/api/security.py) using `pyjwt`.
+- Leveraged external provider OIDC JWKS public key directories with local async fetching and caching to avoid round-trip signature check bottlenecks.
+
+### Tenant Data Retention Scheduler
+- Added `data_retention_ttl_days` schema bounds to SecuritySettings.
+- Implemented periodic Celery cleanup worker in [__init__.py](file:///Users/prateeksharma/Developer/retriever/workers/src/tasks/__init__.py) executing system-wide database cleanses on expired documents (with cascade deletes to vector fragments) and idle chat history.
+
+### Granular Scope Validation
+- Extended `verify_scopes` middleware checks to analyze request parameters (such as path extensions or body filters), validating collection-scoped (`collection:<name>:read`) and file-typed (`document_type:<ext>:write`) rules.
+
+---
+
+## 9. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

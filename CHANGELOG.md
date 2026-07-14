@@ -2,6 +2,13 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-07-14
+### Added
+- **Cryptographic Immutable Audit Logs**: Configured hash-linked append-only chains to ensure SOC 2 database logs protection.
+- **OIDC/SSO Validation Layer**: Supported external token validation (RSA signature checking with cached JWKS public keys).
+- **Tenant Data Retention Sweeper**: Implemented Celery scheduler to automatically purge expired documents and chat histories.
+- **Granular Collection RBAC Scopes**: Supported resource-bound scopes (`collection:<name>:read`, `document_type:<ext>:write`) in endpoints security dependencies.
+
 ## [0.9.0] - 2026-07-14
 ### Added
 - **Hexagonal Semantic Cache**: Created abstract cache provider ports in domain layer and PgSemanticCacheAdapter database repository adapter in infrastructure layer.

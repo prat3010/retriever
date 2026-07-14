@@ -42,6 +42,7 @@ class RetrievalSettings(BaseModel):
 class SecuritySettings(BaseModel):
     enable_rls: bool = True
     api_key_expiration_days: int = 90
+    data_retention_ttl_days: int | None = None
 
 
 class RateLimits(BaseModel):

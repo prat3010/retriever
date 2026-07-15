@@ -66,7 +66,7 @@ class S3Storage(DocumentStorage):
 
         await asyncio.to_thread(_delete)
 
-    def generate_presigned_url(self, storage_path: str, expires_in: int = 900) -> str:
+    async def generate_presigned_url(self, storage_path: str, expiry_seconds: int = 300) -> str:
         """Generate a pre-signed GET URL for document download."""
         if not storage_path.startswith("s3://"):
             raise ValueError("Storage path must be an S3 URI starting with s3://")
@@ -78,8 +78,11 @@ class S3Storage(DocumentStorage):
         bucket = path_parts[0]
         key = path_parts[1]
 
-        return self.client.generate_presigned_url(
-            ClientMethod="get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=expires_in,
-        )
+        def _presign() -> str:
+            return self.client.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={"Bucket": bucket, "Key": key},
+                ExpiresIn=expiry_seconds,
+            )
+
+        return await asyncio.to_thread(_presign)

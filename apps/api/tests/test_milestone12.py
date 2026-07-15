@@ -82,7 +82,7 @@ async def test_s3_storage_operations(mock_session_cls):
 
     # Test Presigned URL
     mock_client.generate_presigned_url.return_value = "http://presigned-link.com/download"
-    url = storage.generate_presigned_url(path, expires_in=300)
+    url = await storage.generate_presigned_url(path, expiry_seconds=300)
     assert url == "http://presigned-link.com/download"
     mock_client.generate_presigned_url.assert_called_once_with(
         ClientMethod="get_object",

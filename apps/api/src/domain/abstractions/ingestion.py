@@ -76,6 +76,12 @@ class DocumentStorage(ABC):
         """Remove file from storage medium."""
         pass
 
+    @abstractmethod
+    async def generate_presigned_url(self, storage_path: str, expiry_seconds: int = 300) -> str:
+        """Generate a temporary, secure, signed URL for downloading a file."""
+        pass
+
+
 
 class DocumentParser(ABC):
     @abstractmethod

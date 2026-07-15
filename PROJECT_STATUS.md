@@ -210,6 +210,31 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 11. Outstanding Blockers & Issues
+## 11. M16 User Feedback & Quality Loops — Completed
+
+### Relational Feedback Tracking
+- Implemented `chat_message_feedback` database schema with ForeignKey constraints mapping to messages and tenants (supporting cascade delete).
+- Enabled Row-Level Security (RLS) automatically during setup to guarantee B2B client isolation.
+
+### Feedback Repository & REST API
+- Created `SqlFeedbackRepository` adapter compiling thumbs up/down count ratios and tracking recent comments.
+- Added client route `POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages/{messageId}/feedback` and admin route `GET /v1/admin/tenants/{tenantId}/feedback/analytics`.
+
+---
+
+## 12. M17 Secure Document Distribution — Completed
+
+### Presigned URL Abstraction
+- Declared `generate_presigned_url` abstract method on the `DocumentStorage` interface.
+- Updated `S3Storage` adapter to generate expiring AWS S3/MinIO/Cloudflare R2 links.
+- Implemented temporary HMAC-SHA256 signature generation and validation inside the `LocalStorage` adapter to test expiring downloads locally.
+
+### Document Distribution API
+- Added client route `GET /v1/tenants/{tenantId}/documents/{documentId}/download-url` to retrieve secure presigned download paths.
+- Added verification endpoint `GET /v1/local-downloads/{tenantId}/{filename}` to securely validate HMAC tokens and serve files from the local filesystem during testing.
+
+---
+
+## 13. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

@@ -30,3 +30,20 @@ class LocalStorage(DocumentStorage):
                 os.remove(storage_path)
 
         await asyncio.to_thread(_delete)
+
+    async def generate_presigned_url(self, storage_path: str, expiry_seconds: int = 300) -> str:
+        """Generate a local temporary signed URL with HMAC verification."""
+        import hmac
+        import time
+        from hashlib import sha256
+
+        # Extract relative path to reconstruct target download file
+        relative_path = os.path.relpath(storage_path, self.storage_dir)
+        expires = int(time.time()) + expiry_seconds
+
+        # Cryptographic HMAC-SHA256 signature
+        secret_key = b"local-storage-presign-key"
+        msg = f"{relative_path}:{expires}".encode()
+        sig = hmac.new(secret_key, msg=msg, digestmod=sha256).hexdigest()
+
+        return f"/v1/local-downloads/{relative_path}?expires={expires}&signature={sig}"

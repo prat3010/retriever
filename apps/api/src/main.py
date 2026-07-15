@@ -1456,6 +1456,77 @@ async def get_tenant_feedback_analytics(tenantId: str) -> Any:
     return analytics
 
 
+@app.get(
+    "/v1/tenants/{tenantId}/documents/{documentId}/download-url",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def get_document_download_url(
+    tenantId: str,
+    documentId: str,
+    expiry: int = 300,
+) -> Any:
+    """Retrieve a temporary, secure presigned download URL for a document (Client scope)."""
+    # 1. Fetch document metadata
+    doc = await document_repository.get_document(tenantId, documentId)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    # 2. Generate presigned URL
+    try:
+        download_url = await local_storage.generate_presigned_url(doc.storage_path, expiry_seconds=expiry)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {str(e)}")
+
+    return {
+        "documentId": documentId,
+        "filename": doc.filename,
+        "downloadUrl": download_url,
+        "expiresInSeconds": expiry,
+    }
+
+
+@app.get(
+    "/v1/local-downloads/{tenantId}/{filename}",
+    status_code=status.HTTP_200_OK,
+)
+async def serve_local_download(
+    tenantId: str,
+    filename: str,
+    expires: int,
+    signature: str,
+) -> Any:
+    """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
+    import hmac
+    import time
+    from hashlib import sha256
+    from fastapi.responses import FileResponse
+    from src.adapters.storage.local_storage import LocalStorage
+
+    # 1. Check expiration
+    if int(time.time()) > expires:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This download link has expired.")
+
+    # 2. Verify signature
+    relative_path = f"{tenantId}/{filename}"
+    secret_key = b"local-storage-presign-key"
+    msg = f"{relative_path}:{expires}".encode()
+    expected_sig = hmac.new(secret_key, msg=msg, digestmod=sha256).hexdigest()
+
+    if not hmac.compare_digest(signature, expected_sig):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid signature.")
+
+    # 3. Serve file from local storage directory
+    if not isinstance(local_storage, LocalStorage):
+        raise HTTPException(status_code=500, detail="Local downloads are only supported in local storage mode.")
+
+    file_path = os.path.join(local_storage.storage_dir, tenantId, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk.")
+
+    return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+
+
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "Retriever Core Platform API. Visit /docs for Swagger UI."}

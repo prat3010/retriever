@@ -17,7 +17,18 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
         if limiter is None:
             return  # Rate limiting disabled
 
-        key = f"rate_limit:{tenantId or 'anonymous'}:{scope}"
+        t_id = tenantId
+        if not t_id:
+            auth_header = request.headers.get("Authorization")
+            if auth_header:
+                try:
+                    from src.adapters.api.security import get_current_user
+                    user_context = await get_current_user(token=auth_header)
+                    t_id = user_context.tenant_id
+                except Exception:
+                    pass
+
+        key = f"rate_limit:{t_id or 'anonymous'}:{scope}"
         result = await limiter.acquire(key)
 
         # Set rate limit headers in the response if available

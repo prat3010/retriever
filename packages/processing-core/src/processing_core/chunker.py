@@ -170,6 +170,23 @@ async def chunk_semantic(
     if not sentences:
         return []
 
+    # Preprocess sentences: if any sentence exceeds chunk_size, split it recursively
+    final_sentences = []
+    for s in sentences:
+        if len(tokenize_text(s)) > chunk_size:
+            sub_chunks = chunk_recursive(
+                text=s,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
+            for sc in sub_chunks:
+                final_sentences.append(sc["content"])
+        else:
+            final_sentences.append(s)
+    sentences = final_sentences
+
     # Batch embed all sentences to prevent redundant API queries
     embeddings = await embed_with_retry(embed_client, sentences, embed_model)
 

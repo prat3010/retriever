@@ -49,7 +49,7 @@ class SqlFeedbackRepository(FeedbackRepository):
                 )
                 session.add(row)
 
-            await session.commit()
+            await session.flush()
 
     async def get_feedback_analytics(self, tenant_id: str) -> dict[str, Any]:
         """Aggregate thumbs up/down count ratios, per-dimension scores, and recent comments."""

@@ -140,8 +140,9 @@ def test_list_messages_cursor(mock_get_messages_cursor, mock_get_session, mock_v
     """GET /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages returns cursor paginated chat history."""
     tenant_id = str(uuid.uuid4())
     session_id = str(uuid.uuid4())
+    user_uuid = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123",
+        user_id=user_uuid,
         tenant_id=tenant_id,
         roles=["integrator"],
         scopes=["document:read"],
@@ -163,7 +164,7 @@ def test_list_messages_cursor(mock_get_messages_cursor, mock_get_session, mock_v
         True
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_uuid}
     response = client.get(f"/v1/tenants/{tenant_id}/chat/sessions/{session_id}/messages?limit=10", headers=headers)
     assert response.status_code == 200
     body = response.json()

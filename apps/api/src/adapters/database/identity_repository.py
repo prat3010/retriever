@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.database.models import ApiKeyDb
+from src.adapters.database.models import ApiKeyDb, TenantDb
 from src.domain.abstractions.exceptions import AuthenticationError
 from src.domain.abstractions.identity import (
     ApiKeyMetadata,
@@ -30,14 +30,20 @@ class SqlIdentityProvider(IdentityProvider):
 
         # Query requires bypassing RLS since tenant is not yet resolved
         async with tenant_session(bypass_rls=True) as session:
-            stmt = select(ApiKeyDb).where(
-                ApiKeyDb.key_hash == key_hash, ApiKeyDb.status == "active"
+            stmt = (
+                select(ApiKeyDb)
+                .join(TenantDb, ApiKeyDb.tenant_id == TenantDb.tenant_id)
+                .where(
+                    ApiKeyDb.key_hash == key_hash,
+                    ApiKeyDb.status == "active",
+                    TenantDb.status == "active",
+                )
             )
             result = await session.execute(stmt)
             db_key = result.scalar_one_or_none()
 
             if not db_key:
-                raise AuthenticationError("Invalid or inactive API key token.")
+                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
 
             # Validate expiration timestamp
             if db_key.expires_at:

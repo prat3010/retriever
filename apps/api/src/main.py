@@ -1480,6 +1480,13 @@ async def send_chat_message(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
 
+    session_user_id = getattr(session, "user_id", None)
+    if session_user_id and isinstance(session_user_id, str) and session_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Forbidden: You do not own this chat session."
+        )
+
     tenant_config = await config_service.get_tenant_config(tenantId)
 
     experiment_id = None
@@ -1594,12 +1601,20 @@ async def list_session_messages(
     sessionId: str,
     limit: int = 50,
     cursor: str | None = None,
+    user_id: str | None = Depends(get_current_user_id),
 ) -> Any:
     """Retrieve message history for a chat session with cursor-based pagination."""
     # Verify session belongs to tenant
     session = await inference_orchestrator.get_session(sessionId, tenantId)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
+
+    session_user_id = getattr(session, "user_id", None)
+    if session_user_id and isinstance(session_user_id, str) and session_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Forbidden: You do not own this chat session."
+        )
 
     items, next_cursor, has_more = await session_repo.get_messages_cursor(
         tenant_id=tenantId, session_id=sessionId, limit=limit, cursor=cursor

@@ -12,7 +12,7 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         tenant_id: str,
         query_embedding: list[float],
     ) -> list[SearchResult] | None:
-        async with engine.connect() as conn:
+        async with engine.begin() as conn:
             # Set local tenant RLS context for select query
             await conn.execute(text("SET LOCAL app.current_tenant_id = :tenant_id"), {"tenant_id": tenant_id})
             res = await conn.execute(

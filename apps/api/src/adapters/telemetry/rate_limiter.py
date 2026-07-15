@@ -15,6 +15,7 @@ local now = tonumber(ARGV[1])
 local window = tonumber(ARGV[2])
 local max_reqs = tonumber(ARGV[3])
 local cost = tonumber(ARGV[4])
+local suffix = ARGV[5]
 local cutoff = now - window
 
 redis.call('ZREMRANGEBYSCORE', key, 0, cutoff)
@@ -25,7 +26,7 @@ local allowed = 1
 if count + cost > max_reqs then
     allowed = 0
 else
-    redis.call('ZADD', key, now, now .. ':' .. tostring(math.random()))
+    redis.call('ZADD', key, now, now .. ':' .. suffix)
     redis.call('EXPIRE', key, window + 1)
     count = count + cost
 end
@@ -87,7 +88,9 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
 
         Uses a Lua script for atomic sliding-window check-and-add.
         """
+        import uuid
         now = time.time()
+        suffix = uuid.uuid4().hex
         try:
             res = await self._redis.eval(
                 _SLIDING_WINDOW_SCRIPT,
@@ -97,6 +100,7 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
                 self._window,
                 self._max_requests,
                 cost,
+                suffix,
             )
             return _parse_rate_limit_result(res, self._max_requests)
         except Exception:

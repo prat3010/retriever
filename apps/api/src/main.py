@@ -311,6 +311,18 @@ class PreviewPromptRequest(BaseModel):
     context: str | None = None
 
 
+class ValidateKeyRequest(BaseModel):
+    api_key: str = Field(default="", description="API key to validate (falls back to server key if empty)")
+    base_url: str = Field(default="", description="Custom API base URL")
+    provider: str = Field(..., description="Provider name: 'openai' or 'gemini'")
+    model: str = Field(default="gemini-1.5-flash", description="Model name to ping")
+
+
+class ValidateKeyResponse(BaseModel):
+    valid: bool
+    error: str | None = None
+
+
 class CreateApiKeyRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     role: str = Field(default="client", pattern="^(admin|client)$")
@@ -442,6 +454,46 @@ async def create_tenant(
     )
     await audit_logger.write(tenant.tenant_id, "tenant.created", f"Tenant '{payload.name}' created")
     return tenant
+
+
+@app.post(
+    "/v1/config/validate-key",
+    status_code=status.HTTP_200_OK,
+    response_model=ValidateKeyResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def validate_api_key(
+    payload: ValidateKeyRequest,
+) -> ValidateKeyResponse:
+    """Validate that the provided LLM key is active and functional."""
+    try:
+        import openai
+        # Initialize client
+        api_key = payload.api_key or settings.OPENAI_API_KEY
+        if not api_key:
+            return ValidateKeyResponse(valid=False, error="No API key provided and no server-wide key found.")
+            
+        kwargs = {"api_key": api_key}
+        base_url = payload.base_url
+        if not base_url and payload.provider == "gemini":
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+        if base_url:
+            kwargs["base_url"] = base_url
+        
+        client = openai.AsyncOpenAI(**kwargs)
+        
+        # Lightweight 1-token query to check authentication
+        await client.chat.completions.create(
+            model=payload.model,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=1,
+            timeout=10
+        )
+        return ValidateKeyResponse(valid=True)
+    except openai.AuthenticationError as ae:
+        return ValidateKeyResponse(valid=False, error=f"Authentication Error: {ae.message}")
+    except Exception as e:
+        return ValidateKeyResponse(valid=False, error=str(e))
 
 
 @app.put(

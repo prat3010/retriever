@@ -14,6 +14,7 @@ class FeatureFlags(BaseModel):
     enable_query_rewriting: bool = False
     enable_corrective_retrieval: bool = False
     enable_query_intent: bool = False
+    allow_platform_key: bool = False
 
 
 class ModelPricing(BaseModel):

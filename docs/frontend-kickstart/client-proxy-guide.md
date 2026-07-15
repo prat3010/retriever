@@ -171,7 +171,7 @@ async function streamChatMessage(
         "Accept": "text/event-stream"
       },
       body: JSON.stringify({
-        message: message,
+        query: message,
         stream: true
       })
     }
@@ -201,16 +201,14 @@ async function streamChatMessage(
       
       if (cleanLine.startsWith("data: ")) {
         const rawData = cleanLine.substring(6);
-        if (rawData === "[DONE]") {
-          onDone();
-          return;
-        }
-
         try {
           const parsed = JSON.parse(rawData);
           // Yield character delta (SSE event data format)
-          if (parsed.choices?.[0]?.delta?.content) {
-            onChunk(parsed.choices[0].delta.content);
+          if (parsed.event === "token" && parsed.delta) {
+            onChunk(parsed.delta);
+          } else if (parsed.event === "done") {
+            onDone();
+            return;
           }
         } catch {
           // Skip malformed SSE noise lines

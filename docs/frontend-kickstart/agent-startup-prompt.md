@@ -14,9 +14,9 @@ Your goal is to help me design, build, and deploy a frontend application that co
 - **SDK:** The client-side application uses the `@prat3010/retriever-client-js` TypeScript SDK.
 - **Security model (The Proxy):** Never make direct calls to the Retriever API from the client. All calls must route through our Cloudflare Worker client proxy.
 - **Authentication:** The client proxy expects an `Authorization: Bearer <UserJWT>` header. The JWT payload must contain a `"sub"` claim (representing the User UUID, which maps to `X-User-ID`) and a `"tenant_id"` claim.
-- **Dynamic System Prompts:** Do not write system prompts in the client application code. All prompts are managed via the Retriever Admin Dashboard. The frontend calls:
+- **Dynamic System Prompts:** Do not write system prompts in the client application code. All prompts are managed via the Retriever Admin Dashboard. The frontend calls the proxy message creation endpoint:
   `POST /chat/sessions/{sessionId}/messages`
-  And passes a `system_prompt_name` parameter (e.g. "default", "exam_mode", "tutor_mode") to dynamically change the AI's behavior based on user settings or profile selections.
+  with a JSON body containing `{ "query": "Your user prompt", "stream": true, "system_prompt_name": "exam_mode" }`. The backend expects the query parameter key to be named `"query"`, NOT `"message"`.
 
 ### 2. Frontend UX Standards (Mandatory)
 Every app we build together must implement these RAG UX patterns:

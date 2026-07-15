@@ -81,21 +81,24 @@ class ConfigurationService:
 
         # AI provider credentials resolution
         if resolved.ai_provider.api_key is None or resolved.ai_provider.api_key == "********":
-            provider = resolved.ai_provider.provider_name.upper()
-            env_key = f"{provider}_API_KEY"
-            resolved.ai_provider.api_key = self.env_secrets.get(env_key, resolved.ai_provider.api_key)
+            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+                provider = resolved.ai_provider.provider_name.upper()
+                env_key = f"{provider}_API_KEY"
+                resolved.ai_provider.api_key = self.env_secrets.get(env_key, resolved.ai_provider.api_key)
 
         # Embedding provider credentials resolution
         if resolved.embedding_provider.api_key is None or resolved.embedding_provider.api_key == "********":
-            provider = resolved.embedding_provider.provider_name.upper()
-            env_key = f"{provider}_API_KEY"
-            resolved.embedding_provider.api_key = self.env_secrets.get(env_key, resolved.embedding_provider.api_key)
+            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+                provider = resolved.embedding_provider.provider_name.upper()
+                env_key = f"{provider}_API_KEY"
+                resolved.embedding_provider.api_key = self.env_secrets.get(env_key, resolved.embedding_provider.api_key)
 
         # Web search API key resolution — fall back to env var for the configured provider
         if resolved.retrieval_settings.web_search_api_key is None or resolved.retrieval_settings.web_search_api_key == "********":
-            provider = resolved.retrieval_settings.web_search_provider.upper()
-            env_key = f"{provider}_API_KEY"
-            resolved.retrieval_settings.web_search_api_key = self.env_secrets.get(env_key, resolved.retrieval_settings.web_search_api_key)
+            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+                provider = resolved.retrieval_settings.web_search_provider.upper()
+                env_key = f"{provider}_API_KEY"
+                resolved.retrieval_settings.web_search_api_key = self.env_secrets.get(env_key, resolved.retrieval_settings.web_search_api_key)
 
         return resolved
 

@@ -27,8 +27,23 @@ def extract_tables_from_pdf(storage_path: str) -> list[dict]:
     return tables
 
 
+import os
+
+TEXT_EXTENSIONS = {
+    ".txt", ".py", ".md", ".json", ".yaml", ".yml", ".ini", ".toml", 
+    ".csv", ".xml", ".sh", ".js", ".ts", ".html", ".css", ".go",
+    ".rs", ".c", ".cpp", ".h", ".hpp", ".java", ".kt", ".swift",
+    ".sql", ".properties", ".conf", ".cfg"
+}
+
+
 def extract_text_from_file(storage_path: str) -> str:
     if storage_path.lower().endswith(".pdf"):
         return extract_text_from_pdf(storage_path)
+    
+    _, ext = os.path.splitext(storage_path.lower())
+    if ext not in TEXT_EXTENSIONS:
+        return ""
+
     with open(storage_path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read()

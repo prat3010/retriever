@@ -193,6 +193,7 @@ class DocumentChunkDb(Base):
 
     __table_args__ = (
         Index("ix_document_chunks_meta_data", meta_data, postgresql_using="gin"),
+        Index("idx_document_chunks_tenant_doc_idx", tenant_id, document_id, chunk_index),
     )
 
     # Relationships

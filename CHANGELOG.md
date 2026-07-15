@@ -8,6 +8,12 @@ All notable changes to the Retriever platform will be documented in this file. T
 - **Key Validation Endpoint**: Added `POST /v1/config/validate-key` to verify active cognitive provider API keys.
 - **Billing Security Guard**: Added `allow_platform_key` flag to `FeatureFlags` in tenant configurations. If `False`, blocks automatic env secret resolution for client queries, securing your billing credentials.
 - **Local Ingestion Pipeline**: Overhauled `ingest_self.py` to generate vector records for the codebase using local Ollama (`nomic-embed-text` at port `11434`).
+- **Security & Telemetry Hardening**:
+  - **SQL Injection Prevention**: Enforced strict UUID context-level validation on database session manager `tenant_session()` contexts.
+  - **Streaming Telemetry Fixes**: Corrected token usage loss for both Anthropic Claude streams (capturing `message_start` inputs) and OpenAI streams (removing premature breaks on `finish_reason` chunks).
+  - **Automatic Embedding Batching**: Embedded inputs are automatically sliced into batches of 32 inside the core `embed_with_retry` function, preventing gateway size limits or timeouts on large documents.
+  - **Text Parsing Whitelist**: Added a file extension whitelist validation to `extract_text_from_file`, preventing binary documents like `.docx` and `.xlsx` from poisoning plaintext parsing and correctly falling back to OCR/Vision pipelines.
+  - **Database Index Optimization**: Configured a composite index `idx_document_chunks_tenant_doc_idx` on `(tenant_id, document_id, chunk_index)` to optimize tenant-isolated search execution.
 
 ## [0.17.0] - 2026-07-15
 ### Added

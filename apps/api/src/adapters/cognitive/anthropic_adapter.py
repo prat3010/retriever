@@ -137,16 +137,26 @@ class AnthropicLLMAdapter(LlmProvider):
             raise ProviderUnavailableError(str(e)) from e
 
         async for event in response_stream:
-            if event.type == "content_block_delta":
+            if event.type == "message_start":
+                usage = getattr(event.message, "usage", None)
+                if usage:
+                    yield {
+                        "usage": {
+                            "input_tokens": getattr(usage, "input_tokens", 0) or 0,
+                            "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0) + (getattr(usage, "output_tokens", 0) or 0),
+                        }
+                    }
+            elif event.type == "content_block_delta":
                 yield {"delta": event.delta.text, "finish_reason": None}
             elif event.type == "message_delta":
                 usage = getattr(event, "usage", None)
                 if usage and usage.output_tokens:
                     yield {
                         "usage": {
-                            "input_tokens": usage.input_tokens or 0,
+                            "input_tokens": getattr(usage, "input_tokens", 0) or 0,
                             "output_tokens": usage.output_tokens or 0,
-                            "total_tokens": (usage.input_tokens or 0) + usage.output_tokens,
+                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0) + usage.output_tokens,
                         }
                     }
                 yield {"delta": "", "finish_reason": event.delta.stop_reason}

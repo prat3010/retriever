@@ -32,10 +32,11 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Completed** | Q3 2028 |
 | **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Completed** | Q3 2028 |
 | **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Completed** | Q4 2028 |
-| **M25** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q4 2028 |
-| **M26** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q1 2029 |
-| **M27** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q1 2029 |
-| **M28** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q2 2029 |
+| **M25** | Developer Console & Local Ingestion | Next.js Developer Console, local Ollama RAG ingestion, RLS verification | **Completed** | Q1 2029 |
+| **M26** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q1 2029 |
+| **M27** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q2 2029 |
+| **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q2 2029 |
+| **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q3 2029 |
 
 ---
 
@@ -514,7 +515,23 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 25: SaaS Tenant Resource Quotas
+### [Completed] Milestone 25: Developer Console & Local Ingestion
+
+**Objective:** Build a Next.js Developer Console with a local Ollama indexing pipeline and validate dynamic configuration fallback logic.
+
+**Complexity:** Medium
+
+**Dependencies:** M10, M11
+
+**Targets:**
+- Bootstrapped `apps/developer-console` using Next.js 16 and `@prat3010/retriever-client-js`.
+- Configured local Ollama embeddings (`nomic-embed-text`) inside `ingest_self.py` to index the codebase.
+- Enforced platform key access rules matching backend endpoint API validation.
+- Implemented chat playground with real-time SSE token stream rendering.
+
+---
+
+### [Planned] Milestone 26: SaaS Tenant Resource Quotas
 
 **Objective:** Enforce SaaS resource limits (file counts, storage volumes, token budgets) at the tenant API level.
 
@@ -532,7 +549,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 26: Multi-Workspace Collections
+### [Planned] Milestone 27: Multi-Workspace Collections
 
 **Objective:** Allow tenants to partition their documents into isolated collections/workspaces.
 
@@ -550,7 +567,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 27: Interactive Chunking Auditor
+### [Planned] Milestone 28: Interactive Chunking Auditor
 
 **Objective:** Provide administrative users with a visual preview sandbox to audit document chunking splits before indexing.
 
@@ -568,7 +585,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 28: A/B Testing Platform
+### [Planned] Milestone 29: A/B Testing Platform
 
 **Objective:** Full experiment management lifecycle — create, start, stop experiments via admin API, with dashboard visibility into variant performance.
 

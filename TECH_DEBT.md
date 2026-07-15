@@ -38,6 +38,11 @@ they start blocking you — not before.
 | No local OCR (Tesseract) — pytesseract fallback added | C-4 Sprint 2 |
 | First-page-only PDF vision — multi-page vision loop | C-4 Sprint 2 |
 | Token budget alert thresholds — `BudgetSettings` + `NotificationProvider` | E-6 Sprint 3 cleanup |
+| Vision config not tenant-aware / platform key fallback | M25 cleanup |
+| Streaming token telemetry early break (OpenAI & Anthropic) | M25 cleanup |
+| SQL injection in PostgreSQL connection manager `tenant_session` | M25 cleanup |
+| Lack of automatic batching in `embed_with_retry` | M25 cleanup |
+| Plaintext parsing loophole for binary document uploads | M25 cleanup |
 
 ## Architecture
 
@@ -89,15 +94,9 @@ construction instead.
 ### Source files with zero test coverage
 | File | Risk |
 |------|------|
-| `adapters/cognitive/reranker_adapter.py` | Reranker failures undetected |
-| `adapters/cognitive/openai_adapter.py` (stream path) | Streaming bugs ship |
-| `adapters/storage/local_storage.py` | File I/O errors undetected |
 | `adapters/telemetry/middleware.py` | Observability gaps |
-| `adapters/telemetry/setup.py` | Init failures undetected |
 | `adapters/database/setup.py` | Migration/RBAC setup untested |
-| `domain/inference/orchestrator.py` (stream path) | Streaming bugs ship |
 | All `workers/` files (354 lines) | Async pipeline untested |
-| All `packages/processing-core/` files | Core chunking/parsing untested |
 
 ### Source files with new test coverage added during M24 polish round
 | File | Tests |
@@ -270,7 +269,9 @@ For zero-text PDFs, only the first page is described. Long scanned documents wil
 
 Worker `_describe_with_vision` hard-codes OpenAI. Add Anthropic Claude vision path (`claude-3-5-sonnet`) when the provider config switches away from OpenAI.
 
-### Worker vision config not tenant-aware
+### ~~Worker vision config not tenant-aware~~ (Fixed)
 **File:** `workers/src/tasks/__init__.py`  
 
 `_describe_with_vision` reads `vision_model` from the document's tenant config but uses `OPENAI_API_KEY` env var. Add per-tenant API key routing when multi-tenant vision use cases emerge.
+
+*Fixed: added _get_decrypted_key helper to resolve tenant-specific keys in tasks.*

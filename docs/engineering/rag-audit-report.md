@@ -369,7 +369,7 @@ These findings overlap with items already in `TECH_DEBT.md` or `ROADMAP.md`:
 | G-5 (no JSON schema validation) | `TECH_DEBT.md:228-231` | Already deferred | ⚪ Pending |
 | E-3 (no extraction streaming) | `TECH_DEBT.md:243-246` | Already deferred | ⚪ Pending |
 | R-8 (no Anthropic vision in worker) | `TECH_DEBT.md:260-263` | Already deferred | ⚪ Pending |
-| R-8 (worker vision not tenant-aware) | `TECH_DEBT.md:265-268` | Already deferred | ⚪ Pending |
+| R-8 (worker vision not tenant-aware) | `TECH_DEBT.md:265-268` | Resolved — tenant key resolution in workers | 🟢 Completed |
 | P-5 (per-tenant web search keys) | `TECH_DEBT.md:201-204` | Already deferred | ⚪ Pending |
 | P-5 (Brave Search adapter) | `TECH_DEBT.md:196-199` | Already deferred | ⚪ Pending |
 | E-2 (per-message token_count) | `TECH_DEBT.md:191-194` | Already deferred | ⚪ Pending |

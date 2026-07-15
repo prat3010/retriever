@@ -5,37 +5,37 @@ Operational overview of the Retriever platform's current engineering status.
 ---
 
 ## 1. Status Overview
-
-- **Current Milestone**: Milestone 25: Developer Console & Local Ingestion (Completed)
-- **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
-- **Build Status**: Passing (286+ unit tests pass)
-- **Admin Dashboard Build**: Passing (9 routes, all compile)
-- **Developer Console Build**: Passing (Next.js 16, compiles successfully)
-- **Reference Client Build**: Passing
-- **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
-
----
-
-## 2. Health Indicators
-
-### Architecture Health: **Green**
-- **Hexagonal Architecture Compliance**: Enforced by `tests/test_architecture.py` on every test run. Core domains contain no database or framework imports.
-- **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all customer-data tables.
-- **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
-- **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
-- **No Hardcoded Prompts**: Enforced by conformance test and `PromptTemplateNotFoundError`.
-- **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
-
-### Testing Status: **Green**
-- **Unit Test Coverage**: 27 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), and self-querying retrieval (M24).
-- **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 286/286 passing.
-- **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
-- **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
-
-### Documentation Health: **Green**
-- **Blueprints**: Master Architecture, Core specifications, System Design outlines, and Admin Dashboard guide are complete.
+ 
+ - **Current Milestone**: Milestone 25: Developer Console & Local Ingestion (Completed)
+ - **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
+ - **Build Status**: Passing (358+ unit tests pass)
+ - **Admin Dashboard Build**: Passing (9 routes, all compile)
+ - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
+ - **Reference Client Build**: Passing
+ - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
+ - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
+ 
+ ---
+ 
+ ## 2. Health Indicators
+ 
+ ### Architecture Health: **Green**
+ - **Hexagonal Architecture Compliance**: Enforced by `tests/test_architecture.py` on every test run. Core domains contain no database or framework imports.
+ - **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all customer-data tables. Secure UUID context validation blocks connection-level SQL injections.
+ - **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
+ - **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
+ - **No Hardcoded Prompts**: Enforced by conformance test and `PromptTemplateNotFoundError`.
+ - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
+ 
+ ### Testing Status: **Green**
+ - **Unit Test Coverage**: 28 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), and stream token telemetry / parsing whitelist validation (M25).
+ - **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
+ - **Total Tests**: 358/358 passing.
+ - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
+ - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
+ 
+ ### Documentation Health: **Green**
+ - **Blueprints**: Master Architecture, Core specifications, System Design outlines, and Admin Dashboard guide are complete.
 - **Feature Docs**: Core platform spec at `docs/features/core-platform.md`, Client SDK guide at `docs/features/client-sdk.md`.
 - **Playbook**: Strict enforcement rules for database design, testing, RLS limits, and imports are documented.
 - **ADRs**: Decisions for PostgreSQL, pgvector, FastAPI, Redis, RabbitMQ, Next.js, and SSE are recorded in `docs/decisions/`.

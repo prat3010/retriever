@@ -82,6 +82,10 @@ async def _create_btree_indices(conn) -> None:
         CREATE INDEX IF NOT EXISTS idx_inference_logs_created_at
         ON inference_logs (created_at DESC);
     """))
+    await conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_document_chunks_tenant_doc_idx
+        ON document_chunks (tenant_id, document_id, chunk_index);
+    """))
 
 
 async def initialize_database() -> None:

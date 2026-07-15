@@ -371,14 +371,13 @@ class InferenceOrchestrator:
                 full_content.append(delta)
                 yield {"event": "token", "delta": delta}
 
-            finish = chunk.get("finish_reason")
-            if finish:
-                break
-
+            # Do not break on finish_reason so trailing usage metadata can be processed
             usage = chunk.get("usage")
             if usage:
-                input_tokens = usage.get("input_tokens", 0)
-                output_tokens = usage.get("output_tokens", 0)
+                if "input_tokens" in usage and usage["input_tokens"] > 0:
+                    input_tokens = usage["input_tokens"]
+                if "output_tokens" in usage and usage["output_tokens"] > 0:
+                    output_tokens = usage["output_tokens"]
 
         final_text = "".join(full_content)
         invalid = self.citation_validator.get_invalid_citations(final_text)

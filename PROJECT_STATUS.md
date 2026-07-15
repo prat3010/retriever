@@ -196,6 +196,20 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 10. Outstanding Blockers & Issues
+## 10. Google Gemini & Anthropic Claude Integration Sprint — Completed
+
+### Google Gemini Default Configuration
+- Migrated default model configuration to target Google Gemini (`gemini-1.5-flash` for chat, `text-embedding-004` for vectors) using the OpenAI-compatible endpoint route.
+- Standardised vector column dimensions from `1536` to `768` for pgvector.
+- Added automatic dimension slicing to the OpenAI embedding adapters (in API services and processing-core workers) to compress `text-embedding-3-` embeddings to `768` dimensions on-the-fly, preserving cross-provider schema compatibility.
+
+### Native Anthropic Claude Integration
+- Created `AnthropicLLMAdapter` complying with `LlmProvider` to extract system prompts and handle Claude Messages API outputs.
+- Implemented `RoutingLLMProvider` as a composite delegator to switch between OpenAI and Anthropic adapters dynamically based on the configuration's `provider_name` property.
+- Fixed mock vector dimensions and added new adapter/router mock tests to the pytest suite.
+
+---
+
+## 11. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

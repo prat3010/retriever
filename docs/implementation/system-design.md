@@ -320,7 +320,7 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 ### 3.8 Embedding Engine
 * **Responsibility:** Generate numerical coordinate arrays for text chunks using the tenant's configured embedding model.
 * **Inputs:** Text blocks list.
-* **Outputs:** Array of coordinate values (e.g. 1536 float elements).
+* **Outputs:** Array of coordinate values (e.g. 768 or 1536 float elements).
 * **Dependencies:** External Cognitive Provider Adapter (OpenAI / local HuggingFace).
 * **Failure Modes:**
   * *Provider Timeout:* Retry with exponential backoff. If exhaustion occurs, fail task and mark chunks as `UNINDEXED`.

@@ -182,19 +182,21 @@ No third-party SDK or infrastructure library may leak into the core domains. Dec
                   |                      |                      |
   ================|======================|======================|========= Dependency Boundary
                   v                      v                      v
-       +-----------------------------------------------------------------+
-       |                       Adapters Layer                            |
-       |                                                                 |
-        |  +---------------------------+   +-------------------+       |
-        |  | OpenAILLMAdapter         |   | PgVectorSearch    |       |
-        |  +---------------------------+   +-------------------+       |
-        |  +---------------------------+   +-------------------+       |
-         |  | CohereRerankerAdapter    |   | Local / S3Storage |       |
-        |  +---------------------------+   +-------------------+       |
-        |  +----------------------------+                              |
-        |  | RedisTenantConfigCache     |                              |
-        |  +----------------------------+                              |
-       +-----------------------------------------------------------------+
+        +-----------------------------------------------------------------+
+        |                       Adapters Layer                            |
+        |                                                                 |
+        |  +---------------------------+   +-------------------+          |
+        |  | RoutingLLMProvider        |   | PgVectorSearch    |          |
+        |  |  - OpenAILLMAdapter       |   +-------------------+          |
+        |  |  - AnthropicLLMAdapter    |   +-------------------+          |
+        |  +---------------------------+   | Local / S3Storage |          |
+        |  +---------------------------+   +-------------------+          |
+        |  | CohereRerankerAdapter    |                                  |
+        |  +---------------------------+                                  |
+        |  +----------------------------+                                 |
+        |  | RedisTenantConfigCache     |                                 |
+        |  +----------------------------+                                 |
+        +-----------------------------------------------------------------+
 ```
 
 #### 3.1 Cognitive Service Interface (`domain.abstractions.inference`)
@@ -814,6 +816,6 @@ LLM API keys are resolved in the following priority (first match wins):
 
 1. **Request header** `X-LLM-Key` — frontend override (for advanced clients who bring their own key)
 2. **Tenant config** `llm_api_key` — stored encrypted in DB, configured via admin API
-3. **Environment variable** `OPENAI_API_KEY` — deployment-wide fallback
+3. **Environment variable** `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — deployment-wide fallback
 
 This means a coaching portal can use the coaching institute's own OpenAI key, while the admin dashboard uses the platform key, and an advanced client can override per-request. All without code changes.

@@ -115,13 +115,24 @@ export default function DeveloperConsole() {
   const handleTriggerSync = async () => {
     setIsSyncing(true);
     try {
-      // In development, we can trigger the background ingestion command via a test run endpoint
-      // For practice console purposes, mock a re-sync latency to show state updates
-      await new Promise(r => setTimeout(r, 2000));
-      await fetchDocuments();
-      alert("Codebase synchronization triggered successfully!");
-    } catch (e) {
+      const response = await fetch(`${baseUrl}/v1/admin/tenants/${tenantId}/reindex`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Master-Key": apiKey,
+          "Authorization": `Bearer ${apiKey}`
+        }
+      });
+      if (response.ok) {
+        alert("Codebase synchronization triggered successfully!");
+        setTimeout(fetchDocuments, 2000);
+      } else {
+        const errData = await response.json().catch(() => ({ detail: "Unknown error" }));
+        alert(`Failed to trigger sync: ${errData.detail || "Request failed"}`);
+      }
+    } catch (e: any) {
       console.error(e);
+      alert(`Failed to connect to backend: ${e.message || e}`);
     } finally {
       setIsSyncing(false);
     }

@@ -91,12 +91,37 @@ def _ocr_with_tesseract(path: str, mime_type: str) -> str:
         return ""
 
 
+def _get_decrypted_key(config: dict, provider_key: str, env_key: str, tenant_id: str) -> str:
+    """Safely retrieve and decrypt the provider API key, checking platform key permission constraints."""
+    provider_config = config.get(provider_key, {})
+    api_key = provider_config.get("api_key", "")
+    
+    if api_key and api_key != "********":
+        try:
+            from processing_core import ConfigEncrypter
+            enc = ConfigEncrypter()
+            api_key = enc.decrypt(api_key)
+        except Exception:
+            pass
+            
+    if not api_key or api_key == "********":
+        # Check feature flags to allow platform key fallback, or allow if system tenant
+        allow_platform = config.get("feature_flags", {}).get("allow_platform_key", False)
+        is_system = tenant_id == "00000000-0000-0000-0000-000000000000"
+        if allow_platform or is_system:
+            api_key = os.environ.get(env_key, os.environ.get("OPENAI_API_KEY", ""))
+        else:
+            api_key = ""
+            
+    return api_key
+
+
 # ponytail: vision extraction for images and zero-text PDFs
-def _describe_with_vision(path: str, mime_type: str, config: dict) -> str:
+def _describe_with_vision(path: str, mime_type: str, config: dict, tenant_id: str = "00000000-0000-0000-0000-000000000000") -> str:
     import base64
     import openai
 
-    api_key = config.get("ai_provider", {}).get("api_key") or os.environ.get("OPENAI_API_KEY", "")
+    api_key = _get_decrypted_key(config, "ai_provider", "OPENAI_API_KEY", tenant_id)
     if not api_key:
         return ""
     client = openai.OpenAI(api_key=api_key)
@@ -244,7 +269,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             if not text_content.strip() and mime_type:
                 text_content = _ocr_with_tesseract(parse_target_path, mime_type)
             if not text_content.strip() and mime_type:
-                text_content = _describe_with_vision(parse_target_path, mime_type, config_val)
+                text_content = _describe_with_vision(parse_target_path, mime_type, config_val, tenant_id)
             # ponytail: table extraction for PDFs — stored in metadata
             extracted_tables = []
             if parse_target_path.lower().endswith(".pdf") and mime_type == "application/pdf":
@@ -362,14 +387,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 if schema_def:
                     ai_cfg = config_val.get("ai_provider", {})
                     ai_model = ai_cfg.get("default_model", "gemini-1.5-flash")
-                    ai_api_key = ai_cfg.get("api_key", "")
-                    
-                    if ai_api_key and ai_api_key != "********":
-                        from processing_core import ConfigEncrypter
-                        enc = ConfigEncrypter()
-                        ai_api_key = enc.decrypt(ai_api_key)
-                    if not ai_api_key or ai_api_key == "********":
-                        ai_api_key = os.environ.get("OPENAI_API_KEY", "")
+                    ai_api_key = _get_decrypted_key(config_val, "ai_provider", "OPENAI_API_KEY", tenant_id)
+                    if not ai_api_key:
+                        continue
                     ai_base_url = ai_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
                     
                     import openai
@@ -517,16 +537,8 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
                     config_val = json.loads(config_val)
                 embed_cfg = config_val.get("embedding_provider", {})
                 embedding_model = embed_cfg.get("model_name", embedding_model)
-                api_key = embed_cfg.get("api_key", api_key)
-                if api_key and api_key != "********":
-                    from processing_core import ConfigEncrypter
-                    enc = ConfigEncrypter()
-                    api_key = enc.decrypt(api_key)
-
-                if not api_key or api_key == "********":
-                    provider = embed_cfg.get("provider_name", "openai").upper()
-                    env_key = f"{provider}_API_KEY"
-                    api_key = os.environ.get(env_key, os.environ.get("OPENAI_API_KEY", ""))
+                provider = embed_cfg.get("provider_name", "openai").upper()
+                api_key = _get_decrypted_key(config_val, "embedding_provider", f"{provider}_API_KEY", tenant_id)
 
         async with engine.connect() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))

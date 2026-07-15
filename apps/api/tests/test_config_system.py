@@ -74,6 +74,7 @@ def test_env_resolution_fallback_logic() -> None:
     )
 
     config = TenantConfiguration()
+    config.feature_flags.allow_platform_key = True
     config.ai_provider.provider_name = "openai"
     config.ai_provider.api_key = "********"  # placeholder
 

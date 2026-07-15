@@ -1024,6 +1024,27 @@ async def admin_preview_prompt(tenantId: str, payload: PreviewPromptRequest) -> 
     }
 
 
+@app.post(
+    "/v1/admin/tenants/{tenantId}/reindex",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_reindex_codebase(tenantId: str, background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Trigger background codebase ingestion (Admin only, restricted to System Tenant)."""
+    if tenantId != "00000000-0000-0000-0000-000000000000":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Codebase reindexing is only supported for the System Tenant (00000000-0000-0000-0000-000000000000).",
+        )
+    
+    from src.scripts.ingest_self import main as ingest_main
+    
+    # Run the ingestion in the background to avoid timing out the HTTP request
+    background_tasks.add_task(ingest_main)
+    
+    return {"status": "accepted", "message": "Codebase reindexing started in the background."}
+
+
 async def _check_idempotency(tenantId: str, key: str) -> dict | None:
     redis_key = f"idempotency:{tenantId}:{key}"
     cached = await redis_client.get(redis_key)

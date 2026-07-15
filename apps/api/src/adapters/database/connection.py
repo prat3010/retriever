@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -5,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.config import settings
+from src.domain.abstractions.exceptions import TenantIsolationViolationError
 
 engine = create_async_engine(
     settings.DATABASE_URL,
@@ -36,9 +38,15 @@ async def tenant_session(
             if bypass_rls:
                 await session.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             elif tenant_id:
+                try:
+                    # Validate that tenant_id is a valid UUID to prevent SQL injection
+                    valid_uuid = uuid.UUID(str(tenant_id))
+                except ValueError as e:
+                    raise TenantIsolationViolationError(f"Invalid tenant ID format: {e}") from e
+                
                 # Set thread-local context variables for postgres row level security
                 await session.execute(
-                    text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"),
+                    text(f"SET LOCAL app.current_tenant_id = '{valid_uuid}'"),
                 )
             else:
                 # Set empty setting to ensure RLS triggers restriction

@@ -104,3 +104,25 @@ async def test_chat_message_repository_scopes_reads_to_tenant(mock_session_ctx) 
     compiled = str(statement.compile(compile_kwargs={"literal_binds": True}))
     assert "chat_messages.tenant_id" in compiled
     assert "chat_messages.session_id" in compiled
+
+
+@pytest.mark.asyncio
+async def test_tenant_session_rejects_sql_injection() -> None:
+    from src.adapters.database.connection import tenant_session
+    from src.domain.abstractions.exceptions import TenantIsolationViolationError
+    
+    # 1. Valid UUID should not raise TenantIsolationViolationError
+    valid_uuid = str(uuid.uuid4())
+    try:
+        async with tenant_session(tenant_id=valid_uuid):
+            pass
+    except Exception as e:
+        assert not isinstance(e, TenantIsolationViolationError)
+        
+    # 2. Malicious payload should raise TenantIsolationViolationError
+    malicious_payload = "00000000-0000-0000-0000-000000000000'; DROP TABLE tenants; --"
+    with pytest.raises(TenantIsolationViolationError) as exc_info:
+        async with tenant_session(tenant_id=malicious_payload):
+            pass
+            
+    assert "Invalid tenant ID format" in str(exc_info.value)

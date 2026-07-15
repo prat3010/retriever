@@ -529,3 +529,35 @@ def test_admin_list_audit_logs_filtered(mock_list, tenant_id) -> None:
     mock_list.assert_awaited_once_with(
         tenant_id=tenant_id, action="tenant.created", limit=10, offset=5,
     )
+
+
+@patch("src.scripts.ingest_self.main", new_callable=AsyncMock)
+def test_admin_reindex_codebase_success(mock_ingest_main) -> None:
+    """POST /v1/admin/tenants/{id}/reindex succeeds with 202 for System Tenant."""
+    system_tenant = "00000000-0000-0000-0000-000000000000"
+    response = client.post(
+        f"/v1/admin/tenants/{system_tenant}/reindex",
+        headers=auth_header,
+    )
+    assert response.status_code == 202
+    assert response.json()["status"] == "accepted"
+
+
+def test_admin_reindex_codebase_invalid_tenant() -> None:
+    """POST /v1/admin/tenants/{id}/reindex returns 400 for non-system tenant."""
+    other_tenant = "11111111-1111-1111-1111-111111111111"
+    response = client.post(
+        f"/v1/admin/tenants/{other_tenant}/reindex",
+        headers=auth_header,
+    )
+    assert response.status_code == 400
+    assert "only supported for the System Tenant" in response.json()["detail"]
+
+
+def test_admin_reindex_codebase_unauthorized() -> None:
+    """POST /v1/admin/tenants/{id}/reindex returns 401 without admin auth."""
+    system_tenant = "00000000-0000-0000-0000-000000000000"
+    response = client.post(
+        f"/v1/admin/tenants/{system_tenant}/reindex",
+    )
+    assert response.status_code == 401

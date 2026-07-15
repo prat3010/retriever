@@ -2,6 +2,20 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-07-15
+### Added
+- **Self-Querying Retrieval (M24)**: Default LLM metadata extraction during ingestion (doc_type, date_reference, topics, author_reference). `SelfQueryProvider` ABC + `enable_self_query` on `SearchQuery`. `LLMSelfQueryAdapter` parses NL queries into `MetadataFilter` lists via LLM. Wired into `HybridSearchService` as pipeline step 0 (parsed filters merge with explicit filters). 9 new tests.
+- **Admin download URL bugfix**: Added missing `await` on `generate_presigned_url()` call at main.py:708 — admin file downloads were silently broken.
+- **Migration drift fixes**: 3 Alembic migrations for `inference_logs.notes`, `semantic_cache` table, `audit_logs.entry_hash`/`previous_hash`.
+- **Test hygiene**: `MagicMock`→`AsyncMock` in presigned URL tests; `asyncio.run()`→`await` in event tests.
+
+### Changed
+- **Long function refactoring**: `initialize_database` split into 6 async helpers (setup.py). `generate`/`generate_stream` share 5 extracted helpers in orchestrator.py (net -82 lines). `_apply_web_search_fallback` extracted from `search()`.
+- **Polish pass**: Removed 10 redundant inline imports in `main.py` (`json`×4, `re`, `uuid` already at module level). Moved `logging`, `datetime` to module-level imports. Extracted `_check_idempotency`/`_cache_idempotency` helpers in `upload_document` (73→~40 lines). Extracted `_SLIDING_WINDOW_SCRIPT` constant + `_parse_rate_limit_result` helper in `rate_limiter.py` (`acquire` 75→17 lines). Added `AsyncGenerator` return types to `lifespan`, `event_stream`, `admin_download_document_file`.
+- **Polish round 2**: Split `_apply_input_guardrails` into `_apply_pii_guard` + `_apply_llm_safety_guard` (59→~25 lines). Replaced `build_filter_clause` 10-branch if/elif chain with `_OP_TO_SQL` operator dict (60→~35 lines). Extracted shared `rows_to_search_results` from `search_similar`/`search_keywords` into `filter_builder.py`. Moved `StreamingResponse` + `select` to module-level imports.
+- **Test coverage**: Added `test_cache_adapter.py` (11 tests), `test_vector_repository.py` (4 tests), `test_keyword_repository.py` (4 tests) — covering `RedisTenantConfigCache`, `PgVectorSearchAdapter`, and `PgKeywordSearchAdapter`.
+- **Test coverage round 2**: Added `test_local_storage.py` (7 tests), `test_reranker.py` (7 tests), `test_telemetry_setup.py` (6 tests) — covering `LocalStorage`, `CohereRerankerAdapter`, and `get_tracer`/`get_metrics`/`get_rate_limiter`/`init_telemetry`. 286 tests passing.
+
 ## [0.16.0] - 2026-07-15
 ### Added
 - **Multi-Modal Processing (M23)**: `ChatMessage.images` field for vision prompts. OpenAI and Anthropic adapters convert images to content blocks. `_describe_with_vision()` worker function describes images and zero-text PDFs via OpenAI vision API. `mime_type` passed through upload→Celery pipeline. `AIProviderConfig.vision_model` config. 11 new tests.

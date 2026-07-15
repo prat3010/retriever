@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 23: Multi-Modal Processing (Completed)
-- **Last Completed Milestone**: Milestone 23: Multi-Modal Processing
-- **Build Status**: Passing (238+ unit tests pass)
+- **Current Milestone**: Milestone 24: Self-Querying Retrieval (Completed)
+- **Last Completed Milestone**: Milestone 24: Self-Querying Retrieval
+- **Build Status**: Passing (286+ unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 24: Self-Querying Retrieval
+- **Next Recommended Milestone**: Milestone 25: SaaS Tenant Resource Quotas
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 26 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), and multi-modal processing (M23).
+- **Unit Test Coverage**: 27 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), and self-querying retrieval (M24).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 238/238 passing.
+- **Total Tests**: 286/286 passing.
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -281,6 +281,39 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 15. Outstanding Blockers & Issues
+## 15. M24 Self-Querying Retrieval — Completed
+
+### LLM Metadata Extraction (Ingestion)
+- Default LLM metadata extraction in worker (`workers/src/tasks/__init__.py`) — runs when no extractors configured AND API key available.
+- Extracts `doc_type`, `date_reference`, `topics`, `author_reference` into each chunk's `meta_data`.
+
+### Self-Query Adapter (Search)
+- `SelfQueryProvider` ABC + `enable_self_query` on `SearchQuery` + `FeatureFlags`.
+- `LLMSelfQueryAdapter` in `adapters/cognitive/self_query_adapter.py` — parses NL queries into `MetadataFilter` lists.
+- Wired into `HybridSearchService` as pipeline step 0: parsed filters merge with explicit filters (not override).
+- 9 tests covering adapter parsing, search integration, flag gating, filter merging, graceful degradation.
+
+### Polish Round 2 (Code Quality)
+- Removed 10 redundant inline imports in `main.py` (dead code from modules already at top level).
+- Extracted `_check_idempotency`/`_cache_idempotency` in `upload_document` (73→~40 lines).
+- Extracted `_SLIDING_WINDOW_SCRIPT` + `_parse_rate_limit_result` in `rate_limiter.py` (`acquire` 75→17 lines).
+- Added `AsyncGenerator` return type annotations to `lifespan`, `event_stream`, `admin_download_document_file`.
+- 286 tests passing.
+
+### Test coverage (6 new test files)
+- `test_cache_adapter.py` (11 tests): `RedisTenantConfigCache` — hit/miss/error paths for all 5 public methods.
+- `test_vector_repository.py` (4 tests): `PgVectorSearchAdapter.search_similar` — happy path, empty results, filters, tags.
+- `test_keyword_repository.py` (4 tests): `PgKeywordSearchAdapter.search_keywords` — happy path, empty results, filters, query passthrough.
+- `test_local_storage.py` (7 tests): `LocalStorage` — save, delete, presigned URL with real temp dir.
+- `test_reranker.py` (7 tests): `CohereRerankerAdapter` — empty candidates, basic rerank, threshold filtering, score remapping, model override.
+- `test_telemetry_setup.py` (6 tests): `get_tracer`/`get_metrics`/`get_rate_limiter` singletons + `init_telemetry` wiring.
+
+### Bugfixes
+- Added missing `await` on `local_storage.generate_presigned_url()` at `main.py:708`.
+- 3 migration drifts: `inference_logs.notes`, `semantic_cache` table, `audit_logs.entry_hash`/`previous_hash`.
+
+---
+
+## 16. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

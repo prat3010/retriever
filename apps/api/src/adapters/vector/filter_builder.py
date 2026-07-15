@@ -1,6 +1,32 @@
-from typing import Any
+from typing import Any, Callable
 
-from src.domain.abstractions.retrieval import MetadataFilter
+from src.domain.abstractions.retrieval import MetadataFilter, SearchResult
+
+
+_OP_TO_SQL: dict[str, tuple[str, Callable[[Any], Any]]] = {
+    "eq":       ("{alias}.meta_data ->> '{field}' = :{param}", str),
+    "neq":      ("{alias}.meta_data ->> '{field}' != :{param}", str),
+    "in":       ("{alias}.meta_data -> '{field}' ?| :{param}", lambda v: [str(x) for x in (v or [])]),
+    "gt":       ("({alias}.meta_data ->> '{field}')::numeric > :{param}", str),
+    "gte":      ("({alias}.meta_data ->> '{field}')::numeric >= :{param}", str),
+    "lt":       ("({alias}.meta_data ->> '{field}')::numeric < :{param}", str),
+    "lte":      ("({alias}.meta_data ->> '{field}')::numeric <= :{param}", str),
+    "contains": ("{alias}.meta_data @> :{param}::jsonb", lambda v: v),
+    "regex":    ("{alias}.meta_data ->> '{field}' ~* :{param}", str),
+}
+
+
+def rows_to_search_results(rows: list[Any]) -> list[SearchResult]:
+    return [
+        SearchResult(
+            chunk_id=str(row[0]),
+            document_id=str(row[1]),
+            content=row[2],
+            score=float(row[4]),
+            metadata=row[3] if isinstance(row[3], dict) else {},
+        )
+        for row in rows
+    ]
 
 
 def build_filter_clause(
@@ -23,36 +49,13 @@ def build_filter_clause(
 
     for i, f in enumerate(filters):
         p = f"f_{i}"
-        if f.operator == "eq":
-            conditions.append(f"{chunk_alias}.meta_data ->> '{f.field}' = :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "neq":
-            conditions.append(f"{chunk_alias}.meta_data ->> '{f.field}' != :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "in":
-            conditions.append(f"{chunk_alias}.meta_data -> '{f.field}' ?| :{p}")
-            params[p] = [str(v) for v in (f.value or [])]
-        elif f.operator == "gt":
-            conditions.append(f"({chunk_alias}.meta_data ->> '{f.field}')::numeric > :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "gte":
-            conditions.append(f"({chunk_alias}.meta_data ->> '{f.field}')::numeric >= :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "lt":
-            conditions.append(f"({chunk_alias}.meta_data ->> '{f.field}')::numeric < :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "lte":
-            conditions.append(f"({chunk_alias}.meta_data ->> '{f.field}')::numeric <= :{p}")
-            params[p] = str(f.value)
-        elif f.operator == "exists":
+        if f.operator == "exists":
             conditions.append(f"{chunk_alias}.meta_data ? :{p}")
             params[p] = f.field
-        elif f.operator == "contains":
-            conditions.append(f"{chunk_alias}.meta_data @> :{p}::jsonb")
-            params[p] = f.value
-        elif f.operator == "regex":
-            conditions.append(f"{chunk_alias}.meta_data ->> '{f.field}' ~* :{p}")
-            params[p] = str(f.value)
+            continue
+        sql_tpl, prepare = _OP_TO_SQL[f.operator]
+        conditions.append(sql_tpl.format(alias=chunk_alias, field=f.field, param=p))
+        params[p] = prepare(f.value)
 
     if conditions:
         return " AND " + " AND ".join(conditions), params, join_clause

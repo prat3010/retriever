@@ -1,7 +1,7 @@
 from sqlalchemy import text
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.vector.filter_builder import build_filter_clause
+from src.adapters.vector.filter_builder import build_filter_clause, rows_to_search_results
 from src.domain.abstractions.retrieval import MetadataFilter, SearchResult, VectorSearchProvider
 
 
@@ -47,13 +47,4 @@ class PgVectorSearchAdapter(VectorSearchProvider):
             )
             rows = result.fetchall()
 
-        return [
-            SearchResult(
-                chunk_id=str(row[0]),
-                document_id=str(row[1]),
-                content=row[2],
-                score=float(row[4]),
-                metadata=row[3] if isinstance(row[3], dict) else {},
-            )
-            for row in rows
-        ]
+        return rows_to_search_results(rows)

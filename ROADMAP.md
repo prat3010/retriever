@@ -31,7 +31,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Completed** | Q2 2028 |
 | **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Completed** | Q3 2028 |
 | **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Completed** | Q3 2028 |
-| **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Planned** | Q4 2028 |
+| **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Completed** | Q4 2028 |
 | **M25** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q4 2028 |
 | **M26** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q1 2029 |
 | **M27** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q1 2029 |
@@ -487,7 +487,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 - Uploaded JPEG/PNG images are processed, described, chunked, and indexed.
 - Scanned PDFs (zero extractable text) fall through to vision LLM (first page described).
 - Text PDFs and plain text files unaffected (no regression).
-- 238+ tests passing.
+- 286+ tests passing.
 
 ---
 

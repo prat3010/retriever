@@ -23,6 +23,19 @@ they start blocking you — not before.
 | Duplicate `index=True` on `ChatSessionDb.user_id` / `ChatMessageDb.user_id` | `f760f68` |
 | `SET LOCAL` uses bindparam instead of f-string (PG doesn't support `$N` params in SET) | `f760f68` |
 | `greenlet` dependency missing (SQLAlchemy async requirement) | `12c301a` |
+| Missing `await` on `generate_presigned_url()` — admin download silently broken | M24 polish |
+| 3 migration drifts: `inference_logs.notes`, `semantic_cache` table, `audit_logs` hashes | M24 polish |
+| `MagicMock` → `AsyncMock` in presigned URL tests | M24 polish |
+| `asyncio.run()` → `await` in event tests | M24 polish |
+| 10 redundant inline imports in `main.py` (`json`×4, `re`, `uuid` — already at module level) | M24 polish |
+| Missing module-level imports: `logging`, `datetime.UTC` | M24 polish |
+| `upload_document` (73 lines) refactored — extracted `_check_idempotency`/`_cache_idempotency` | M24 polish |
+| `rate_limiter.py:acquire` (75 lines) refactored — extracted Lua script constant + result parser | M24 polish |
+| Missing return type annotations: `lifespan`, `event_stream`, `admin_download_document_file` | M24 polish |
+| `_apply_input_guardrails` (59 lines) split into `_apply_pii_guard` + `_apply_llm_safety_guard` | M24 polish |
+| `build_filter_clause` 10-branch if/elif chain replaced with `_OP_TO_SQL` operator dict (60→~35 lines) | M24 polish |
+| Duplicate row mappers in `search_similar`/`search_keywords` replaced with shared `rows_to_search_results` | M24 polish |
+| `StreamingResponse` + `sqlalchemy.select` moved from inline to module-level imports | M24 polish |
 
 ## Architecture
 
@@ -71,19 +84,28 @@ construction instead.
 
 ## Test Coverage
 
-### 15+ source files with zero test coverage
+### Source files with zero test coverage
 | File | Risk |
 |------|------|
 | `adapters/cognitive/reranker_adapter.py` | Reranker failures undetected |
 | `adapters/cognitive/openai_adapter.py` (stream path) | Streaming bugs ship |
 | `adapters/storage/local_storage.py` | File I/O errors undetected |
-| `adapters/cache/config_cache.py` | Cache logic untested |
 | `adapters/telemetry/middleware.py` | Observability gaps |
 | `adapters/telemetry/setup.py` | Init failures undetected |
 | `adapters/database/setup.py` | Migration/RBAC setup untested |
 | `domain/inference/orchestrator.py` (stream path) | Streaming bugs ship |
 | All `workers/` files (354 lines) | Async pipeline untested |
 | All `packages/processing-core/` files | Core chunking/parsing untested |
+
+### Source files with new test coverage added during M24 polish round
+| File | Tests |
+|------|-------|
+| `adapters/cache/config_cache.py` | 11 |
+| `adapters/vector/vector_repository.py` | 4 |
+| `adapters/vector/keyword_repository.py` | 4 |
+| `adapters/storage/local_storage.py` | 7 |
+| `adapters/cognitive/reranker_adapter.py` | 7 |
+| `adapters/telemetry/setup.py` | 6 |
 
 ## Observability
 

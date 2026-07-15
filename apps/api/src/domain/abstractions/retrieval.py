@@ -24,6 +24,7 @@ class SearchQuery(BaseModel):
     tags: list[str] = Field(default_factory=list)
     enable_hybrid: bool = True
     enable_reranking: bool = True
+    enable_self_query: bool = False
     rrf_k: int = 60
     reranking_threshold: float = 0.7
     enable_web_search: bool = False
@@ -122,4 +123,11 @@ class SemanticCacheProvider(ABC):
         query_embedding: list[float],
         results: list[SearchResult],
     ) -> None:
+        pass
+
+
+class SelfQueryProvider(ABC):
+
+    @abstractmethod
+    async def parse_query(self, query: str) -> list[MetadataFilter]:
         pass

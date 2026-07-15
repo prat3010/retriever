@@ -9,6 +9,7 @@ class FeatureFlags(BaseModel):
     enable_reranking: bool = True
     enable_sse_streaming: bool = True
     enable_web_search: bool = False
+    enable_self_query: bool = False
 
 
 class ModelPricing(BaseModel):

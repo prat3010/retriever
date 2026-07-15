@@ -12,11 +12,13 @@ from uuid import uuid4
 from src.domain.abstractions.retrieval import (
     EmbeddingProvider,
     KeywordSearchProvider,
+    MetadataFilter,
     RerankerProvider,
     SearchMeta,
     SearchQuery,
     SearchResponse,
     SearchResult,
+    SelfQueryProvider,
     VectorSearchProvider,
     SemanticCacheProvider,
 )
@@ -34,6 +36,7 @@ class HybridSearchService:
         reranker: RerankerProvider,
         cache_provider: SemanticCacheProvider = None,
         web_search: WebSearchProvider | None = None,
+        self_query: SelfQueryProvider | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
@@ -41,10 +44,16 @@ class HybridSearchService:
         self.reranker = reranker
         self.cache_provider = cache_provider
         self.web_search = web_search
+        self.self_query = self_query
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
         start_time = time.monotonic()
+
+        # 0. Self-query: parse NL query into structured filters
+        if query.enable_self_query and self.self_query:
+            parsed = await self._parse_self_query(query.query)
+            query.filters = query.filters + parsed
 
         # 1. Generate query embedding
         query_embedding = await self.embedder.embed_text(query.query)
@@ -143,6 +152,12 @@ class HybridSearchService:
             return results[: query.top_k]
         except Exception:
             return results
+
+    async def _parse_self_query(self, query: str) -> list[MetadataFilter]:
+        try:
+            return await self.self_query.parse_query(query)
+        except Exception:
+            return []
 
     async def _fan_out_search(
         self,

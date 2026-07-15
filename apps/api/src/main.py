@@ -197,6 +197,17 @@ else:
 
 # Initialize search service
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
+
+llm_provider = RoutingLLMProvider(
+    openai_adapter=OpenAILLMAdapter(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    ),
+    anthropic_adapter=AnthropicLLMAdapter(
+        api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+    ),
+)
 
 search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
@@ -208,6 +219,7 @@ search_service = HybridSearchService(
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),
     web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
+    self_query=LLMSelfQueryAdapter(llm=llm_provider),
 )
 
 # Initialize inference service
@@ -217,15 +229,7 @@ log_writer = SqlInferenceLogWriter()
 feedback_repo = SqlFeedbackRepository()
 
 inference_orchestrator = InferenceOrchestrator(
-    llm_provider=RoutingLLMProvider(
-        openai_adapter=OpenAILLMAdapter(
-            api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL,
-        ),
-        anthropic_adapter=AnthropicLLMAdapter(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-        ),
-    ),
+    llm_provider=llm_provider,
     prompt_builder=PromptBuilder(template_registry=template_registry),
     citation_validator=CitationValidator(),
     session_repo=session_repo,
@@ -1185,6 +1189,7 @@ async def search_documents(
         enable_web_search=tenant_config.feature_flags.enable_web_search,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
+        enable_self_query=tenant_config.feature_flags.enable_self_query,
     )
 
     response = await search_service.search(query)
@@ -1323,6 +1328,7 @@ def _build_search_query(
         enable_web_search=tenant_config.feature_flags.enable_web_search,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
+        enable_self_query=tenant_config.feature_flags.enable_self_query,
     )
 
 

@@ -266,6 +266,25 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
         # Metadata Extraction
         extracted_metadata = {}
         extractors_cfg = config_val.get("metadata_extractors", [])
+        if not extractors_cfg:
+            ai_api_key = config_val.get("ai_provider", {}).get("api_key", "")
+            if ai_api_key and ai_api_key != "********":
+                from processing_core import ConfigEncrypter
+                enc = ConfigEncrypter()
+                ai_api_key = enc.decrypt(ai_api_key)
+            if not ai_api_key or ai_api_key == "********":
+                ai_api_key = os.environ.get("OPENAI_API_KEY", "")
+            if ai_api_key:
+                extractors_cfg = [{
+                    "name": "default",
+                    "extractor_type": "llm",
+                    "schema_definition": {
+                        "doc_type": "Document type (invoice, contract, report, email, memo, other)",
+                        "date_reference": "Year or date mentioned (e.g. 2025, Q3 2026)",
+                        "topics": ["List of 2-4 key topics"],
+                        "author_reference": "Author, sender, or department name if mentioned",
+                    },
+                }]
         for ext_cfg in extractors_cfg:
             ext_name = ext_cfg.get("name")
             ext_type = ext_cfg.get("extractor_type")

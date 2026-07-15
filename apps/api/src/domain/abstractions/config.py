@@ -32,6 +32,7 @@ class AIProviderConfig(BaseModel):
     api_key: str | None = None
     base_url: str | None = "https://generativelanguage.googleapis.com/v1beta/openai/"
     default_model: str = "gemini-1.5-flash"
+    vision_model: str = "gpt-4o"
     fallback_provider: str = ""
     fallback_model: str = ""
     retry_attempts: int = 2

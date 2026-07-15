@@ -995,7 +995,7 @@ async def upload_document(
     # 4. Submit to Celery worker for parsing and embedding
     celery_app.send_task(
         "process_document",
-        args=[str(doc_id), tenantId, storage_path],
+        args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
         queue="ingestion.parse",
     )
 

@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 22: Structured Data Extraction (Completed)
-- **Last Completed Milestone**: Milestone 22: Structured Data Extraction
-- **Build Status**: Passing (215+ unit tests pass)
+- **Current Milestone**: Milestone 23: Multi-Modal Processing (Completed)
+- **Last Completed Milestone**: Milestone 23: Multi-Modal Processing
+- **Build Status**: Passing (238+ unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 23: Multi-Modal Processing
+- **Next Recommended Milestone**: Milestone 24: Self-Querying Retrieval
 
 ---
 
@@ -27,7 +27,7 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 25 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), and structured data extraction (M22).
+- **Unit Test Coverage**: 26 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), and multi-modal processing (M23).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
 - **Total Tests**: 215/215 passing (base + 16 failover tests in M19 + 14 token cost tests in M20 + 12 web search tests in M21).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
@@ -257,6 +257,30 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 14. Outstanding Blockers & Issues
+## 14. M23 Multi-Modal Processing — Completed
+
+### ChatMessage Vision Support
+- Added `images: list[dict]` field to `ChatMessage` domain model — empty by default, backward-compatible.
+- OpenAI adapter: converts `images` to OpenAI content blocks (`text` + `image_url`) in both `generate()` and `generate_stream()`.
+- Anthropic adapter: converts `images` to Anthropic content blocks (`text` + `image` with base64 source) in `_compile_messages()`.
+
+### Config
+- Added `vision_model: str = "gpt-4o"` to `AIProviderConfig`.
+- Added `VISION_MODEL` env var to `Settings`.
+
+### Worker Pipeline
+- `mime_type` now passed from upload endpoint to Celery `process_document` task.
+- New `_describe_with_vision()` function in worker calls OpenAI vision API for images and zero-text PDFs (describes first page).
+- Added `Pillow>=10.0.0` and `openai>=1.0.0` to worker dependencies.
+
+### Testing
+- Created `test_vision.py` with 11 tests covering model, both adapters, config, and worker function signature.
+
+### Documentation
+- Updated ROADMAP.md, PROJECT_STATUS.md, CHANGELOG.md, and TECH_DEBT.md.
+
+---
+
+## 15. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

@@ -63,6 +63,54 @@ def _build_envelope(event_type: str, payload: dict, trace_id: str = "") -> dict:
     }
 
 
+# ponytail: vision extraction for images and zero-text PDFs
+def _describe_with_vision(path: str, mime_type: str, config: dict) -> str:
+    import base64
+    import openai
+
+    api_key = config.get("ai_provider", {}).get("api_key") or os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        return ""
+    client = openai.OpenAI(api_key=api_key)
+
+    image_data: bytes | None = None
+    if mime_type.startswith("image/"):
+        with open(path, "rb") as f:
+            image_data = f.read()
+    elif mime_type == "application/pdf":
+        try:
+            import pdfplumber
+            with pdfplumber.open(path) as pdf:
+                for page in pdf.pages:
+                    img = page.to_image(resolution=150)
+                    import io
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    buf.seek(0)
+                    image_data = buf.read()
+                    break  # ponytail: describe first page only
+        except Exception:
+            return ""
+    if image_data is None:
+        return ""
+
+    b64 = base64.b64encode(image_data).decode("utf-8")
+    media_type = f"image/{mime_type.split('/')[-1]}" if mime_type.startswith("image/") else "image/png"
+
+    resp = client.chat.completions.create(
+        model=config.get("ai_provider", {}).get("vision_model", "gpt-4o"),
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Describe this document page in detail, including all visible text and visual elements."},
+                {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{b64}"}},
+            ],
+        }],
+        max_tokens=4096,
+    )
+    return resp.choices[0].message.content or ""
+
+
 # ── Celery tasks ──────────────────────────────────────────────────────────
 
 
@@ -87,7 +135,7 @@ class DatabaseTask(Task):
     pass
 
 
-async def _run_process_document(document_id: str, tenant_id: str, storage_path: str) -> None:
+async def _run_process_document(document_id: str, tenant_id: str, storage_path: str, mime_type: str = "") -> None:
     engine = get_engine()
 
     async with engine.begin() as conn:
@@ -151,6 +199,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
         try:
             text_content = extract_text_from_file(parse_target_path)
+            # ponytail: vision fallback for images and zero-text PDFs
+            if not text_content.strip() and mime_type:
+                text_content = _describe_with_vision(parse_target_path, mime_type, config_val)
         finally:
             if local_path and os.path.exists(local_path):
                 try:
@@ -351,8 +402,8 @@ process_document_async = _run_process_document
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def process_document(self, document_id: str, tenant_id: str, storage_path: str) -> None:
-    asyncio.run(_run_process_document(document_id, tenant_id, storage_path))
+def process_document(self, document_id: str, tenant_id: str, storage_path: str, mime_type: str = "") -> None:
+    asyncio.run(_run_process_document(document_id, tenant_id, storage_path, mime_type))
 
 
 async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:

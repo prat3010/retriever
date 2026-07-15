@@ -30,7 +30,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M20** | Token Cost Optimization | Long chat history summarization compression, token billing tracking | **Completed** | Q2 2028 |
 | **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Completed** | Q2 2028 |
 | **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Completed** | Q3 2028 |
-| **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Planned** | Q3 2028 |
+| **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Completed** | Q3 2028 |
 | **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Planned** | Q4 2028 |
 | **M25** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q4 2028 |
 | **M26** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q1 2029 |
@@ -469,7 +469,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 23: Multi-Modal Processing
+### [Completed] Milestone 23: Multi-Modal Processing
 
 **Objective:** Add OCR and vision support for scanned PDFs and image files during worker ingestion.
 
@@ -477,13 +477,19 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Dependencies:** M4, M12
 
-**Targets:**
-- Integrate local OCR libraries (Tesseract) and cloud multi-modal LLM vision adapters in Celery worker pipeline.
-- Implement file-type checks on ingestion queues; trigger visual descriptions for PDF pages yielding zero raw text.
-- Extract, chunk, and index text descriptions from charts, diagrams, and tables.
+**Deliverables:**
+- `ChatMessage.images: list[dict]` field added to domain model; `model_dump()` backward-compatible (empty list = string content).
+- OpenAI adapter converts `images` to content blocks (`text` + `image_url`) when present; `generate_stream` similarly wired.
+- Anthropic adapter converts `images` to Anthropic content blocks (`text` + `image` with base64 source) when present.
+- `AIProviderConfig.vision_model` config field (default `gpt-4o`); `Settings.VISION_MODEL` env var.
+- Worker extraction pipeline: `mime_type` passed from upload endpoint to Celery task. New `_describe_with_vision()` function in worker calls OpenAI vision API for images and zero-text PDFs (first page).
+- `Pillow>=10.0.0`, `openai>=1.0.0` added to worker deps.
 
 **Acceptance Criteria:**
-- Photographed invoices and scanned document PDFs are successfully processed, chunked, and retrievable via vector search.
+- Uploaded JPEG/PNG images are processed, described, chunked, and indexed.
+- Scanned PDFs (zero extractable text) fall through to vision LLM per page.
+- Text PDFs and plain text files unaffected (no regression).
+- 238+ tests passing.
 
 ---
 

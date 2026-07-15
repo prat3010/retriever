@@ -24,6 +24,7 @@ class ChatMessage(BaseModel):
     content: str
     name: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
+    images: list[dict] = Field(default_factory=list)
 
 
 class InferenceRequest(BaseModel):

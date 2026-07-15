@@ -15,7 +15,9 @@ dependencies = [
     "pdfplumber>=0.11.0",
     "tiktoken>=0.6.0",
     "boto3>=1.34.0",
+    "Pillow>=10.0.0",
     "cryptography>=42.0.0",
+    "openai>=1.0.0",
 ]
 
 [dependency-groups]

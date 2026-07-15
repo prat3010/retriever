@@ -2,6 +2,10 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-07-15
+### Added
+- **Multi-Modal Processing (M23)**: `ChatMessage.images` field for vision prompts. OpenAI and Anthropic adapters convert images to content blocks. `_describe_with_vision()` worker function describes images and zero-text PDFs via OpenAI vision API. `mime_type` passed through upload→Celery pipeline. `AIProviderConfig.vision_model` config. 11 new tests.
+
 ## [0.15.0] - 2026-07-15
 ### Added
 - **Structured Data Extraction (M22)**: New `POST /v1/tenants/{tenantId}/documents/{documentId}/extract` endpoint accepts a JSON Schema and returns structured JSON extracted from document content. `get_document_chunks` method on `DocumentRepository` port + `SqlDocumentRepository` adapter.

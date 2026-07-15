@@ -222,3 +222,25 @@ Anthropic doesn't expose a `response_format={"type": "json_object"}` equivalent.
 **File:** `apps/api/src/main.py`  
 
 Extraction endpoint returns a blocking JSON response. Add SSE streaming for large document extraction if latency becomes a concern.
+
+## Product/Deferred (M23)
+
+### No local OCR (Tesseract)
+**File:** `workers/src/tasks/__init__.py`  
+
+Vision extraction uses OpenAI vision API only — no local Tesseract OCR. This works for all image types but has per-call cost and latency. Add `pytesseract` + `TesseractOCR` system binary when throughput or cost requires offline processing.
+
+### First-page-only PDF vision
+**File:** `workers/src/tasks/__init__.py` (in `_describe_with_vision`)
+
+For zero-text PDFs, only the first page is described. Long scanned documents will miss later pages. Iterate all pages when multi-page scanned PDFs become a common workload.
+
+### No Anthropic vision in worker
+**File:** `workers/src/tasks/__init__.py`  
+
+Worker `_describe_with_vision` hard-codes OpenAI. Add Anthropic Claude vision path (`claude-3-5-sonnet`) when the provider config switches away from OpenAI.
+
+### Worker vision config not tenant-aware
+**File:** `workers/src/tasks/__init__.py`  
+
+`_describe_with_vision` reads `vision_model` from the document's tenant config but uses `OPENAI_API_KEY` env var. Add per-tenant API key routing when multi-tenant vision use cases emerge.

@@ -52,6 +52,12 @@ class OpenAILLMAdapter(LlmProvider):
     ) -> InferenceResponse:
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
+        for msg in messages:
+            images = msg.pop("images", None)
+            if images:
+                content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
+                content_block.extend(images)
+                msg["content"] = content_block
         client = self._client_for_key(configuration.get("api_key"))
 
         kwargs: dict[str, Any] = {
@@ -85,6 +91,12 @@ class OpenAILLMAdapter(LlmProvider):
     ) -> AsyncIterator[dict]:
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
+        for msg in messages:
+            images = msg.pop("images", None)
+            if images:
+                content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
+                content_block.extend(images)
+                msg["content"] = content_block
         client = self._client_for_key(configuration.get("api_key"))
 
         kwargs: dict[str, Any] = {

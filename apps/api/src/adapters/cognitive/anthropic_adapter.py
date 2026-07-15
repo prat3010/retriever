@@ -52,10 +52,23 @@ class AnthropicLLMAdapter(LlmProvider):
                 system_parts.append(msg.content)
             else:
                 role = "assistant" if msg.role == "assistant" else "user"
-                compiled_history.append({
-                    "role": role,
-                    "content": msg.content
-                })
+                if msg.images:
+                    content_block: list[dict] = [{"type": "text", "text": msg.content}]
+                    for img in msg.images:
+                        url = img.get("image_url", {}).get("url", "")
+                        if url.startswith("data:image"):
+                            media_type = url.split(";")[0].split(":")[1]
+                            data = url.split(",")[1]
+                            content_block.append({
+                                "type": "image",
+                                "source": {"type": "base64", "media_type": media_type, "data": data},
+                            })
+                    compiled_history.append({"role": role, "content": content_block})
+                else:
+                    compiled_history.append({
+                        "role": role,
+                        "content": msg.content
+                    })
 
         system_prompt = "\n\n".join(system_parts)
         return system_prompt, compiled_history

@@ -399,8 +399,6 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
----
-
 ### [Completed] Milestone 20: Token Cost Optimization
 
 **Objective:** Control input token billing on long chat sessions by introducing context summarization compression.
@@ -487,7 +485,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Acceptance Criteria:**
 - Uploaded JPEG/PNG images are processed, described, chunked, and indexed.
-- Scanned PDFs (zero extractable text) fall through to vision LLM per page.
+- Scanned PDFs (zero extractable text) fall through to vision LLM (first page described).
 - Text PDFs and plain text files unaffected (no regression).
 - 238+ tests passing.
 

@@ -206,6 +206,7 @@ export interface ChatMessage {
   readonly content: string;
   readonly name?: string;
   readonly toolCalls?: readonly ToolCall[];
+  readonly images?: readonly Record<string, any>[];
 }
 
 export interface ToolCall {

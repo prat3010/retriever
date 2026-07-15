@@ -93,6 +93,17 @@ async def initialize_database() -> None:
             )
         )
 
+        # Create GIN index on document_chunks.meta_data for JSONB filter queries
+        print("Creating GIN meta_data index...", file=sys.stderr)
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_document_chunks_meta_data
+                ON document_chunks USING gin (meta_data);
+                """
+            )
+        )
+
         # Create index on chat_sessions created_at for ordering
         print("Creating chat_sessions created_at index...", file=sys.stderr)
         await conn.execute(

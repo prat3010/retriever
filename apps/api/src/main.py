@@ -61,7 +61,7 @@ from src.domain.abstractions.exceptions import (
 )
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, PromptTemplate
 from src.domain.abstractions.ingestion import Document
-from src.domain.abstractions.retrieval import MetadataFilter, SearchMeta, SearchQuery, SearchResponse, SearchResult
+from src.domain.abstractions.retrieval import MetadataFilter, SearchQuery
 from src.domain.abstractions.tenant import Tenant
 from src.domain.config.config_service import ConfigurationService
 from src.domain.inference.citation_validator import CitationValidator
@@ -705,7 +705,7 @@ async def admin_get_document_download_url(tenantId: str, documentId: str) -> dic
 
     if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "generate_presigned_url"):
         try:
-            url = local_storage.generate_presigned_url(doc.storage_path)
+            url = await local_storage.generate_presigned_url(doc.storage_path)
             return {"downloadUrl": url}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}")

@@ -191,6 +191,10 @@ class DocumentChunkDb(Base):
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
+    __table_args__ = (
+        Index("ix_document_chunks_meta_data", meta_data, postgresql_using="gin"),
+    )
+
     # Relationships
     document = relationship("DocumentDb", back_populates="chunks")
 
@@ -323,6 +327,7 @@ class InferenceLogDb(Base):
     output_tokens = Column(Integer, nullable=False, default=0)
     latency_ms = Column(Integer, nullable=False, default=0)
     cost_usd = Column(Float, nullable=False, default=0.0)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 

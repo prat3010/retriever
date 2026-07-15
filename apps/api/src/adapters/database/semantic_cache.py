@@ -1,4 +1,3 @@
-import json
 import uuid
 from sqlalchemy import text
 from src.adapters.database.connection import engine

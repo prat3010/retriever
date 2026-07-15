@@ -29,15 +29,15 @@ Operational overview of the Retriever platform's current engineering status.
 ### Testing Status: **Green**
 - **Unit Test Coverage**: 26 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), and multi-modal processing (M23).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 215/215 passing (base + 16 failover tests in M19 + 14 token cost tests in M20 + 12 web search tests in M21).
+- **Total Tests**: 238/238 passing.
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
 ### Documentation Health: **Green**
 - **Blueprints**: Master Architecture, Core specifications, System Design outlines, and Admin Dashboard guide are complete.
+- **Feature Docs**: Core platform spec at `docs/features/core-platform.md`, Client SDK guide at `docs/features/client-sdk.md`.
 - **Playbook**: Strict enforcement rules for database design, testing, RLS limits, and imports are documented.
 - **ADRs**: Decisions for PostgreSQL, pgvector, FastAPI, Redis, RabbitMQ, Next.js, and SSE are recorded in `docs/decisions/`.
-- **Admin Dashboard**: Full agent guide at `docs/features/admin-dashboard.md`.
 
 ---
 

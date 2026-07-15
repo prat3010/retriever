@@ -8,9 +8,9 @@ Verifies:
 - Integration: upload endpoint publishes event
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from src.domain.abstractions.events import DocumentEventPayload, EventEnvelope
 
 # ── 1. Event Envelope ────────────────────────────────────────────────────────
@@ -65,7 +65,8 @@ def test_document_event_payload_defaults() -> None:
 
 
 @patch("pika.BlockingConnection", autospec=True)
-def test_publisher_declare_topology(mock_connection) -> None:
+@pytest.mark.asyncio
+async def test_publisher_declare_topology(mock_connection) -> None:
     """Verify declare_topology creates exchange, DLX, queues, and bindings."""
     from src.adapters.broker.rabbitmq_event_publisher import RabbitMQEventPublisher
 
@@ -73,7 +74,7 @@ def test_publisher_declare_topology(mock_connection) -> None:
     mock_connection.return_value.channel.return_value = mock_channel
 
     publisher = RabbitMQEventPublisher(amqp_url="amqp://localhost")
-    asyncio.run(publisher.declare_topology())
+    await publisher.declare_topology()
 
     # Exchange declarations
     exchange_calls = list(mock_channel.exchange_declare.call_args_list)
@@ -94,7 +95,8 @@ def test_publisher_declare_topology(mock_connection) -> None:
 
 
 @patch("pika.BlockingConnection", autospec=True)
-def test_publisher_publish(mock_connection) -> None:
+@pytest.mark.asyncio
+async def test_publisher_publish(mock_connection) -> None:
     """Verify publish sends JSON to the exchange with correct routing key."""
     from src.adapters.broker.rabbitmq_event_publisher import (
         ROUTING_UPLOADED,
@@ -110,7 +112,7 @@ def test_publisher_publish(mock_connection) -> None:
     )
 
     publisher = RabbitMQEventPublisher(amqp_url="amqp://localhost")
-    asyncio.run(publisher.publish(envelope, ROUTING_UPLOADED))
+    await publisher.publish(envelope, ROUTING_UPLOADED)
 
     mock_channel.basic_publish.assert_called_once()
     call_kwargs = mock_channel.basic_publish.call_args[1]

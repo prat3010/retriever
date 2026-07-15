@@ -71,3 +71,4 @@ AI agents must stop and ask the user for clarification in the following scenario
 3. **Ambiguous Tenant Isolation Bounds:** If a proposed feature needs to share data across tenant partitions, violating isolation rules.
 4. **Tool/Library Additions:** Before adding any third-party library to a lockfile, as this introduces dependency changes.
 5. **Human-in-the-Loop Approval Policies:** If a user action flow requires validation hooks, but the approval wait duration or timeout bounds are unspecified.
+6. **Docs Update Rule:** Whenever an agent makes a code change, it must check `docs/` for stale documentation and update accordingly. If any `.md` file under `docs/` references the modified code, the agent must update it in the same change set. If the agent is unsure whether a doc reference is stale, it must ask.

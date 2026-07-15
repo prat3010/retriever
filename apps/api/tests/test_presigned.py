@@ -128,7 +128,7 @@ async def test_serve_local_download_success(tmp_path) -> None:
     valid_sig = hmac.new(secret_key, msg=msg, digestmod=sha256).hexdigest()
 
     # Mock LocalStorage storage_dir to look at tmp_path
-    mock_local_storage = MagicMock(spec=LocalStorage)
+    mock_local_storage = AsyncMock(spec=LocalStorage)
     mock_local_storage.storage_dir = str(tmp_path)
 
     with patch("src.main.local_storage", mock_local_storage):

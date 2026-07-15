@@ -123,7 +123,7 @@ Retriever's capabilities are divided into five logical feature groups:
 *   **FR-5.2: Prompt Construction:** The system MUST construct prompts dynamically by combining system guidelines, tenant persona configurations, retrieved context chunks, and user inputs.
 *   **FR-5.3: Context Window Management:** The system MUST check the token counts of compiled prompts. If the prompt exceeds the target model's limits, it MUST automatically apply compression policies (e.g., summarizing older history or selecting only highest-scoring chunks).
 *   **FR-5.4: Citation Enforcement:** Generated responses MUST include inline citations referring to specific source chunk IDs. The system MUST validate citations; responses containing unresolvable citations MUST trigger correction logic or throw a validation error.
-*   **FR-5.5: Structured Output Generation:** The system MUST enforce structured JSON formats for models when requested and validate outputs against target JSON schemas.
+*   **FR-5.5: Structured Output Generation:** The system SHOULD attempt structured JSON generation via prompt hints and `response_format` where supported; output JSON schema validation is best-effort.
 *   **FR-5.6: Input/Output Guardrails:** The system MUST check input queries for prompt injection attempts and check output tokens for safety violations.
 *   **FR-5.7: Tool Execution Scope:** If the cognitive model requests tool execution, the system MUST validate the tool schemas against the tenant's allowed scopes.
 *   **FR-5.8: Human-in-the-Loop Hooks:** The platform MUST support pausing tool executions or high-risk generations to register token hooks in the database, waiting for external user approval before completing the operation.

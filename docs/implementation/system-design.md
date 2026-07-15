@@ -393,7 +393,7 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 ### 3.17 Billing Hooks
 * **Responsibility:** Track tenant token usage, API operations, and storage resource consumption.
 * **Inputs:** Tenant ID context, operation cost metrics (tokens, bytes).
-* **Outputs:** None (Asynchronous update).
+* **Outputs:** None (Asynchronous update to `inference_logs.cost_usd` per inference call).
 * **Dependencies:** Relational DB (async ledger update) or Kafka/RabbitMQ.
 * **Failure Modes:**
   * *Ledger Failure:* Write metric payload to local file logs for manual reconciliation to prevent system blocking.
@@ -493,6 +493,7 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
 #### 4.1.4 `documents`
 * **Primary Key:** `document_id` (UUIDv4)
 * **Foreign Keys:** `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
+* **Columns:** `tags TEXT[]` — document-level tag labels for search filtering
 * **Important Indexes:**
   * Index on `tenant_id`
   * Compound unique index on `(tenant_id, file_hash)`
@@ -509,7 +510,8 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
   * Index on `tenant_id`
   * Index on `document_id`
   * Compound index on `(tenant_id, document_id)`
-  * GIN index on `content` (supporting Postgres BM25 keyword searches)
+  * GIN tsvector index on `content` (Postgres BM25 keyword search via `to_tsvector('english', content)`)
+  * GIN index on `meta_data` (JSONB filter queries: `@>`, `?`, `?|`, `~*`)
 * **Relationships:** Many-to-One with `documents`, Many-to-One with `tenants`, Hierarchical self-reference (parent-child).
 * **Retention Strategy:** Cascade deleted when their parent `document` is deleted.
 
@@ -575,6 +577,7 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
   * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
   * `session_id` (UUIDv4, FK referencing `chat_sessions.session_id` ON DELETE SET NULL)
   * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE SET NULL)
+* **Columns:** `cost_usd` (Float) — per-inference token cost, `notes` (Text) — telemetry metadata (e.g. `_actual_provider` for failover tracking)
 * **Important Indexes:**
   * Index on `tenant_id`
   * Index on `user_id`
@@ -729,16 +732,18 @@ Every request MUST provide header trace variables and client authorization keys.
 {
   "query": "What is the budget limit for the Q3 marketing campaign?",
   "limit": 5,
-  "filters": {
-    "tags": ["finance", "marketing"],
-    "dateAfter": "2026-01-01T00:00:00Z"
-  }
+  "filters": [
+    {"field": "tags", "operator": "contains", "value": "finance"}
+  ],
+  "tags": ["marketing"]
 }
 ```
+* **`filters` items support 10 operators:** `eq`, `neq`, `in`, `gt`, `gte`, `lt`, `lte`, `exists`, `contains` (array overlap), `regex` (PG `~*`).
+* **`tags`:** Shortcut for `{"field": "tags", "operator": "contains", "value": tag}`. Applies to the `documents.tags TEXT[]` column (GIN-indexed).
 * **Response Schema (200 OK):**
 ```json
 {
-  "query": "What is the budget limit for the Q3 marketing campaign?",
+  "query": "...",
   "results": [
     {
       "chunkId": "chk_001a1234-5678-90ab-cdef-1234567890ab",
@@ -778,9 +783,14 @@ Every request MUST provide header trace variables and client authorization keys.
 ```json
 {
   "query": "How much spend is allowed for the Q3 marketing?",
-  "stream": true
+  "stream": true,
+  "system_prompt_name": "default",
+  "filters": [],
+  "tags": []
 }
 ```
+* **`system_prompt_name`:** Selects a per-tenant prompt template. Defaults to `"default"`.
+* **`filters`/`tags`:** Same semantics as search — scopes grounding to matching documents.
 * **Response Stream (Server-Sent Events):**
 *Format:* `data: { JSON delta payload }\n\n`
 ```json
@@ -814,6 +824,38 @@ data: {"event": "done", "usage": {"inputTokens": 350, "outputTokens": 45, "laten
 {
   "sessionId": "ses_778f10b2-3c4d-5e6f-7a8b-9c0d1e2f3a4b",
   "status": "processing"
+}
+```
+
+---
+
+#### 5.1.5 Structured Data Extraction
+
+##### `POST /v1/tenants/{tenantId}/documents/{documentId}/extract`
+* **Method:** `POST`
+* **Authentication:** Tenant API Key (Bearer Token)
+* **Request Schema:**
+```json
+{
+  "json_schema": {
+    "type": "object",
+    "properties": {
+      "title": {"type": "string"},
+      "date": {"type": "string"},
+      "amount": {"type": "number"}
+    }
+  }
+}
+```
+* **Response Schema (200 OK):**
+```json
+{
+  "documentId": "doc_a01b02c0-3d04-5e06-7f08-9a0b0c0d0e0f",
+  "extracted": {
+    "title": "Q3 Budget Report",
+    "date": "2026-07-01",
+    "amount": 450000.0
+  }
 }
 ```
 

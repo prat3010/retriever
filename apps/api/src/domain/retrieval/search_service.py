@@ -7,6 +7,8 @@ reranking. Depends only on domain abstractions — no infrastructure imports.
 
 import time
 
+from uuid import uuid4
+
 from src.domain.abstractions.retrieval import (
     EmbeddingProvider,
     KeywordSearchProvider,
@@ -18,6 +20,7 @@ from src.domain.abstractions.retrieval import (
     VectorSearchProvider,
     SemanticCacheProvider,
 )
+from src.domain.abstractions.web_search import WebSearchProvider
 
 
 class HybridSearchService:
@@ -30,12 +33,14 @@ class HybridSearchService:
         embedder: EmbeddingProvider,
         reranker: RerankerProvider,
         cache_provider: SemanticCacheProvider = None,
+        web_search: WebSearchProvider | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
         self.embedder = embedder
         self.reranker = reranker
         self.cache_provider = cache_provider
+        self.web_search = web_search
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
@@ -84,6 +89,28 @@ class HybridSearchService:
         # 6. Trim to requested limit
         final_results = fused[: query.top_k]
 
+        # 7. Web search fallback if scores are low
+        if (
+            query.enable_web_search
+            and self.web_search is not None
+            and final_results
+            and final_results[0].score < query.web_search_threshold
+        ):
+            try:
+                web_results = await self.web_search.search(query.query, query.web_search_max_results)
+                max_local = max(r.score for r in final_results)
+                for i, wr in enumerate(web_results):
+                    final_results.append(SearchResult(
+                        chunk_id=f"web_{uuid4().hex[:12]}",
+                        document_id="__web__",
+                        content=f"[Web: {wr.title}]({wr.url})\n{wr.content}",
+                        score=max(0.001, max_local * (0.9 - i * 0.1)),
+                    ))
+                final_results.sort(key=lambda r: r.score, reverse=True)
+                final_results = final_results[: query.top_k]
+            except Exception:
+                pass
+
         elapsed_ms = (time.monotonic() - start_time) * 1000
         response = SearchResponse(
             query=query.query,
@@ -119,18 +146,17 @@ class HybridSearchService:
         vector_results: list[SearchResult] = []
         keyword_results: list[SearchResult] = []
 
-        # Dense vector search
         try:
             vector_results = await self.vector_search.search_similar(
                 tenant_id=query.tenant_id,
                 embedding=query_embedding,
                 top_k=query.top_k,
                 filters=query.filters,
+                tags=query.tags,
             )
         except Exception:
-            pass  # Graceful degradation: proceed with keyword-only
+            pass
 
-        # Sparse keyword search (only if hybrid enabled)
         if query.enable_hybrid:
             try:
                 keyword_results = await self.keyword_search.search_keywords(
@@ -138,9 +164,10 @@ class HybridSearchService:
                     query_text=query.query,
                     top_k=query.top_k,
                     filters=query.filters,
+                    tags=query.tags,
                 )
             except Exception:
-                pass  # Graceful degradation: proceed with vector-only
+                pass
 
         return vector_results, keyword_results
 

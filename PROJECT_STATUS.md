@@ -6,13 +6,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 15: Enterprise Readiness (Completed)
-- **Last Completed Milestone**: Milestone 15: Enterprise Readiness
-- **Build Status**: Passing (144/144 unit tests pass)
+- **Current Milestone**: Milestone 22: Structured Data Extraction (Completed)
+- **Last Completed Milestone**: Milestone 22: Structured Data Extraction
+- **Build Status**: Passing (215+ unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: None (All planned roadmap milestones completed)
+- **Next Recommended Milestone**: Milestone 23: Multi-Modal Processing
 
 ---
 
@@ -27,9 +27,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
 
 ### Testing Status: **Green**
-- **Unit Test Coverage**: 19 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (Milestone 11), production storage (Milestone 12), custom pipelines (Milestone 13), semantic caching / worker batching (Milestone 14), and enterprise cryptographic audit chains / data retention schedulers (Milestone 15).
+- **Unit Test Coverage**: 25 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), and structured data extraction (M22).
 - **Admin API Tests**: 33 tests covering all 19 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs).
-- **Total Tests**: 144/144 passing (111 unit + 7 error-path tests added in tech debt sprint + 5 API surface/SDK tests in Milestone 11 + 6 storage/encryption tests in Milestone 12 + 8 pipeline configurability tests in Milestone 13 + 3 caching/performance tests in Milestone 14 + 4 compliance/auth/retention tests in Milestone 15).
+- **Total Tests**: 215/215 passing (base + 16 failover tests in M19 + 14 token cost tests in M20 + 12 web search tests in M21).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 
@@ -235,6 +235,28 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 13. Outstanding Blockers & Issues
+## 13. M22 Structured Data Extraction — Completed
+
+### Extraction Endpoint
+- Created `POST /v1/tenants/{tenantId}/documents/{documentId}/extract` accepting a JSON Schema and returning structured JSON from document content.
+- Added `ExtractRequest` and `ExtractResponse` DTOs with proper field validation.
+
+### Adapter Wiring
+- Wired `json_schema` field on `InferenceRequest` into the OpenAI adapter as `response_format={"type": "json_object"}`.
+- Wired `json_schema` into the Anthropic adapter as a schema hint appended to the system prompt.
+
+### Domain Model
+- Added `get_document_chunks` abstract method to `DocumentRepository` port with `SqlDocumentRepository` implementation.
+- `DocumentChunk` domain model confirmed and used by the extraction pipeline.
+
+### Testing
+- Created `test_extraction.py` with 10 tests covering model validation, adapter wiring (response_format, system prompt injection), endpoint DTOs, and error paths.
+
+### Documentation
+- Updated ROADMAP.md, PROJECT_STATUS.md, CHANGELOG.md, and TECH_DEBT.md.
+
+---
+
+## 14. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

@@ -13,6 +13,7 @@ class Document(BaseModel):
     file_size: int
     mime_type: str
     status: str
+    tags: list[str] = Field(default_factory=list)
     created_at: str
     updated_at: str
 
@@ -62,6 +63,13 @@ class DocumentRepository(ABC):
     @abstractmethod
     async def soft_delete(self, tenant_id: str, document_id: str) -> str | None:
         """Mark a document as deleted, remove chunks. Returns storage_path for cleanup, or None if not found."""
+        pass
+
+    @abstractmethod
+    async def get_document_chunks(
+        self, tenant_id: str, document_id: str
+    ) -> list[DocumentChunk]:
+        """Get all chunks for a document, ordered by chunk_index."""
         pass
 
 

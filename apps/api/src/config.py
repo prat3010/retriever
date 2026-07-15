@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     COHERE_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""
+    TAVILY_API_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: str = "*"

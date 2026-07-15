@@ -38,6 +38,7 @@ class Usage(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
+    cost_usd: float = 0.0
 
 
 class InferenceResponse(BaseModel):
@@ -70,6 +71,8 @@ class InferenceLog(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     latency_ms: int = 0
+    cost_usd: float = 0.0
+    notes: str | None = None
 
 
 # ── Ports (Abstract Interfaces) ────────────────────────────────────────────

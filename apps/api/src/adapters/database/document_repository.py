@@ -7,7 +7,7 @@ from sqlalchemy import delete, select
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import DocumentChunkDb, DocumentDb
 from src.adapters.database.pagination import encode_cursor, decode_cursor
-from src.domain.abstractions.ingestion import Document, DocumentRepository
+from src.domain.abstractions.ingestion import Document, DocumentChunk, DocumentRepository
 
 
 class SqlDocumentRepository(DocumentRepository):
@@ -23,6 +23,7 @@ class SqlDocumentRepository(DocumentRepository):
             file_size=row.file_size,
             mime_type=row.mime_type,
             status=row.status,
+            tags=list(row.tags or []),
             created_at=row.created_at.isoformat(),
             updated_at=row.updated_at.isoformat(),
         )
@@ -68,6 +69,7 @@ class SqlDocumentRepository(DocumentRepository):
                     file_size=doc.file_size,
                     mime_type=doc.mime_type,
                     status=doc.status,
+                    tags=doc.tags,
                 )
             )
             await session.flush()
@@ -89,6 +91,33 @@ class SqlDocumentRepository(DocumentRepository):
             )
             await session.flush()
             return storage_path
+
+    def _chunk_to_domain(self, row: DocumentChunkDb) -> DocumentChunk:
+        return DocumentChunk(
+            chunk_id=str(row.chunk_id),
+            document_id=str(row.document_id),
+            tenant_id=str(row.tenant_id),
+            content=row.content,
+            token_count=row.token_count,
+            chunk_index=row.chunk_index,
+            parent_chunk_id=str(row.parent_chunk_id) if row.parent_chunk_id else None,
+            meta_data=dict(row.meta_data or {}),
+            created_at=row.created_at.isoformat(),
+        )
+
+    async def get_document_chunks(
+        self, tenant_id: str, document_id: str
+    ) -> list[DocumentChunk]:
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = (
+                select(DocumentChunkDb)
+                .where(
+                    DocumentChunkDb.tenant_id == uuid.UUID(tenant_id),
+                    DocumentChunkDb.document_id == uuid.UUID(document_id),
+                )
+                .order_by(DocumentChunkDb.chunk_index)
+            )
+            return [self._chunk_to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
 
     async def list_documents_cursor(
         self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False

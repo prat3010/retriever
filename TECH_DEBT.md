@@ -163,3 +163,62 @@ fallback.
 
 `if key:` should be `if key is not None:`. Empty string redaction
 gap. Fix when a provider with empty-string API key is added.
+
+## Product / Deferred (M20 & M21)
+
+### Per-message `token_count` on `ChatMessage`
+**Files:** `apps/api/src/domain/abstractions/inference.py`, `apps/api/src/adapters/database/models.py`  
+
+`ChatMessage` and `ChatMessageDb` have no `token_count` field. Adding it would enable per-message token accounting in the dashboard. Skipped because `InferenceLog` already tracks total cost — add when a feature needs per-message token display.
+
+### Brave Search adapter
+**File:** (none — doesn't exist yet)  
+
+Only `TavilySearchAdapter` is implemented. Brave Search would be useful as a redundancy or cost-saving alternative. Add when Tavily API key is absent or rate limits become a blocker.
+
+### Per-tenant web search API keys
+**Files:** `apps/api/src/config.py`, `apps/api/src/adapters/cognitive/tavily_adapter.py`  
+
+Web search API key is platform-level (`TAVILY_API_KEY` env var). No per-tenant override exists. Add when tenants need to bring their own web search credentials.
+
+### Embedding/chunking web results
+**File:** `apps/api/src/domain/retrieval/search_service.py`  
+
+Web results are injected as raw text (`[Web: Title](url)\n{content}`) without chunking or embedding. This works for shallow fallback but longer web content could exhaust the context window. Add proper chunking + embedding when web results regularly exceed 2k tokens.
+
+### Token budget alert thresholds
+**Files:** `apps/api/src/domain/abstractions/config.py`  
+
+No `monthly_token_budget` or `budget_alert_threshold` config fields exist. The Prometheus `COST_SPEND` counter is emitted but not hooked to alerts. Add when a tenant needs spend caps (related to M25).
+
+### Admin dashboard cost charts
+**File:** (none — doesn't exist yet)  
+
+`InferenceLog.cost_usd` is recorded but not surfaced in the dashboard. Add cost-per-tenant charts when the admin UX needs billing visibility.
+
+### Web search result citation validation
+**File:** `apps/api/src/domain/retrieval/search_service.py`  
+
+Web results use `document_id="__web__"` and fake `chunk_id`s, so `CitationValidator` won't match `[Source: web_...]` citations. The LLM may still reference them but citations won't be verified. Fix by adding web results to the valid IDs set, or by skipping citation check for `__web__` documents.
+
+## Product/Deferred (M22)
+
+### No JSON Schema validation
+**File:** `apps/api/src/main.py`  
+
+Extraction endpoint returns the LLM output as-is after `json.loads()`. No server-side JSON Schema validation is performed — the schema is only used as a prompt hint. Add `jsonschema` or `fastapi` built-in validation when extraction reliability needs to be guaranteed.
+
+### No pagination on get_document_chunks
+**File:** `apps/api/src/adapters/database/document_repository.py`  
+
+`get_document_chunks` loads all chunks in one query. For documents with 10k+ chunks this could be slow. Add pagination or streaming when documents exceed 500 chunks.
+
+### Anthropic has no native JSON mode
+**File:** `apps/api/src/adapters/cognitive/anthropic_adapter.py`  
+
+Anthropic doesn't expose a `response_format={"type": "json_object"}` equivalent. The schema hint in the system prompt is best-effort. Switch to tool-calling (`tool_choice` with a single function) when Anthropic's JSON reliability becomes an issue. Claude 3.5+ models support `anthropic-json` mode via the `text` content block with a `thinking` config — revisit when the SDK stabilizes.
+
+### No extraction streaming
+**File:** `apps/api/src/main.py`  
+
+Extraction endpoint returns a blocking JSON response. Add SSE streaming for large document extraction if latency becomes a concern.

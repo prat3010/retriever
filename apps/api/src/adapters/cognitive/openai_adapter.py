@@ -1,14 +1,9 @@
-"""OpenAI LLM Adapter.
-
-Implements the LlmProvider port using the OpenAI API for both
-synchronous generation and SSE-compatible streaming.
-"""
-
 from collections.abc import AsyncIterator
 from typing import Any
 
-from openai import AsyncOpenAI
+import openai
 
+from src.domain.abstractions.exceptions import ProviderUnavailableError
 from src.domain.abstractions.inference import (
     InferenceRequest,
     InferenceResponse,
@@ -17,8 +12,15 @@ from src.domain.abstractions.inference import (
 )
 
 
+RETRYABLE_ERRORS = (
+    openai.InternalServerError,
+    openai.APITimeoutError,
+    openai.APIConnectionError,
+    openai.RateLimitError,
+)
+
+
 class OpenAILLMAdapter(LlmProvider):
-    """Concrete adapter for OpenAI / OpenAI-compatible chat completions."""
 
     def __init__(
         self, api_key: str, base_url: str = "", default_model: str = "gemini-1.5-flash"
@@ -26,31 +28,28 @@ class OpenAILLMAdapter(LlmProvider):
         self.default_model = default_model
         self._api_key = api_key
         self._base_url = base_url
-        self._async_client: AsyncOpenAI | None = None
+        self._async_client: openai.AsyncOpenAI | None = None
 
     @property
-    def client(self) -> AsyncOpenAI:
-        """Lazy-initialize the OpenAI async client."""
+    def client(self) -> openai.AsyncOpenAI:
         if self._async_client is None:
             kwargs: dict[str, Any] = {"api_key": self._api_key}
             if self._base_url:
                 kwargs["base_url"] = self._base_url
-            self._async_client = AsyncOpenAI(**kwargs)
+            self._async_client = openai.AsyncOpenAI(**kwargs)
         return self._async_client
 
-    def _client_for_key(self, api_key: str | None) -> AsyncOpenAI:
-        """Create or return a client for the given API key."""
+    def _client_for_key(self, api_key: str | None) -> openai.AsyncOpenAI:
         if api_key and api_key != self._api_key:
             kwargs: dict[str, Any] = {"api_key": api_key}
             if self._base_url:
                 kwargs["base_url"] = self._base_url
-            return AsyncOpenAI(**kwargs)
+            return openai.AsyncOpenAI(**kwargs)
         return self.client
 
     async def generate(
         self, request: InferenceRequest, configuration: dict[str, Any]
     ) -> InferenceResponse:
-        """Execute a synchronous non-streaming generation."""
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
         client = self._client_for_key(configuration.get("api_key"))
@@ -62,10 +61,13 @@ class OpenAILLMAdapter(LlmProvider):
         }
         if request.max_tokens:
             kwargs["max_tokens"] = request.max_tokens
+        if request.json_schema:
+            kwargs["response_format"] = {"type": "json_object"}
 
-        response = await client.chat.completions.create(
-            **kwargs, stream=False
-        )
+        try:
+            response = await client.chat.completions.create(**kwargs, stream=False)
+        except RETRYABLE_ERRORS as e:
+            raise ProviderUnavailableError(str(e)) from e
 
         choice = response.choices[0]
         return InferenceResponse(
@@ -81,7 +83,6 @@ class OpenAILLMAdapter(LlmProvider):
     async def generate_stream(
         self, request: InferenceRequest, configuration: dict[str, Any]
     ) -> AsyncIterator[dict]:
-        """Execute a streaming generation yielding delta dicts."""
         model = configuration.get("model", self.default_model)
         messages = [m.model_dump() for m in request.messages]
         client = self._client_for_key(configuration.get("api_key"))
@@ -96,7 +97,10 @@ class OpenAILLMAdapter(LlmProvider):
         if request.max_tokens:
             kwargs["max_tokens"] = request.max_tokens
 
-        stream = await client.chat.completions.create(**kwargs)
+        try:
+            stream = await client.chat.completions.create(**kwargs)
+        except RETRYABLE_ERRORS as e:
+            raise ProviderUnavailableError(str(e)) from e
 
         async for chunk in stream:
             choice = chunk.choices[0] if chunk.choices else None

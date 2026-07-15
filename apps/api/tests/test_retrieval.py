@@ -317,7 +317,8 @@ async def test_vector_repository_sets_rls(mock_session_ctx) -> None:
         tenant_id=tenant_id,
         embedding=[0.1] * 768,
         top_k=5,
-        filters={},
+        filters=[],
+        tags=[],
     )
 
     mock_session_ctx.assert_called_once_with(tenant_id=tenant_id)
@@ -326,7 +327,6 @@ async def test_vector_repository_sets_rls(mock_session_ctx) -> None:
 @pytest.mark.asyncio
 @patch("src.adapters.vector.keyword_repository.tenant_session", autospec=True)
 async def test_keyword_repository_sets_rls(mock_session_ctx) -> None:
-    """Verify PgKeywordSearchAdapter calls tenant_session with tenant_id."""
     from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 
     mock_db_session = AsyncMock()
@@ -342,7 +342,8 @@ async def test_keyword_repository_sets_rls(mock_session_ctx) -> None:
         tenant_id=tenant_id,
         query_text="budget report",
         top_k=5,
-        filters={},
+        filters=[],
+        tags=[],
     )
 
     mock_session_ctx.assert_called_once_with(tenant_id=tenant_id)

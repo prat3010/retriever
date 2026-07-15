@@ -2,6 +2,40 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-07-15
+### Added
+- **Structured Data Extraction (M22)**: New `POST /v1/tenants/{tenantId}/documents/{documentId}/extract` endpoint accepts a JSON Schema and returns structured JSON extracted from document content. `get_document_chunks` method on `DocumentRepository` port + `SqlDocumentRepository` adapter.
+- **json_schema wiring**: `InferenceRequest.json_schema` now active — OpenAI adapter sets `response_format={"type": "json_object"}`, Anthropic adapter appends schema hint to system prompt. 10 new tests.
+
+## [0.14.0] - 2026-07-15
+### Added
+- **Web Search Grounding (M21)**: `WebSearchProvider` port + `TavilySearchAdapter` for live web fallback when local search scores fall below `web_search_threshold` (default 0.65). Wired into `HybridSearchService.search()` and both search/chat endpoints. 12 new tests.
+- **TAVILY_API_KEY** env var in settings.
+- **Tech debt ledger**: `TECH_DEBT.md` updated with deferred items from M20/M21.
+
+## [0.13.0] - 2026-07-15
+### Added
+- **Token Cost Optimization (M20)**: `ModelPricing` schema + `DEFAULT_PRICING` on `AIProviderConfig`. `cost_usd` field on `Usage`, `InferenceLog`, `InferenceLogDb` + Alembic migration. `calculate_cost()` utility. Orchestrator emits `TOKEN_CONSUMPTION` and `COST_SPEND` Prometheus counters. 14 new tests.
+- **Conversation Summarizer**: Long histories (>15 turns) are compressed via LLM summary before prompt building. Configurable via `summarize_after_turns`. Fails safe.
+- **Anthropic streaming usage**: Captures token counts from `message_delta` events (was missing before).
+
+## [0.12.0] - 2026-07-15
+### Added
+- **Smart Model Failover (M19)**: `ProviderUnavailableError` exception. `fallback_provider`, `fallback_model`, `retry_attempts`, `retry_delay_ms` on `AIProviderConfig`. Both adapters catch retryable SDK errors (5xx, timeout, connection, rate limit) and raise `ProviderUnavailableError`. `RoutingLLMProvider` retries with exponential backoff then falls back. `_actual_provider` tracked in `InferenceLog.notes`. 16 new tests.
+- **Narrowed retryable errors**: `APIStatusError` → `InternalServerError` on both adapters so auth errors (401) propagate correctly.
+
+## [0.11.0] - 2026-07-15
+### Added
+- **Typed Metadata Filter Operators**: Added `MetadataFilter` Pydantic model with 10 operators (`eq`, `neq`, `in`, `gt`, `gte`, `lt`, `lte`, `exists`, `contains`, `regex`) for both chunk-level metadata and document-level tag filtering.
+- **Document Tags**: Added `tags TEXT[]` column to `documents` table with GIN index. Filtering via `JOIN documents ... d.tags @> ARRAY[:tags]` in vector and keyword search queries.
+- **Rich Chunk Metadata Queries**: Added JSONB operators (`->>` for scalar, `?|` for array, `@>` for containment, `?` for key-existence, `~*` for regex) with proper SQL parameterization.
+- **Shared Filter Clause Builder**: Extracted `build_filter_clause()` in `adapters/vector/filter_builder.py`, deduplicating previously copy-pasted filter logic from both search adapters.
+- **GIN Index on meta_data**: Added `ix_document_chunks_meta_data` GIN index for index-scan performance on JSONB queries.
+- **Filters and Tags in Chat Requests**: Added `filters` and `tags` fields to `ChatMessageRequest`, wired through the chat endpoint's grounding search.
+- **JS SDK Filter Support**: Updated `@prat3010/retriever-client-js` with `MetadataFilter` type and `filters`/`tags` params on `search()`, `chat()`, `chatStream()`.
+- **18 New Tests**: Covering all filter operators, tag filtering, combined filters, and domain model defaults.
+- **173/173 tests passing** (was 155).
+
 ## [0.10.0] - 2026-07-14
 ### Added
 - **Cryptographic Immutable Audit Logs**: Configured hash-linked append-only chains to ensure SOC 2 database logs protection.

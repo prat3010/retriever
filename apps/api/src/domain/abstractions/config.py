@@ -8,6 +8,23 @@ class FeatureFlags(BaseModel):
     enable_hybrid_search: bool = True
     enable_reranking: bool = True
     enable_sse_streaming: bool = True
+    enable_web_search: bool = False
+
+
+class ModelPricing(BaseModel):
+    input_cost_per_1k: float = 0.0
+    output_cost_per_1k: float = 0.0
+    currency: str = "USD"
+
+
+DEFAULT_PRICING: dict[str, ModelPricing] = {
+    "gemini-1.5-flash": ModelPricing(input_cost_per_1k=0.075, output_cost_per_1k=0.30),
+    "gemini-1.5-pro": ModelPricing(input_cost_per_1k=1.25, output_cost_per_1k=5.0),
+    "gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),
+    "gpt-4o-mini": ModelPricing(input_cost_per_1k=0.15, output_cost_per_1k=0.60),
+    "claude-3-5-sonnet-20240620": ModelPricing(input_cost_per_1k=3.0, output_cost_per_1k=15.0),
+    "claude-3-haiku": ModelPricing(input_cost_per_1k=0.25, output_cost_per_1k=1.25),
+}
 
 
 class AIProviderConfig(BaseModel):
@@ -15,6 +32,11 @@ class AIProviderConfig(BaseModel):
     api_key: str | None = None
     base_url: str | None = "https://generativelanguage.googleapis.com/v1beta/openai/"
     default_model: str = "gemini-1.5-flash"
+    fallback_provider: str = ""
+    fallback_model: str = ""
+    retry_attempts: int = 2
+    retry_delay_ms: int = 500
+    pricing: dict[str, ModelPricing] = Field(default_factory=lambda: dict(DEFAULT_PRICING))
 
 
 class EmbeddingProviderConfig(BaseModel):
@@ -37,6 +59,10 @@ class RetrievalSettings(BaseModel):
     chunk_size: int = 500
     chunk_overlap: int = 100
     citation_template: str = "[{index}]"
+    summarize_after_turns: int = 15
+    web_search_threshold: float = 0.65
+    web_search_provider: str = "tavily"
+    web_search_max_results: int = 5
 
 
 class SecuritySettings(BaseModel):

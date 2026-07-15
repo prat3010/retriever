@@ -36,3 +36,8 @@ class PromptTemplateNotFoundError(DomainError):
             f"No prompt template '{name}' found for tenant {tenant_id}. "
             "Seed the `prompt_templates` table or configure one via the API."
         )
+
+
+class ProviderUnavailableError(ConnectionError):
+    """Exception raised when an LLM provider returns a retryable error (timeout, 5xx, rate limit)."""
+    pass

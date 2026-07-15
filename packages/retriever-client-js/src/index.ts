@@ -5,9 +5,22 @@ export interface RetrieverClientConfig {
   userId?: string;
 }
 
+export interface MetadataFilter {
+  field: string;
+  operator: "eq" | "neq" | "in" | "gt" | "gte" | "lt" | "lte" | "exists" | "contains" | "regex";
+  value: any;
+}
+
 export interface SearchOptions {
   limit?: number;
-  filters?: Record<string, any>;
+  filters?: MetadataFilter[];
+  tags?: string[];
+}
+
+export interface ChatOptions {
+  xLlmKey?: string;
+  filters?: MetadataFilter[];
+  tags?: string[];
 }
 
 export interface PaginationOptions {
@@ -141,10 +154,16 @@ export class RetrieverClient {
 
   async search(query: string, options: SearchOptions = {}): Promise<{ results: SearchResultItem[]; searchMeta: { durationMs: number } }> {
     const url = `${this.baseUrl}/v1/tenants/${this.tenantId}/search`;
-    const body = {
+    const body: Record<string, any> = {
       query,
       limit: options.limit || 5,
     };
+    if (options.filters && options.filters.length > 0) {
+      body.filters = options.filters;
+    }
+    if (options.tags && options.tags.length > 0) {
+      body.tags = options.tags;
+    }
 
     const response = await fetch(url, {
       method: "POST",
@@ -197,17 +216,25 @@ export class RetrieverClient {
     return response.json();
   }
 
-  async chat(sessionId: string, message: string, options: { xLlmKey?: string } = {}): Promise<any> {
+  async chat(sessionId: string, message: string, options: ChatOptions = {}): Promise<any> {
     const url = `${this.baseUrl}/v1/tenants/${this.tenantId}/chat/sessions/${sessionId}/messages`;
     const headers = this.getHeaders({ "Content-Type": "application/json" });
     if (options.xLlmKey) {
       headers["X-LLM-Key"] = options.xLlmKey;
     }
 
+    const body: Record<string, any> = { query: message, stream: false };
+    if (options.filters && options.filters.length > 0) {
+      body.filters = options.filters;
+    }
+    if (options.tags && options.tags.length > 0) {
+      body.tags = options.tags;
+    }
+
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ query: message, stream: false }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -217,7 +244,7 @@ export class RetrieverClient {
     return response.json();
   }
 
-  async *chatStream(sessionId: string, message: string, options: { xLlmKey?: string } = {}): AsyncGenerator<any, void, unknown> {
+  async *chatStream(sessionId: string, message: string, options: ChatOptions = {}): AsyncGenerator<any, void, unknown> {
     const url = `${this.baseUrl}/v1/tenants/${this.tenantId}/chat/sessions/${sessionId}/messages`;
     const headers = this.getHeaders({
       "Content-Type": "application/json",
@@ -227,10 +254,18 @@ export class RetrieverClient {
       headers["X-LLM-Key"] = options.xLlmKey;
     }
 
+    const body: Record<string, any> = { query: message, stream: true };
+    if (options.filters && options.filters.length > 0) {
+      body.filters = options.filters;
+    }
+    if (options.tags && options.tags.length > 0) {
+      body.tags = options.tags;
+    }
+
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ query: message, stream: true }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

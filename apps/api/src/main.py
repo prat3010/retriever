@@ -49,7 +49,7 @@ from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.storage.s3_storage import S3Storage
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
-from src.adapters.telemetry.setup import init_telemetry
+from src.adapters.telemetry.setup import get_metrics, init_telemetry
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import settings
@@ -59,9 +59,9 @@ from src.domain.abstractions.exceptions import (
     PromptTemplateNotFoundError,
     TenantIsolationViolationError,
 )
-from src.domain.abstractions.inference import PromptTemplate
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest, PromptTemplate
 from src.domain.abstractions.ingestion import Document
-from src.domain.abstractions.retrieval import SearchQuery, SearchResponse, SearchResult, SearchMeta
+from src.domain.abstractions.retrieval import MetadataFilter, SearchMeta, SearchQuery, SearchResponse, SearchResult
 from src.domain.abstractions.tenant import Tenant
 from src.domain.config.config_service import ConfigurationService
 from src.domain.inference.citation_validator import CitationValidator
@@ -194,6 +194,8 @@ else:
     local_storage = LocalStorage()
 
 # Initialize search service
+from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+
 search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
     keyword_search=PgKeywordSearchAdapter(),
@@ -203,6 +205,7 @@ search_service = HybridSearchService(
     ),
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),
+    web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
 )
 
 # Initialize inference service
@@ -225,6 +228,7 @@ inference_orchestrator = InferenceOrchestrator(
     citation_validator=CitationValidator(),
     session_repo=session_repo,
     log_writer=log_writer,
+    metrics_registry=get_metrics(),
 )
 
 # Exception Handlers mapping to HTTP Responses
@@ -322,7 +326,8 @@ class DocumentResponse(BaseModel):
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     limit: int = Field(default=5, ge=1, le=100)
-    filters: dict[str, Any] = Field(default_factory=dict)
+    filters: list[MetadataFilter] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
 
 class SearchResultItem(BaseModel):
@@ -1088,6 +1093,67 @@ async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     return {"status": "deleted", "documentId": documentId}
 
 
+class ExtractRequest(BaseModel):
+    json_schema: dict[str, Any] = Field(..., description="JSON Schema to shape the extraction output")
+    model: str | None = None
+
+
+class ExtractResponse(BaseModel):
+    data: dict[str, Any]
+    provider: str
+    model: str
+    inputTokens: int
+    outputTokens: int
+
+
+@app.post(
+    "/v1/tenants/{tenantId}/documents/{documentId}/extract",
+    status_code=status.HTTP_200_OK,
+    response_model=ExtractResponse,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def extract_document(
+    tenantId: str,
+    documentId: str,
+    payload: ExtractRequest,
+) -> ExtractResponse:
+    """Extract structured data from a document using a JSON schema."""
+    chunks = await document_repository.get_document_chunks(tenantId, documentId)
+    if not chunks:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    full_text = "\n".join(c.content for c in chunks)
+
+    messages = [
+        ChatMessage(
+            role="system",
+            content=f"Extract structured data from the document according to this JSON schema: {payload.json_schema}. Return ONLY valid JSON.",
+        ),
+        ChatMessage(role="user", content=full_text),
+    ]
+
+    config: dict[str, Any] = {"model": payload.model} if payload.model else {}
+    response = await inference_orchestrator.llm.generate(
+        InferenceRequest(messages=messages, temperature=0.1, json_schema=payload.json_schema),
+        config,
+    )
+
+    import json
+
+    try:
+        data = json.loads(response.content)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="LLM returned invalid JSON")
+
+    return ExtractResponse(
+        data=data,
+        provider=response.finish_reason,
+        model=payload.model or "default",
+        inputTokens=response.usage.input_tokens,
+        outputTokens=response.usage.output_tokens,
+    )
+
+
 # --- Search & Retrieval Endpoints ---
 
 @app.post(
@@ -1109,10 +1175,14 @@ async def search_documents(
         tenant_id=tenantId,
         top_k=payload.limit,
         filters=payload.filters,
+        tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
         enable_reranking=tenant_config.feature_flags.enable_reranking,
         rrf_k=tenant_config.retrieval_settings.rrf_k,
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+        enable_web_search=tenant_config.feature_flags.enable_web_search,
+        web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
+        web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
     )
 
     response = await search_service.search(query)
@@ -1150,6 +1220,8 @@ class ChatMessageRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=4000)
     stream: bool = True
     system_prompt_name: str = "default"
+    filters: list[MetadataFilter] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
 
 @app.post(
@@ -1261,15 +1333,19 @@ async def send_chat_message(
     if x_llm_key:
         tenant_config.ai_provider.api_key = x_llm_key
 
-    # Execute hybrid search for grounding context
     search_query = SearchQuery(
         query=payload.query,
         tenant_id=tenantId,
         top_k=tenant_config.retrieval_settings.top_k,
+        filters=payload.filters,
+        tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
         enable_reranking=tenant_config.feature_flags.enable_reranking,
         rrf_k=tenant_config.retrieval_settings.rrf_k,
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+        enable_web_search=tenant_config.feature_flags.enable_web_search,
+        web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
+        web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
     )
     search_response = await search_service.search(search_query)
 

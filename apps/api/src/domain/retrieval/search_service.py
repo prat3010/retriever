@@ -96,20 +96,7 @@ class HybridSearchService:
             and final_results
             and final_results[0].score < query.web_search_threshold
         ):
-            try:
-                web_results = await self.web_search.search(query.query, query.web_search_max_results)
-                max_local = max(r.score for r in final_results)
-                for i, wr in enumerate(web_results):
-                    final_results.append(SearchResult(
-                        chunk_id=f"web_{uuid4().hex[:12]}",
-                        document_id="__web__",
-                        content=f"[Web: {wr.title}]({wr.url})\n{wr.content}",
-                        score=max(0.001, max_local * (0.9 - i * 0.1)),
-                    ))
-                final_results.sort(key=lambda r: r.score, reverse=True)
-                final_results = final_results[: query.top_k]
-            except Exception:
-                pass
+            final_results = await self._apply_web_search_fallback(query, final_results)
 
         elapsed_ms = (time.monotonic() - start_time) * 1000
         response = SearchResponse(
@@ -136,6 +123,26 @@ class HybridSearchService:
                 pass
 
         return response
+
+    async def _apply_web_search_fallback(
+        self,
+        query: SearchQuery,
+        results: list[SearchResult],
+    ) -> list[SearchResult]:
+        try:
+            web_results = await self.web_search.search(query.query, query.web_search_max_results)
+            max_local = max(r.score for r in results)
+            for i, wr in enumerate(web_results):
+                results.append(SearchResult(
+                    chunk_id=f"web_{uuid4().hex[:12]}",
+                    document_id="__web__",
+                    content=f"[Web: {wr.title}]({wr.url})\n{wr.content}",
+                    score=max(0.001, max_local * (0.9 - i * 0.1)),
+                ))
+            results.sort(key=lambda r: r.score, reverse=True)
+            return results[: query.top_k]
+        except Exception:
+            return results
 
     async def _fan_out_search(
         self,

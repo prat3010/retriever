@@ -1,6 +1,8 @@
 import hashlib
 import asyncio
+import json
 import os
+import re
 import uuid
 from contextlib import asynccontextmanager
 from typing import Any
@@ -1242,48 +1244,22 @@ async def create_chat_session(
     )
 
 
-@app.post(
-    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
-    status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
-)
-async def send_chat_message(
-    tenantId: str,
-    sessionId: str,
-    payload: ChatMessageRequest,
-    user_id: str | None = Depends(get_current_user_id),
-    x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
-):
-    """Send a message to a chat session and get a grounded inference response.
-
-    When ``stream=true`` (default), returns a Server-Sent Events stream.
-    When ``stream=false``, returns a JSON response.
-    """
-    # Verify session belongs to tenant
-    session = await inference_orchestrator.get_session(sessionId, tenantId)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found.")
-
-    # Retrieve tenant config for inference parameters
-    tenant_config = await config_service.get_tenant_config(tenantId)
-
-    # 1. Run Input Guardrails
+async def _apply_input_guardrails(
+    tenant_config: TenantConfiguration,
+    query_text: str,
+) -> str:
     guardrails = tenant_config.guardrails
-    query_text = payload.query
-    
     for guard in guardrails:
         guard_type = guard.get("guard_type") if isinstance(guard, dict) else getattr(guard, "guard_type", None)
         if guard_type == "pii_regex":
-            import re
             patterns = guard.get("patterns") if isinstance(guard, dict) else getattr(guard, "patterns", None)
             patterns = patterns or [
-                r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
-                r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", # Email
-                r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b" # Credit card
+                r"\b\d{3}-\d{2}-\d{4}\b",
+                r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+                r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",
             ]
             for pat in patterns:
                 query_text = re.sub(pat, "[REDACTED]", query_text)
-                
         elif guard_type == "llm_safety":
             import openai
             ai_cfg = tenant_config.ai_provider
@@ -1296,11 +1272,11 @@ async def send_chat_message(
             if not ai_api_key or ai_api_key == "********":
                 ai_api_key = os.environ.get("OPENAI_API_KEY", "")
             ai_base_url = ai_cfg.base_url or os.environ.get("OPENAI_BASE_URL")
-            
+
             client_opts = {"api_key": ai_api_key}
             if ai_base_url:
                 client_opts["base_url"] = ai_base_url
-            
+
             safety_client = openai.AsyncOpenAI(**client_opts)
             llm_prompt_template = guard.get("llm_prompt_template") if isinstance(guard, dict) else getattr(guard, "llm_prompt_template", None)
             template = llm_prompt_template or (
@@ -1308,32 +1284,33 @@ async def send_chat_message(
                 "Respond with ONLY 'SAFE' or 'UNSAFE'.\nUser Input: {query}"
             )
             prompt = template.format(query=query_text)
-            
+
             try:
                 safety_response = await safety_client.chat.completions.create(
                     model=ai_model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.0,
-                    max_tokens=5
+                    max_tokens=5,
                 )
                 safety_result = safety_response.choices[0].message.content.strip().upper()
                 if "UNSAFE" in safety_result:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Safety check failed: unsafe content or prompt injection detected."
+                        detail="Safety check failed: unsafe content or prompt injection detected.",
                     )
             except HTTPException:
                 raise
             except Exception:
                 pass
-                
-    payload.query = query_text
+    return query_text
 
-    # Override LLM API key if X-LLM-Key header is provided
-    if x_llm_key:
-        tenant_config.ai_provider.api_key = x_llm_key
 
-    search_query = SearchQuery(
+def _build_search_query(
+    tenantId: str,
+    tenant_config: TenantConfiguration,
+    payload: ChatMessageRequest,
+) -> SearchQuery:
+    return SearchQuery(
         query=payload.query,
         tenant_id=tenantId,
         top_k=tenant_config.retrieval_settings.top_k,
@@ -1347,6 +1324,32 @@ async def send_chat_message(
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
     )
+
+
+@app.post(
+    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+)
+async def send_chat_message(
+    tenantId: str,
+    sessionId: str,
+    payload: ChatMessageRequest,
+    user_id: str | None = Depends(get_current_user_id),
+    x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
+):
+    session = await inference_orchestrator.get_session(sessionId, tenantId)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    tenant_config = await config_service.get_tenant_config(tenantId)
+
+    payload.query = await _apply_input_guardrails(tenant_config, payload.query)
+
+    if x_llm_key:
+        tenant_config.ai_provider.api_key = x_llm_key
+
+    search_query = _build_search_query(tenantId, tenant_config, payload)
     search_response = await search_service.search(search_query)
 
     citation_template = tenant_config.retrieval_settings.citation_template
@@ -1368,7 +1371,6 @@ async def send_chat_message(
             "finish_reason": response.finish_reason,
         }
 
-    # Streaming response via SSE
     from fastapi.responses import StreamingResponse
 
     async def event_stream():
@@ -1385,15 +1387,11 @@ async def send_chat_message(
                 user_id=user_id,
                 system_prompt_name=payload.system_prompt_name,
             ):
-                import json
                 if event.get("event") == "token":
                     delta = event.get("delta", "")
                     buffer += delta
-                    
-                    # Format complete matches in the buffer
                     buffer = _format_citations(buffer, search_response.results, citation_template)
-                    
-                    # Look for safe yield boundary to handle split brackets
+
                     last_bracket = buffer.rfind("[")
                     if last_bracket != -1 and ("source".startswith(buffer[last_bracket+1:last_bracket+8].lower()) or len(buffer) - last_bracket < 50):
                         safe_to_yield = buffer[:last_bracket]
@@ -1401,7 +1399,7 @@ async def send_chat_message(
                     else:
                         safe_to_yield = buffer
                         buffer = ""
-                    
+
                     if safe_to_yield:
                         event["delta"] = safe_to_yield
                         yield f"data: {json.dumps(event)}\n\n"

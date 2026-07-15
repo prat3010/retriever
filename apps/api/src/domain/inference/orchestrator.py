@@ -113,29 +113,18 @@ class InferenceOrchestrator:
         except Exception:
             return history
 
-    async def generate(
+    async def _prepare_inference(
         self,
         tenant_id: str,
         session_id: str,
         query: str,
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
-        user_id: str | None = None,
-        system_prompt_name: str = "default",
-    ) -> InferenceResponse:
-        """Execute a complete non-streaming inference pipeline.
-
-        1. Fetch history
-        2. Summarize long histories (>15 turns)
-        3. Build prompt (system + context + history)
-        4. Dispatch to LLM
-        5. Validate citations
-        6. Log telemetry
-        """
-        start = time.monotonic()
-
-        history = await self.session_repo.get_messages(tenant_id, session_id)
+        system_prompt_name: str,
+    ) -> tuple[list[ChatMessage], TenantConfiguration, dict]:
         model_config = tenant_config.ai_provider
+        history = await self.session_repo.get_messages(tenant_id, session_id)
+
         summarize_after = tenant_config.retrieval_settings.summarize_after_turns
         if summarize_after > 0 and len(history) > summarize_after * 2:
             config_dict = model_config.model_dump()
@@ -147,9 +136,7 @@ class InferenceOrchestrator:
             for c in context_chunks
         ]
 
-        self.citation_validator.set_valid_ids(
-            [c.chunk_id for c in context_chunks]
-        )
+        self.citation_validator.set_valid_ids([c.chunk_id for c in context_chunks])
 
         prompt_messages = await self.prompt_builder.build_messages(
             tenant_id=tenant_id,
@@ -160,25 +147,100 @@ class InferenceOrchestrator:
             system_prompt_name=system_prompt_name,
         )
 
+        return prompt_messages, model_config
+
+    def _build_notes(self, actual_provider: str | None) -> str | None:
+        return f"actual_provider={actual_provider}" if actual_provider else None
+
+    async def _record_metrics(
+        self,
+        tenant_id: str,
+        model_used: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost: float,
+    ) -> None:
+        if not self.metrics:
+            return
+        self.metrics.increment("TOKEN_CONSUMPTION", value=input_tokens, labels={
+            "tenant_id": tenant_id, "model": model_used, "type": "input"
+        })
+        self.metrics.increment("TOKEN_CONSUMPTION", value=output_tokens, labels={
+            "tenant_id": tenant_id, "model": model_used, "type": "output"
+        })
+        self.metrics.increment("COST_SPEND", value=cost, labels={
+            "tenant_id": tenant_id, "model": model_used
+        })
+
+    async def _log_inference(
+        self,
+        tenant_id: str,
+        session_id: str,
+        user_id: str | None,
+        model_used: str,
+        input_tokens: int,
+        output_tokens: int,
+        latency_ms: int,
+        cost: float,
+        notes: str | None,
+    ) -> None:
+        await self.log_writer.write_log(
+            InferenceLog(
+                tenant_id=tenant_id,
+                session_id=session_id,
+                user_id=user_id,
+                model_used=model_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                latency_ms=latency_ms,
+                cost_usd=cost,
+                notes=notes,
+            )
+        )
+
+    async def _persist_messages(
+        self,
+        tenant_id: str,
+        session_id: str,
+        query: str,
+        content: str,
+        user_id: str | None,
+    ) -> None:
+        await self.session_repo.add_message(
+            tenant_id, session_id, ChatMessage(role="user", content=query), user_id
+        )
+        await self.session_repo.add_message(
+            tenant_id, session_id, ChatMessage(role="assistant", content=content), user_id
+        )
+
+    async def generate(
+        self,
+        tenant_id: str,
+        session_id: str,
+        query: str,
+        context_chunks: list[SearchResult],
+        tenant_config: TenantConfiguration,
+        user_id: str | None = None,
+        system_prompt_name: str = "default",
+    ) -> InferenceResponse:
+        start = time.monotonic()
+
+        prompt_messages, model_config = await self._prepare_inference(
+            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
+        )
+
         request = InferenceRequest(
             messages=prompt_messages,
-            temperature=model_config.temperature
-            if hasattr(model_config, "temperature") else 0.7,
+            temperature=getattr(model_config, "temperature", 0.7),
         )
 
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
-        response = await self.llm.generate(
-            request, config_dict
-        )
-        actual_provider = config_dict.get("_actual_provider")
+        response = await self.llm.generate(request, config_dict)
 
-        # Calculate cost
         model_used = model_config.default_model
-        pricing = model_config.pricing
-        cost = calculate_cost(response.usage, model_used, pricing)
+        cost = calculate_cost(response.usage, model_used, model_config.pricing)
 
-        # Validate citations
         invalid = self.citation_validator.get_invalid_citations(response.content)
         if invalid:
             response.content += (
@@ -188,46 +250,11 @@ class InferenceOrchestrator:
             )
 
         elapsed = int((time.monotonic() - start) * 1000)
+        notes = self._build_notes(config_dict.get("_actual_provider"))
 
-        notes = None
-        if actual_provider:
-            notes = f"actual_provider={actual_provider}"
-
-        if self.metrics:
-            self.metrics.increment("TOKEN_CONSUMPTION", value=response.usage.input_tokens, labels={
-                "tenant_id": tenant_id, "model": model_used, "type": "input"
-            })
-            self.metrics.increment("TOKEN_CONSUMPTION", value=response.usage.output_tokens, labels={
-                "tenant_id": tenant_id, "model": model_used, "type": "output"
-            })
-            self.metrics.increment("COST_SPEND", value=cost, labels={
-                "tenant_id": tenant_id, "model": model_used
-            })
-
-        await self.log_writer.write_log(
-            InferenceLog(
-                tenant_id=tenant_id,
-                session_id=session_id,
-                user_id=user_id,
-                model_used=model_used,
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-                latency_ms=elapsed,
-                cost_usd=cost,
-                notes=notes,
-            )
-        )
-
-        # Persist user message and assistant response
-        await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="user", content=query), user_id
-        )
-        await self.session_repo.add_message(
-            tenant_id,
-            session_id,
-            ChatMessage(role="assistant", content=response.content),
-            user_id,
-        )
+        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost)
+        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes)
+        await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
 
         return response
 
@@ -241,39 +268,10 @@ class InferenceOrchestrator:
         user_id: str | None = None,
         system_prompt_name: str = "default",
     ) -> AsyncIterator[dict]:
-        """Execute streaming inference, yielding token delta events.
-
-        Yields dicts with keys:
-          - ``event``: "token", "citation_error", or "done"
-          - ``delta``: str (for "token" events)
-          - ``usage``: dict (for "done" events)
-        """
         start = time.monotonic()
 
-        history = await self.session_repo.get_messages(tenant_id, session_id)
-        model_config = tenant_config.ai_provider
-        summarize_after = tenant_config.retrieval_settings.summarize_after_turns
-        if summarize_after > 0 and len(history) > summarize_after * 2:
-            config_dict = model_config.model_dump()
-            config_dict["model"] = model_config.default_model
-            history = await self._summarize_history(history, summarize_after, config_dict)
-
-        chunks_dict = [
-            {"chunk_id": c.chunk_id, "content": c.content, "score": c.score}
-            for c in context_chunks
-        ]
-
-        self.citation_validator.set_valid_ids(
-            [c.chunk_id for c in context_chunks]
-        )
-
-        prompt_messages = await self.prompt_builder.build_messages(
-            tenant_id=tenant_id,
-            query=query,
-            history=history,
-            context_chunks=chunks_dict,
-            max_tokens=tenant_config.retrieval_settings.top_k * 500 or 4096,
-            system_prompt_name=system_prompt_name,
+        prompt_messages, model_config = await self._prepare_inference(
+            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
         )
 
         request = InferenceRequest(
@@ -287,9 +285,7 @@ class InferenceOrchestrator:
 
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
-        async for chunk in self.llm.generate_stream(
-            request, config_dict
-        ):
+        async for chunk in self.llm.generate_stream(request, config_dict):
             if chunk.get("event") == "info":
                 yield chunk
                 continue
@@ -307,62 +303,24 @@ class InferenceOrchestrator:
                 input_tokens = usage.get("input_tokens", 0)
                 output_tokens = usage.get("output_tokens", 0)
 
-        # Final response for citation check
         final_text = "".join(full_content)
         invalid = self.citation_validator.get_invalid_citations(final_text)
         if invalid:
-            yield {
-                "event": "citation_error",
-                "invalid_citations": invalid,
-            }
+            yield {"event": "citation_error", "invalid_citations": invalid}
 
         elapsed = int((time.monotonic() - start) * 1000)
-
-        # Persist messages
-        await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="user", content=query), user_id
-        )
-        await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="assistant", content=final_text), user_id
-        )
-
-        actual_provider = config_dict.get("_actual_provider")
-        notes = None
-        if actual_provider:
-            notes = f"actual_provider={actual_provider}"
+        await self._persist_messages(tenant_id, session_id, query, final_text, user_id)
 
         model_used = model_config.default_model
         usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=input_tokens + output_tokens)
         cost = calculate_cost(usage, model_used, model_config.pricing)
+        notes = self._build_notes(config_dict.get("_actual_provider"))
 
-        if self.metrics:
-            self.metrics.increment("TOKEN_CONSUMPTION", value=input_tokens, labels={
-                "tenant_id": tenant_id, "model": model_used, "type": "input"
-            })
-            self.metrics.increment("TOKEN_CONSUMPTION", value=output_tokens, labels={
-                "tenant_id": tenant_id, "model": model_used, "type": "output"
-            })
-            self.metrics.increment("COST_SPEND", value=cost, labels={
-                "tenant_id": tenant_id, "model": model_used
-            })
+        await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost)
+        await self._log_inference(tenant_id, session_id, user_id, model_used, input_tokens, output_tokens, elapsed, cost, notes)
 
-        await self.log_writer.write_log(
-            InferenceLog(
-                tenant_id=tenant_id,
-                session_id=session_id,
-                user_id=user_id,
-                model_used=model_used,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                latency_ms=elapsed,
-                cost_usd=cost,
-                notes=notes,
-            )
-        )
-
-        total = input_tokens + output_tokens
         yield {
             "event": "done",
-            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": total},
+            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens},
             "latency_ms": elapsed,
         }

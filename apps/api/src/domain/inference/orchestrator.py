@@ -112,8 +112,10 @@ class InferenceOrchestrator:
             if hasattr(model_config, "temperature") else 0.7,
         )
 
+        config_dict = model_config.model_dump()
+        config_dict["model"] = model_config.default_model
         response = await self.llm.generate(
-            request, {"model": model_config.default_model, "api_key": model_config.api_key}
+            request, config_dict
         )
 
         # Validate citations
@@ -201,8 +203,10 @@ class InferenceOrchestrator:
         input_tokens = 0
         output_tokens = 0
 
+        config_dict = model_config.model_dump()
+        config_dict["model"] = model_config.default_model
         async for chunk in self.llm.generate_stream(
-            request, {"model": model_config.default_model, "api_key": model_config.api_key}
+            request, config_dict
         ):
             delta = chunk.get("delta", chunk if isinstance(chunk, str) else "")
             if delta:

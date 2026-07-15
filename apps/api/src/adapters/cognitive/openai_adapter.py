@@ -21,7 +21,7 @@ class OpenAILLMAdapter(LlmProvider):
     """Concrete adapter for OpenAI / OpenAI-compatible chat completions."""
 
     def __init__(
-        self, api_key: str, base_url: str = "", default_model: str = "gpt-4o"
+        self, api_key: str, base_url: str = "", default_model: str = "gemini-1.5-flash"
     ) -> None:
         self.default_model = default_model
         self._api_key = api_key

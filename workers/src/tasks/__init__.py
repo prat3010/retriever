@@ -176,7 +176,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             # Setup openai client for embedding sentences
             import openai
             embed_cfg = config_val.get("embedding_provider", {})
-            embed_model = embed_cfg.get("model_name", "text-embedding-3-small")
+            embed_model = embed_cfg.get("model_name", "text-embedding-004")
             embed_api_key = embed_cfg.get("api_key", "")
             
             if embed_api_key and embed_api_key != "********":
@@ -230,7 +230,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 schema_def = ext_cfg.get("schema_definition")
                 if schema_def:
                     ai_cfg = config_val.get("ai_provider", {})
-                    ai_model = ai_cfg.get("default_model", "gpt-4o")
+                    ai_model = ai_cfg.get("default_model", "gemini-1.5-flash")
                     ai_api_key = ai_cfg.get("api_key", "")
                     
                     if ai_api_key and ai_api_key != "********":
@@ -357,7 +357,7 @@ def process_document(self, document_id: str, tenant_id: str, storage_path: str) 
 
 async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
     engine = get_engine()
-    embedding_model = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    embedding_model = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-004")
     api_key = os.environ.get("OPENAI_API_KEY", "")
 
     try:

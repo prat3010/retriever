@@ -129,7 +129,7 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Dimension</Label>
-                <Input type="number" value={config?.embedding_provider.dimension ?? 1536} onChange={(e) => update("embedding_provider.dimension", parseInt(e.target.value) || 1536)} />
+                <Input type="number" value={config?.embedding_provider.dimension ?? 768} onChange={(e) => update("embedding_provider.dimension", parseInt(e.target.value) || 768)} />
               </div>
             </div>
             <div className="space-y-2">

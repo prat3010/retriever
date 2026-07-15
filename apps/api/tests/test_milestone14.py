@@ -42,7 +42,7 @@ async def test_semantic_cache_hit(
     
     config = TenantConfiguration(tenant_id=tenant_id)
     mock_get_config.return_value = config
-    mock_embed.return_value = [0.1] * 1536
+    mock_embed.return_value = [0.1] * 768
     
     # Mock cache provider hit
     mock_cache_provider = AsyncMock()
@@ -101,7 +101,7 @@ async def test_semantic_cache_miss_and_write(
     config.feature_flags.enable_hybrid_search = False
     config.feature_flags.enable_reranking = False
     mock_get_config.return_value = config
-    mock_embed.return_value = [0.1] * 1536
+    mock_embed.return_value = [0.1] * 768
     
     # Mock cache provider miss
     mock_cache_provider = AsyncMock()

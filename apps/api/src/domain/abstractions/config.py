@@ -13,15 +13,15 @@ class FeatureFlags(BaseModel):
 class AIProviderConfig(BaseModel):
     provider_name: str = "openai"
     api_key: str | None = None
-    base_url: str | None = None
-    default_model: str = "gpt-4o"
+    base_url: str | None = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    default_model: str = "gemini-1.5-flash"
 
 
 class EmbeddingProviderConfig(BaseModel):
     provider_name: str = "openai"
     api_key: str | None = None
-    model_name: str = "text-embedding-3-small"
-    dimension: int = 1536
+    model_name: str = "text-embedding-004"
+    dimension: int = 768
 
 
 class StorageProviderConfig(BaseModel):

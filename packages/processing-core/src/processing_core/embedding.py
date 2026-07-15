@@ -11,9 +11,14 @@ async def embed_with_retry(
 ) -> list[list[float]]:
     for attempt in range(max_retries + 1):
         try:
-            response = await client.embeddings.create(
-                input=texts, model=model, timeout=30
-            )
+            kwargs = {
+                "input": texts,
+                "model": model,
+                "timeout": 30,
+            }
+            if model.startswith("text-embedding-3-"):
+                kwargs["dimensions"] = 768
+            response = await client.embeddings.create(**kwargs)
             sorted_data = sorted(response.data, key=lambda x: x.index)
             return [item.embedding for item in sorted_data]
         except (

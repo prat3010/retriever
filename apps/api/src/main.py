@@ -29,6 +29,8 @@ from src.adapters.broker.celery_publisher import celery_app
 from src.adapters.cache.config_cache import RedisTenantConfigCache, redis_client
 from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
+from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
+from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
@@ -208,9 +210,14 @@ template_registry = SqlPromptTemplateRegistry()
 log_writer = SqlInferenceLogWriter()
 
 inference_orchestrator = InferenceOrchestrator(
-    llm_provider=OpenAILLMAdapter(
-        api_key=settings.OPENAI_API_KEY,
-        base_url=settings.OPENAI_BASE_URL,
+    llm_provider=RoutingLLMProvider(
+        openai_adapter=OpenAILLMAdapter(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL,
+        ),
+        anthropic_adapter=AnthropicLLMAdapter(
+            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+        ),
     ),
     prompt_builder=PromptBuilder(template_registry=template_registry),
     citation_validator=CitationValidator(),

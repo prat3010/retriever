@@ -208,7 +208,7 @@ class VectorRecordDb(Base):
         nullable=False,
         index=True,
     )
-    embedding = Column(Vector(1536), nullable=False)
+    embedding = Column(Vector(768), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 
@@ -335,7 +335,7 @@ class SemanticCacheDb(Base):
         index=True,
     )
     query_text = Column(Text, nullable=False)
-    embedding = Column(Vector(1536), nullable=False)
+    embedding = Column(Vector(768), nullable=False)
     search_results = Column(JSONB, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     expires_at = Column(DateTime(timezone=True), nullable=False)

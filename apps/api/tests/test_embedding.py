@@ -28,14 +28,14 @@ async def test_embed_text_returns_correct_dimension() -> None:
     from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 
     mock_response = MagicMock()
-    mock_response.data = [MagicMock(index=0, embedding=[0.1] * 1536)]
+    mock_response.data = [MagicMock(index=0, embedding=[0.1] * 768)]
 
     adapter = OpenAIEmbeddingAdapter(api_key="test-key")
     adapter._client = AsyncMock()
     adapter._client.embeddings.create = AsyncMock(return_value=mock_response)
 
     embedding = await adapter.embed_text("test query")
-    assert len(embedding) == 1536
+    assert len(embedding) == 768
     assert embedding[0] == 0.1
 
 
@@ -46,8 +46,8 @@ async def test_embed_batch_returns_ordered_results() -> None:
 
     mock_response = MagicMock()
     mock_response.data = [
-        MagicMock(index=1, embedding=[0.2] * 1536),
-        MagicMock(index=0, embedding=[0.1] * 1536),
+        MagicMock(index=1, embedding=[0.2] * 768),
+        MagicMock(index=0, embedding=[0.1] * 768),
     ]
 
     adapter = OpenAIEmbeddingAdapter(api_key="test-key")
@@ -73,7 +73,7 @@ async def test_embed_retry_on_api_error() -> None:
     mock_http_response.headers = {}
     mock_http_response.request = mock_http_request
     mock_success_response = MagicMock()
-    mock_success_response.data = [MagicMock(index=0, embedding=[0.5] * 1536)]
+    mock_success_response.data = [MagicMock(index=0, embedding=[0.5] * 768)]
 
     adapter = OpenAIEmbeddingAdapter(api_key="test-key")
     adapter._client = AsyncMock()
@@ -86,7 +86,7 @@ async def test_embed_retry_on_api_error() -> None:
     )
 
     embedding = await adapter.embed_text("test")
-    assert len(embedding) == 1536
+    assert len(embedding) == 768
     assert embedding[0] == 0.5
     assert adapter._client.embeddings.create.call_count == 3
 
@@ -120,7 +120,7 @@ async def test_embed_batch_with_config_model() -> None:
     from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 
     mock_response = MagicMock()
-    mock_response.data = [MagicMock(index=0, embedding=[0.3] * 1536)]
+    mock_response.data = [MagicMock(index=0, embedding=[0.3] * 768)]
 
     adapter = OpenAIEmbeddingAdapter(api_key="test-key", model="text-embedding-3-large")
     adapter._client = AsyncMock()
@@ -131,4 +131,5 @@ async def test_embed_batch_with_config_model() -> None:
         input=["test"],
         model="text-embedding-3-large",
         timeout=30,
+        dimensions=768,
     )

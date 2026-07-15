@@ -95,7 +95,7 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS vector_records (
             chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
             tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
-            embedding vector(1536) NOT NULL,
+            embedding vector(768) NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)

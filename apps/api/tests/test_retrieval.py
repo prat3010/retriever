@@ -175,7 +175,7 @@ async def test_search_vector_only_when_hybrid_disabled() -> None:
     mock_keyword.search_keywords.return_value = []
 
     mock_embedder = AsyncMock()
-    mock_embedder.embed_text.return_value = [0.1] * 1536
+    mock_embedder.embed_text.return_value = [0.1] * 768
 
     mock_reranker = AsyncMock()
     mock_reranker.rerank.return_value = [_make_result("v1", 0.9)]
@@ -315,7 +315,7 @@ async def test_vector_repository_sets_rls(mock_session_ctx) -> None:
     tenant_id = str(uuid.uuid4())
     await adapter.search_similar(
         tenant_id=tenant_id,
-        embedding=[0.1] * 1536,
+        embedding=[0.1] * 768,
         top_k=5,
         filters={},
     )

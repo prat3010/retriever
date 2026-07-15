@@ -42,6 +42,7 @@ from src.adapters.database.inference_repository import (
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
 )
+from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
@@ -208,6 +209,7 @@ search_service = HybridSearchService(
 session_repo = SqlChatSessionRepository()
 template_registry = SqlPromptTemplateRegistry()
 log_writer = SqlInferenceLogWriter()
+feedback_repo = SqlFeedbackRepository()
 
 inference_orchestrator = InferenceOrchestrator(
     llm_provider=RoutingLLMProvider(
@@ -1387,6 +1389,71 @@ async def list_session_messages(
             "hasMore": has_more,
         }
     }
+
+
+class FeedbackSubmitRequest(BaseModel):
+    rating: int = Field(..., description="Rating score, +1 for positive, -1 for negative.")
+    feedback_text: str | None = Field(None, description="Optional text comment.")
+
+
+@app.post(
+    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages/{messageId}/feedback",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def submit_message_feedback(
+    tenantId: str,
+    sessionId: str,
+    messageId: str,
+    payload: FeedbackSubmitRequest,
+    user_id: str | None = Depends(get_current_user_id),
+) -> Any:
+    """Submit or update user feedback (thumbs up/down + optional comments) for a chat response."""
+    # 1. Verify session belongs to tenant
+    session = await inference_orchestrator.get_session(sessionId, tenantId)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    # 2. Verify message exists and belongs to this session and tenant
+    from src.adapters.database.connection import tenant_session
+    from src.adapters.database.models import ChatMessageDb
+    from sqlalchemy import select
+    import uuid
+
+    async with tenant_session(tenant_id=tenantId) as db_session:
+        stmt = select(ChatMessageDb).where(
+            ChatMessageDb.tenant_id == uuid.UUID(tenantId),
+            ChatMessageDb.session_id == uuid.UUID(sessionId),
+            ChatMessageDb.message_id == uuid.UUID(messageId),
+        )
+        res = await db_session.execute(stmt)
+        msg = res.scalar_one_or_none()
+        if not msg:
+            raise HTTPException(status_code=404, detail="Message not found in this session.")
+
+    # 3. Save feedback
+    from src.domain.abstractions.inference import ChatMessageFeedback
+    feedback = ChatMessageFeedback(
+        tenant_id=tenantId,
+        message_id=messageId,
+        user_id=user_id,
+        rating=payload.rating,
+        feedback_text=payload.feedback_text,
+    )
+    await feedback_repo.submit_feedback(feedback)
+
+    return {"status": "success", "message": "Feedback submitted successfully."}
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/feedback/analytics",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_tenant_feedback_analytics(tenantId: str) -> Any:
+    """Get aggregated message feedback analytics for a tenant (Admin only)."""
+    analytics = await feedback_repo.get_feedback_analytics(tenantId)
+    return analytics
 
 
 @app.get("/")

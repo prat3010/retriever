@@ -10,6 +10,8 @@ async def initialize_database() -> None:
     """Create all relational tables and apply Row-Level Security (RLS) policies."""
     print("Initializing database tables...", file=sys.stderr)
     async with engine.begin() as conn:
+        # Ensure vector extension is enabled
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         # Create all tables defined in models
         await conn.run_sync(Base.metadata.create_all)
 
@@ -21,6 +23,7 @@ async def initialize_database() -> None:
             "documents", "document_chunks", "vector_records",
             "prompt_templates", "chat_sessions", "chat_messages",
             "inference_logs", "users", "semantic_cache",
+            "chat_message_feedback",
         ]
         for table in tables_to_isolate:
             await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))

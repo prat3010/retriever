@@ -2386,6 +2386,153 @@
         }
       }
     },
+    "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages/{messageId}/feedback": {
+      "post": {
+        "summary": "Submit Message Feedback",
+        "description": "Submit or update user feedback (thumbs up/down + optional comments) for a chat response.",
+        "operationId": "submit_message_feedback_v1_tenants__tenantId__chat_sessions__sessionId__messages__messageId__feedback_post",
+        "security": [
+          {
+            "APIKeyHeader": [
+              "document:read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sessionid"
+            }
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Messageid"
+            }
+          },
+          {
+            "name": "X-User-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Submit Message Feedback V1 Tenants  Tenantid  Chat Sessions  Sessionid  Messages  Messageid  Feedback Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants/{tenantId}/feedback/analytics": {
+      "get": {
+        "summary": "Get Tenant Feedback Analytics",
+        "description": "Get aggregated message feedback analytics for a tenant (Admin only).",
+        "operationId": "get_tenant_feedback_analytics_v1_admin_tenants__tenantId__feedback_analytics_get",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "X-Admin-Master-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Master-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Tenant Feedback Analytics V1 Admin Tenants  Tenantid  Feedback Analytics Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -2805,6 +2952,32 @@
         },
         "type": "object",
         "title": "FeatureFlags"
+      },
+      "FeedbackSubmitRequest": {
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "title": "Rating",
+            "description": "Rating score, +1 for positive, -1 for negative."
+          },
+          "feedback_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback Text",
+            "description": "Optional text comment."
+          }
+        },
+        "type": "object",
+        "required": [
+          "rating"
+        ],
+        "title": "FeedbackSubmitRequest"
       },
       "GuardrailConfig": {
         "properties": {

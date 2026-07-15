@@ -181,3 +181,28 @@ class InferenceLogWriter(ABC):
     async def write_log(self, log: InferenceLog) -> None:
         """Persist an inference log entry."""
         pass
+
+
+class ChatMessageFeedback(BaseModel):
+    feedback_id: str | None = None
+    tenant_id: str
+    message_id: str
+    user_id: str | None = None
+    rating: int
+    feedback_text: str | None = None
+    created_at: str = ""
+
+
+class FeedbackRepository(ABC):
+    """Port for message feedback loops."""
+
+    @abstractmethod
+    async def submit_feedback(self, feedback: ChatMessageFeedback) -> None:
+        """Submit or update feedback for a message."""
+        pass
+
+    @abstractmethod
+    async def get_feedback_analytics(self, tenant_id: str) -> dict[str, Any]:
+        """Aggregate feedback analytics for a tenant."""
+        pass
+

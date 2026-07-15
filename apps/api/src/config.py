@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""
     TAVILY_API_KEY: str = ""
+    BRAVE_API_KEY: str = ""
     VISION_MODEL: str = "gpt-4o"
 
     # CORS

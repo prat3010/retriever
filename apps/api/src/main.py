@@ -199,6 +199,7 @@ else:
 
 # Initialize search service
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
 from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
@@ -225,6 +226,7 @@ search_service = HybridSearchService(
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),
     web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
+    brave_search=BraveSearchAdapter(api_key=settings.BRAVE_API_KEY) if settings.BRAVE_API_KEY else None,
     self_query=LLMSelfQueryAdapter(llm=llm_provider),
     query_rewriter=LLMQueryRewriterAdapter(llm=llm_provider),
     query_intent_classifier=LLMQueryIntentAdapter(llm=llm_provider),
@@ -1227,6 +1229,8 @@ async def search_documents(
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
         rerank_candidate_multiplier=tenant_config.retrieval_settings.rerank_candidate_multiplier,
         enable_web_search=tenant_config.feature_flags.enable_web_search,
+        web_search_provider=tenant_config.retrieval_settings.web_search_provider,
+        web_search_api_key=tenant_config.retrieval_settings.web_search_api_key,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,
@@ -1378,6 +1382,8 @@ def _build_search_query(
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
         rerank_candidate_multiplier=tenant_config.retrieval_settings.rerank_candidate_multiplier,
         enable_web_search=tenant_config.feature_flags.enable_web_search,
+        web_search_provider=tenant_config.retrieval_settings.web_search_provider,
+        web_search_api_key=tenant_config.retrieval_settings.web_search_api_key,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,

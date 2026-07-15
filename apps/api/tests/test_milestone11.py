@@ -204,6 +204,8 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
     mock_config.feature_flags.enable_reranking = False
     mock_config.retrieval_settings.rrf_k = 60
     mock_config.retrieval_settings.reranking_threshold = 0.5
+    mock_config.retrieval_settings.web_search_provider = "tavily"
+    mock_config.retrieval_settings.web_search_api_key = None
     mock_get_config.return_value = mock_config
 
     mock_limiter = AsyncMock()

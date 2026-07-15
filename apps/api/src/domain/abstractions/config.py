@@ -99,6 +99,7 @@ class RetrievalSettings(BaseModel):
     summarize_after_turns: int = 15
     web_search_threshold: float = 0.65
     web_search_provider: str = "tavily"
+    web_search_api_key: str | None = None
     web_search_max_results: int = 5
     json_schema: dict | None = None
 

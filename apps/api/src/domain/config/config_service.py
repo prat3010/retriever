@@ -91,6 +91,12 @@ class ConfigurationService:
             env_key = f"{provider}_API_KEY"
             resolved.embedding_provider.api_key = self.env_secrets.get(env_key, resolved.embedding_provider.api_key)
 
+        # Web search API key resolution — fall back to env var for the configured provider
+        if resolved.retrieval_settings.web_search_api_key is None or resolved.retrieval_settings.web_search_api_key == "********":
+            provider = resolved.retrieval_settings.web_search_provider.upper()
+            env_key = f"{provider}_API_KEY"
+            resolved.retrieval_settings.web_search_api_key = self.env_secrets.get(env_key, resolved.retrieval_settings.web_search_api_key)
+
         return resolved
 
     def _merge_configurations(

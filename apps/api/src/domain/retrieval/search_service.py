@@ -37,6 +37,7 @@ class HybridSearchService:
         reranker: RerankerProvider,
         cache_provider: SemanticCacheProvider = None,
         web_search: WebSearchProvider | None = None,
+        brave_search: WebSearchProvider | None = None,
         self_query: SelfQueryProvider | None = None,
         query_rewriter: QueryRewriterProvider | None = None,
         query_intent_classifier: QueryIntentClassifier | None = None,
@@ -47,6 +48,7 @@ class HybridSearchService:
         self.reranker = reranker
         self.cache_provider = cache_provider
         self.web_search = web_search
+        self.brave_search = brave_search
         self.self_query = self_query
         self.query_rewriter = query_rewriter
         self.query_intent_classifier = query_intent_classifier
@@ -177,8 +179,11 @@ class HybridSearchService:
         query: SearchQuery,
         results: list[SearchResult],
     ) -> list[SearchResult]:
+        provider = self._resolve_web_search_provider(query)
+        if provider is None:
+            return results
         try:
-            web_results = await self.web_search.search(query.query, query.web_search_max_results)
+            web_results = await provider.search(query.query, query.web_search_max_results)
             max_local = max(r.score for r in results)
             for i, wr in enumerate(web_results):
                 results.append(SearchResult(
@@ -191,6 +196,20 @@ class HybridSearchService:
             return results[: query.top_k]
         except Exception:
             return results
+
+    def _resolve_web_search_provider(self, query: SearchQuery) -> WebSearchProvider | None:
+        from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
+        from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+
+        provider_name = query.web_search_provider
+        api_key = query.web_search_api_key
+        if api_key:
+            if provider_name == "brave":
+                return BraveSearchAdapter(api_key=api_key)
+            return TavilySearchAdapter(api_key=api_key)
+        if provider_name == "brave":
+            return self.brave_search
+        return self.web_search
 
     async def _parse_self_query(self, query: str) -> list[MetadataFilter]:
         try:

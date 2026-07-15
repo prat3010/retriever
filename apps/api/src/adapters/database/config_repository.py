@@ -27,6 +27,11 @@ class SqlConfigRegistry(ConfigRegistry):
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.encrypt(provider["api_key"])
             copied["embedding_provider"] = provider
+        if "retrieval_settings" in copied and isinstance(copied["retrieval_settings"], dict):
+            rs = dict(copied["retrieval_settings"])
+            if rs.get("web_search_api_key") and rs["web_search_api_key"] != "********":
+                rs["web_search_api_key"] = self.encrypter.encrypt(rs["web_search_api_key"])
+            copied["retrieval_settings"] = rs
         return copied
 
     def _decrypt_payload(self, config_data: dict[str, Any]) -> dict[str, Any]:
@@ -41,6 +46,11 @@ class SqlConfigRegistry(ConfigRegistry):
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.decrypt(provider["api_key"])
             copied["embedding_provider"] = provider
+        if "retrieval_settings" in copied and isinstance(copied["retrieval_settings"], dict):
+            rs = dict(copied["retrieval_settings"])
+            if rs.get("web_search_api_key"):
+                rs["web_search_api_key"] = self.encrypter.decrypt(rs["web_search_api_key"])
+            copied["retrieval_settings"] = rs
         return copied
 
     async def get_raw_config(self, tenant_id: str | None) -> dict[str, Any] | None:

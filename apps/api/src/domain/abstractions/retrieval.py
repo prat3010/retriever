@@ -32,6 +32,8 @@ class SearchQuery(BaseModel):
     reranking_threshold: float = 0.7
     rerank_candidate_multiplier: int = 5
     enable_web_search: bool = False
+    web_search_provider: str = "tavily"
+    web_search_api_key: str | None = None
     web_search_threshold: float = 0.65
     web_search_max_results: int = 5
 

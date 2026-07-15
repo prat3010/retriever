@@ -2,6 +2,13 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-07-16
+### Added
+- **Developer Console (M25)**: Bootstrapped Next.js 16 workspace playground under `apps/developer-console/`. Integrates `@prat3010/retriever-client-js` SDK, SSE chat streaming, workspace sidebar navigation, and cited code snippet click modal view.
+- **Key Validation Endpoint**: Added `POST /v1/config/validate-key` to verify active cognitive provider API keys.
+- **Billing Security Guard**: Added `allow_platform_key` flag to `FeatureFlags` in tenant configurations. If `False`, blocks automatic env secret resolution for client queries, securing your billing credentials.
+- **Local Ingestion Pipeline**: Overhauled `ingest_self.py` to generate vector records for the codebase using local Ollama (`nomic-embed-text` at port `11434`).
+
 ## [0.17.0] - 2026-07-15
 ### Added
 - **Self-Querying Retrieval (M24)**: Default LLM metadata extraction during ingestion (doc_type, date_reference, topics, author_reference). `SelfQueryProvider` ABC + `enable_self_query` on `SearchQuery`. `LLMSelfQueryAdapter` parses NL queries into `MetadataFilter` lists via LLM. Wired into `HybridSearchService` as pipeline step 0 (parsed filters merge with explicit filters). 9 new tests.

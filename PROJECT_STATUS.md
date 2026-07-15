@@ -6,13 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
 ## 1. Status Overview
 
-- **Current Milestone**: Milestone 24: Self-Querying Retrieval (Completed)
-- **Last Completed Milestone**: Milestone 24: Self-Querying Retrieval
+- **Current Milestone**: Milestone 25: Developer Console & Local Ingestion (Completed)
+- **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
 - **Build Status**: Passing (286+ unit tests pass)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
+- **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 25: SaaS Tenant Resource Quotas
+- **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
 
 ---
 
@@ -314,6 +315,23 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 16. Outstanding Blockers & Issues
+## 16. Milestone 25: Developer Console & Local Ingestion — Completed
+
+### Local Ingestion Pipeline Overhaul
+- Configured local **Ollama** embeddings (`nomic-embed-text` at `http://host.docker.internal:11434/v1`) inside `ingest_self.py`.
+- Re-indexed entire codebase (220 files, 2,241 vector chunks) into Postgres isolated by logical RLS under the system tenant.
+
+### API Key Validation Endpoint
+- Implemented `/v1/config/validate-key` endpoint inside `main.py` allowing clients to run lightweight check pings against cognitive models.
+- Enforced a secure billing strategy: the API key resolver checks the new `allow_platform_key` flag on the tenant's features. If unset or `False`, requests without client keys are rejected, preventing auto-billing leaks.
+
+### Next.js Developer Console App
+- Bootstrapped `apps/developer-console` using Next.js 16 and `@prat3010/retriever-client-js`.
+- Implemented a premium dark-mode glassmorphic theme in pure vanilla CSS.
+- Added sidebar navigation for indexed documents, SSE chat token streaming, key validation settings, and citation click modals.
+
+---
+
+## 17. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

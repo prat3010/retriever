@@ -507,7 +507,7 @@ Retriever is designed as an extensible platform. Custom integrations MUST connec
 | **Vector Store Provider** | `VectorDatabaseProvider` | Manages vector persistence, indexing, metadata filtering, and semantic query matching. |
 | **LLM Provider** | `LlmProvider` | Orchestrates generation API completions and real-time Server-Sent Event streaming. |
 | **Authentication Provider** | `IdentityProvider` | Decodes JWTs or API keys, resolving tenant identities and request scopes. |
-| **Storage Provider** | `StorageProvider` | Manages raw document storage and handles presigned URL generation. |
+| **Storage Provider** | `DocumentStorage` | Manages raw document storage and handles presigned URL generation. |
 | **Tool Provider** | `ExternalToolExecutor` | Executes actions requested by agentic inference loops (e.g., fetching weather, running APIs). |
 | **Guardrail Provider** | `SafetyGuardrail` | Inspects input queries (block injections) and checks outputs (redact PII). |
 | **Reranker Provider** | `ContextReranker` | Re-orders retrieved candidates based on cross-encoder similarity scoring. |

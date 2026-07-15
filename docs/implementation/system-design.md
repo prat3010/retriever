@@ -593,6 +593,23 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
 * **Relationships:** Many-to-One with `tenants`.
 * **Retention Strategy:** Immutable ledger record; retained for 1 year in active DB, then archived to read-only cold storage.
 
+#### 4.1.13 `chat_message_feedback`
+* **Primary Key:** `feedback_id` (UUIDv4)
+* **Foreign Keys:**
+  * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
+  * `message_id` (UUIDv4, FK referencing `chat_messages.message_id` ON DELETE CASCADE)
+  * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE SET NULL)
+* **Columns:**
+  * `rating` (Integer, NOT NULL, e.g. +1 / -1)
+  * `feedback_text` (Text, nullable)
+  * `created_at` (DateTime, NOT NULL)
+* **Important Indexes:**
+  * Index on `tenant_id`
+  * Index on `message_id`
+  * Index on `user_id`
+* **RLS:** Filtered by `tenant_id`. Admin bypasses RLS.
+* **Relationships:** Many-to-One with `tenants`, Many-to-One with `chat_messages`, Many-to-One with `users`.
+
 ---
 
 ## 5. API Surface

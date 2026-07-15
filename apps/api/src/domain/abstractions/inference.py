@@ -192,8 +192,9 @@ class ChatMessageFeedback(BaseModel):
     tenant_id: str
     message_id: str
     user_id: str | None = None
-    rating: int
+    rating: int = 0
     feedback_text: str | None = None
+    scores: dict[str, int] | None = None
     created_at: str = ""
 
 

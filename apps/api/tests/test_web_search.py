@@ -80,7 +80,7 @@ def test_feature_flags_has_web_search() -> None:
     from src.domain.abstractions.config import FeatureFlags
 
     f = FeatureFlags()
-    assert f.enable_web_search is False
+    assert f.enable_web_search is True
 
 
 def test_retrieval_settings_has_web_search_fields() -> None:

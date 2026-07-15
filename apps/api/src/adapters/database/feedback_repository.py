@@ -22,7 +22,6 @@ class SqlFeedbackRepository(FeedbackRepository):
         message_id = uuid.UUID(feedback.message_id)
 
         async with tenant_session(tenant_id=tenant_id) as session:
-            # Check for existing feedback on this message
             stmt = select(ChatMessageFeedbackDb).where(
                 ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
                 ChatMessageFeedbackDb.message_id == message_id,
@@ -31,13 +30,12 @@ class SqlFeedbackRepository(FeedbackRepository):
             row = result.scalar_one_or_none()
 
             if row:
-                # Update existing
                 row.rating = feedback.rating
                 row.feedback_text = feedback.feedback_text
+                row.scores = feedback.scores
                 if feedback.user_id:
                     row.user_id = uuid.UUID(feedback.user_id)
             else:
-                # Create new
                 feedback_id = uuid.UUID(feedback.feedback_id) if feedback.feedback_id else uuid.uuid4()
                 user_id = uuid.UUID(feedback.user_id) if feedback.user_id else None
                 row = ChatMessageFeedbackDb(
@@ -47,15 +45,15 @@ class SqlFeedbackRepository(FeedbackRepository):
                     user_id=user_id,
                     rating=feedback.rating,
                     feedback_text=feedback.feedback_text,
+                    scores=feedback.scores,
                 )
                 session.add(row)
 
             await session.commit()
 
     async def get_feedback_analytics(self, tenant_id: str) -> dict[str, Any]:
-        """Aggregate thumbs up/down count ratios and recent comments."""
+        """Aggregate thumbs up/down count ratios, per-dimension scores, and recent comments."""
         async with tenant_session(tenant_id=tenant_id) as session:
-            # Thumbs up (+1) count query
             stmt_up = select(func.count(ChatMessageFeedbackDb.feedback_id)).where(
                 ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
                 ChatMessageFeedbackDb.rating > 0,
@@ -63,7 +61,6 @@ class SqlFeedbackRepository(FeedbackRepository):
             res_up = await session.execute(stmt_up)
             up_count = res_up.scalar() or 0
 
-            # Thumbs down (< 0) count query
             stmt_down = select(func.count(ChatMessageFeedbackDb.feedback_id)).where(
                 ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
                 ChatMessageFeedbackDb.rating <= 0,
@@ -71,7 +68,6 @@ class SqlFeedbackRepository(FeedbackRepository):
             res_down = await session.execute(stmt_down)
             down_count = res_down.scalar() or 0
 
-            # Recent comments query
             stmt_comments = (
                 select(ChatMessageFeedbackDb)
                 .where(
@@ -92,10 +88,37 @@ class SqlFeedbackRepository(FeedbackRepository):
                     "user_id": str(c.user_id) if c.user_id else None,
                     "rating": c.rating,
                     "text": c.feedback_text,
+                    "scores": c.scores if c.scores else None,
                     "created_at": c.created_at.isoformat(),
                 }
                 for c in comments_rows
             ]
+
+            # Per-dimension score averages
+            stmt_scores = (
+                select(ChatMessageFeedbackDb.scores)
+                .where(
+                    ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
+                    ChatMessageFeedbackDb.scores.isnot(None),
+                )
+            )
+            res_scores = await session.execute(stmt_scores)
+            score_rows = res_scores.scalars().all()
+
+            dim_sums: dict[str, float] = {}
+            dim_counts: dict[str, int] = {}
+            for s in score_rows:
+                if not s:
+                    continue
+                for k, v in s.items():
+                    if isinstance(v, (int, float)):
+                        dim_sums[k] = dim_sums.get(k, 0) + v
+                        dim_counts[k] = dim_counts.get(k, 0) + 1
+
+            dimension_averages = {
+                k: round(dim_sums[k] / dim_counts[k], 2)
+                for k in dim_sums
+            } if dim_sums else {}
 
             total = up_count + down_count
             percentage_positive = (up_count / total * 100) if total > 0 else 100.0
@@ -106,5 +129,6 @@ class SqlFeedbackRepository(FeedbackRepository):
                 "positive_count": up_count,
                 "negative_count": down_count,
                 "positive_percentage": round(percentage_positive, 2),
+                "dimension_averages": dimension_averages,
                 "recent_comments": comments_list,
             }

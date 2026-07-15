@@ -3,7 +3,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
 Operator = Literal[
     "eq", "neq", "in", "gt", "gte", "lt", "lte",
     "exists", "contains", "regex",
@@ -25,8 +24,13 @@ class SearchQuery(BaseModel):
     enable_hybrid: bool = True
     enable_reranking: bool = True
     enable_self_query: bool = False
+    enable_bm25: bool = False
+    enable_mmr: bool = False
+    enable_query_rewriting: bool = False
+    enable_query_intent: bool = False
     rrf_k: int = 60
     reranking_threshold: float = 0.7
+    rerank_candidate_multiplier: int = 5
     enable_web_search: bool = False
     web_search_threshold: float = 0.65
     web_search_max_results: int = 5
@@ -130,4 +134,44 @@ class SelfQueryProvider(ABC):
 
     @abstractmethod
     async def parse_query(self, query: str) -> list[MetadataFilter]:
+        pass
+
+
+class QueryRewriterProvider(ABC):
+
+    @abstractmethod
+    async def rewrite(self, query: str) -> list[str]:
+        pass
+
+
+class CorrectiveRetrievalDecision(BaseModel):
+    needs_re_retrieval: bool = False
+    confidence_score: float = 0.0
+    reason: str = ""
+    reformulated_query: str | None = None
+
+
+class CorrectiveRetrievalProvider(ABC):
+
+    @abstractmethod
+    async def evaluate_response(
+        self,
+        query: str,
+        response: str,
+        context_chunks: list[SearchResult],
+    ) -> CorrectiveRetrievalDecision:
+        pass
+
+
+class QueryIntent(BaseModel):
+    top_k: int = 10
+    enable_hybrid: bool = True
+    enable_reranking: bool = True
+    enable_web_search: bool = False
+
+
+class QueryIntentClassifier(ABC):
+
+    @abstractmethod
+    async def classify(self, query: str) -> QueryIntent:
         pass

@@ -18,6 +18,10 @@ dependencies = [
     "Pillow>=10.0.0",
     "cryptography>=42.0.0",
     "openai>=1.0.0",
+    "ragas>=0.2.0",
+    "deepeval>=0.21.0",
+    "datasets>=2.0.0",
+    "pytesseract>=0.3.10",
 ]
 
 [dependency-groups]

@@ -467,12 +467,16 @@ A platform orchestrating non-deterministic models (LLMs) requires a multi-tiered
 *   **Contract Testing:** All API endpoints MUST run automated integration tests validating that responses match the OpenAPI contract.
 
 ### 12.2 Non-Deterministic Testing (LLM Evaluation)
-Since LLM outputs are probabilistic, traditional assert statements fail. We mandate the implementation of an automated evaluation pipeline:
-*   **Retrieval Evaluation (RAG Evals):** We test retrieval accuracy using metrics such as **Context Precision** and **Context Recall**. We verify that the retrieval domain returns relevant chunks for a synthetic query dataset.
-*   **Generation Evaluation:** We use LLM-as-a-judge methodologies to evaluate generated answers based on:
-  *   **Faithfulness (Groundedness):** Ensuring the LLM does not hallucinate information outside the retrieved context.
-  *   **Answer Relevance:** Ensuring the generated response directly addresses the user query.
-*   **Regression Testing:** A golden evaluation dataset of 200 standard user queries MUST be evaluated before every release to production. Any drop in evaluation scores is a build-blocking event.
+Since LLM outputs are probabilistic, traditional assert statements fail. We now implement an automated evaluation pipeline:
+
+*   **Frameworks (both active):**
+    *   **RAGAS** — Evaluates faithfulness, answer_relevancy, context_precision, context_recall.
+    *   **DeepEval** — Evaluates hallucination, toxicity, bias.
+*   **Search Metrics (pure math, no LLM needed):** nDCG@10, MRR, hit_rate@10 computed per query.
+*   **Ground-Truth Datasets:** Per-tenant `eval_datasets` + `eval_questions` tables with admin CRUD API.
+*   **Execution:** On-demand via admin API (`POST /v1/admin/tenants/{t}/eval-datasets/{d}/run`) and scheduled nightly via Celery beat.
+*   **LLM-as-Judge:** Both RAGAS and DeepEval use `gemini-1.5-flash` as the lightweight judge model.
+*   **Regression Testing (aspirational):** A golden evaluation dataset of 200 standard user queries evaluated before every release. Any drop in evaluation scores is a build-blocking event. Not yet automated in CI — requires admin API call to trigger.
 
 ---
 

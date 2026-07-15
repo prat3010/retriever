@@ -6,6 +6,8 @@ and telemetry logging. Depends only on domain abstractions.
 """
 
 import time
+from collections import defaultdict
+from datetime import date
 from collections.abc import AsyncIterator
 
 from src.domain.abstractions.config import ModelPricing, TenantConfiguration
@@ -20,6 +22,7 @@ from src.domain.abstractions.inference import (
     LlmProvider,
     Usage,
 )
+from src.domain.abstractions.notifications import NotificationProvider
 from src.domain.abstractions.retrieval import SearchResult
 from src.domain.abstractions.telemetry import MetricsRegistry
 from src.domain.inference.citation_validator import CitationValidator
@@ -49,6 +52,7 @@ class InferenceOrchestrator:
         session_repo: ChatSessionRepository,
         log_writer: InferenceLogWriter,
         metrics_registry: MetricsRegistry | None = None,
+        notification_provider: NotificationProvider | None = None,
     ) -> None:
         self.llm = llm_provider
         self.prompt_builder = prompt_builder
@@ -56,6 +60,10 @@ class InferenceOrchestrator:
         self.session_repo = session_repo
         self.log_writer = log_writer
         self.metrics = metrics_registry
+        self.notifier = notification_provider
+        self._daily_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        self._monthly_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        self._notified: set[str] = set()
 
     async def create_session(
         self, tenant_id: str, user_id: str | None = None
@@ -132,7 +140,7 @@ class InferenceOrchestrator:
             history = await self._summarize_history(history, summarize_after, config_dict)
 
         chunks_dict = [
-            {"chunk_id": c.chunk_id, "content": c.content, "score": c.score}
+            {"chunk_id": c.chunk_id, "document_id": c.document_id, "content": c.content, "score": c.score, "metadata": c.metadata}
             for c in context_chunks
         ]
 
@@ -149,8 +157,12 @@ class InferenceOrchestrator:
 
         return prompt_messages, model_config
 
-    def _build_notes(self, actual_provider: str | None) -> str | None:
-        return f"actual_provider={actual_provider}" if actual_provider else None
+    def _build_notes(self, actual_provider: str | None, experiment_id: str | None = None, experiment_variant: str | None = None) -> str | None:
+        notes = f"actual_provider={actual_provider}" if actual_provider else None
+        if experiment_id and experiment_variant:
+            exp = f"experiment={experiment_id},variant={experiment_variant}"
+            notes = f"{notes};{exp}" if notes else exp
+        return notes
 
     async def _record_metrics(
         self,
@@ -171,6 +183,47 @@ class InferenceOrchestrator:
         self.metrics.increment("COST_SPEND", value=cost, labels={
             "tenant_id": tenant_id, "model": model_used
         })
+
+    async def _check_budget(
+        self,
+        tenant_id: str,
+        cost: float,
+        budget: object,
+    ) -> None:
+        if not self.notifier:
+            return
+        daily_budget = getattr(budget, "daily_cost_budget", None) if budget else None
+        monthly_budget = getattr(budget, "monthly_cost_budget", None) if budget else None
+        if not daily_budget and not monthly_budget:
+            return
+
+        today = date.today().isoformat()
+        this_month = date.today().strftime("%Y-%m")
+        self._daily_costs[tenant_id][today] += cost
+        self._monthly_costs[tenant_id][this_month] += cost
+
+        daily_total = self._daily_costs[tenant_id][today]
+        monthly_total = self._monthly_costs[tenant_id][this_month]
+
+        if daily_budget and daily_total >= daily_budget:
+            key = f"{tenant_id}_daily_{this_month}"
+            if key not in self._notified:
+                self._notified.add(key)
+                await self.notifier.send_alert(
+                    tenant_id,
+                    f"Daily cost ${daily_total:.2f} exceeds budget ${daily_budget:.2f}",
+                    severity="warning",
+                )
+
+        if monthly_budget and monthly_total >= monthly_budget:
+            key = f"{tenant_id}_monthly_{this_month}"
+            if key not in self._notified:
+                self._notified.add(key)
+                await self.notifier.send_alert(
+                    tenant_id,
+                    f"Monthly cost ${monthly_total:.2f} exceeds budget ${monthly_budget:.2f}",
+                    severity="critical",
+                )
 
     async def _log_inference(
         self,
@@ -222,6 +275,8 @@ class InferenceOrchestrator:
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
         system_prompt_name: str = "default",
+        experiment_id: str | None = None,
+        experiment_variant: str | None = None,
     ) -> InferenceResponse:
         start = time.monotonic()
 
@@ -232,6 +287,7 @@ class InferenceOrchestrator:
         request = InferenceRequest(
             messages=prompt_messages,
             temperature=getattr(model_config, "temperature", 0.7),
+            json_schema=tenant_config.retrieval_settings.json_schema,
         )
 
         config_dict = model_config.model_dump()
@@ -241,22 +297,40 @@ class InferenceOrchestrator:
         model_used = model_config.default_model
         cost = calculate_cost(response.usage, model_used, model_config.pricing)
 
-        invalid = self.citation_validator.get_invalid_citations(response.content)
-        if invalid:
-            response.content += (
-                "\n\n[WARNING: The following citations could not be verified: "
-                + ", ".join(invalid)
-                + "]"
-            )
+        if self.citation_validator.get_invalid_citations(response.content):
+            response.content = self.citation_validator.strip_invalid_citations(response.content)
+
+        self._emit_search_quality_metrics(tenant_id, context_chunks, response.content)
 
         elapsed = int((time.monotonic() - start) * 1000)
-        notes = self._build_notes(config_dict.get("_actual_provider"))
+        notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
 
         await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost)
+        await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
         await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes)
         await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
 
         return response
+
+    def _emit_search_quality_metrics(
+        self,
+        tenant_id: str,
+        context_chunks: list[SearchResult],
+        response_text: str,
+    ) -> None:
+        if self.metrics is None:
+            return
+        cited = self.citation_validator.extract_citations(response_text)
+        if not cited:
+            return
+        from src.domain.evaluation.search_metrics import compute_search_metrics
+        sq = compute_search_metrics(
+            retrieved_chunk_ids=[c.chunk_id for c in context_chunks],
+            relevant_chunk_ids=cited,
+        )
+        self.metrics.observe("search_ndcg_at_10", sq.ndcg_at_10, {"tenant_id": tenant_id})
+        self.metrics.observe("search_mrr", sq.mrr, {"tenant_id": tenant_id})
+        self.metrics.observe("search_hit_rate_at_10", sq.hit_rate_at_10, {"tenant_id": tenant_id})
 
     async def generate_stream(
         self,
@@ -267,6 +341,8 @@ class InferenceOrchestrator:
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
         system_prompt_name: str = "default",
+        experiment_id: str | None = None,
+        experiment_variant: str | None = None,
     ) -> AsyncIterator[dict]:
         start = time.monotonic()
 
@@ -277,6 +353,7 @@ class InferenceOrchestrator:
         request = InferenceRequest(
             messages=prompt_messages,
             temperature=getattr(model_config, "temperature", 0.7),
+            json_schema=tenant_config.retrieval_settings.json_schema,
         )
 
         full_content: list[str] = []
@@ -307,6 +384,9 @@ class InferenceOrchestrator:
         invalid = self.citation_validator.get_invalid_citations(final_text)
         if invalid:
             yield {"event": "citation_error", "invalid_citations": invalid}
+            final_text = self.citation_validator.strip_invalid_citations(final_text)
+
+        self._emit_search_quality_metrics(tenant_id, context_chunks, final_text)
 
         elapsed = int((time.monotonic() - start) * 1000)
         await self._persist_messages(tenant_id, session_id, query, final_text, user_id)
@@ -314,9 +394,10 @@ class InferenceOrchestrator:
         model_used = model_config.default_model
         usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=input_tokens + output_tokens)
         cost = calculate_cost(usage, model_used, model_config.pricing)
-        notes = self._build_notes(config_dict.get("_actual_provider"))
+        notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
 
         await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost)
+        await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
         await self._log_inference(tenant_id, session_id, user_id, model_used, input_tokens, output_tokens, elapsed, cost, notes)
 
         yield {

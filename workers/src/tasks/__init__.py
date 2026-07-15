@@ -63,6 +63,34 @@ def _build_envelope(event_type: str, payload: dict, trace_id: str = "") -> dict:
     }
 
 
+# ponytail: local OCR fallback for scanned PDFs and images
+def _ocr_with_tesseract(path: str, mime_type: str) -> str:
+    try:
+        import pytesseract
+        from PIL import Image
+        import io
+    except ImportError:
+        return ""
+    try:
+        if mime_type == "application/pdf":
+            import pdfplumber
+            texts = []
+            with pdfplumber.open(path) as pdf:
+                for i, page in enumerate(pdf.pages):
+                    img = page.to_image(resolution=200)
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    buf.seek(0)
+                    text = pytesseract.image_to_string(Image.open(buf))
+                    if text.strip():
+                        texts.append(f"--- Page {i+1} ---\n{text}")
+            return "\n\n".join(texts)
+        else:
+            return pytesseract.image_to_string(Image.open(path))
+    except Exception:
+        return ""
+
+
 # ponytail: vision extraction for images and zero-text PDFs
 def _describe_with_vision(path: str, mime_type: str, config: dict) -> str:
     import base64
@@ -78,6 +106,7 @@ def _describe_with_vision(path: str, mime_type: str, config: dict) -> str:
         with open(path, "rb") as f:
             image_data = f.read()
     elif mime_type == "application/pdf":
+        descriptions = []
         try:
             import pdfplumber
             with pdfplumber.open(path) as pdf:
@@ -88,11 +117,23 @@ def _describe_with_vision(path: str, mime_type: str, config: dict) -> str:
                     img.save(buf, format="PNG")
                     buf.seek(0)
                     image_data = buf.read()
-                    break  # ponytail: describe first page only
+                    b64 = base64.b64encode(image_data).decode("utf-8")
+                    resp = client.chat.completions.create(
+                        model=config.get("ai_provider", {}).get("vision_model", "gpt-4o"),
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Describe this document page in detail, including all visible text and visual elements."},
+                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                            ],
+                        }],
+                        max_tokens=4096,
+                    )
+                    descriptions.append(resp.choices[0].message.content or "")
         except Exception:
             return ""
-    if image_data is None:
-        return ""
+        parts = [f"--- Page {i+1} ---\n{desc}" for i, desc in enumerate(descriptions)]
+        return "\n\n".join(parts)
 
     b64 = base64.b64encode(image_data).decode("utf-8")
     media_type = f"image/{mime_type.split('/')[-1]}" if mime_type.startswith("image/") else "image/png"
@@ -199,9 +240,19 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
         try:
             text_content = extract_text_from_file(parse_target_path)
-            # ponytail: vision fallback for images and zero-text PDFs
+            # ponytail: OCR fallback chain — tesseract first, then vision
+            if not text_content.strip() and mime_type:
+                text_content = _ocr_with_tesseract(parse_target_path, mime_type)
             if not text_content.strip() and mime_type:
                 text_content = _describe_with_vision(parse_target_path, mime_type, config_val)
+            # ponytail: table extraction for PDFs — stored in metadata
+            extracted_tables = []
+            if parse_target_path.lower().endswith(".pdf") and mime_type == "application/pdf":
+                try:
+                    from processing_core.pdf_parser import extract_tables_from_pdf
+                    extracted_tables = extract_tables_from_pdf(parse_target_path)
+                except Exception:
+                    pass
         finally:
             if local_path and os.path.exists(local_path):
                 try:
@@ -259,6 +310,16 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 text=text_content,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
+
+        # ponytail: hierarchical chunking — group children into parent sections
+        if chunk_cfg.get("enable_hierarchical", False) and chunks_to_insert:
+            from processing_core.chunker import build_hierarchy
+            chunks_to_insert = build_hierarchy(
+                chunks=chunks_to_insert,
+                group_size=chunk_cfg.get("hierarchical_group_size", 5),
                 document_id=document_id,
                 tenant_id=tenant_id,
             )
@@ -341,6 +402,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     except Exception:
                         pass
 
+        if extracted_tables:
+            extracted_metadata["extracted_tables"] = extracted_tables
+
         chunk_ids = [c["chunk_id"] for c in chunks_to_insert]
 
         async with engine.begin() as conn:
@@ -349,7 +413,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             for chunk in chunks_to_insert:
                 chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
                 chunk_meta.update(extracted_metadata)
-                insert_params.append({
+                if chunk.get("parent_chunk_id"):
+                    chunk_meta["parent_chunk_id"] = chunk["parent_chunk_id"]
+                params = {
                     "chunk_id": chunk["chunk_id"],
                     "document_id": chunk["document_id"],
                     "tenant_id": chunk["tenant_id"],
@@ -357,7 +423,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     "token_count": chunk["token_count"],
                     "chunk_index": chunk["chunk_index"],
                     "meta_data": json.dumps(chunk_meta),
-                })
+                    "parent_chunk_id": chunk.get("parent_chunk_id"),
+                }
+                insert_params.append(params)
                 
             if insert_params:
                 await conn.execute(
@@ -365,9 +433,10 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                         """
                         INSERT INTO document_chunks
                         (chunk_id, document_id, tenant_id, content, token_count,
-                         chunk_index, meta_data, created_at)
+                         chunk_index, meta_data, parent_chunk_id, created_at)
                         VALUES (:chunk_id, :document_id, :tenant_id, :content,
-                                :token_count, :chunk_index, CAST(:meta_data AS jsonb), NOW())
+                                :token_count, :chunk_index, CAST(:meta_data AS jsonb),
+                                :parent_chunk_id::uuid, NOW())
                         """
                     ),
                     insert_params,
@@ -525,6 +594,12 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
                 {"doc_id": document_id},
             )
 
+            # ponytail: full tenant cache clear on any document update.
+            await conn.execute(
+                sa.text("DELETE FROM semantic_cache WHERE tenant_id = :tenant_id"),
+                {"tenant_id": tenant_id},
+            )
+
         indexed_payload = {
             "documentId": document_id,
             "tenantId": tenant_id,
@@ -601,12 +676,6 @@ def reconcile_stalled() -> None:
                 generate_embeddings.delay(doc_id, t_id)
 
     asyncio.run(_run())
-
-
-@celery_app.task(base=DatabaseTask)
-def warm_caches() -> None:
-    """Periodic cache warming — placeholder for Redis pre-heat logic."""
-    pass
 
 
 @celery_app.task(base=DatabaseTask)

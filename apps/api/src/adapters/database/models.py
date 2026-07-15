@@ -370,10 +370,99 @@ class ChatMessageFeedbackDb(Base):
         nullable=True,
         index=True,
     )
-    rating = Column(Integer, nullable=False)  # +1 / -1
+    rating = Column(Integer, nullable=False, default=0)  # +1 / -1
     feedback_text = Column(Text, nullable=True)
+    scores = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     tenant = relationship("TenantDb")
     message = relationship("ChatMessageDb")
     user = relationship("UserDb")
+
+
+class EvalDatasetDb(Base):
+    __tablename__ = "eval_datasets"
+
+    dataset_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+    questions = relationship("EvalQuestionDb", back_populates="dataset", cascade="all, delete-orphan")
+
+
+class EvalQuestionDb(Base):
+    __tablename__ = "eval_questions"
+
+    question_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dataset_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("eval_datasets.dataset_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question = Column(Text, nullable=False)
+    ground_truth_answer = Column(Text, nullable=False)
+    relevant_chunk_ids = Column(JSONB, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    dataset = relationship("EvalDatasetDb", back_populates="questions")
+
+
+class EvalRunDb(Base):
+    __tablename__ = "eval_runs"
+
+    run_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    dataset_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("eval_datasets.dataset_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status = Column(String(20), nullable=False, default="pending")
+    trigger = Column(String(20), nullable=False, default="manual")
+    aggregate_scores = Column(JSONB, nullable=True)
+    question_count = Column(Integer, nullable=False, default=0)
+    completed_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    results = relationship("EvalRunResultDb", back_populates="run", cascade="all, delete-orphan")
+
+
+class EvalRunResultDb(Base):
+    __tablename__ = "eval_run_results"
+
+    result_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("eval_runs.run_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("eval_questions.question_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    generated_answer = Column(Text, nullable=True)
+    retrieved_chunk_ids = Column(JSONB, nullable=False, default=list)
+    scores = Column(JSONB, nullable=False, default=dict)
+    latency_ms = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    run = relationship("EvalRunDb", back_populates="results")

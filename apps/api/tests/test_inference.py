@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import (
     ChatMessage,
@@ -157,6 +158,31 @@ def test_citation_validator_invalid_list() -> None:
     assert invalid == ["chk_999"]
 
 
+def test_citation_validator_strip_invalid() -> None:
+    """Verify strip_invalid_citations removes only invalid [Source: X] tokens."""
+    v = CitationValidator()
+    v.set_valid_ids(["chk_001"])
+    result = v.strip_invalid_citations(
+        "[Source: chk_001] valid and [Source: chk_999] invalid [Source: chk_001]."
+    )
+    assert "[Source: chk_001]" in result
+    assert "[Source: chk_999]" not in result
+
+
+def test_citation_validator_strip_all_valid() -> None:
+    """Verify strip_invalid_citations leaves valid citations intact."""
+    v = CitationValidator()
+    v.set_valid_ids(["a", "b"])
+    text = "Cites [Source: a] and [Source: b]."
+    assert v.strip_invalid_citations(text) == text
+
+
+def test_citation_validator_strip_no_citations() -> None:
+    """Verify strip_invalid_citations returns unchanged text when no citations."""
+    v = CitationValidator()
+    assert v.strip_invalid_citations("No citations here.") == "No citations here."
+
+
 # ── 3. OpenAI Adapter Lazy Init ────────────────────────────────────────────
 
 
@@ -257,6 +283,93 @@ async def test_orchestrator_create_session() -> None:
     session = await orchestrator.create_session("t1")
     assert session.session_id == "ses_001"
     mock_session_repo.create_session.assert_called_once_with("t1", None)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_passes_json_schema() -> None:
+    """Verify json_schema from tenant config is passed to InferenceRequest."""
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = InferenceResponse(
+        content='{"answer": "42"}',
+        usage=Usage(input_tokens=10, output_tokens=5, total_tokens=15),
+    )
+
+    mock_registry = AsyncMock()
+    mock_registry.get_template.return_value = PromptTemplate(
+        name="default",
+        content="You are a helpful assistant.",
+    )
+
+    mock_session_repo = AsyncMock()
+    mock_session_repo.get_messages.return_value = []
+
+    orchestrator = InferenceOrchestrator(
+        llm_provider=mock_llm,
+        prompt_builder=PromptBuilder(template_registry=mock_registry),
+        citation_validator=CitationValidator(),
+        session_repo=mock_session_repo,
+        log_writer=AsyncMock(),
+    )
+
+    config = TenantConfiguration(tenant_id="t1")
+    config.retrieval_settings.json_schema = {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+    }
+
+    await orchestrator.generate(
+        tenant_id="t1",
+        session_id="ses_001",
+        query="What is the answer?",
+        context_chunks=[],
+        tenant_config=config,
+    )
+
+    request_arg = mock_llm.generate.call_args[0][0]
+    assert request_arg.json_schema == {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+    }
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_json_schema_defaults_to_none() -> None:
+    """Verify json_schema is None when config doesn't set it."""
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = InferenceResponse(
+        content="plain text answer",
+        usage=Usage(input_tokens=5, output_tokens=10, total_tokens=15),
+    )
+
+    mock_registry = AsyncMock()
+    mock_registry.get_template.return_value = PromptTemplate(
+        name="default",
+        content="You are a helpful assistant.",
+    )
+
+    mock_session_repo = AsyncMock()
+    mock_session_repo.get_messages.return_value = []
+
+    orchestrator = InferenceOrchestrator(
+        llm_provider=mock_llm,
+        prompt_builder=PromptBuilder(template_registry=mock_registry),
+        citation_validator=CitationValidator(),
+        session_repo=mock_session_repo,
+        log_writer=AsyncMock(),
+    )
+
+    config = TenantConfiguration(tenant_id="t1")
+
+    await orchestrator.generate(
+        tenant_id="t1",
+        session_id="ses_001",
+        query="Hello?",
+        context_chunks=[],
+        tenant_config=config,
+    )
+
+    request_arg = mock_llm.generate.call_args[0][0]
+    assert request_arg.json_schema is None
 
 
 # ── 5. Chat API Endpoints ──────────────────────────────────────────────────

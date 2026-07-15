@@ -5,19 +5,22 @@ chunks, and enforces token budget limits via compression.
 Depends only on domain abstractions — no infrastructure imports.
 """
 
+import tiktoken
+
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.inference import (
     ChatMessage,
     PromptTemplateRegistry,
 )
 
-CONTEXT_HEADER = "Here is the relevant context for answering:"
+CONTEXT_HEADER = "Here is the relevant context for answering (all chunks are equally important, order does not indicate priority):"
 CONTEXT_TEMPLATE = "[Source: {chunk_id}] {content}"
 
 
+_TIKTOKEN_ENCODING = tiktoken.get_encoding("cl100k_base")
+
 def _estimate_tokens(text: str) -> int:
-    """Rough token estimate (~4 chars per token)."""
-    return max(1, len(text) // 4)
+    return max(1, len(_TIKTOKEN_ENCODING.encode(text)))
 
 
 class PromptBuilder:
@@ -66,19 +69,28 @@ class PromptBuilder:
         return candidates
 
     def _format_context(self, chunks: list[dict]) -> str:
-        """Format retrieved chunks into a structured context block."""
+        """Format retrieved chunks into a structured context block grouped by document."""
         if not chunks:
             return "No relevant context was found."
 
-        parts = [CONTEXT_HEADER]
+        docs: dict[str, list[dict]] = {}
         for c in chunks:
-            parts.append(
-                CONTEXT_TEMPLATE.format(
-                    chunk_id=c.get("chunk_id", "unknown"),
-                    content=c.get("content", ""),
-                )
-            )
-        return "\n\n".join(parts)
+            doc_id = c.get("document_id", "unknown")
+            docs.setdefault(doc_id, []).append(c)
+
+        sections = [CONTEXT_HEADER]
+        for doc_id, doc_chunks in docs.items():
+            lines = [f"Document: {doc_id}"]
+            for c in doc_chunks:
+                meta = c.get("metadata") or {}
+                parent_id = meta.get("parent_chunk_id") if isinstance(meta, dict) else None
+                chunk_id = c.get("chunk_id", "unknown")
+                content = c.get("content", "")
+                if parent_id:
+                    content = f"[This is part of section {parent_id}]\n{content}"
+                lines.append(CONTEXT_TEMPLATE.format(chunk_id=chunk_id, content=content))
+            sections.append("\n".join(lines))
+        return "\n\n".join(sections)
 
     async def _resolve_system_prompt(
         self, tenant_id: str, name: str

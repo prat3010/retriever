@@ -263,6 +263,7 @@ class SqlInferenceLogWriter(InferenceLogWriter):
                     output_tokens=log.output_tokens,
                     latency_ms=log.latency_ms,
                     cost_usd=log.cost_usd,
+                    notes=log.notes,
                 )
             )
             await session.flush()

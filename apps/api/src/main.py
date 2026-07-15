@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import (
+    BackgroundTasks,
     Depends,
     FastAPI,
     File,
@@ -199,6 +200,10 @@ else:
 # Initialize search service
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
+from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
+from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
+from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
+from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 
 llm_provider = RoutingLLMProvider(
     openai_adapter=OpenAILLMAdapter(
@@ -221,6 +226,8 @@ search_service = HybridSearchService(
     cache_provider=PgSemanticCacheAdapter(),
     web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
     self_query=LLMSelfQueryAdapter(llm=llm_provider),
+    query_rewriter=LLMQueryRewriterAdapter(llm=llm_provider),
+    query_intent_classifier=LLMQueryIntentAdapter(llm=llm_provider),
 )
 
 # Initialize inference service
@@ -236,6 +243,31 @@ inference_orchestrator = InferenceOrchestrator(
     session_repo=session_repo,
     log_writer=log_writer,
     metrics_registry=get_metrics(),
+    notification_provider=LoggingNotificationAdapter(),
+)
+
+# Initialize evaluation service
+from src.adapters.database.evaluation_repository import SqlEvalDatasetRepository, SqlEvalRunRepository
+from src.domain.evaluation.evaluator import EvalRunService
+
+eval_dataset_repo = SqlEvalDatasetRepository()
+eval_run_repo = SqlEvalRunRepository()
+eval_service = EvalRunService(
+    eval_dataset_repo=eval_dataset_repo,
+    eval_run_repo=eval_run_repo,
+    search_service=search_service,
+    inference_orchestrator=inference_orchestrator,
+)
+
+# Initialize corrective retrieval service
+from src.adapters.cognitive.corrective_retrieval_adapter import LLMCorrectiveRetrievalAdapter
+from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
+
+corrective_provider = LLMCorrectiveRetrievalAdapter(llm=llm_provider)
+corrective_service = CorrectiveRetrievalService(
+    search_service=search_service,
+    orchestrator=inference_orchestrator,
+    corrective_provider=corrective_provider,
 )
 
 # Exception Handlers mapping to HTTP Responses
@@ -1188,16 +1220,20 @@ async def search_documents(
         tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
         enable_reranking=tenant_config.feature_flags.enable_reranking,
+        enable_bm25=tenant_config.bm25_settings.enable_bm25,
+        enable_mmr=tenant_config.mmr_settings.enable_mmr,
+        enable_query_rewriting=tenant_config.feature_flags.enable_query_rewriting,
         rrf_k=tenant_config.retrieval_settings.rrf_k,
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+        rerank_candidate_multiplier=tenant_config.retrieval_settings.rerank_candidate_multiplier,
         enable_web_search=tenant_config.feature_flags.enable_web_search,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,
+        enable_query_intent=tenant_config.feature_flags.enable_query_intent,
     )
 
     response = await search_service.search(query)
-
     return SearchResponseDto(
         query=response.query,
         results=[
@@ -1217,7 +1253,6 @@ async def search_documents(
             durationMs=response.search_meta.duration_ms,
         ),
     )
-
 
 # --- Chat & Inference Endpoints ---
 
@@ -1336,12 +1371,17 @@ def _build_search_query(
         tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,
         enable_reranking=tenant_config.feature_flags.enable_reranking,
+        enable_bm25=tenant_config.bm25_settings.enable_bm25,
+        enable_mmr=tenant_config.mmr_settings.enable_mmr,
+        enable_query_rewriting=tenant_config.feature_flags.enable_query_rewriting,
         rrf_k=tenant_config.retrieval_settings.rrf_k,
         reranking_threshold=tenant_config.retrieval_settings.reranking_threshold,
+        rerank_candidate_multiplier=tenant_config.retrieval_settings.rerank_candidate_multiplier,
         enable_web_search=tenant_config.feature_flags.enable_web_search,
         web_search_threshold=tenant_config.retrieval_settings.web_search_threshold,
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,
+        enable_query_intent=tenant_config.feature_flags.enable_query_intent,
     )
 
 
@@ -1363,6 +1403,17 @@ async def send_chat_message(
 
     tenant_config = await config_service.get_tenant_config(tenantId)
 
+    experiment_id = None
+    experiment_variant = None
+    if tenant_config.experiments:
+        for exp in tenant_config.experiments:
+            variant = assign_variant(user_id, exp)
+            if variant:
+                tenant_config = apply_overrides(tenant_config, variant)
+                experiment_id = exp.id
+                experiment_variant = variant.id
+                break
+
     payload.query = await _apply_input_guardrails(tenant_config, payload.query)
 
     if x_llm_key:
@@ -1374,15 +1425,28 @@ async def send_chat_message(
     citation_template = tenant_config.retrieval_settings.citation_template
 
     if not payload.stream:
-        response = await inference_orchestrator.generate(
-            tenant_id=tenantId,
-            session_id=sessionId,
-            query=payload.query,
-            context_chunks=search_response.results,
-            tenant_config=tenant_config,
-            user_id=user_id,
-            system_prompt_name=payload.system_prompt_name,
-        )
+        if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
+            response = await corrective_service.generate_with_correction(
+                tenant_id=tenantId,
+                session_id=sessionId,
+                query=payload.query,
+                search_query=search_query,
+                tenant_config=tenant_config,
+                user_id=user_id,
+                system_prompt_name=payload.system_prompt_name,
+            )
+        else:
+            response = await inference_orchestrator.generate(
+                tenant_id=tenantId,
+                session_id=sessionId,
+                query=payload.query,
+                context_chunks=search_response.results,
+                tenant_config=tenant_config,
+                user_id=user_id,
+                system_prompt_name=payload.system_prompt_name,
+                experiment_id=experiment_id,
+                experiment_variant=experiment_variant,
+            )
         formatted_content = _format_citations(response.content, search_response.results, citation_template)
         return {
             "content": formatted_content,
@@ -1402,6 +1466,8 @@ async def send_chat_message(
                 tenant_config=tenant_config,
                 user_id=user_id,
                 system_prompt_name=payload.system_prompt_name,
+                experiment_id=experiment_id,
+                experiment_variant=experiment_variant,
             ):
                 if event.get("event") == "token":
                     delta = event.get("delta", "")
@@ -1482,8 +1548,9 @@ async def list_session_messages(
 
 
 class FeedbackSubmitRequest(BaseModel):
-    rating: int = Field(..., description="Rating score, +1 for positive, -1 for negative.")
+    rating: int = Field(default=0, description="Rating score, +1 for positive, -1 for negative.")
     feedback_text: str | None = Field(None, description="Optional text comment.")
+    scores: dict[str, int] | None = Field(None, description="Per-dimension scores, e.g. helpfulness=5, accuracy=4.")
 
 
 @app.post(
@@ -1527,6 +1594,7 @@ async def submit_message_feedback(
         user_id=user_id,
         rating=payload.rating,
         feedback_text=payload.feedback_text,
+        scores=payload.scores,
     )
     await feedback_repo.submit_feedback(feedback)
 
@@ -1542,6 +1610,151 @@ async def get_tenant_feedback_analytics(tenantId: str) -> Any:
     """Get aggregated message feedback analytics for a tenant (Admin only)."""
     analytics = await feedback_repo.get_feedback_analytics(tenantId)
     return analytics
+
+
+# ── Evaluation Admin Routes ─────────────────────────────────────────────
+
+
+class CreateEvalDatasetRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+
+
+class AddEvalQuestionRequest(BaseModel):
+    question: str = Field(..., min_length=1)
+    ground_truth_answer: str = Field(...)
+    relevant_chunk_ids: list[str] = Field(default_factory=list)
+
+
+class BulkImportQuestionsRequest(BaseModel):
+    questions: list[AddEvalQuestionRequest]
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/eval-datasets",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_eval_datasets(tenantId: str) -> Any:
+    datasets = await eval_dataset_repo.list_datasets(tenantId)
+    return [d.model_dump() for d in datasets]
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/eval-datasets",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def create_eval_dataset(tenantId: str, body: CreateEvalDatasetRequest) -> Any:
+    from src.domain.abstractions.evaluation import EvalDataset
+    dataset = await eval_dataset_repo.create_dataset(EvalDataset(
+        tenant_id=tenantId,
+        name=body.name,
+        description=body.description,
+    ))
+    return dataset.model_dump()
+
+
+@app.delete(
+    "/v1/admin/tenants/{tenantId}/eval-datasets/{datasetId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def delete_eval_dataset(tenantId: str, datasetId: str) -> Any:
+    deleted = await eval_dataset_repo.delete_dataset(tenantId, datasetId)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Dataset not found.")
+    return {"status": "deleted"}
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/eval-datasets/{datasetId}/questions",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_eval_questions(tenantId: str, datasetId: str) -> Any:
+    questions = await eval_dataset_repo.list_questions(datasetId)
+    return [q.model_dump() for q in questions]
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/eval-datasets/{datasetId}/questions",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def add_eval_question(tenantId: str, datasetId: str, body: AddEvalQuestionRequest) -> Any:
+    from src.domain.abstractions.evaluation import EvalQuestion
+    question = await eval_dataset_repo.add_question(EvalQuestion(
+        dataset_id=datasetId,
+        question=body.question,
+        ground_truth_answer=body.ground_truth_answer,
+        relevant_chunk_ids=body.relevant_chunk_ids,
+    ))
+    return question.model_dump()
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/eval-datasets/{datasetId}/import",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def bulk_import_questions(tenantId: str, datasetId: str, body: BulkImportQuestionsRequest) -> Any:
+    from src.domain.abstractions.evaluation import EvalQuestion
+    imported = []
+    for q in body.questions:
+        question = await eval_dataset_repo.add_question(EvalQuestion(
+            dataset_id=datasetId,
+            question=q.question,
+            ground_truth_answer=q.ground_truth_answer,
+            relevant_chunk_ids=q.relevant_chunk_ids,
+        ))
+        imported.append(question)
+    return {"imported": len(imported)}
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/eval-datasets/{datasetId}/run",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def trigger_eval_run(tenantId: str, datasetId: str, background_tasks: BackgroundTasks) -> Any:
+    background_tasks.add_task(eval_service.run_evaluation, tenantId, datasetId, "manual")
+    return {"status": "accepted"}
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/eval-runs",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_eval_runs(tenantId: str) -> Any:
+    runs = await eval_run_repo.list_runs(tenantId)
+    return [r.model_dump() for r in runs]
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/eval-runs/{runId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_eval_run(tenantId: str, runId: str) -> Any:
+    run = await eval_run_repo.get_run(tenantId, runId)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found.")
+    return run.model_dump()
+
+
+@app.get(
+    "/v1/admin/tenants/{tenantId}/eval-runs/{runId}/results",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_eval_run_results(tenantId: str, runId: str) -> Any:
+    results = await eval_run_repo.list_results(runId)
+    return [r.model_dump() for r in results]
+
+
+# ── Document Download Routes ────────────────────────────────────────────
 
 
 @app.get(

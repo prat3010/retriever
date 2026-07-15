@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
@@ -39,7 +40,7 @@ class LLMSelfQueryAdapter(SelfQueryProvider):
             max_tokens=200,
         )
         try:
-            response = await self.llm.generate(request, {"model": self.model})
+            response = await asyncio.wait_for(self.llm.generate(request, {"model": self.model}), timeout=2.0)
             raw = response.content.strip()
             raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```")
             parsed = json.loads(raw)

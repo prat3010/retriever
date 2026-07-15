@@ -1,8 +1,15 @@
 from sqlalchemy import text
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.vector.filter_builder import build_filter_clause, rows_to_search_results
-from src.domain.abstractions.retrieval import KeywordSearchProvider, MetadataFilter, SearchResult
+from src.adapters.vector.filter_builder import (
+    build_filter_clause,
+    rows_to_search_results,
+)
+from src.domain.abstractions.retrieval import (
+    KeywordSearchProvider,
+    MetadataFilter,
+    SearchResult,
+)
 
 
 class PgKeywordSearchAdapter(KeywordSearchProvider):
@@ -26,15 +33,16 @@ class PgKeywordSearchAdapter(KeywordSearchProvider):
                         dc.document_id,
                         dc.content,
                         dc.meta_data,
-                        ts_rank(
+                        ts_rank_cd(
                             to_tsvector('english', dc.content),
-                            plainto_tsquery('english', :query)
+                            websearch_to_tsquery('english', :query),
+                            2
                         ) AS rank_score
                     FROM document_chunks dc
                     {join_clause}
                     WHERE dc.tenant_id = :tenant_id
                       AND to_tsvector('english', dc.content)
-                          @@ plainto_tsquery('english', :query)
+                          @@ websearch_to_tsquery('english', :query)
                       {filter_clause}
                     ORDER BY rank_score DESC
                     LIMIT :top_k

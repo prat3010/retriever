@@ -1149,7 +1149,11 @@ PHASE 2: Ingestion & Sandbox parsing
 
 PHASE 3: Retrieval & Fusion
 ├── Build hybrid search & RRF merger
-└── Implement metadata filters & reranker models
+├── Implement metadata filters & reranker models
+├── Two-stage BM25 (ts_rank_cd + in-app Python BM25)
+├── MMR diversity sampling (TF-IDF cosine, post-reranker)
+├── HyDE query rewriting (LLM-generated hypothetical doc for embedding)
+└── Self-RAG / corrective retrieval (LLM-as-judge, re-retrieval on low confidence)
     [EXIT CRITERIA: Multi-tier search queries executed < 150ms]
 
 PHASE 4: Generative Orchestration
@@ -1159,8 +1163,15 @@ PHASE 4: Generative Orchestration
 
 PHASE 5: Operational Hardening
 ├── Implement Prometheus dashboards & logs
-└── Build evaluation pipeline for quality benchmarks
-    [EXIT CRITERIA: Production metrics logged & baseline met]
+├── Build evaluation pipeline for quality benchmarks
+│   ├── Ground-truth eval datasets (eval_datasets + eval_questions tables)
+│   ├── RAGAS: faithfulness, answer_relevancy, context_precision, context_recall
+│   ├── DeepEval: hallucination, toxicity, bias
+│   ├── Search metrics: nDCG@10, MRR, hit_rate@10
+│   ├── Admin API: CRUD for datasets/questions + trigger eval runs
+│   └── Celery nightly: scheduled evaluation runs
+└── Self-query timeout gating + cache invalidation on document update
+    [EXIT CRITERIA: Production metrics logged, eval pipeline operational]
 ```
 
 ### 13.2 Phase Profiles

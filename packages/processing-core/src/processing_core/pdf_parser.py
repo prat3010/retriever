@@ -11,6 +11,22 @@ def extract_text_from_pdf(storage_path: str) -> str:
     return "\n--- Page Break ---\n".join(text_runs)
 
 
+def extract_tables_from_pdf(storage_path: str) -> list[dict]:
+    tables = []
+    with pdfplumber.open(storage_path) as pdf:
+        for page_num, page in enumerate(pdf.pages):
+            for table in page.extract_tables():
+                if table and len(table) > 1:
+                    headers = table[0]
+                    rows = table[1:]
+                    tables.append({
+                        "page": page_num + 1,
+                        "headers": [h.strip() if h else "" for h in headers],
+                        "rows": [[c.strip() if c else "" for c in row] for row in rows],
+                    })
+    return tables
+
+
 def extract_text_from_file(storage_path: str) -> str:
     if storage_path.lower().endswith(".pdf"):
         return extract_text_from_pdf(storage_path)

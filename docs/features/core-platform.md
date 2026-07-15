@@ -117,6 +117,9 @@ Retriever's capabilities are divided into five logical feature groups:
 *   **FR-4.2: Reciprocal Rank Fusion (RRF):** The retrieval system MUST merge parallel search results into a single ranked list using a Reciprocal Rank Fusion (RRF) algorithm.
 *   **FR-4.3: Metadata Filtering:** The system MUST filter search candidate lists using metadata tags (e.g., source file date, custom categories, document type) before applying ranking algorithms.
 *   **FR-4.4: Context Reranking:** The system MUST route the top fused candidates to a cross-encoder model to compute relevance scores and prune chunks below a tenant-configured similarity threshold.
+*   **FR-4.5: BM25 Two-Stage Scoring:** The keyword leg MUST use `ts_rank_cd` (length-normalized) for fast candidate retrieval. Optionally, an in-app pure-Python BM25 re-ranks fused candidates using local IDF.
+*   **FR-4.6: MMR Diversity Sampling:** The system SHOULD apply Maximum Marginal Relevance (TF-IDF cosine) after reranking to ensure result diversity across documents.
+*   **FR-4.7: HyDE Query Rewriting:** The system SHOULD generate a hypothetical document via LLM and use its embedding for the vector search leg, improving semantic recall for underspecified queries.
 
 ### 5.5 Grounded Generative Inference
 *   **FR-5.1: Chat Session Tracking:** The system MUST manage conversation histories, saving user inputs and system responses in session logs.
@@ -178,12 +181,16 @@ erDiagram
     TENANT ||--o{ CHAT_SESSION : maintains
     TENANT ||--o{ USER : has
     TENANT ||--o{ API_KEY : has
+    TENANT ||--o{ EVAL_DATASET : maintains
     DOCUMENT ||--o{ CHUNK : contains
     CHUNK ||--|| VECTOR_RECORD : materializes
     TENANT ||--o{ PROMPT_TEMPLATE : registers
     CHAT_SESSION ||--o{ CHAT_MESSAGE : records
     CHAT_SESSION ||--o{ INFERENCE_LOG : logs
     USER ||--o{ CHAT_SESSION : initiates
+    EVAL_DATASET ||--o{ EVAL_QUESTION : contains
+    EVAL_DATASET ||--o{ EVAL_RUN : triggers
+    EVAL_RUN ||--o{ EVAL_RUN_RESULT : produces
 ```
 
 *   **Tenant:** Represents isolated enterprise workspace bounds.
@@ -208,6 +215,14 @@ erDiagram
     *   *Fields:* `messageId` (UUID), `sessionId` (UUID), `userId` (UUID), `role` (`System`, `User`, `Assistant`, `Tool`), `content` (Text), `toolCalls` (JSON), `createdAt` (Timestamp).
 *   **InferenceLog:** Operational log for cost and audit tracing.
     *   *Fields:* `logId` (UUID), `tenantId` (UUID), `sessionId` (UUID), `userId` (UUID), `modelUsed` (String), `inputTokens` (Integer), `outputTokens` (Integer), `latencyMs` (Integer), `createdAt` (Timestamp).
+*   **EvalDataset:** Ground-truth question sets for RAG evaluation.
+    *   *Fields:* `datasetId` (UUID), `tenantId` (UUID), `name` (String), `description` (Text), `createdAt` (Timestamp).
+*   **EvalQuestion:** Individual Q&A pair within a dataset.
+    *   *Fields:* `questionId` (UUID), `datasetId` (UUID), `question` (Text), `groundTruthAnswer` (Text), `relevantChunkIds` (JSONB).
+*   **EvalRun:** Execution record of an evaluation pass.
+    *   *Fields:* `runId` (UUID), `tenantId` (UUID), `datasetId` (UUID), `status` (`pending`, `running`, `completed`), `trigger` (`manual`, `scheduled`), `aggregateScores` (JSONB).
+*   **EvalRunResult:** Per-question scores from an eval run.
+    *   *Fields:* `resultId` (UUID), `runId` (UUID), `questionId` (UUID), `generatedAnswer` (Text), `retrievedChunkIds` (JSONB), `scores` (JSONB), `latencyMs` (Integer).
 
 ---
 
@@ -241,7 +256,7 @@ The table below defines how the system handles critical error states:
 
 ### 10.3 Knowledge Indexing & Chunk Management
 *   [ ] **AC 3.1:** Document text MUST be segmented into chunks matching the tenant's configuration limits.
-*   [ ] **AC 3.2:** Sub-chunks (children) MUST be saved with `parentChunkId` referencing their parent context block.
+*   [x] **AC 3.2:** Sub-chunks (children) MUST be saved with `parentChunkId` referencing their parent context block.
 *   [ ] **AC 3.3:** Indexed chunks MUST have corresponding mathematical vectors generated and saved in the vector database.
 
 ### 10.4 Hybrid Retrieval & Fusion Engine
@@ -276,7 +291,7 @@ The table below defines how the system handles critical error states:
 ## 12. Open Questions and Assumptions
 
 *   **Q-1: Reranking Config Routing:** Do we support tenant-configured reranking models (e.g., Tenant A uses Cohere, Tenant B uses local Cross-Encoder), or does the platform run a single shared reranker service?
-    *   *Assumption:* The platform utilizes a shared reranker instance in Phase 1, with tenant-configured model routing added in later releases.
+    *   *Decision:* Shared Cohere `rerank-v3.5` instance. `rerank_candidate_multiplier` is per-tenant configurable. Model choice is shared platform-wide.
 *   **Q-2: Chunk Deletion Synchronization:** When a document is deleted, should the chunk deletion in relational and vector databases run synchronously or eventually?
     *   *Assumption:* Deleting a document removes metadata synchronously, and background workers clean up chunk databases and vector stores asynchronously.
 *   **Q-3: Human-in-the-Loop Expiry:** How long should a paused, human-in-the-loop inference session wait for approval before timing out?

@@ -2,14 +2,18 @@ from abc import ABC, abstractmethod
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from src.domain.abstractions.experiment import ExperimentConfig
 
 
 class FeatureFlags(BaseModel):
     enable_hybrid_search: bool = True
     enable_reranking: bool = True
     enable_sse_streaming: bool = True
-    enable_web_search: bool = False
-    enable_self_query: bool = False
+    enable_web_search: bool = True
+    enable_self_query: bool = True
+    enable_query_rewriting: bool = False
+    enable_corrective_retrieval: bool = False
+    enable_query_intent: bool = False
 
 
 class ModelPricing(BaseModel):
@@ -54,10 +58,41 @@ class StorageProviderConfig(BaseModel):
     local_path: str = "./storage"
 
 
+class BM25Settings(BaseModel):
+    enable_bm25: bool = True
+    k1: float = 1.5
+    b: float = 0.75
+    rerank_top_k: int = 50
+
+
+class MMRSettings(BaseModel):
+    enable_mmr: bool = True
+    mmr_lambda: float = 0.7
+    mmr_top_k: int = 10
+
+
+class CorrectiveRetrievalSettings(BaseModel):
+    enable_corrective_retrieval: bool = False
+    max_retrieval_rounds: int = 2
+    confidence_threshold: float = 0.4
+    judge_model: str = "gemini-1.5-flash"
+
+
+class QueryIntentSettings(BaseModel):
+    enable_query_intent: bool = False
+    classifier_model: str = "gemini-1.5-flash"
+
+
+class BudgetSettings(BaseModel):
+    daily_cost_budget: float | None = None
+    monthly_cost_budget: float | None = None
+
+
 class RetrievalSettings(BaseModel):
     top_k: int = 10
     rrf_k: int = 60
     reranking_threshold: float = 0.7
+    rerank_candidate_multiplier: int = 5
     chunk_size: int = 500
     chunk_overlap: int = 100
     citation_template: str = "[{index}]"
@@ -65,6 +100,7 @@ class RetrievalSettings(BaseModel):
     web_search_threshold: float = 0.65
     web_search_provider: str = "tavily"
     web_search_max_results: int = 5
+    json_schema: dict | None = None
 
 
 class SecuritySettings(BaseModel):
@@ -83,6 +119,8 @@ class ChunkingSettings(BaseModel):
     chunk_size: int = 500
     chunk_overlap: int = 100
     semantic_threshold: float = 0.95
+    enable_hierarchical: bool = False
+    hierarchical_group_size: int = 5
 
 
 class MetadataExtractorConfig(BaseModel):
@@ -106,11 +144,17 @@ class TenantConfiguration(BaseModel):
     embedding_provider: EmbeddingProviderConfig = Field(default_factory=EmbeddingProviderConfig)
     storage_provider: StorageProviderConfig = Field(default_factory=StorageProviderConfig)
     retrieval_settings: RetrievalSettings = Field(default_factory=RetrievalSettings)
+    bm25_settings: BM25Settings = Field(default_factory=BM25Settings)
+    mmr_settings: MMRSettings = Field(default_factory=MMRSettings)
+    corrective_retrieval_settings: CorrectiveRetrievalSettings = Field(default_factory=CorrectiveRetrievalSettings)
+    query_intent_settings: QueryIntentSettings = Field(default_factory=QueryIntentSettings)
+    budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)
     chunking_settings: ChunkingSettings = Field(default_factory=ChunkingSettings)
     metadata_extractors: list[MetadataExtractorConfig] = Field(default_factory=list)
     guardrails: list[GuardrailConfig] = Field(default_factory=list)
+    experiments: list[ExperimentConfig] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
 

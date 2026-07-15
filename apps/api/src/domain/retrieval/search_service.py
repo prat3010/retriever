@@ -6,21 +6,22 @@ reranking. Depends only on domain abstractions — no infrastructure imports.
 """
 
 import time
-
 from uuid import uuid4
 
 from src.domain.abstractions.retrieval import (
     EmbeddingProvider,
     KeywordSearchProvider,
     MetadataFilter,
+    QueryIntentClassifier,
+    QueryRewriterProvider,
     RerankerProvider,
     SearchMeta,
     SearchQuery,
     SearchResponse,
     SearchResult,
     SelfQueryProvider,
-    VectorSearchProvider,
     SemanticCacheProvider,
+    VectorSearchProvider,
 )
 from src.domain.abstractions.web_search import WebSearchProvider
 
@@ -37,6 +38,8 @@ class HybridSearchService:
         cache_provider: SemanticCacheProvider = None,
         web_search: WebSearchProvider | None = None,
         self_query: SelfQueryProvider | None = None,
+        query_rewriter: QueryRewriterProvider | None = None,
+        query_intent_classifier: QueryIntentClassifier | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
@@ -45,18 +48,41 @@ class HybridSearchService:
         self.cache_provider = cache_provider
         self.web_search = web_search
         self.self_query = self_query
+        self.query_rewriter = query_rewriter
+        self.query_intent_classifier = query_intent_classifier
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
         start_time = time.monotonic()
+
+        # -1. Classify query intent and override top_k / feature flags
+        if query.enable_query_intent and self.query_intent_classifier:
+            try:
+                intent = await self.query_intent_classifier.classify(query.query)
+                query.top_k = intent.top_k
+                query.enable_hybrid = intent.enable_hybrid
+                query.enable_reranking = intent.enable_reranking
+                query.enable_web_search = intent.enable_web_search
+            except Exception:
+                pass
 
         # 0. Self-query: parse NL query into structured filters
         if query.enable_self_query and self.self_query:
             parsed = await self._parse_self_query(query.query)
             query.filters = query.filters + parsed
 
-        # 1. Generate query embedding
-        query_embedding = await self.embedder.embed_text(query.query)
+        # 0a. Optional HyDE query rewriting — rewritten text used for embedding only
+        embed_query = query.query
+        if query.enable_query_rewriting and self.query_rewriter:
+            try:
+                rewritten = await self.query_rewriter.rewrite(query.query)
+                if rewritten:
+                    embed_query = rewritten[0]
+            except Exception:
+                pass
+
+        # 1. Generate query embedding (from HyDE document if rewriting was active)
+        query_embedding = await self.embedder.embed_text(embed_query)
 
         # 2. Check semantic cache table if cache provider is set
         if self.cache_provider is not None:
@@ -77,8 +103,11 @@ class HybridSearchService:
                 pass
 
         # 3. Fan-out: parallel dense + sparse searches
+        search_k = query.top_k * (
+            query.rerank_candidate_multiplier if query.enable_reranking else 1
+        )
         vector_results, keyword_results = await self._fan_out_search(
-            query, query_embedding
+            query, query_embedding, search_k
         )
 
         # 4. Determine strategy and fuse results
@@ -89,11 +118,21 @@ class HybridSearchService:
             query, strategy, vector_results, keyword_results
         )
 
+        # 4b. Optional BM25 re-ranking (Stage 2) — re-scores fused candidates
+        if query.enable_bm25 and fused:
+            from src.domain.retrieval.bm25_reranker import bm25_rerank
+            bm25_rerank(query.query, fused)
+
         # 5. Optional reranking pass
         if query.enable_reranking and fused:
             fused, strategy = await self._apply_reranking(
                 query, fused, strategy
             )
+
+        # 5b. Optional MMR diversity sampling
+        if query.enable_mmr and fused:
+            from src.domain.retrieval.mmr import mmr_diversify
+            fused = mmr_diversify(fused)
 
         # 6. Trim to requested limit
         final_results = fused[: query.top_k]
@@ -163,6 +202,7 @@ class HybridSearchService:
         self,
         query: SearchQuery,
         query_embedding: list[float],
+        search_k: int,
     ) -> tuple[list[SearchResult], list[SearchResult]]:
         """Execute vector and keyword searches with graceful degradation."""
         vector_results: list[SearchResult] = []
@@ -172,7 +212,7 @@ class HybridSearchService:
             vector_results = await self.vector_search.search_similar(
                 tenant_id=query.tenant_id,
                 embedding=query_embedding,
-                top_k=query.top_k,
+                top_k=search_k,
                 filters=query.filters,
                 tags=query.tags,
             )
@@ -184,7 +224,7 @@ class HybridSearchService:
                 keyword_results = await self.keyword_search.search_keywords(
                     tenant_id=query.tenant_id,
                     query_text=query.query,
-                    top_k=query.top_k,
+                    top_k=search_k,
                     filters=query.filters,
                     tags=query.tags,
                 )

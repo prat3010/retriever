@@ -26,7 +26,6 @@ they start blocking you — not before.
 | Missing `await` on `generate_presigned_url()` — admin download silently broken | M24 polish |
 | 3 migration drifts: `inference_logs.notes`, `semantic_cache` table, `audit_logs` hashes | M24 polish |
 | `MagicMock` → `AsyncMock` in presigned URL tests | M24 polish |
-| `asyncio.run()` → `await` in event tests | M24 polish |
 | 10 redundant inline imports in `main.py` (`json`×4, `re`, `uuid` — already at module level) | M24 polish |
 | Missing module-level imports: `logging`, `datetime.UTC` | M24 polish |
 | `upload_document` (73 lines) refactored — extracted `_check_idempotency`/`_cache_idempotency` | M24 polish |
@@ -36,6 +35,9 @@ they start blocking you — not before.
 | `build_filter_clause` 10-branch if/elif chain replaced with `_OP_TO_SQL` operator dict (60→~35 lines) | M24 polish |
 | Duplicate row mappers in `search_similar`/`search_keywords` replaced with shared `rows_to_search_results` | M24 polish |
 | `StreamingResponse` + `sqlalchemy.select` moved from inline to module-level imports | M24 polish |
+| No local OCR (Tesseract) — pytesseract fallback added | C-4 Sprint 2 |
+| First-page-only PDF vision — multi-page vision loop | C-4 Sprint 2 |
+| Token budget alert thresholds — `BudgetSettings` + `NotificationProvider` | E-6 Sprint 3 cleanup |
 
 ## Architecture
 
@@ -208,10 +210,12 @@ Web search API key is platform-level (`TAVILY_API_KEY` env var). No per-tenant o
 
 Web results are injected as raw text (`[Web: Title](url)\n{content}`) without chunking or embedding. This works for shallow fallback but longer web content could exhaust the context window. Add proper chunking + embedding when web results regularly exceed 2k tokens.
 
-### Token budget alert thresholds
-**Files:** `apps/api/src/domain/abstractions/config.py`  
+### ~~Token budget alert thresholds~~ (Fixed in E-6)
+**Files:** `apps/api/src/domain/abstractions/config.py`
 
 No `monthly_token_budget` or `budget_alert_threshold` config fields exist. The Prometheus `COST_SPEND` counter is emitted but not hooked to alerts. Add when a tenant needs spend caps (related to M25).
+
+*Fixed: `BudgetSettings` + `NotificationProvider` port + `LoggingNotificationAdapter` added. In-memory daily/monthly accumulation with threshold crossing alerts in `orchestrator._check_budget()`.*
 
 ### Admin dashboard cost charts
 **File:** (none — doesn't exist yet)  
@@ -247,15 +251,19 @@ Extraction endpoint returns a blocking JSON response. Add SSE streaming for larg
 
 ## Product/Deferred (M23)
 
-### No local OCR (Tesseract)
-**File:** `workers/src/tasks/__init__.py`  
+### ~~No local OCR (Tesseract)~~ (Fixed in C-4)
+**File:** `workers/src/tasks/__init__.py`
 
 Vision extraction uses OpenAI vision API only — no local Tesseract OCR. This works for all image types but has per-call cost and latency. Add `pytesseract` + `TesseractOCR` system binary when throughput or cost requires offline processing.
 
-### First-page-only PDF vision
+*Fixed: `_ocr_with_tesseract()` chained before vision API, `pytesseract>=0.3.10` dep added.*
+
+### ~~First-page-only PDF vision~~ (Fixed in C-4)
 **File:** `workers/src/tasks/__init__.py` (in `_describe_with_vision`)
 
 For zero-text PDFs, only the first page is described. Long scanned documents will miss later pages. Iterate all pages when multi-page scanned PDFs become a common workload.
+
+*Fixed: removed `break` after first page — all pages are now described and concatenated.*
 
 ### No Anthropic vision in worker
 **File:** `workers/src/tasks/__init__.py`  

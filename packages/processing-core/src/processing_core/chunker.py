@@ -113,16 +113,15 @@ def chunk_recursive(
                 })
                 chunk_index += 1
 
-                overlap_chunk = []
-                overlap_tokens = 0
-                for cb, cb_len in reversed(current_chunk):
-                    if overlap_tokens + cb_len <= chunk_overlap:
-                        overlap_chunk.insert(0, (cb, cb_len))
-                        overlap_tokens += cb_len
-                    else:
+                keep_tokens = 0
+                keep_count = 0
+                for _, cb_len in reversed(current_chunk):
+                    if keep_tokens + cb_len > chunk_overlap:
                         break
-                current_chunk = overlap_chunk
-                current_tokens = overlap_tokens
+                    keep_tokens += cb_len
+                    keep_count += 1
+                current_chunk = current_chunk[-keep_count:] if keep_count else []
+                current_tokens = keep_tokens
 
             current_chunk.append((block, len(block_tokens)))
             current_tokens += len(block_tokens)
@@ -162,7 +161,11 @@ async def chunk_semantic(
     tenant_id: str = "",
 ) -> list[dict]:
     """Topic-Aware Semantic Similarity Sentence Chunker."""
-    raw_sentences = re.split(r'(?<=[.?!])\s+', text)
+    # C-1: More robust sentence boundary detection
+    raw_sentences = re.split(
+        r'(?<=[.?!])\s+(?=[A-Z"\'(])|(?<=[.?!])\s*$',
+        text
+    )
     sentences = [s.strip() for s in raw_sentences if s.strip()]
     if not sentences:
         return []
@@ -182,57 +185,105 @@ async def chunk_semantic(
     for idx, sentence in enumerate(sentences):
         sentence_tokens = tokenize_text(sentence)
 
+        did_split = False
+
+        # C-2: Size-triggered split — check BEFORE adding the new sentence
         if current_sentences and (current_tokens + len(sentence_tokens) > chunk_size):
             content = " ".join(current_sentences)
-            chunks.append({
-                "chunk_id": str(uuid.uuid4()),
-                "document_id": document_id,
-                "tenant_id": tenant_id,
-                "content": content.strip(),
-                "token_count": current_tokens,
-                "chunk_index": chunk_index,
-                "meta_data": json.dumps({"strategy": "semantic"}),
-            })
+            chunks.append(_make_chunk(content, current_tokens, chunk_index, document_id, tenant_id))
             chunk_index += 1
 
-            # Simple overlap: carry forward the last sentence
-            overlap_sentence = current_sentences[-1]
-            overlap_tokens = len(tokenize_text(overlap_sentence))
-            current_sentences = [overlap_sentence]
-            current_tokens = overlap_tokens
+            # Overlap: carry forward sentences up to chunk_overlap tokens
+            keep_tokens = 0
+            keep_count = 0
+            for s in reversed(current_sentences):
+                st = len(tokenize_text(s))
+                if keep_tokens + st > chunk_overlap:
+                    break
+                keep_tokens += st
+                keep_count += 1
+            current_sentences = current_sentences[-keep_count:] if keep_count else []
+            current_tokens = keep_tokens
+            did_split = True
 
         current_sentences.append(sentence)
         current_tokens += len(sentence_tokens)
 
-        # Check similarity spike drops indicating topic transition
-        if idx < len(similarities) and similarities[idx] < semantic_threshold:
+        # C-2: Similarity-triggered split — only if we did NOT already split this iteration
+        if not did_split and idx < len(similarities) and similarities[idx] < semantic_threshold:
             if current_sentences:
                 content = " ".join(current_sentences)
-                chunks.append({
-                    "chunk_id": str(uuid.uuid4()),
-                    "document_id": document_id,
-                    "tenant_id": tenant_id,
-                    "content": content.strip(),
-                    "token_count": current_tokens,
-                    "chunk_index": chunk_index,
-                    "meta_data": json.dumps({"strategy": "semantic"}),
-                })
+                chunks.append(_make_chunk(content, current_tokens, chunk_index, document_id, tenant_id))
                 chunk_index += 1
-                overlap_sentence = current_sentences[-1]
-                overlap_tokens = len(tokenize_text(overlap_sentence))
-                current_sentences = [overlap_sentence]
-                current_tokens = overlap_tokens
+                # Overlap: carry forward sentences up to chunk_overlap tokens
+                keep_tokens = 0
+                keep_count = 0
+                for s in reversed(current_sentences):
+                    st = len(tokenize_text(s))
+                    if keep_tokens + st > chunk_overlap:
+                        break
+                    keep_tokens += st
+                    keep_count += 1
+                current_sentences = current_sentences[-keep_count:] if keep_count else []
+                current_tokens = keep_tokens
 
     if current_sentences:
         content = " ".join(current_sentences)
-        chunks.append({
-            "chunk_id": str(uuid.uuid4()),
-            "document_id": document_id,
-            "tenant_id": tenant_id,
-            "content": content.strip(),
-            "token_count": current_tokens,
-            "chunk_index": chunk_index,
-            "meta_data": json.dumps({"strategy": "semantic"}),
-        })
+        chunks.append(_make_chunk(content, current_tokens, chunk_index, document_id, tenant_id))
 
     return chunks
+
+
+def build_hierarchy(
+    chunks: list[dict],
+    group_size: int = 5,
+    document_id: str = "",
+    tenant_id: str = "",
+) -> list[dict]:
+    """Group child chunks into parent sections, setting parent_chunk_id on children.
+
+    Each parent is a concatenation of its group_size child chunks.
+    Parents are inserted first in the returned list, followed by children.
+    """
+    if not chunks:
+        return []
+
+    parents = []
+    children_with_parent = []
+
+    for i in range(0, len(chunks), group_size):
+        group = chunks[i : i + group_size]
+        parent_id = str(uuid.uuid4())
+        parent_content = "\n\n---\n\n".join(c["content"] for c in group)
+        parent_tokens = sum(c.get("token_count", 0) for c in group)
+
+        parents.append({
+            "chunk_id": parent_id,
+            "document_id": document_id or group[0].get("document_id", ""),
+            "tenant_id": tenant_id or group[0].get("tenant_id", ""),
+            "content": parent_content,
+            "token_count": parent_tokens,
+            "chunk_index": group[0].get("chunk_index", 0),
+            "meta_data": json.dumps({"is_parent": True, "strategy": "hierarchical"}),
+        })
+
+        for c in group:
+            c["parent_chunk_id"] = parent_id
+            children_with_parent.append(c)
+
+    return parents + children_with_parent
+
+
+def _make_chunk(
+    content: str, token_count: int, chunk_index: int,
+    document_id: str, tenant_id: str,
+) -> dict:
+    return {
+        "chunk_id": str(uuid.uuid4()),
+        "document_id": document_id,
+        "tenant_id": tenant_id,
+        "content": content.strip(),
+        "token_count": token_count,
+        "chunk_index": chunk_index,
+        "meta_data": json.dumps({"strategy": "semantic"}),
+    }

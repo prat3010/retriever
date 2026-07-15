@@ -71,9 +71,13 @@ celery_app.conf.update(
             "queue": "periodic",
             "routing_key": "periodic.reconcile",
         },
-        "workers.src.tasks.warm_caches": {
+        "workers.src.tasks.eval_tasks.run_evaluation": {
+            "queue": "evaluation",
+            "routing_key": "evaluation.run",
+        },
+        "workers.src.tasks.eval_tasks.run_scheduled_evaluations": {
             "queue": "periodic",
-            "routing_key": "periodic.warm_caches",
+            "routing_key": "periodic.evaluation",
         },
     },
     task_annotations={
@@ -87,9 +91,9 @@ celery_app.conf.update(
             "schedule": 900.0,
             "args": (),
         },
-        "warm-tenant-caches": {
-            "task": "workers.src.tasks.warm_caches",
-            "schedule": 21600.0,
+        "nightly-evaluation": {
+            "task": "workers.src.tasks.eval_tasks.run_scheduled_evaluations",
+            "schedule": 43200.0,
             "args": (),
         },
     },

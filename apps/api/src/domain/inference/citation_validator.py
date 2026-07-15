@@ -38,3 +38,10 @@ class CitationValidator:
         """Return list of cited chunk IDs that are NOT in the valid set."""
         cited = self.extract_citations(text)
         return [cid for cid in cited if cid not in self._valid_ids]
+
+    def strip_invalid_citations(self, text: str) -> str:
+        """Remove all [Source: X] tokens where X is NOT in valid_ids."""
+        def _replacer(match):
+            cid = match.group(1)
+            return "" if cid not in self._valid_ids else match.group(0)
+        return CITATION_PATTERN.sub(_replacer, text)

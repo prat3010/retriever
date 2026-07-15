@@ -35,6 +35,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M25** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q4 2028 |
 | **M26** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q1 2029 |
 | **M27** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q1 2029 |
+| **M28** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q2 2029 |
 
 ---
 
@@ -491,7 +492,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 24: Self-Querying Retrieval
+### [Completed] Milestone 24: Self-Querying Retrieval
 
 **Objective:** Convert natural language search queries into structured database metadata filters.
 
@@ -499,13 +500,17 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Dependencies:** M5, M18
 
-**Targets:**
-- Implement query translation step in `HybridSearchService` using light LLM parsing.
-- Compile natural language filter intent (e.g. "written in 2024") into structured JSONB search query parameters.
-- Combine vector search similarity queries with compiled SQL metadata filters.
+**Deliverables:**
+- `SelfQueryProvider` port + `LLMSelfQueryAdapter` — parses natural language into `MetadataFilter` list via LLM (gemini-1.5-flash, 2s timeout, structured JSON output).
+- Wired into `HybridSearchService` as step 0: parsed filters merged with existing filters before fan-out search.
+- Auto-retry/fallback: adapter returns empty list on any failure (timeout, invalid JSON, LLM error).
+- Query rewriting (HyDE) reuses the same pattern via `QueryRewriterProvider` + `LLMQueryRewriterAdapter`, generating a hypothetical document for embedding.
+- Full integration coverage with 9 tests.
 
 **Acceptance Criteria:**
-- Querying "Show invoices from 2025" compiles to a vector search with a strict `{"publish_year": 2025}` SQL filter.
+- ✅ Querying "invoices from 2025" appends `[{"field": "doc_type", "eq": "invoice"}, {"field": "date_reference", "eq": "2025"}]` filters to the search.
+- ✅ On LLM timeout/crash, search proceeds without filters (graceful degradation).
+- ✅ 312+ tests passing.
 
 ---
 
@@ -560,6 +565,29 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Acceptance Criteria:**
 - Auditor endpoint returns exact split positions and token size estimations for visual dashboard rendering.
+
+---
+
+### [Planned] Milestone 28: A/B Testing Platform
+
+**Objective:** Full experiment management lifecycle — create, start, stop experiments via admin API, with dashboard visibility into variant performance.
+
+**Complexity:** Large
+
+**Dependencies:** M10 (admin dashboard), E-5 minimal (foundation)
+
+**Targets:**
+- `experiments` DB table: `experiment_id`, `tenant_id`, `name`, `status` (draft/running/stopped), `variants` JSONB, `created_at`, `started_at`, `stopped_at`.
+- Admin CRUD API: create/edit/start/stop experiments.
+- `experiment_id` + `variant` columns on `inference_logs` and `chat_message_feedback`.
+- Admin Dashboard: experiment list view, per-variant metrics (cost, latency, feedback scores).
+- Statistical significance calculation (chi-square or Bayesian) between control & treatment.
+- Auto-stop on detected regression (negative impact > 5% with 95% confidence).
+
+**Acceptance Criteria:**
+- Admin can create an experiment, start it, see live per-variant metrics in the dashboard.
+- Stopping an experiment immediately routes all traffic back to the control config.
+- Dashboard shows "Statistically significant improvement" or "No significant difference" per metric.
 
 ---
 

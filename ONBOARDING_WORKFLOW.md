@@ -39,10 +39,11 @@ Before writing code, upload the client's knowledge base so the search engine has
 
 1. In the **Admin Dashboard**, select the tenant and navigate to **Documents**.
 2. Upload the client's PDFs, text documents, or code files.
-3. The background worker will automatically:
+3. The ingestion pipeline (synchronous, no Celery needed) will automatically:
    - Slice the documents into text chunks.
-   - Call the local Ollama embedding engine (`nomic-embed-text`) or cloud API to calculate vectors.
+   - Call the HuggingFace Inference API (`all-mpnet-base-v2`) to calculate embeddings.
    - Store the vectors and chunks in Postgres isolated by Row-Level Security.
+   - Processing is inline — the API responds once ingestion is complete.
 
 ---
 

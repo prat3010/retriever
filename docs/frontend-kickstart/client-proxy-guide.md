@@ -1,6 +1,13 @@
 # Frontend Integration & Secure Client Proxy Guide
 
-This guide details how to securely connect public frontend applications (such as iOS/Android mobile apps or web clients) to your **Retriever** RAG backend. 
+This guide details how to securely connect public frontend applications (such as iOS/Android mobile apps or web clients) to your **Retriever** RAG backend.
+
+The current production deployment runs entirely on free-tier infrastructure:
+- **API**: Render (free web service, Docker)
+- **Database**: Supabase (free tier, PostgreSQL + pgvector)
+- **Embeddings**: HuggingFace Inference API (free, `all-mpnet-base-v2`)
+- **LLM**: Client BYOK (tenant provides their own API key)
+- **Proxy**: Cloudflare Workers (free, 100k req/day)
 
 ---
 
@@ -26,17 +33,9 @@ Mobile app binaries (IPAs and APKs) can be decompiled in seconds using standard 
 Instead of direct connection, route client traffic through an edge-based **Cloudflare Worker Proxy**. The proxy validates your user's auth token, injects the hidden API key from environment secrets, and forwards the request to your live Retriever engine.
 
 ```
-+---------------+           User Token + Message           +-------------------------+
-|  Mobile App   +----------------------------------------->+ Cloudflare Worker Proxy |
-|  (App Store)  |                                          | - Verifies User JWT     |
-+---------------+                                          | - Injects X-API-Key     |
-                                                           | - Injects X-User-ID     |
-                                                           +------------+------------+
-                                                                        | (Secure Cloud VPC)
-                                                                        v
-                                                           +-------------------------+
-                                                           |    Retriever API        |
-                                                           +-------------------------+
+Client App → Cloudflare Proxy (JWT auth, key injection) → Render (API) → Supabase (DB, vectors, RLS)
+                                                                         → HuggingFace (embeddings)
+                                                                         → Tenant's LLM
 ```
 
 ---
@@ -46,32 +45,29 @@ Instead of direct connection, route client traffic through an edge-based **Cloud
 We have packaged a ready-to-deploy proxy worker template under `packages/client-proxy-worker/`.
 
 ### Step 1: Install Dependencies
-Navigate to the proxy directory and install the developer tooling:
 ```bash
 cd packages/client-proxy-worker
 npm install
 ```
 
 ### Step 2: Configure Environment
-Open `wrangler.toml` and change `RETRIEVER_API_URL` to point to your live cloud Retriever API:
+Open `wrangler.toml` and set `RETRIEVER_API_URL` to the production API URL:
 ```toml
 [vars]
-RETRIEVER_API_URL = "https://api.yourdomain.com"
+RETRIEVER_API_URL = "https://retriever-gnns.onrender.com"
 ```
 
 ### Step 3: Set Your API Key Secret
-Upload your Tenant's master API key securely to Cloudflare. Do not write it in the code or git:
 ```bash
 npx wrangler secret put RETRIEVER_API_KEY
 ```
-*(When prompted, paste the target tenant's `X-API-Key` from the Admin Dashboard).*
+*(Paste the target tenant's `X-API-Key` from the Admin Dashboard).*
 
 ### Step 4: Deploy
-Deploy the worker to your Cloudflare account:
 ```bash
 npx wrangler deploy
 ```
-This will output your public proxy URL (e.g., `https://retriever-client-proxy.<your-subdomain>.workers.dev`).
+Outputs your proxy URL (e.g., `https://retriever-client-proxy.retriever.workers.dev`).
 
 ---
 
@@ -250,51 +246,44 @@ If the user navigates away or walks into a cellular dead-zone, active HTTP reque
 
 ## 7. Production Deployment & Connection Checklist
 
-Once your frontend application code is complete, follow this checklist to connect it to your production Retriever instance:
+### Current Stack (Free Tier)
 
-### Step 1: Deploy Retriever Backend
-- Deploy PostgreSQL (with `pgvector` enabled) on **Supabase**.
-- Set up a **Cloudflare R2** bucket for document storage.
-- Build and run your Retriever Docker Compose stack on your cloud VPS, pointing to Supabase and R2.
-- Map the backend API to a public subdomain: `https://api.yourdomain.com`.
+| Component | Provider | URL |
+|-----------|----------|-----|
+| API | Render | `https://retriever-gnns.onrender.com` |
+| Database | Supabase (us-west-2) | Session pooler via `aws-1-us-west-2.pooler.supabase.com` |
+| Embeddings | HuggingFace Inference API | `all-mpnet-base-v2` (768-dim) |
+| Proxy | Cloudflare Workers | `https://retriever-client-proxy.retriever.workers.dev` |
 
-### Step 2: Onboard Tenant in Admin Dashboard
-- Access your production **Admin Dashboard** (`https://dashboard.yourdomain.com`).
-- Create a new Tenant for your application. Copy the generated **Tenant ID** UUID.
-- Under **API Keys** for that tenant, generate a new Client API Key (e.g. `sk_client_12345...`).
-- Under **Prompts**, define your system prompt templates (e.g. `default`, `summarizer`, `expert_mode`).
+### Step 1: Deploy the API on Render
+- Push the repo to GitHub (Render auto-deploys from `main`).
+- Set the following env vars in Render dashboard:
+  - `DATABASE_URL` — Supabase direct or pooler connection string
+  - `ENVIRONMENT=production`
+  - `HF_API_TOKEN` — your HuggingFace API token (free, optional)
 
-### Step 3: Deploy the Cloudflare Worker Proxy
-- Open `packages/client-proxy-worker/wrangler.toml` and set `RETRIEVER_API_URL` to point to your live API:
-  ```toml
-  [vars]
-  RETRIEVER_API_URL = "https://api.yourdomain.com"
-  ```
-- Upload the Client API Key safely to Cloudflare secrets:
-  ```bash
-  npx wrangler secret put RETRIEVER_API_KEY
-  ```
-- Run the deployment command:
-  ```bash
-  npx wrangler deploy
-  ```
-- Copy the public proxy endpoint URL: `https://app-proxy.yourdomain.workers.dev`.
+### Step 2: Onboard Tenant
+- Run the Admin Dashboard locally, or use the API directly.
+- Create a Tenant, generate an API Key, configure prompts.
 
-### Step 4: Configure Frontend API Base URL
-- In your frontend/mobile app config, set the API Base URL to point to the Cloudflare Worker Proxy URL from Step 3:
-  ```env
-  EXPO_PUBLIC_API_URL=https://app-proxy.yourdomain.workers.dev
-  ```
+### Step 3: Deploy the Proxy Worker
+```bash
+cd packages/client-proxy-worker
+npx wrangler secret put RETRIEVER_API_KEY  # paste tenant API key
+npx wrangler deploy
+```
+
+### Step 4: Configure Frontend
+```env
+EXPO_PUBLIC_API_URL=https://retriever-client-proxy.retriever.workers.dev
+```
 
 ### Step 5: Issue User JWT Tokens
-- When a user logs in to your app (via Firebase, Supabase Auth, custom JWT server), ensure the generated auth JWT contains the following claims:
-  - `sub`: User ID UUID (maps to `X-User-ID` for per-user history filtering)
-  - `tenant_id`: Tenant ID UUID (maps the request to the target tenant container)
-- The frontend must include this token in the header of every request:
-  `Authorization: Bearer <user_jwt_token>`
+JWT must contain:
+- `sub`: user UUID (maps to `X-User-ID`)
+- `tenant_id`: tenant UUID (routes to correct tenant)
 
-### Step 6: Ingest Initial Knowledge Documents
-- In the Admin Dashboard under the tenant's **Documents** tab, upload the PDFs/text files that represent the knowledge base for this app.
-- Celery background workers will parse, chunk, and index the vectors. Your app is now live!
+### Step 6: Ingest Documents
+Upload via `POST /v1/admin/tenants/{tenantId}/documents/ingest`. Processing is synchronous (no Celery).
 
 

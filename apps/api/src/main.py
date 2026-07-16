@@ -229,7 +229,7 @@ search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
     keyword_search=PgKeywordSearchAdapter(),
     embedder=HFEmbeddingAdapter(
-        api_key=os.environ.get("HF_API_KEY", ""),
+        api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
     ),
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),

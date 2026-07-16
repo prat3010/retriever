@@ -5,9 +5,9 @@ import httpx
 
 from src.domain.abstractions.retrieval import EmbeddingProvider
 
-DEFAULT_MODEL = "sentence-transformers/all-mpnet-base-v2"
-DEFAULT_DIMENSION = 768
-HF_INFERENCE_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction"
+DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
+DEFAULT_DIMENSION = 384
+HF_INFERENCE_URL = "https://router.huggingface.co/hf-inference/models"
 
 
 class HFEmbeddingAdapter(EmbeddingProvider):

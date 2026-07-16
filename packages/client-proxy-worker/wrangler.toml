@@ -1,6 +1,7 @@
 name = "retriever-client-proxy"
 main = "src/index.ts"
 compatibility_date = "2024-05-29"
+workers_dev = true
 
 [vars]
 # Point to your live Retriever API (e.g. https://api.yourdomain.com)

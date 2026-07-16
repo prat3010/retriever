@@ -32,9 +32,13 @@ from src.adapters.api.security import (
     verify_scopes,
     verify_tenant_isolation,
 )
-from src.adapters.broker.celery_publisher import celery_app
 from src.adapters.cache.config_cache import RedisTenantConfigCache, redis_client
-from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
+from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
+
+try:
+    from src.adapters.broker.celery_publisher import celery_app
+except Exception:
+    celery_app = None
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
@@ -219,9 +223,8 @@ llm_provider = RoutingLLMProvider(
 search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
     keyword_search=PgKeywordSearchAdapter(),
-    embedder=OpenAIEmbeddingAdapter(
-        api_key=settings.OPENAI_API_KEY,
-        base_url=settings.OPENAI_BASE_URL,
+    embedder=HFEmbeddingAdapter(
+        api_key=os.environ.get("HF_API_KEY", ""),
     ),
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),
@@ -421,7 +424,8 @@ async def readiness_probe() -> HealthResponse:
             await conn.execute(text("SELECT 1"))
         
         # Stateful ping check on Redis cluster connection pool
-        await redis_client.ping()
+        if redis_client is not None:
+            await redis_client.ping()
 
         # Stateful reachability check on S3 bucket
         if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "client"):
@@ -828,16 +832,16 @@ async def admin_upload_document(
     )
     await document_repository.create_document(tenantId, doc)
 
-    # Submit to Celery worker for parsing and embedding
-    celery_app.send_task(
-        "process_document",
-        args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
-        queue="ingestion.parse",
-    )
+    if celery_app is not None:
+        celery_app.send_task(
+            "process_document",
+            args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+            queue="ingestion.parse",
+        )
 
     return {
         "documentId": str(doc_id),
-        "status": "pending",
+        "status": "pending" if celery_app is not None else "uploaded",
         "fileHash": file_hash,
         "createdAt": doc.created_at,
     }
@@ -1234,6 +1238,8 @@ async def admin_reindex_codebase(tenantId: str, background_tasks: BackgroundTask
 
 
 async def _check_idempotency(tenantId: str, key: str) -> dict | None:
+    if redis_client is None:
+        return None
     redis_key = f"idempotency:{tenantId}:{key}"
     cached = await redis_client.get(redis_key)
     if cached:
@@ -1242,6 +1248,8 @@ async def _check_idempotency(tenantId: str, key: str) -> dict | None:
 
 
 async def _cache_idempotency(tenantId: str, key: str, payload: dict) -> None:
+    if redis_client is None:
+        return
     redis_key = f"idempotency:{tenantId}:{key}"
     await redis_client.setex(redis_key, 86400, json.dumps(payload))
 
@@ -1301,16 +1309,16 @@ async def upload_document(
     )
     await document_repository.create_document(tenantId, doc)
 
-    # 4. Submit to Celery worker for parsing and embedding
-    celery_app.send_task(
-        "process_document",
-        args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
-        queue="ingestion.parse",
-    )
+    if celery_app is not None:
+        celery_app.send_task(
+            "process_document",
+            args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+            queue="ingestion.parse",
+        )
 
     response_payload = {
         "documentId": str(doc_id),
-        "status": "pending",
+        "status": "pending" if celery_app is not None else "uploaded",
         "fileHash": file_hash,
         "createdAt": doc.created_at,
     }
@@ -1319,6 +1327,41 @@ async def upload_document(
         await _cache_idempotency(tenantId, x_idempotency_key, response_payload)
 
     return response_payload
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/documents/ingest",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_ingest_document_sync(
+    tenantId: str,
+    file: UploadFile = File(...),
+) -> dict:
+    """Upload, parse, chunk, embed, and index a document synchronously."""
+    content = await file.read()
+    file_hash = hashlib.sha256(content).hexdigest()
+    doc_id = str(uuid.uuid4())
+    now = datetime.now(UTC).isoformat()
+
+    from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
+
+    chunk_count = await ingest_file_sync(
+        tenant_id=tenantId,
+        document_id=doc_id,
+        filename=file.filename,
+        file_content=content,
+        file_hash=file_hash,
+        mime_type=file.content_type or "application/octet-stream",
+        embedder=search_service.embedder,
+    )
+
+    return {
+        "documentId": doc_id,
+        "status": "indexed",
+        "fileHash": file_hash,
+        "chunksIndexed": chunk_count,
+    }
 
 
 @app.get(

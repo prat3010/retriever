@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: retriever-api
+    runtime: image
+    repo: https://github.com/prat3010/retriever.git
+    plan: free
+    dockerfilePath: apps/api/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: HF_API_TOKEN
+        sync: false

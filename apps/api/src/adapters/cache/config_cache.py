@@ -1,12 +1,15 @@
 import json
 
-import redis.asyncio as redis
-
 from src.config import settings
 from src.domain.abstractions.config import ConfigCache, TenantConfiguration
 
-# Initialize async Redis client pool
-redis_client: redis.Redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+redis_client = None
+
+try:
+    import redis.asyncio as redis
+    redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+except Exception:
+    pass
 
 
 class RedisTenantConfigCache(ConfigCache):
@@ -19,60 +22,55 @@ class RedisTenantConfigCache(ConfigCache):
         return "config:global"
 
     async def get_cached_config(self, tenant_id: str) -> TenantConfiguration | None:
-        """Fetch cached tenant configurations, returning None if cache misses."""
         try:
-            key = self._get_key(tenant_id)
-            cached_data = await redis_client.get(key)
+            if redis_client is None:
+                return None
+            cached_data = await redis_client.get(self._get_key(tenant_id))
             if not cached_data:
                 return None
-            data = json.loads(cached_data)
-            return TenantConfiguration(**data)
+            return TenantConfiguration(**json.loads(cached_data))
         except Exception:
             return None
 
     async def set_cached_config(self, tenant_id: str, config: TenantConfiguration) -> None:
-        """Cache configuration parameters with a 1-hour TTL boundary."""
         try:
-            key = self._get_key(tenant_id)
-            serialized = json.dumps(config.model_dump())
-            await redis_client.setex(key, 3600, serialized)
+            if redis_client is None:
+                return
+            await redis_client.setex(self._get_key(tenant_id), 3600, json.dumps(config.model_dump()))
         except Exception:
             pass
 
     async def get_cached_global_config(self) -> TenantConfiguration | None:
-        """Fetch cached global configurations, returning None if cache misses."""
         try:
-            key = self._get_global_key()
-            cached_data = await redis_client.get(key)
+            if redis_client is None:
+                return None
+            cached_data = await redis_client.get(self._get_global_key())
             if not cached_data:
                 return None
-            data = json.loads(cached_data)
-            return TenantConfiguration(**data)
+            return TenantConfiguration(**json.loads(cached_data))
         except Exception:
             return None
 
     async def set_cached_global_config(self, config: TenantConfiguration) -> None:
-        """Cache global configurations with a 1-hour TTL."""
         try:
-            key = self._get_global_key()
-            serialized = json.dumps(config.model_dump())
-            await redis_client.setex(key, 3600, serialized)
+            if redis_client is None:
+                return
+            await redis_client.setex(self._get_global_key(), 3600, json.dumps(config.model_dump()))
         except Exception:
             pass
 
     async def invalidate_config(self, tenant_id: str) -> None:
-        """Invalidate the cached tenant configuration parameters immediately."""
         try:
-            key = self._get_key(tenant_id)
-            await redis_client.delete(key)
+            if redis_client is None:
+                return
+            await redis_client.delete(self._get_key(tenant_id))
         except Exception:
             pass
 
     async def invalidate_global_config(self) -> None:
-        """Invalidate the cached global configuration parameters immediately."""
         try:
-            key = self._get_global_key()
-            await redis_client.delete(key)
+            if redis_client is None:
+                return
+            await redis_client.delete(self._get_global_key())
         except Exception:
             pass
-

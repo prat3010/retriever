@@ -12,6 +12,7 @@ import {
   Moon,
   ScrollText,
   LogOut,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/tenants", label: "Tenants", icon: Building2 },
   { href: "/onboard", label: "Onboard Client", icon: UserPlus },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
+  { href: "/system-data", label: "System Data", icon: Database },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

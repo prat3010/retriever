@@ -785,6 +785,194 @@ async def admin_list_documents(tenantId: str) -> list[DocumentResponse]:
     return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
 
 
+@app.post(
+    "/v1/admin/tenants/{tenantId}/documents",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_upload_document(
+    tenantId: str,
+    file: UploadFile = File(...),
+) -> dict:
+    """Upload and schedule document text chunking extraction pipeline (System-wide Admin)."""
+    content = await file.read()
+    file_hash = hashlib.sha256(content).hexdigest()
+
+    # Deduplication
+    existing = await document_repository.find_by_hash(tenantId, file_hash)
+    if existing:
+        return {
+            "documentId": existing.document_id,
+            "status": "pending",
+            "fileHash": file_hash,
+            "createdAt": existing.created_at,
+        }
+
+    # Save file
+    storage_path = await local_storage.save_file(tenantId, file.filename, content)
+
+    # Create document database entry
+    doc_id = str(uuid.uuid4())
+    now = datetime.now(UTC).isoformat()
+    doc = Document(
+        document_id=doc_id,
+        tenant_id=tenantId,
+        filename=file.filename,
+        file_hash=file_hash,
+        storage_path=storage_path,
+        file_size=len(content),
+        mime_type=file.content_type or "application/octet-stream",
+        status="PENDING",
+        created_at=now,
+        updated_at=now,
+    )
+    await document_repository.create_document(tenantId, doc)
+
+    # Submit to Celery worker for parsing and embedding
+    celery_app.send_task(
+        "process_document",
+        args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+        queue="ingestion.parse",
+    )
+
+    return {
+        "documentId": str(doc_id),
+        "status": "pending",
+        "fileHash": file_hash,
+        "createdAt": doc.created_at,
+    }
+
+
+@app.delete(
+    "/v1/admin/tenants/{tenantId}/documents/{documentId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_delete_document(tenantId: str, documentId: str) -> dict[str, str]:
+    """Delete document source file, cascade chunks, and mark records deleted (System-wide Admin)."""
+    storage_path = await document_repository.soft_delete(tenantId, documentId)
+    if storage_path is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    await local_storage.delete_file(storage_path)
+    return {"status": "deleted", "documentId": documentId}
+
+
+@app.get(
+    "/v1/admin/platform/stats",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_platform_stats() -> dict[str, Any]:
+    """Get aggregated statistics across the entire platform database (System-wide Admin)."""
+    from src.adapters.database.connection import tenant_session
+    from src.adapters.database.models import (
+        TenantDb,
+        DocumentDb,
+        DocumentChunkDb,
+        VectorRecordDb,
+        ApiKeyDb,
+        UserDb,
+        ChatSessionDb,
+        ChatMessageDb,
+        AuditLogDb,
+        EvalRunDb,
+    )
+    from sqlalchemy import func
+
+    async with tenant_session(bypass_rls=True) as session:
+        # Tenants
+        tenants_total = (await session.execute(select(func.count(TenantDb.tenant_id)))).scalar() or 0
+        tenants_active = (await session.execute(select(func.count(TenantDb.tenant_id)).where(TenantDb.status == "active"))).scalar() or 0
+        tenants_suspended = (await session.execute(select(func.count(TenantDb.tenant_id)).where(TenantDb.status == "suspended"))).scalar() or 0
+        
+        # Documents
+        docs_total = (await session.execute(select(func.count(DocumentDb.document_id)).where(DocumentDb.is_deleted == False))).scalar() or 0
+        
+        # Chunks & Vectors
+        chunks_total = (await session.execute(select(func.count(DocumentChunkDb.chunk_id)))).scalar() or 0
+        vectors_total = (await session.execute(select(func.count(VectorRecordDb.chunk_id)))).scalar() or 0
+        
+        # Keys, Users, Sessions
+        keys_total = (await session.execute(select(func.count(ApiKeyDb.key_id)))).scalar() or 0
+        users_total = (await session.execute(select(func.count(UserDb.user_id)))).scalar() or 0
+        sessions_total = (await session.execute(select(func.count(ChatSessionDb.session_id)))).scalar() or 0
+        messages_total = (await session.execute(select(func.count(ChatMessageDb.message_id)))).scalar() or 0
+        
+        # Logs & Evals
+        audit_logs_total = (await session.execute(select(func.count(AuditLogDb.log_id)))).scalar() or 0
+        eval_runs_total = (await session.execute(select(func.count(EvalRunDb.run_id)))).scalar() or 0
+
+    return {
+        "tenants": {
+            "total": tenants_total,
+            "active": tenants_active,
+            "suspended": tenants_suspended,
+        },
+        "documents": {
+            "total": docs_total,
+        },
+        "chunks": {
+            "total": chunks_total,
+        },
+        "vectors": {
+            "total": vectors_total,
+        },
+        "apiKeys": {
+            "total": keys_total,
+        },
+        "users": {
+            "total": users_total,
+        },
+        "chat": {
+            "sessions": sessions_total,
+            "messages": messages_total,
+        },
+        "auditLogs": {
+            "total": audit_logs_total,
+        },
+        "evaluations": {
+            "runs": eval_runs_total,
+        }
+    }
+
+
+@app.post(
+    "/v1/admin/platform/reset",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_platform_reset() -> dict[str, str]:
+    """Wipe all tenant data, documents, chunks, and embeddings except the System Tenant (System-wide Admin)."""
+    from src.adapters.database.connection import tenant_session
+    from src.adapters.database.models import TenantDb
+    import shutil
+
+    async with tenant_session(bypass_rls=True) as session:
+        result = await session.execute(
+            select(TenantDb).where(TenantDb.tenant_id != uuid.UUID("00000000-0000-0000-0000-000000000000"))
+        )
+        tenants = result.scalars().all()
+        
+        for t in tenants:
+            tenant_id_str = str(t.tenant_id)
+            
+            # Clean local files
+            for base_dir in ["./storage", "apps/api/storage"]:
+                tenant_dir = os.path.join(base_dir, tenant_id_str)
+                if os.path.exists(tenant_dir):
+                    try:
+                        shutil.rmtree(tenant_dir)
+                    except Exception:
+                        pass
+                        
+            await session.delete(t)
+            
+        await session.flush()
+        
+    return {"status": "success", "message": "All non-system tenant data cleared successfully."}
+
+
+
 @app.get(
     "/v1/admin/tenants/{tenantId}/documents/{documentId}/download",
     status_code=status.HTTP_200_OK,

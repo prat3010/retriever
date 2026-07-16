@@ -13,7 +13,7 @@ Verifies all admin endpoints under /v1/admin/:
 import uuid
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -318,6 +318,117 @@ def test_admin_list_documents_empty(mock_list, tenant_id) -> None:
     response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
     assert response.status_code == 200
     assert response.json() == []
+
+
+@patch("src.main.celery_app.send_task")
+@patch("src.main.document_repository.create_document", new_callable=AsyncMock)
+@patch("src.main.local_storage.save_file", new_callable=AsyncMock)
+@patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
+def test_admin_upload_document(mock_find, mock_save, mock_create, mock_send_task, tenant_id) -> None:
+    """POST /v1/admin/tenants/{id}/documents uploads file and kicks off Celery task."""
+    mock_find.return_value = None
+    mock_save.return_value = "/tmp/fake_storage/report.pdf"
+    
+    file_content = b"fake PDF file content"
+    files = {"file": ("report.pdf", file_content, "application/pdf")}
+    
+    response = client.post(
+        f"/v1/admin/tenants/{tenant_id}/documents",
+        headers=auth_header,
+        files=files
+    )
+    
+    assert response.status_code == 202
+    body = response.json()
+    assert "documentId" in body
+    assert body["status"] == "pending"
+    assert "fileHash" in body
+    
+    mock_find.assert_called_once_with(tenant_id, mock_find.call_args[0][1])
+    mock_save.assert_called_once_with(tenant_id, "report.pdf", file_content)
+    mock_create.assert_called_once()
+    mock_send_task.assert_called_once_with(
+        "process_document",
+        args=[body["documentId"], tenant_id, "/tmp/fake_storage/report.pdf", "application/pdf"],
+        queue="ingestion.parse",
+    )
+
+
+@patch("src.main.local_storage.delete_file", new_callable=AsyncMock)
+@patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
+def test_admin_delete_document(mock_delete_db, mock_delete_storage, tenant_id) -> None:
+    """DELETE /v1/admin/tenants/{id}/documents/{doc_id} deletes document from DB and storage."""
+    doc_id = str(uuid.uuid4())
+    mock_delete_db.return_value = "/tmp/fake_storage/report.pdf"
+    
+    response = client.delete(
+        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}",
+        headers=auth_header
+    )
+    
+    assert response.status_code == 200
+    assert response.json() == {"status": "deleted", "documentId": doc_id}
+    
+    mock_delete_db.assert_called_once_with(tenant_id, doc_id)
+    mock_delete_storage.assert_called_once_with("/tmp/fake_storage/report.pdf")
+
+
+@patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
+def test_admin_delete_document_not_found(mock_delete_db, tenant_id) -> None:
+    """DELETE /v1/admin/tenants/{id}/documents/{doc_id} returns 404 if document doesn't exist."""
+    doc_id = str(uuid.uuid4())
+    mock_delete_db.return_value = None
+    
+    response = client.delete(
+        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}",
+        headers=auth_header
+    )
+    
+    assert response.status_code == 404
+    assert "Document not found" in response.text
+
+
+@patch("src.adapters.database.connection.tenant_session")
+def test_admin_platform_stats(mock_session_ctx) -> None:
+    """GET /v1/admin/platform/stats returns aggregated platform statistics."""
+    mock_session = AsyncMock()
+    mock_session_ctx.return_value.__aenter__.return_value = mock_session
+    
+    mock_scalar = MagicMock()
+    mock_scalar.scalar.return_value = 5
+    mock_session.execute.return_value = mock_scalar
+    
+    response = client.get("/v1/admin/platform/stats", headers=auth_header)
+    assert response.status_code == 200
+    body = response.json()
+    assert "tenants" in body
+    assert body["tenants"]["total"] == 5
+    assert body["documents"]["total"] == 5
+    assert body["chunks"]["total"] == 5
+
+
+@patch("src.main.os.path.exists")
+@patch("shutil.rmtree")
+@patch("src.adapters.database.connection.tenant_session")
+def test_admin_platform_reset(mock_session_ctx, mock_rmtree, mock_exists) -> None:
+    """POST /v1/admin/platform/reset clears all non-system tenants and storage files."""
+    mock_session = AsyncMock()
+    mock_session_ctx.return_value.__aenter__.return_value = mock_session
+    
+    mock_result = MagicMock()
+    mock_session.execute.return_value = mock_result
+    fake_tenant = SimpleNamespace(tenant_id=uuid.UUID("11111111-1111-1111-1111-111111111111"))
+    mock_result.scalars.return_value.all.return_value = [fake_tenant]
+    mock_exists.return_value = True
+    
+    response = client.post("/v1/admin/platform/reset", headers=auth_header)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    mock_session.delete.assert_called_once_with(fake_tenant)
+    mock_rmtree.assert_called()
+
+
 
 
 # ── Prompt Template Endpoints ──────────────────────────────────────────────

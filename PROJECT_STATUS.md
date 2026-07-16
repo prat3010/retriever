@@ -4,16 +4,16 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 1. Status Overview
- 
- - **Current Milestone**: Milestone 25: Developer Console & Local Ingestion (Completed)
- - **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
- - **Build Status**: Passing (358+ unit tests pass)
- - **Admin Dashboard Build**: Passing (9 routes, all compile)
- - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
- - **Reference Client Build**: Passing
- - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
- - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
+ ##  1. Status Overview
+  
+  - **Current Milestone**: Deployment: Free-Tier Production (Completed)
+  - **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
+  - **Build Status**: Passing (369 unit tests pass)
+  - **Admin Dashboard Build**: Passing (9 routes, all compile)
+  - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
+  - **Reference Client Build**: Passing
+  - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
+  - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
  
  ---
  
@@ -332,6 +332,47 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 17. Outstanding Blockers & Issues
+## 17. Deployment: Free-Tier Production — Completed
+
+### Stack (Zero Cost)
+
+| Component | Provider | Notes |
+|-----------|----------|-------|
+| API server | Render (free web service) | Docker, 512 MB RAM, sleeps after 15 min idle |
+| Database | Supabase (free tier) | PostgreSQL + pgvector, 500 MB, RLS enabled |
+| Embeddings | HuggingFace Inference API | `all-mpnet-base-v2` (768-dim), free token for higher rate limits |
+| LLM | Client BYOK | OpenAI / Anthropic / Gemini via tenant's own API key |
+| Proxy | Cloudflare Workers | CORS, routing, rate limiting — 100k req/day free |
+
+### Architecture
+
+```
+Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
+                                                → HuggingFace (embeddings)
+                                                → Tenant's LLM provider
+```
+
+### Changes Made
+
+- **`apps/api/src/adapters/cognitive/hf_embedding_adapter.py`** — New adapter using HuggingFace Inference API (`sentence-transformers/all-mpnet-base-v2`), retries on 503s, no Redis/Celery dependency.
+- **`apps/api/src/adapters/ingestion/sync_ingestion_service.py`** — Synchronous document ingestion pipeline (parse → chunk → embed → store), no Celery required.
+- **`apps/api/src/main.py`** — Swapped OpenAI embedder for HF; added `POST /v1/admin/tenants/{tenantId}/documents/ingest` (sync); made Celery import conditional; made Redis non-fatal.
+- **`apps/api/src/adapters/cache/config_cache.py`** — Lazy Redis connection (no crash if Redis is down).
+- **`apps/api/src/adapters/telemetry/setup.py`** — Updated Redis reference.
+- **`packages/client-proxy-worker/`** — Deployed to Cloudflare Workers at `retriever-client-proxy.retriever.workers.dev`.
+- **`Dockerfile`** — Moved to repo root, listens on `$PORT` env var for Render compatibility.
+
+### Details
+
+- Embedding model: `sentence-transformers/all-mpnet-base-v2` via HuggingFace Inference API (free, 768-dim).
+- No Celery/RabbitMQ/Redis — processing happens inline in the API request.
+- Embedding via HuggingFace Inference API (free tier, ~1000 req/min with token).
+- LLM per-tenant: each tenant provides their own API key (OpenAI, Anthropic, Gemini).
+- Migrations: all tables created via `Base.metadata.create_all` (Supabase), then `alembic stamp head` to mark current.
+- Health check: `/health/liveness` (simple) and `/health/readiness` (DB + Redis + S3 checks).
+
+---
+
+## 18. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

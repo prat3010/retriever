@@ -2,6 +2,15 @@
 
 This document outlines the standard step-by-step workflow for onboarding a new client onto the Retriever Platform and building their custom frontend application.
 
+The platform is deployed at:
+
+| Service | URL |
+|---------|-----|
+| API (Render) | `https://retriever-gnns.onrender.com` |
+| Admin Dashboard | (local: `http://localhost:3001`) |
+| Developer Console | (local: `http://localhost:3002`) |
+| Client Proxy | `https://retriever-client-proxy.retriever.workers.dev` |
+
 ```mermaid
 graph TD
     Step1[1. Admin Onboarding] -->|Generate IDs & API Keys| Step2[2. Knowledge Ingestion]

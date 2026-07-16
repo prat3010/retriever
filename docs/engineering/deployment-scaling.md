@@ -1,5 +1,53 @@
 # Deployment Scaling: Multi-Tenant vs. Single-Tenant Isolation
 
+---
+
+## 0. Quick-Start Free Tier (Current)
+
+The platform runs on a **zero-cost** stack:
+
+| Component | Provider | Cost |
+|-----------|----------|------|
+| API server | [Render](https://render.com) (free web service) | $0 — 512 MB RAM, 0.1 CPU, auto-sleep after 15 min idle |
+| Database | [Supabase](https://supabase.com) (free tier) | $0 — 500 MB, pgvector support, Row-Level Security |
+| Embeddings | [HuggingFace Inference API](https://huggingface.co/inference-api) (free) | $0 — ~1000 req/min with free token, model `all-mpnet-base-v2` (768-dim) |
+| LLM | Client BYOK (bring your own key) | $0 platform cost — tenant provides their own OpenAI/Anthropic/Gemini key |
+| Proxy | [Cloudflare Workers](https://workers.cloudflare.com) (free) | $0 — 100k req/day, routes client apps to Render |
+
+### 0.1 Architecture
+
+```
+Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
+                                                → HuggingFace (embeddings)
+                                                → Tenant's LLM provider
+```
+
+### 0.2 Deployment Steps
+
+1. **Supabase** — Create project, copy `DATABASE_URL`. Run `initialize_database()` to create all tables (pgvector, RLS, indices):
+   ```bash
+   cd apps/api
+   DATABASE_URL="postgresql+asyncpg://..." uv run python -m src.adapters.database.setup
+   ```
+2. **Render** — Create a new Web Service, connect GitHub repo, set:
+   - Runtime: Docker
+   - Dockerfile Path: `Dockerfile` (at repo root)
+   - Plan: Free
+   - Env vars: `DATABASE_URL`, `ENVIRONMENT=production`, `HF_API_TOKEN` (optional)
+3. **Cloudflare Workers** — Deploy the proxy (handles CORS, routing, rate limiting):
+   ```bash
+   cd packages/client-proxy-worker
+   npx wrangler deploy
+   ```
+4. Point the proxy at `https://your-app.onrender.com` and client apps at the proxy URL.
+
+### 0.3 Caveats (Free Tier)
+
+- Render free service **sleeps after 15 minutes of inactivity** — first request after idle takes ~30s to cold-start.
+- Supabase free tier: 500 MB DB, 2 GB bandwidth, 50k monthly active users.
+- HuggingFace free inference: ~30 req/min unauthenticated, ~1000 req/min with free token.
+- No Redis, no Celery — ingestion and chat are synchronous.
+
 This document outlines the strategy for handling two distinct operational scenarios using the single, unified Retriever codebase:
 1.  **Scenario A (Personal/Shared Instance):** A single central deployment supporting multiple applications, each isolated logically as a separate tenant.
 2.  **Scenario B (Private/Enterprise Instance):** An isolated backend instance deployed physically inside a client's own cloud virtual private cloud (VPC).

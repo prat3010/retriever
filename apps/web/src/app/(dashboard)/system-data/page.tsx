@@ -162,7 +162,7 @@ export default function SystemDataPage() {
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton className="h-44 w-full" />
+              <Skeleton key={i} className="h-44 w-full" />
             ))}
           </div>
         ) : (

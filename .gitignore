@@ -62,3 +62,8 @@ apps/api/storage/
 **/dist/
 .pytest_cache/
 .ruff_cache/
+
+# Local env and tsbuildinfo
+.env
+*.tsbuildinfo
+

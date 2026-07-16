@@ -12,7 +12,6 @@ from src.domain.abstractions.inference import (
     LlmProvider,
 )
 
-
 logger = logging.getLogger("api")
 
 

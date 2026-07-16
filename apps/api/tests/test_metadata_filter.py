@@ -1,10 +1,8 @@
 """Tests for M18: Metadata & Tag Filtering."""
 
-import pytest
 
 from src.adapters.vector.filter_builder import build_filter_clause
 from src.domain.abstractions.retrieval import MetadataFilter
-
 
 # --- filter_builder unit tests ---
 
@@ -53,19 +51,19 @@ def test_gt_filter() -> None:
 
 def test_gte_filter() -> None:
     flt = [MetadataFilter(field="year", operator="gte", value=2020)]
-    sql, params, _ = build_filter_clause(flt, [])
+    sql, _, _ = build_filter_clause(flt, [])
     assert ">= :f_0" in sql
 
 
 def test_lt_filter() -> None:
     flt = [MetadataFilter(field="amount", operator="lt", value=1000)]
-    sql, params, _ = build_filter_clause(flt, [])
+    sql, _, _ = build_filter_clause(flt, [])
     assert "< :f_0" in sql
 
 
 def test_lte_filter() -> None:
     flt = [MetadataFilter(field="amount", operator="lte", value=500)]
-    sql, params, _ = build_filter_clause(flt, [])
+    sql, _, _ = build_filter_clause(flt, [])
     assert "<= :f_0" in sql
 
 

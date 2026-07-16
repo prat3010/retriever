@@ -1,3 +1,4 @@
+from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import (
     answer_relevancy,
@@ -5,7 +6,6 @@ from ragas.metrics import (
     context_recall,
     faithfulness,
 )
-from datasets import Dataset
 
 from src.domain.abstractions.evaluation import RagasScores
 

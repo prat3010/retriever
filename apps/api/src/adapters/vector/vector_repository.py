@@ -1,8 +1,15 @@
 from sqlalchemy import text
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.vector.filter_builder import build_filter_clause, rows_to_search_results
-from src.domain.abstractions.retrieval import MetadataFilter, SearchResult, VectorSearchProvider
+from src.adapters.vector.filter_builder import (
+    build_filter_clause,
+    rows_to_search_results,
+)
+from src.domain.abstractions.retrieval import (
+    MetadataFilter,
+    SearchResult,
+    VectorSearchProvider,
+)
 
 
 class PgVectorSearchAdapter(VectorSearchProvider):

@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import TenantConfigDb, TenantDb
-from src.adapters.database.pagination import encode_cursor, decode_cursor
+from src.adapters.database.pagination import decode_cursor, encode_cursor
 from src.domain.abstractions.tenant import Tenant, TenantConfig, TenantRegistry
 
 

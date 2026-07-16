@@ -3,9 +3,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-
 # ── _build_envelope ────────────────────────────────────────────────────────
 
 
@@ -35,7 +32,7 @@ def test_build_envelope_default_trace_id() -> None:
 
 @patch("workers.src.tasks.pika.BlockingConnection", autospec=True)
 def test_publish_event_opens_connection(mock_connection) -> None:
-    from workers.src.tasks import _publish_event, EXCHANGE_NAME, ROUTING_PARSED
+    from workers.src.tasks import EXCHANGE_NAME, ROUTING_PARSED, _publish_event
 
     mock_channel = MagicMock()
     mock_connection.return_value.channel.return_value = mock_channel
@@ -59,7 +56,7 @@ def test_publish_event_opens_connection(mock_connection) -> None:
 
 @patch("workers.src.tasks.pika.BlockingConnection", autospec=True)
 def test_publish_event_connection_closed_on_exit(mock_connection) -> None:
-    from workers.src.tasks import _publish_event, ROUTING_PARSED
+    from workers.src.tasks import ROUTING_PARSED, _publish_event
 
     mock_channel = MagicMock()
     mock_conn_instance = MagicMock()

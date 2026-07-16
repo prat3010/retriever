@@ -2,7 +2,6 @@ import logging
 
 from src.domain.abstractions.notifications import AlertSeverity, NotificationProvider
 
-
 logger = logging.getLogger(__name__)
 
 

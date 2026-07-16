@@ -9,11 +9,10 @@ from src.domain.abstractions.evaluation import (
     EvalRunResult,
     EvalRunResultScores,
     RagasScores,
-    SearchMetrics,
 )
-from src.domain.abstractions.inference import LlmProvider
-from src.domain.abstractions.retrieval import EmbeddingProvider, KeywordSearchProvider, RerankerProvider, SearchQuery, SemanticCacheProvider, VectorSearchProvider
-from src.domain.abstractions.web_search import WebSearchProvider
+from src.domain.abstractions.retrieval import (
+    SearchQuery,
+)
 from src.domain.evaluation.search_metrics import compute_search_metrics
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.retrieval.search_service import HybridSearchService
@@ -92,7 +91,9 @@ class EvalRunService:
 
             if generated_answer:
                 try:
-                    from src.adapters.cognitive.ragas_evaluator import compute_ragas_scores
+                    from src.adapters.cognitive.ragas_evaluator import (
+                        compute_ragas_scores,
+                    )
                     ragas_scores = await compute_ragas_scores(
                         question=question.question,
                         answer=generated_answer,
@@ -103,7 +104,9 @@ class EvalRunService:
                     pass
 
                 try:
-                    from src.adapters.cognitive.deepeval_evaluator import compute_deepeval_scores
+                    from src.adapters.cognitive.deepeval_evaluator import (
+                        compute_deepeval_scores,
+                    )
                     deepeval_scores = await compute_deepeval_scores(
                         question=question.question,
                         answer=generated_answer,

@@ -1,9 +1,9 @@
 import uuid
 from typing import Any
 
+from processing_core import ConfigEncrypter
 from sqlalchemy import select
 
-from processing_core import ConfigEncrypter
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import ConfigurationDb
 from src.config import settings

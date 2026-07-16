@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ── _ocr_with_tesseract ────────────────────────────────────────────────────
 # ponytail: pytesseract and PIL may not be installed in API venv — mock via sys.modules
 
@@ -13,11 +12,11 @@ import pytest
 @pytest.fixture
 def mock_ocr_modules():
     pytesseract = MagicMock()
-    PIL = MagicMock()
-    PIL.Image = MagicMock()
+    pil = MagicMock()
+    pil.Image = MagicMock()
     sys.modules["pytesseract"] = pytesseract
-    sys.modules["PIL"] = PIL
-    sys.modules["PIL.Image"] = PIL.Image
+    sys.modules["PIL"] = pil
+    sys.modules["PIL.Image"] = pil.Image
     yield pytesseract
     for k in ["pytesseract", "PIL", "PIL.Image"]:
         sys.modules.pop(k, None)

@@ -4,7 +4,6 @@ import json
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import QueryIntent, QueryIntentClassifier
 
-
 CLASSIFY_SYSTEM_PROMPT = (
     "You are a search query classifier. Given a user query, decide how many chunks to retrieve "
     "and which search features to enable. Return ONLY a JSON object with these fields:\n"

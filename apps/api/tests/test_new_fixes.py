@@ -1,6 +1,8 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import os
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 
 @pytest.mark.asyncio
 async def test_embed_with_retry_batching() -> None:
@@ -37,8 +39,9 @@ async def test_embed_with_retry_batching() -> None:
 
 
 def test_extract_text_from_file_whitelist() -> None:
-    from processing_core.pdf_parser import extract_text_from_file
     import tempfile
+
+    from processing_core.pdf_parser import extract_text_from_file
     
     # 1. Text file extension in whitelist (.txt) should be read
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w+", delete=False, encoding="utf-8") as f:

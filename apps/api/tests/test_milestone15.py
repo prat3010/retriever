@@ -1,22 +1,21 @@
+import datetime
 import json
 import uuid
-import datetime
-import hashlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 import jwt
-from cryptography.hazmat.primitives.asymmetric import rsa
+import pytest
 from cryptography.hazmat.primitives import serialization
-from fastapi import status, HTTPException
+from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi import HTTPException, status
 from fastapi.security import SecurityScopes
-
-from src.domain.abstractions.identity import UserContext
-from src.domain.abstractions.exceptions import AuthenticationError
-from src.adapters.database.audit_repository import SqlAuditLogRepository
-from src.adapters.api.security import get_current_user, verify_scopes
-from src.config import settings
 from workers.src.tasks import cleanup_expired_data
+
+from src.adapters.api.security import get_current_user, verify_scopes
+from src.adapters.database.audit_repository import SqlAuditLogRepository
+from src.config import settings
+from src.domain.abstractions.exceptions import AuthenticationError
+from src.domain.abstractions.identity import UserContext
 
 
 # Helper to generate RSA key pair for testing OIDC signatures
@@ -129,7 +128,7 @@ async def test_oidc_authentication_validation(mock_fetch_jwk, rsa_keys) -> None:
         "tenant_id": tenant_uuid,
         "roles": ["client"],
         "scopes": ["document:read"],
-        "exp": int(datetime.datetime.now(datetime.timezone.utc).timestamp()) + 3600
+        "exp": int(datetime.datetime.now(datetime.UTC).timestamp()) + 3600
     }
     
     # Generate token
@@ -156,7 +155,7 @@ async def test_oidc_authentication_validation(mock_fetch_jwk, rsa_keys) -> None:
             
             # Verify validation fails on expired token
             payload_expired = payload.copy()
-            payload_expired["exp"] = int(datetime.datetime.now(datetime.timezone.utc).timestamp()) - 100
+            payload_expired["exp"] = int(datetime.datetime.now(datetime.UTC).timestamp()) - 100
             token_expired = jwt.encode(payload_expired, pem_private, algorithm="RS256", headers={"kid": "test-key-id"})
             
             with pytest.raises(HTTPException) as exc:

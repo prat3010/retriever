@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import delete, select
 
@@ -19,10 +19,10 @@ async def ingest_file_sync(
     chunk_size: int = 500,
     chunk_overlap: int = 100,
 ) -> int:
-    from processing_core import chunk_text, extract_text_from_file
-
-    import tempfile
     import os
+    import tempfile
+
+    from processing_core import chunk_text, extract_text_from_file
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
         tmp.write(file_content)
@@ -70,7 +70,7 @@ async def ingest_file_sync(
             )
             session.add(db_chunk)
 
-        for chunk_data, embedding in zip(chunks, embeddings):
+        for chunk_data, embedding in zip(chunks, embeddings, strict=True):
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
             db_vector = VectorRecordDb(
                 chunk_id=chunk_id,
@@ -81,7 +81,7 @@ async def ingest_file_sync(
 
         if doc:
             doc.status = "INDEXED"
-            doc.updated_at = datetime.now(timezone.utc)
+            doc.updated_at = datetime.now(UTC)
 
         await session.flush()
 

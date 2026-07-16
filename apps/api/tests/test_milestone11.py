@@ -2,7 +2,6 @@ import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.adapters.telemetry.rate_limiter import RateLimitResult

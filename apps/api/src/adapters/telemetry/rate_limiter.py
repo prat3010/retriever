@@ -8,7 +8,6 @@ from typing import Any
 
 from src.domain.abstractions.telemetry import RateLimiter, RateLimitResult
 
-
 _SLIDING_WINDOW_SCRIPT = """
 local key = KEYS[1]
 local now = tonumber(ARGV[1])

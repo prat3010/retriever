@@ -1,17 +1,16 @@
 import json
 import uuid
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-
-from src.domain.abstractions.identity import UserContext
-from src.domain.abstractions.retrieval import SearchResponse, SearchResult, SearchMeta
-from src.main import app, search_service
-from src.domain.abstractions.config import TenantConfiguration
 from workers.src.tasks import process_document_async
+
+from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.identity import UserContext
+from src.domain.abstractions.retrieval import SearchResult
+from src.main import app, search_service
 
 client = TestClient(app)
 

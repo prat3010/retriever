@@ -1,6 +1,6 @@
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 
@@ -18,7 +18,7 @@ def decode_cursor(cursor_str: str) -> tuple[datetime, UUID]:
         payload = json.loads(json_bytes.decode("utf-8"))
         dt = datetime.fromisoformat(payload[0])
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         uuid_val = UUID(payload[1])
         return dt, uuid_val
     except Exception as e:

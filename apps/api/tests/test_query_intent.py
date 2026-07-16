@@ -5,9 +5,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.domain.abstractions.inference import InferenceResponse, LlmProvider, Usage
-from src.domain.abstractions.retrieval import QueryIntent, QueryIntentClassifier, SearchQuery
+from src.domain.abstractions.retrieval import (
+    QueryIntent,
+    QueryIntentClassifier,
+    SearchQuery,
+)
 from src.domain.retrieval.search_service import HybridSearchService
-
 
 # ── Step 1: QueryIntentClassifier abstraction ──────────────────────────
 

@@ -1,11 +1,10 @@
 """Tests for M24: Self-Querying Retrieval."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.domain.abstractions.inference import (
-    ChatMessage,
-    InferenceRequest,
     InferenceResponse,
     LlmProvider,
     Usage,
@@ -13,11 +12,9 @@ from src.domain.abstractions.inference import (
 from src.domain.abstractions.retrieval import (
     MetadataFilter,
     SearchQuery,
-    SearchResult,
     SelfQueryProvider,
 )
 from src.domain.retrieval.search_service import HybridSearchService
-
 
 # ── Step 1: SelfQueryProvider abstraction ─────────────────────────────
 

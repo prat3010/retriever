@@ -1,13 +1,17 @@
 import json
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import text
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.database.models import EvalDatasetDb, EvalQuestionDb, EvalRunDb, EvalRunResultDb
+from src.adapters.database.models import (
+    EvalDatasetDb,
+    EvalQuestionDb,
+    EvalRunDb,
+    EvalRunResultDb,
+)
 from src.domain.abstractions.evaluation import (
     AggregateScores,
-    DeepEvalScores,
     EvalDataset,
     EvalDatasetRepository,
     EvalQuestion,
@@ -15,8 +19,6 @@ from src.domain.abstractions.evaluation import (
     EvalRunRepository,
     EvalRunResult,
     EvalRunResultScores,
-    RagasScores,
-    SearchMetrics,
 )
 
 
@@ -75,7 +77,7 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
     async def create_dataset(self, dataset: EvalDataset) -> EvalDataset:
         async with tenant_session(tenant_id=dataset.tenant_id) as session:
             db = EvalDatasetDb(
-                dataset_id=uuid4() if not dataset.dataset_id else uuid4(),
+                dataset_id=UUID(dataset.dataset_id) if dataset.dataset_id else uuid4(),
                 tenant_id=dataset.tenant_id,
                 name=dataset.name,
                 description=dataset.description or None,

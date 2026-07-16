@@ -11,7 +11,6 @@ from src.domain.abstractions.inference import (
     Usage,
 )
 
-
 RETRYABLE_ERRORS = (
     openai.InternalServerError,
     openai.APITimeoutError,

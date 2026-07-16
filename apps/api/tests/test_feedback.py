@@ -9,13 +9,19 @@ Verifies:
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from src.main import app, feedback_repo
-from src.adapters.api.security import verify_tenant_isolation, verify_scopes, get_current_user_id, verify_admin_key
+from src.adapters.api.security import (
+    get_current_user_id,
+    verify_admin_key,
+    verify_scopes,
+    verify_tenant_isolation,
+)
 from src.domain.abstractions.inference import ChatMessageFeedback
+from src.main import app, feedback_repo
 
 
 @pytest.fixture

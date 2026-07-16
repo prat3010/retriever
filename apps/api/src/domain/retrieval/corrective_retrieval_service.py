@@ -1,4 +1,7 @@
-from src.domain.abstractions.config import CorrectiveRetrievalSettings, TenantConfiguration
+from src.domain.abstractions.config import (
+    CorrectiveRetrievalSettings,
+    TenantConfiguration,
+)
 from src.domain.abstractions.inference import InferenceResponse
 from src.domain.abstractions.retrieval import CorrectiveRetrievalProvider, SearchQuery
 from src.domain.inference.orchestrator import InferenceOrchestrator

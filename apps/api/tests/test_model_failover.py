@@ -1,17 +1,16 @@
 """Tests for M19: Smart Model Failover."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from src.domain.abstractions.exceptions import ProviderUnavailableError
 from src.domain.abstractions.inference import (
+    ChatMessage,
     InferenceRequest,
     InferenceResponse,
-    ChatMessage,
     Usage,
 )
-from src.domain.abstractions.retrieval import MetadataFilter
-
 
 # --- Step 1: ProviderUnavailableError ---
 
@@ -245,8 +244,9 @@ async def test_router_stream_all_unavailable() -> None:
 
 @pytest.mark.asyncio
 async def test_openai_adapter_wraps_retryable_error() -> None:
-    from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
     import openai
+
+    from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 
     adapter = OpenAILLMAdapter(api_key="sk-test")
     req = _make_request()
@@ -281,9 +281,10 @@ async def test_openai_adapter_lets_auth_error_propagate() -> None:
 
 @pytest.mark.asyncio
 async def test_anthropic_adapter_wraps_retryable_error() -> None:
-    from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
     import anthropic
     import httpx
+
+    from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 
     adapter = AnthropicLLMAdapter(api_key="sk-ant-test")
     req = _make_request()

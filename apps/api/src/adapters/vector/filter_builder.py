@@ -1,7 +1,7 @@
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from src.domain.abstractions.retrieval import MetadataFilter, SearchResult
-
 
 _OP_TO_SQL: dict[str, tuple[str, Callable[[Any], Any]]] = {
     "eq":       ("{alias}.meta_data ->> '{field}' = :{param}", str),
@@ -44,7 +44,7 @@ def build_filter_clause(
 
     if tags:
         join_clause = f" JOIN documents d ON {chunk_alias}.document_id = d.document_id"
-        conditions.append(f"d.tags @> ARRAY[:tag_filters]::varchar[]")
+        conditions.append("d.tags @> ARRAY[:tag_filters]::varchar[]")
         params["tag_filters"] = tags
 
     for i, f in enumerate(filters):

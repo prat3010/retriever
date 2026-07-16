@@ -1,7 +1,8 @@
 """Tests for M20: Token Cost Optimization."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.domain.abstractions.inference import (
     ChatMessage,
@@ -9,7 +10,6 @@ from src.domain.abstractions.inference import (
     InferenceResponse,
     Usage,
 )
-
 
 # ── Step 1: ModelPricing config ─────────────────────────────────────────────
 

@@ -3,12 +3,12 @@ import json
 import re
 import secrets
 import sys
+
 import httpx
 import jwt
-from jwt.exceptions import PyJWTError
-
-from fastapi import Depends, Header, HTTPException, Security, Request, status
+from fastapi import Depends, Header, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, SecurityScopes
+from jwt.exceptions import PyJWTError
 
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.config import settings
@@ -98,13 +98,13 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
             except PyJWTError as je:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"SSO Token validation failed: {str(je)}",
-                )
+                    detail=f"SSO Token validation failed: {je!s}",
+                ) from je
             except AuthenticationError as ae:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=str(ae),
-                )
+                ) from ae
         
         # Raise the original validation failure if OIDC is disabled or did not match
         raise HTTPException(

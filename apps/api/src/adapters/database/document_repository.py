@@ -6,8 +6,12 @@ from sqlalchemy import delete, select
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import DocumentChunkDb, DocumentDb
-from src.adapters.database.pagination import encode_cursor, decode_cursor
-from src.domain.abstractions.ingestion import Document, DocumentChunk, DocumentRepository
+from src.adapters.database.pagination import decode_cursor, encode_cursor
+from src.domain.abstractions.ingestion import (
+    Document,
+    DocumentChunk,
+    DocumentRepository,
+)
 
 
 class SqlDocumentRepository(DocumentRepository):

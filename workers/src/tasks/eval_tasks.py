@@ -4,8 +4,6 @@ Dispatches to the async eval runner. Actual evaluation logic
 lives in the API app where wired dependencies are available.
 """
 
-import asyncio
-
 from celery import Task
 
 from workers.src.celery_app import celery_app

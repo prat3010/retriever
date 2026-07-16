@@ -1,13 +1,13 @@
-import hashlib
 import asyncio
+import hashlib
 import json
 import logging
 import os
 import re
 import uuid
-from datetime import UTC, datetime
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import (
@@ -21,8 +21,8 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 
@@ -39,21 +39,21 @@ try:
     from src.adapters.broker.celery_publisher import celery_app
 except Exception:
     celery_app = None
-from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
-from src.adapters.cognitive.routing_provider import RoutingLLMProvider
+from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
+from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
 from src.adapters.database.connection import engine
 from src.adapters.database.document_repository import SqlDocumentRepository
+from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.inference_repository import (
     SqlChatSessionRepository,
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
 )
-from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
@@ -70,7 +70,11 @@ from src.domain.abstractions.exceptions import (
     PromptTemplateNotFoundError,
     TenantIsolationViolationError,
 )
-from src.domain.abstractions.inference import ChatMessage, InferenceRequest, PromptTemplate
+from src.domain.abstractions.inference import (
+    ChatMessage,
+    InferenceRequest,
+    PromptTemplate,
+)
 from src.domain.abstractions.ingestion import Document
 from src.domain.abstractions.retrieval import MetadataFilter, SearchQuery
 from src.domain.abstractions.tenant import Tenant
@@ -202,11 +206,11 @@ else:
     local_storage = LocalStorage()
 
 # Initialize search service
-from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
-from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
-from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
+from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
+from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
+from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 
@@ -252,7 +256,10 @@ inference_orchestrator = InferenceOrchestrator(
 )
 
 # Initialize evaluation service
-from src.adapters.database.evaluation_repository import SqlEvalDatasetRepository, SqlEvalRunRepository
+from src.adapters.database.evaluation_repository import (
+    SqlEvalDatasetRepository,
+    SqlEvalRunRepository,
+)
 from src.domain.evaluation.evaluator import EvalRunService
 
 eval_dataset_repo = SqlEvalDatasetRepository()
@@ -265,7 +272,9 @@ eval_service = EvalRunService(
 )
 
 # Initialize corrective retrieval service
-from src.adapters.cognitive.corrective_retrieval_adapter import LLMCorrectiveRetrievalAdapter
+from src.adapters.cognitive.corrective_retrieval_adapter import (
+    LLMCorrectiveRetrievalAdapter,
+)
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 
 corrective_provider = LLMCorrectiveRetrievalAdapter(llm=llm_provider)
@@ -868,20 +877,21 @@ async def admin_delete_document(tenantId: str, documentId: str) -> dict[str, str
 )
 async def admin_platform_stats() -> dict[str, Any]:
     """Get aggregated statistics across the entire platform database (System-wide Admin)."""
+    from sqlalchemy import func
+
     from src.adapters.database.connection import tenant_session
     from src.adapters.database.models import (
-        TenantDb,
-        DocumentDb,
-        DocumentChunkDb,
-        VectorRecordDb,
         ApiKeyDb,
-        UserDb,
-        ChatSessionDb,
-        ChatMessageDb,
         AuditLogDb,
+        ChatMessageDb,
+        ChatSessionDb,
+        DocumentChunkDb,
+        DocumentDb,
         EvalRunDb,
+        TenantDb,
+        UserDb,
+        VectorRecordDb,
     )
-    from sqlalchemy import func
 
     async with tenant_session(bypass_rls=True) as session:
         # Tenants
@@ -947,9 +957,10 @@ async def admin_platform_stats() -> dict[str, Any]:
 )
 async def admin_platform_reset() -> dict[str, str]:
     """Wipe all tenant data, documents, chunks, and embeddings except the System Tenant (System-wide Admin)."""
+    import shutil
+
     from src.adapters.database.connection import tenant_session
     from src.adapters.database.models import TenantDb
-    import shutil
 
     async with tenant_session(bypass_rls=True) as session:
         result = await session.execute(
@@ -993,7 +1004,7 @@ async def admin_get_document_download_url(tenantId: str, documentId: str) -> dic
             url = await local_storage.generate_presigned_url(doc.storage_path)
             return {"downloadUrl": url}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}")
+            raise HTTPException(status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}") from e
     else:
         return {"downloadUrl": f"/v1/admin/tenants/{tenantId}/documents/{documentId}/file"}
 
@@ -1080,8 +1091,8 @@ async def apply_industry_preset(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Failed to merge preset: {str(e)}"
-        )
+            detail=f"Failed to merge preset: {e!s}"
+        ) from e
         
     await config_service.update_tenant_config(tenantId, updated_config)
     await audit_logger.write(tenantId, "config.preset_applied", f"Preset {payload.preset} applied to configuration")
@@ -1342,7 +1353,6 @@ async def admin_ingest_document_sync(
     content = await file.read()
     file_hash = hashlib.sha256(content).hexdigest()
     doc_id = str(uuid.uuid4())
-    now = datetime.now(UTC).isoformat()
 
     from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
 
@@ -1487,11 +1497,10 @@ async def extract_document(
         InferenceRequest(messages=messages, temperature=0.1, json_schema=payload.json_schema),
         config,
     )
-
     try:
         data = json.loads(response.content)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=422, detail="LLM returned invalid JSON")
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=422, detail="LLM returned invalid JSON") from e
 
     return ExtractResponse(
         data=data,
@@ -2102,7 +2111,7 @@ async def get_document_download_url(
     try:
         download_url = await local_storage.generate_presigned_url(doc.storage_path, expiry_seconds=expiry)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {e!s}") from e
 
     return {
         "documentId": documentId,
@@ -2125,6 +2134,7 @@ async def serve_local_download(
     """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
     import hmac
     import time
+
     from src.adapters.storage.local_storage import LocalStorage
 
     # 1. Check expiration

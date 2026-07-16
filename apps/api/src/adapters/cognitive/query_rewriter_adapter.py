@@ -3,7 +3,6 @@ import asyncio
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import QueryRewriterProvider
 
-
 HYDE_PROMPT = (
     "Given a search query, write a short factual passage that would be "
     "a perfect answer. Be specific and detailed.\n\n"

@@ -1,16 +1,16 @@
-import pytest
-import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import HTTPException, Request, Response
+from processing_core.chunker import chunk_semantic
 
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.telemetry.rate_limiter import RedisSlidingWindowRateLimiter
+from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.domain.abstractions.exceptions import AuthenticationError
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatSessionInfo
-from src.adapters.telemetry.rate_limiter_dep import rate_limit
-from processing_core.chunker import chunk_semantic
 
 
 @pytest.mark.asyncio

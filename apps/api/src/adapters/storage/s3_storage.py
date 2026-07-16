@@ -1,6 +1,8 @@
 import asyncio
+
 import boto3
 from botocore.config import Config
+
 from src.domain.abstractions.ingestion import DocumentStorage
 
 

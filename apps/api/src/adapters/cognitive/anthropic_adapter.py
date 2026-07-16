@@ -13,7 +13,6 @@ from src.domain.abstractions.inference import (
     Usage,
 )
 
-
 RETRYABLE_ERRORS = (
     anthropic.InternalServerError,
     anthropic.OverloadedError,

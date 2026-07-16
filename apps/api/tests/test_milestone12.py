@@ -1,12 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-
 from processing_core import ConfigEncrypter
+
 from src.adapters.storage.s3_storage import S3Storage
-from src.config import settings
-from src.main import app, local_storage
+from src.main import app
 
 
 # 1. Test Encryption / Decryption Primitives

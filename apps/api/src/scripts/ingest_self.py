@@ -1,16 +1,17 @@
-import os
 import ast
-import hashlib
-import uuid
 import asyncio
+import hashlib
+import os
+import uuid
 from pathlib import Path
-from sqlalchemy import delete, text
+
+from sqlalchemy import delete
 from sqlalchemy.future import select
 
-from src.config import settings
-from src.adapters.database.connection import tenant_session
-from src.adapters.database.models import DocumentDb, DocumentChunkDb, VectorRecordDb
 from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
+from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import DocumentChunkDb, DocumentDb, VectorRecordDb
+from src.config import settings
 
 SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 
@@ -207,7 +208,7 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
     print(f"Indexing: {rel_path}")
     
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
     except Exception as e:
         print(f"  Error reading {rel_path}: {e}")
@@ -278,7 +279,7 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
         await session.flush()
         
         # Save chunks and vectors
-        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=True)):
             chunk_id = uuid.uuid4()
             db_chunk = DocumentChunkDb(
                 chunk_id=chunk_id,

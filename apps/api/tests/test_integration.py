@@ -20,10 +20,11 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@lo
 os.environ.setdefault("REDIS_URL", "redis://localhost:6380/1")
 
 from sqlalchemy import text
+
 from src.adapters.database.connection import engine
+from src.adapters.database.document_repository import SqlDocumentRepository
 from src.adapters.database.setup import initialize_database
 from src.adapters.database.tenant_repository import SqlTenantRegistry
-from src.adapters.database.document_repository import SqlDocumentRepository
 from src.domain.abstractions.ingestion import Document
 
 
@@ -65,7 +66,7 @@ async def test_tenant_crud():
     deactivated = await registry.deactivate_tenant(tenant.tenant_id)
     assert deactivated is True
 
-    entries, total = await registry.list_tenants()
+    _entries, total = await registry.list_tenants()
     assert total >= 1
 
 

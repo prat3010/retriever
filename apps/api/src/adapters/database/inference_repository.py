@@ -15,7 +15,7 @@ from src.adapters.database.models import (
     InferenceLogDb,
     PromptTemplateDb,
 )
-from src.adapters.database.pagination import encode_cursor, decode_cursor
+from src.adapters.database.pagination import decode_cursor, encode_cursor
 from src.domain.abstractions.inference import (
     ChatMessage,
     ChatMessageInfo,

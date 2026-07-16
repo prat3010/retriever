@@ -4,7 +4,6 @@ import json
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import MetadataFilter, SelfQueryProvider
 
-
 SELF_QUERY_SYSTEM_PROMPT = (
     "You are a query analyzer. Extract structured metadata filters from the search query. "
     "Return ONLY a JSON array of filter objects. Use these operators: "

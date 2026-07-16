@@ -8,11 +8,13 @@ Verifies:
 """
 
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from src.domain.abstractions.inference import ChatMessage, InferenceRequest
+
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 
 
 def test_anthropic_adapter_message_compilation() -> None:

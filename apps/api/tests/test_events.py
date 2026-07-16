@@ -11,6 +11,7 @@ Verifies:
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from src.domain.abstractions.events import DocumentEventPayload, EventEnvelope
 
 # ── 1. Event Envelope ────────────────────────────────────────────────────────

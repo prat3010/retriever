@@ -1,5 +1,7 @@
 import uuid
+
 from sqlalchemy import text
+
 from src.adapters.database.connection import engine
 from src.domain.abstractions.retrieval import SearchResult, SemanticCacheProvider
 

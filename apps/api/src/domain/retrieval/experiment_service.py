@@ -1,8 +1,7 @@
 import hashlib
-import copy
 
-from src.domain.abstractions.experiment import ExperimentConfig, VariantConfig
 from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.experiment import ExperimentConfig, VariantConfig
 
 
 def _bucket(user_id: str | None, experiment_id: str, total: int = 100) -> int:

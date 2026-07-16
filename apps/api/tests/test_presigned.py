@@ -5,20 +5,24 @@ Verifies:
 - HMAC verification route handles link expiration, signature mismatch, and valid file serving.
 """
 
-import os
+import hmac
 import time
 import uuid
-import hmac
 from hashlib import sha256
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from src.main import app, local_storage, document_repository
-from src.adapters.api.security import verify_tenant_isolation, verify_scopes, get_current_user_id
+from src.adapters.api.security import (
+    get_current_user_id,
+    verify_scopes,
+    verify_tenant_isolation,
+)
 from src.adapters.storage.local_storage import LocalStorage
 from src.domain.abstractions.ingestion import Document
+from src.main import app, document_repository, local_storage
 
 
 @pytest.fixture

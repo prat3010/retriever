@@ -1,17 +1,15 @@
 """Tests for M22: Structured Data Extraction."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.domain.abstractions.inference import (
     ChatMessage,
     InferenceRequest,
-    InferenceResponse,
-    Usage,
 )
 from src.domain.abstractions.ingestion import DocumentChunk
-
 
 # ── Step 1: DocumentChunk model ────────────────────────────────────────────
 
@@ -51,7 +49,6 @@ def test_sql_document_repository_has_get_document_chunks() -> None:
 
 
 def test_openai_adapter_accepts_json_schema() -> None:
-    from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 
     req = InferenceRequest(
         messages=[ChatMessage(role="user", content="test")],
@@ -61,7 +58,6 @@ def test_openai_adapter_accepts_json_schema() -> None:
 
 
 def test_anthropic_adapter_accepts_json_schema() -> None:
-    from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 
     req = InferenceRequest(
         messages=[ChatMessage(role="user", content="test")],

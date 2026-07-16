@@ -1,16 +1,17 @@
 import json
 import uuid
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from processing_core.chunker import chunk_recursive, chunk_semantic
 
-from src.main import app
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.identity import UserContext
-from src.domain.abstractions.retrieval import SearchResult, SearchResponse, SearchMeta
 from src.domain.abstractions.inference import InferenceResponse, Usage
-from processing_core.chunker import chunk_recursive, chunk_semantic
+from src.domain.abstractions.retrieval import SearchMeta, SearchResponse, SearchResult
+from src.main import app
 
 ADMIN_KEY = "dev-admin-master-key-change-in-production"
 
@@ -245,8 +246,8 @@ def test_chat_with_citation_formatting(
 @patch("workers.src.tasks._publish_event", autospec=True)
 @patch("workers.src.tasks.create_async_engine", autospec=True)
 async def test_worker_task_with_recursive_chunking_and_metadata_extractor(mock_create_engine, mock_publish_event) -> None:
-    from workers.src.tasks import process_document_async
     import workers.src.tasks
+    from workers.src.tasks import process_document_async
     workers.src.tasks._engine = None
     import os
     

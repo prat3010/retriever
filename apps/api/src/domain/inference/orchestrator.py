@@ -7,8 +7,8 @@ and telemetry logging. Depends only on domain abstractions.
 
 import time
 from collections import defaultdict
-from datetime import date
 from collections.abc import AsyncIterator
+from datetime import date
 
 from src.domain.abstractions.config import ModelPricing, TenantConfiguration
 from src.domain.abstractions.inference import (
@@ -28,7 +28,6 @@ from src.domain.abstractions.telemetry import MetricsRegistry
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.cost_calculator import calculate_cost
 from src.domain.inference.prompt_builder import PromptBuilder
-
 
 SUMMARIZE_PROMPT = (
     "Summarize the following conversation concisely, preserving key facts, "

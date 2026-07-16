@@ -1,15 +1,13 @@
 """Tests for M23: Multi-Modal Processing."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.domain.abstractions.inference import (
     ChatMessage,
     InferenceRequest,
-    InferenceResponse,
-    Usage,
 )
-
 
 # ── Step 1: ChatMessage.images field ────────────────────────────────────────
 

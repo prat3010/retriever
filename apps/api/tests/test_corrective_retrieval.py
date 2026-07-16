@@ -3,7 +3,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.domain.abstractions.config import CorrectiveRetrievalSettings, TenantConfiguration
+from src.domain.abstractions.config import (
+    CorrectiveRetrievalSettings,
+    TenantConfiguration,
+)
 from src.domain.abstractions.inference import InferenceResponse, Usage
 from src.domain.abstractions.retrieval import (
     CorrectiveRetrievalDecision,
@@ -238,7 +241,9 @@ class TestLLMCorrectiveRetrievalAdapter:
 
     @pytest.mark.asyncio
     async def test_adapter_returns_decision_on_success(self):
-        from src.adapters.cognitive.corrective_retrieval_adapter import LLMCorrectiveRetrievalAdapter
+        from src.adapters.cognitive.corrective_retrieval_adapter import (
+            LLMCorrectiveRetrievalAdapter,
+        )
 
         mock_llm = AsyncMock()
         mock_llm.generate = AsyncMock()
@@ -260,7 +265,9 @@ class TestLLMCorrectiveRetrievalAdapter:
 
     @pytest.mark.asyncio
     async def test_adapter_graceful_on_failure(self):
-        from src.adapters.cognitive.corrective_retrieval_adapter import LLMCorrectiveRetrievalAdapter
+        from src.adapters.cognitive.corrective_retrieval_adapter import (
+            LLMCorrectiveRetrievalAdapter,
+        )
 
         mock_llm = AsyncMock()
         mock_llm.generate.side_effect = Exception("LLM call failed")

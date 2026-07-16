@@ -7,7 +7,6 @@ import pytest
 from src.domain.abstractions.retrieval import SearchQuery, SearchResult
 from src.domain.abstractions.web_search import WebSearchResult
 
-
 # ── Step 1: WebSearchProvider port + WebSearchResult model ──────────────────
 
 

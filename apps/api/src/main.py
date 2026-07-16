@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import sys
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -285,6 +286,15 @@ corrective_service = CorrectiveRetrievalService(
 )
 
 # Exception Handlers mapping to HTTP Responses
+import traceback
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def handle_unhandled(request, exc):
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    print(f"Unhandled exception: {exc}\n{tb}", file=sys.stderr)
+    return JSONResponse(status_code=500, content={"detail": str(exc), "traceback": tb})
+
 @app.exception_handler(TenantIsolationViolationError)
 async def handle_isolation_violation(request, exc):
     raise HTTPException(
@@ -1594,7 +1604,7 @@ class ChatMessageRequest(BaseModel):
     "/v1/tenants/{tenantId}/chat/sessions",
     status_code=status.HTTP_201_CREATED,
     response_model=CreateSessionResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
 )
 async def create_chat_session(
     tenantId: str,

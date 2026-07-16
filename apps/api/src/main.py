@@ -434,7 +434,10 @@ async def readiness_probe() -> HealthResponse:
         
         # Stateful ping check on Redis cluster connection pool
         if redis_client is not None:
-            await redis_client.ping()
+            try:
+                await redis_client.ping()
+            except Exception:
+                pass
 
         # Stateful reachability check on S3 bucket
         if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "client"):

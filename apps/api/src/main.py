@@ -466,12 +466,12 @@ async def readiness_probe() -> HealthResponse:
 @app.post(
     "/v1/tenants",
     status_code=status.HTTP_201_CREATED,
-    response_model=Tenant,
+    response_model=TenantListItem,
     dependencies=[Depends(verify_admin_key)],
 )
 async def create_tenant(
     payload: CreateTenantRequest,
-) -> Tenant:
+) -> TenantListItem:
     """Register a new tenant workspace bounds (System-wide Admin)."""
     tenant = await tenant_registry.create_tenant(
         name=payload.name,
@@ -479,7 +479,13 @@ async def create_tenant(
         isolation_level=payload.isolation_level,
     )
     await audit_logger.write(tenant.tenant_id, "tenant.created", f"Tenant '{payload.name}' created")
-    return tenant
+    return TenantListItem(
+        tenantId=tenant.tenant_id,
+        name=tenant.name,
+        status=tenant.status,
+        tier=tenant.tier,
+        createdAt=tenant.created_at,
+    )
 
 
 @app.post(

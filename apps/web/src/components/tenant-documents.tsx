@@ -12,6 +12,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { FileText, UploadCloud, Trash2, Loader2 } from "lucide-react";
 import { useState, useRef, DragEvent } from "react";
 import { toast } from "sonner";
@@ -31,11 +40,12 @@ function formatBytes(bytes: number): string {
 }
 
 export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
-  const { data: docs, isLoading, refetch } = useDocuments(tenantId);
+  const { data: docs, isLoading } = useDocuments(tenantId);
   const uploadMutation = useUploadDocument(tenantId);
   const deleteMutation = useDeleteDocument(tenantId);
 
   const [isDragActive, setIsDragActive] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState<{ id: string; filename: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: DragEvent) => {
@@ -94,8 +104,6 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
           id: uploadToastId,
         });
       }
-
-      refetch();
     } catch (err) {
       toast.error("An unexpected error occurred during upload.", {
         id: uploadToastId,
@@ -103,18 +111,16 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const handleDelete = async (docId: string, filename: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${filename}"? This will drop all parsed chunks and vector records.`)) {
-      return;
-    }
-
+  const handleDelete = async () => {
+    if (!deletingDoc) return;
+    const { id, filename } = deletingDoc;
+    setDeletingDoc(null);
     const deleteToastId = toast.loading(`Deleting ${filename}...`);
     try {
-      await deleteMutation.mutateAsync(docId);
+      await deleteMutation.mutateAsync(id);
       toast.success(`Successfully deleted "${filename}".`, {
         id: deleteToastId,
       });
-      refetch();
     } catch (err: any) {
       console.error(err);
       toast.error(`Failed to delete document: ${err.message || "Unknown error"}`, {
@@ -214,18 +220,33 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(doc.documentId, doc.filename);
-                      }}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => e.stopPropagation()}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent onClick={(e) => e.stopPropagation()}>
+                        <DialogHeader>
+                          <DialogTitle>Delete document?</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete &ldquo;{doc.filename}&rdquo;? This will drop all parsed chunks and vector records.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setDeletingDoc(null)}>Cancel</Button>
+                          <Button variant="destructive" onClick={() => { setDeletingDoc({ id: doc.documentId, filename: doc.filename }); handleDelete(); }}>
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}

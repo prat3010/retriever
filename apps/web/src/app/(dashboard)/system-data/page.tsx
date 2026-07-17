@@ -7,9 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useAuthStore } from "@/store/auth";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Database,
   Building2,
@@ -37,20 +35,13 @@ interface PlatformStats {
 }
 
 export default function SystemDataPage() {
-  const adminKey = useAuthStore((s) => s.adminKey);
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [resetConfirmText, setResetConfirmText] = useState("");
   const [showConfirmInput, setShowConfirmInput] = useState(false);
 
-  useEffect(() => {
-    if (!adminKey) router.push("/login");
-  }, [adminKey, router]);
-
   const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: () => api.get<PlatformStats>("/v1/admin/platform/stats"),
-    enabled: !!adminKey,
   });
 
   const resetMutation = useMutation({
@@ -66,8 +57,6 @@ export default function SystemDataPage() {
       toast.error(err.message || "Failed to reset platform data.");
     },
   });
-
-  if (!adminKey) return null;
 
   const handleResetClick = () => {
     if (!showConfirmInput) {

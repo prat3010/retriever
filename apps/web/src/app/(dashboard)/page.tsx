@@ -1,8 +1,5 @@
 "use client";
 
-import { useAuthStore } from "@/store/auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { Topbar } from "@/components/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,15 +7,7 @@ import { useTenants } from "@/hooks/use-tenants";
 import { Building2, Users, Key, FileText } from "lucide-react";
 
 export default function DashboardPage() {
-  const adminKey = useAuthStore((s) => s.adminKey);
-  const router = useRouter();
   const { data: tenants, isLoading } = useTenants();
-
-  useEffect(() => {
-    if (!adminKey) router.push("/login");
-  }, [adminKey, router]);
-
-  if (!adminKey) return null;
 
   const stats = [
     {

@@ -24,7 +24,7 @@ export function ConfigTab({ tenantId }: Props) {
     if (config) setForm(config);
   }, [config]);
 
-  function handleChange(path: string, value: string | number) {
+  function handleChange(path: string, value: string | number | boolean) {
     if (!form) return;
     const updated = structuredClone(form);
 
@@ -36,7 +36,7 @@ export function ConfigTab({ tenantId }: Props) {
       (updated.retrieval_settings as Record<string, unknown>)[key] = Number(value);
     } else if (path.startsWith("security_settings.")) {
       const key = path.split(".")[1] as keyof typeof updated.security_settings;
-      (updated.security_settings as Record<string, unknown>)[key] = Number(value);
+      (updated.security_settings as Record<string, unknown>)[key] = typeof value === "boolean" ? value : Number(value);
     }
 
     setForm(updated);
@@ -162,6 +162,16 @@ export function ConfigTab({ tenantId }: Props) {
           <CardTitle>Security Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <input
+              id="enableRls"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300"
+              checked={form.security_settings.enable_rls}
+              onChange={(e) => handleChange("security_settings.enable_rls", e.target.checked)}
+            />
+            <Label htmlFor="enableRls">Enable Row-Level Security</Label>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="keyExpiration">API Key Expiration (days)</Label>
             <Input

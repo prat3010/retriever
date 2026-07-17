@@ -83,7 +83,7 @@ function ConfigPanel({
   hidden: boolean;
 }) {
   const [form, setForm] = useState<RetrieverConfig>(
-    config ?? { apiUrl: "http://localhost:8000", tenantId: "", apiKey: "", userId: "" },
+    config ?? { apiUrl: "https://retriever-1vjx.onrender.com", tenantId: "", apiKey: "", userId: "" },
   );
 
   useEffect(() => {
@@ -105,7 +105,7 @@ function ConfigPanel({
         </div>
         <div>
           <label>User ID</label>
-          <input value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })} placeholder="user_123" />
+          <input value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })} placeholder="00000000-0000-0000-0000-000000000000" />
         </div>
       </div>
       <label>API Key</label>
@@ -164,14 +164,14 @@ function ChatPanel({ client, hidden }: { client: RetrieverClient | null; hidden:
           if (done) break;
           const text = decoder.decode(value, { stream: true });
           for (const line of text.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-                full += parsed.content ?? parsed.delta ?? "";
-              } catch { /* skip non-JSON SSE */ }
-            }
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.event === "done") break;
+                  full += parsed.content ?? parsed.delta ?? "";
+                } catch { /* skip non-JSON SSE */ }
+              }
           }
         }
       }

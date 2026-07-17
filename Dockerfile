@@ -26,8 +26,10 @@ ENV PATH="/root/.local/bin/:$PATH"
 COPY apps/api/pyproject.toml ./pyproject.toml
 RUN uv pip compile pyproject.toml -o requirements.txt && uv pip install --system -r requirements.txt
 
-# Remove model download from build - handled at startup by deploy/start.py
-# This avoids build failures from Ollama's GPU detection or network issues
+# Pre-download the embedding model during build (build env has more RAM, less OOM risk)
+# GPU detection forced off to avoid build failures in headless CI
+ENV CUDA_VISIBLE_DEVICES=-1
+RUN ollama serve > /dev/null 2>&1 & sleep 3 && ollama pull nomic-embed-text && kill %1 2>/dev/null; true
 
 # Copy application source
 COPY deploy/start.py ./deploy/start.py

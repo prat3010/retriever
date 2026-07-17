@@ -83,7 +83,7 @@ function ConfigPanel({
   hidden: boolean;
 }) {
   const [form, setForm] = useState<RetrieverConfig>(
-    config ?? { apiUrl: "https://retriever-1vjx.onrender.com", tenantId: "", apiKey: "", userId: "" },
+    config ?? { apiUrl: "https://rag.prateeq.in", tenantId: "00000000-0000-0000-0000-000000000000", apiKey: "", userId: "a8b819bb-61bb-450b-9662-62bd06b188d3" },
   );
 
   useEffect(() => {

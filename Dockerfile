@@ -13,11 +13,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# Install Ollama binary directly (no install script - avoids systemd/GPU detection issues)
+RUN curl -fsSL https://github.com/ollama/ollama/releases/download/v0.5.4/ollama-linux-amd64.tgz | tar xz -C /usr/local/
 
 # Install uv package manager
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -27,8 +26,8 @@ ENV PATH="/root/.local/bin/:$PATH"
 COPY apps/api/pyproject.toml ./pyproject.toml
 RUN uv pip compile pyproject.toml -o requirements.txt && uv pip install --system -r requirements.txt
 
-# Pull nomic-embed-text model during build (cached in Docker layer, no download on restarts)
-RUN ollama serve 2>/dev/null & sleep 3 && ollama pull nomic-embed-text 2>&1 || true
+# Remove model download from build - handled at startup by deploy/start.py
+# This avoids build failures from Ollama's GPU detection or network issues
 
 # Copy application source
 COPY deploy/start.py ./deploy/start.py

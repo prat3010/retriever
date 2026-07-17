@@ -110,6 +110,21 @@ function ConfigPanel({
       </div>
       <label>API Key</label>
       <input value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder="sk_..." type="password" />
+      <div className="row">
+        <div>
+          <label>LLM API Key (optional)</label>
+          <input value={form.llmKey ?? ""} onChange={(e) => setForm({ ...form, llmKey: e.target.value || undefined })} placeholder="Override tenant LLM key" type="password" />
+        </div>
+        <div>
+          <label>LLM Provider (optional)</label>
+          <select value={form.llmProvider ?? ""} onChange={(e) => setForm({ ...form, llmProvider: e.target.value || undefined })} style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }}>
+            <option value="">Use tenant default</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini</option>
+            <option value="anthropic">Anthropic</option>
+          </select>
+        </div>
+      </div>
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button className="btn btn-primary" onClick={() => onSave(form)}>
           Save & Connect

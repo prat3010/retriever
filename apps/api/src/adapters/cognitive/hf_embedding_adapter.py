@@ -5,7 +5,7 @@ import httpx
 
 from src.domain.abstractions.retrieval import EmbeddingProvider
 
-DEFAULT_MODEL = "BAAI/bge-base-en-v1.5"
+DEFAULT_MODEL = "nomic-embed-text"
 DEFAULT_DIMENSION = 768
 HF_INFERENCE_URL = "https://router.huggingface.co/hf-inference/models"
 

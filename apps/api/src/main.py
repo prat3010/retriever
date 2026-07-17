@@ -226,7 +226,9 @@ llm_provider = RoutingLLMProvider(
     ),
 )
 
-embedder = OllamaEmbeddingAdapter() if os.environ.get("EMBEDDING_PROVIDER") == "ollama" else HFEmbeddingAdapter(
+embedder = OllamaEmbeddingAdapter(
+    base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+) if os.environ.get("EMBEDDING_PROVIDER") == "ollama" else HFEmbeddingAdapter(
     api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
     model=os.environ.get("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5"),
 )

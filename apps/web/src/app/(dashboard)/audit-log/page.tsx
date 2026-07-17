@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Topbar } from "@/components/topbar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,38 +23,26 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/store/auth";
-import { useRouter } from "next/navigation";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 30;
 const ACTIONS = ["tenant.created", "tenant.deactivated", "user.created", "api_key.created", "api_key.revoked", "config.updated"];
 
 export default function AuditLogPage() {
-  const adminKey = useAuthStore((s) => s.adminKey);
-  const router = useRouter();
-  const [data, setData] = useState<{ items: any[]; total: number } | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [page, setPage] = useState(0);
 
-  useEffect(() => { if (!adminKey) router.push("/login"); }, [adminKey, router]);
+  const params = new URLSearchParams();
+  if (search) params.set("tenantId", search);
+  if (actionFilter && actionFilter !== "all") params.set("action", actionFilter);
+  params.set("limit", String(PAGE_SIZE));
+  params.set("offset", String(page * PAGE_SIZE));
 
-  useEffect(() => {
-    if (!adminKey) return;
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set("tenantId", search);
-    if (actionFilter) params.set("action", actionFilter);
-    params.set("limit", String(PAGE_SIZE));
-    params.set("offset", String(page * PAGE_SIZE));
-    api.get<{ items: any[]; total: number }>(`/v1/admin/audit-logs?${params}`)
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, [adminKey, search, actionFilter, page]);
-
-  if (!adminKey) return null;
+  const { data, isLoading } = useQuery({
+    queryKey: ["audit-logs", search, actionFilter, page],
+    queryFn: () => api.get<{ items: any[]; total: number }>(`/v1/admin/audit-logs?${params}`),
+  });
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
@@ -64,17 +60,18 @@ export default function AuditLogPage() {
               onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             />
           </div>
-          <select
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={actionFilter}
-            onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
-          >
-            <option value="">All actions</option>
-            {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All actions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All actions</SelectItem>
+              {ACTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>

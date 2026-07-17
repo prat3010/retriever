@@ -44,9 +44,14 @@ export default function OnboardPage() {
 
   async function handleCreateKey() {
     if (!createdTenantId) return;
-    const res = await createApiKey.mutateAsync(keyForm);
-    setCreatedApiKey(res.apiKey);
-    setStep("done");
+    try {
+      const res = await createApiKey.mutateAsync(keyForm);
+      setCreatedApiKey(res.apiKey);
+      setStep("done");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to create key";
+      toast.error(msg);
+    }
   }
 
   function copyKey() {
@@ -207,12 +212,12 @@ export default function OnboardPage() {
                 <Label>Quick-start: curl</Label>
                 <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
 {`curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\
-  -H "X-API-Key: ${createdApiKey?.slice(0, 20)}..." \\
+  -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
   -H "X-User-ID: user_123"
 
 curl ${API_BASE}/v1/tenants/${createdTenantId}/search \\
   -X POST \\
-  -H "X-API-Key: ${createdApiKey?.slice(0, 20)}..." \\
+  -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
   -H "X-User-ID: user_123" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "hello world", "limit": 5}'`}

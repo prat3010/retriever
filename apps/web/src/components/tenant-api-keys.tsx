@@ -63,7 +63,6 @@ export function ApiKeysTab({ tenantId }: Props) {
       {
         onSuccess: (data) => {
           setNewKey(data);
-          setCreateOpen(false);
         },
         onError: (err) => toast.error(err.message),
       },

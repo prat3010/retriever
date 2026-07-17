@@ -9,8 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { useAuthStore } from "@/store/auth";
-import { useRouter } from "next/navigation";
 import { Save, Loader2 } from "lucide-react";
 
 interface GlobalConfig {
@@ -22,23 +20,16 @@ interface GlobalConfig {
 }
 
 export default function SettingsPage() {
-  const adminKey = useAuthStore((s) => s.adminKey);
-  const router = useRouter();
   const [config, setConfig] = useState<GlobalConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { if (!adminKey) router.push("/login"); }, [adminKey, router]);
-
   useEffect(() => {
-    if (!adminKey) return;
     api.get<GlobalConfig>("/v1/config/global")
       .then(setConfig)
       .catch(() => toast.error("Failed to load config"))
       .finally(() => setLoading(false));
-  }, [adminKey]);
-
-  if (!adminKey) return null;
+  }, []);
 
   async function handleSave() {
     if (!config) return;

@@ -7,21 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
   const [key, setKey] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAdminKey = useAuthStore((s) => s.setKey);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!key.trim()) {
       setError("Master key is required");
       return;
     }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/v1/admin/tenants?limit=1`, {
+        headers: { "X-Admin-Master-Key": key.trim() },
+      });
+      if (!res.ok) throw new Error("Invalid key");
+    } catch {
+      setLoading(false);
+      setError("Invalid master key. Please try again.");
+      return;
+    }
     setAdminKey(key.trim());
-    document.cookie = `admin_key=${encodeURIComponent(key.trim())}; path=/; max-age=86400; SameSite=Lax`;
+    document.cookie = `admin_key=${encodeURIComponent(key.trim())}; path=/; max-age=86400; SameSite=Lax; Secure`;
     router.push("/");
   }
 
@@ -45,7 +61,10 @@ export default function LoginPage() {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full">Sign in</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Verifying..." : "Sign in"}
+            </Button>
           </form>
         </CardContent>
       </Card>

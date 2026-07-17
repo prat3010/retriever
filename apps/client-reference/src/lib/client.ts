@@ -30,14 +30,16 @@ export class RetrieverClient {
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.config.apiUrl.replace(/\/$/, "")}${path}`;
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${this.config.apiKey}`,
+      "X-User-ID": this.config.userId,
+    };
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
     const res = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": this.config.apiKey,
-        "X-User-ID": this.config.userId,
-        ...options.headers,
-      },
+      headers: { ...headers, ...(options.headers as Record<string, string>) },
     });
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
     return res.json();
@@ -60,11 +62,11 @@ export class RetrieverClient {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-Key": this.config.apiKey,
+        "Authorization": `Bearer ${this.config.apiKey}`,
         "X-User-ID": this.config.userId,
         Accept: "text/event-stream",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ query: message }),
     });
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
     return res.body;
@@ -84,7 +86,7 @@ export class RetrieverClient {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        "X-API-Key": this.config.apiKey,
+        "Authorization": `Bearer ${this.config.apiKey}`,
         "X-User-ID": this.config.userId,
       },
       body: formData,

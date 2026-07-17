@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
   constructor(
@@ -10,6 +10,16 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+function buildHeaders(options: RequestInit): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-Admin-Master-Key": useAuthStore.getState().adminKey || "",
+  };
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  return headers;
 }
 
 async function request<T>(
@@ -24,9 +34,8 @@ async function request<T>(
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      "X-Admin-Master-Key": key,
-      ...options.headers,
+      ...buildHeaders(options),
+      ...(options.headers as Record<string, string>),
     },
   });
 
@@ -53,7 +62,7 @@ export const api = {
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
     }),
   put: <T>(path: string, body: unknown) =>
     request<T>(path, {

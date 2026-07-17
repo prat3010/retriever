@@ -5,7 +5,7 @@ This guide details how to securely connect public frontend applications (such as
 The current production deployment runs entirely on free-tier infrastructure:
 - **API**: Render (free web service, Docker)
 - **Database**: Supabase (free tier, PostgreSQL + pgvector)
-- **Embeddings**: HuggingFace Inference API (free, `all-mpnet-base-v2`)
+- **Embeddings**: HuggingFace Inference API (free, `BAAI/bge-base-en-v1.5`, 768-dim)
 - **LLM**: Client BYOK (tenant provides their own API key)
 - **Proxy**: Cloudflare Workers (free, 100k req/day)
 
@@ -54,7 +54,7 @@ npm install
 Open `wrangler.toml` and set `RETRIEVER_API_URL` to the production API URL:
 ```toml
 [vars]
-RETRIEVER_API_URL = "https://retriever-gnns.onrender.com"
+RETRIEVER_API_URL = "https://retriever-1vjx.onrender.com"
 ```
 
 ### Step 3: Set Your API Key Secret
@@ -250,17 +250,17 @@ If the user navigates away or walks into a cellular dead-zone, active HTTP reque
 
 | Component | Provider | URL |
 |-----------|----------|-----|
-| API | Render | `https://retriever-gnns.onrender.com` |
+| API | Render | `https://retriever-1vjx.onrender.com` |
 | Database | Supabase (us-west-2) | Session pooler via `aws-1-us-west-2.pooler.supabase.com` |
-| Embeddings | HuggingFace Inference API | `all-mpnet-base-v2` (768-dim) |
+| Embeddings | HuggingFace Inference API | `BAAI/bge-base-en-v1.5` via `router.huggingface.co/hf-inference/models/{model}` |
 | Proxy | Cloudflare Workers | `https://retriever-client-proxy.retriever.workers.dev` |
 
 ### Step 1: Deploy the API on Render
 - Push the repo to GitHub (Render auto-deploys from `main`).
 - Set the following env vars in Render dashboard:
-  - `DATABASE_URL` — Supabase direct or pooler connection string
-  - `ENVIRONMENT=production`
+  - `DATABASE_URL` — Supabase pooler connection string
   - `HF_API_TOKEN` — your HuggingFace API token (free, optional)
+- The code auto-detects Render via the `RENDER` env var (set automatically) and switches to `production` mode.
 
 ### Step 2: Onboard Tenant
 - Run the Admin Dashboard locally, or use the API directly.

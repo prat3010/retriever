@@ -6,8 +6,6 @@ import { Topbar } from "@/components/topbar";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Terminal } from "lucide-react";
 import { OverviewTab } from "@/components/tenant-overview";
 import { UsersTab } from "@/components/tenant-users";
 import { ApiKeysTab } from "@/components/tenant-api-keys";
@@ -46,13 +44,7 @@ export default function TenantDetailPage() {
 
   return (
     <div>
-      <Topbar title={tenant.name} description={`Tenant ID: ${tenant.tenantId}`}>
-        <Link href={`/tenants/${tenantId}/playground`}>
-          <Button variant="outline" size="sm">
-            <Terminal className="mr-2 h-4 w-4" /> API Playground
-          </Button>
-        </Link>
-      </Topbar>
+      <Topbar title={tenant.name} description={`Tenant ID: ${tenant.tenantId}`} />
       <div className="p-6">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>

@@ -7,25 +7,29 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Send, Loader2, Terminal } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { api } from "@/lib/api";
 
 export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
   const [apiKey, setApiKey] = useState("");
+  const [userId, setUserId] = useState("admin_demo");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [creatingSession, setCreatingSession] = useState(false);
   const chatEnd = useRef<HTMLDivElement>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   useEffect(() => { chatEnd.current?.scrollIntoView(); }, [messages]);
 
   async function startSession() {
     if (!apiKey.trim()) { toast.error("Enter a tenant API key first"); return; }
+    if (!userId.trim()) { toast.error("Enter a user ID"); return; }
+    setCreatingSession(true);
     try {
       const res = await fetch(`${API_BASE}/v1/tenants/${tenantId}/chat/sessions`, {
         method: "POST",
-        headers: { "X-API-Key": apiKey.trim(), "X-User-ID": "admin_demo", "Content-Type": "application/json" },
+        headers: { "Authorization": `Bearer ${apiKey.trim()}`, "X-User-ID": userId.trim(), "Content-Type": "application/json" },
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -33,6 +37,8 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
       setMessages([{ role: "assistant", content: `Session started: ${data.sessionId}` }]);
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setCreatingSession(false);
     }
   }
 
@@ -47,12 +53,12 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
       const res = await fetch(`${API_BASE}/v1/tenants/${tenantId}/chat/sessions/${sessionId}/messages`, {
         method: "POST",
         headers: {
-          "X-API-Key": apiKey.trim(),
-          "X-User-ID": "admin_demo",
+          "Authorization": `Bearer ${apiKey.trim()}`,
+          "X-User-ID": userId.trim(),
           "Content-Type": "application/json",
           Accept: "text/event-stream",
         },
-        body: JSON.stringify({ query: msg, stream: true }),
+        body: JSON.stringify({ query: msg }),
       });
       if (!res.ok) throw new Error(await res.text());
 
@@ -67,11 +73,10 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
           for (const line of text.split("\n")) {
             if (line.startsWith("data: ")) {
               const data = line.slice(6);
-              if (data === "[DONE]") break;
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.delta) full += parsed.delta;
-                else if (parsed.content) full += parsed.content;
+                if (parsed.event === "done") break;
+                full += parsed.delta ?? parsed.content ?? "";
               } catch { /* skip non-JSON SSE */ }
             }
           }
@@ -97,15 +102,21 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
           {!sessionId && (
             <div className="space-y-2">
               <Label>Tenant API Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="sk_..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={startSession}>Start Session</Button>
-              </div>
+              <Input
+                placeholder="sk_..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+              <Label>User ID</Label>
+              <Input
+                placeholder="user_123"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+              />
+              <Button onClick={startSession} disabled={creatingSession}>
+                {creatingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {creatingSession ? "Starting..." : "Start Session"}
+              </Button>
             </div>
           )}
 
@@ -113,7 +124,7 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
             <>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Session: {sessionId.slice(0, 8)}...</span>
-                <Button variant="outline" size="sm" onClick={startSession}>New Session</Button>
+                <Button variant="outline" size="sm" onClick={() => { setSessionId(null); setMessages([]); }}>New Session</Button>
               </div>
 
               <div className="rounded-lg border bg-muted/30 p-4 max-h-64 overflow-y-auto space-y-2">

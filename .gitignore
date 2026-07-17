@@ -67,6 +67,7 @@ apps/api/storage/
 .env
 *.tsbuildinfo
 
-# Deployment guide (contains secrets, local reference only)
+# Deployment guides (contain secrets, local reference only)
 DEPLOYMENT.md
+ORACLE_DEPLOYMENT_REFERENCE.md
 

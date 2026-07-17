@@ -52,7 +52,19 @@ async def ingest_file_sync(
             select(DocumentDb).where(DocumentDb.document_id == uuid.UUID(document_id))
         )
         doc = result.scalar_one_or_none()
-        if doc:
+        if not doc:
+            doc = DocumentDb(
+                document_id=uuid.UUID(document_id),
+                tenant_id=uuid.UUID(tenant_id),
+                filename=filename,
+                file_hash=file_hash,
+                storage_path="memory",
+                file_size=len(file_content),
+                mime_type=mime_type,
+                status="INDEXING",
+            )
+            session.add(doc)
+        else:
             await session.execute(
                 delete(DocumentChunkDb).where(DocumentChunkDb.document_id == uuid.UUID(document_id))
             )

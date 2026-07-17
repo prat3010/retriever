@@ -208,6 +208,7 @@ else:
 
 # Initialize search service
 from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
+from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
 from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
@@ -225,12 +226,15 @@ llm_provider = RoutingLLMProvider(
     ),
 )
 
+embedder = OllamaEmbeddingAdapter() if os.environ.get("EMBEDDING_PROVIDER") == "ollama" else HFEmbeddingAdapter(
+    api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
+    model=os.environ.get("EMBEDDING_MODEL", "nomic-embed-text"),
+)
+
 search_service = HybridSearchService(
     vector_search=PgVectorSearchAdapter(),
     keyword_search=PgKeywordSearchAdapter(),
-    embedder=HFEmbeddingAdapter(
-        api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
-    ),
+    embedder=embedder,
     reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
     cache_provider=PgSemanticCacheAdapter(),
     web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
@@ -1734,6 +1738,7 @@ async def send_chat_message(
     payload: ChatMessageRequest,
     user_id: str | None = Depends(get_current_user_id),
     x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
+    x_llm_provider: str | None = Header(None, alias="X-LLM-Provider"),
 ):
     session = await inference_orchestrator.get_session(sessionId, tenantId)
     if not session:
@@ -1763,6 +1768,8 @@ async def send_chat_message(
 
     if x_llm_key:
         tenant_config.ai_provider.api_key = x_llm_key
+    if x_llm_provider:
+        tenant_config.ai_provider.provider_name = x_llm_provider
 
     search_query = _build_search_query(tenantId, tenant_config, payload)
     search_response = await search_service.search(search_query)

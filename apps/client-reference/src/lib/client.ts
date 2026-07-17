@@ -3,6 +3,8 @@ export interface RetrieverConfig {
   tenantId: string;
   apiKey: string;
   userId: string;
+  llmKey?: string;
+  llmProvider?: string;
 }
 
 const STORAGE_KEY = "retriever_config";
@@ -58,14 +60,17 @@ export class RetrieverClient {
 
   async chat(sessionId: string, message: string): Promise<ReadableStream<Uint8Array> | null> {
     const url = `${this.config.apiUrl.replace(/\/$/, "")}/v1/tenants/${this.config.tenantId}/chat/sessions/${sessionId}/messages`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${this.config.apiKey}`,
+      "X-User-ID": this.config.userId,
+      Accept: "text/event-stream",
+    };
+    if (this.config.llmKey) headers["X-LLM-Key"] = this.config.llmKey;
+    if (this.config.llmProvider) headers["X-LLM-Provider"] = this.config.llmProvider;
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.config.apiKey}`,
-        "X-User-ID": this.config.userId,
-        Accept: "text/event-stream",
-      },
+      headers,
       body: JSON.stringify({ query: message }),
     });
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);

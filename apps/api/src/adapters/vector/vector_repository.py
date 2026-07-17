@@ -35,13 +35,13 @@ class PgVectorSearchAdapter(VectorSearchProvider):
                         dc.document_id,
                         dc.content,
                         dc.meta_data,
-                        1 - (vr.embedding <=> :query_vec::vector) AS similarity_score
+                        1 - (vr.embedding <=> CAST(:query_vec AS vector)) AS similarity_score
                     FROM vector_records vr
                     JOIN document_chunks dc ON vr.chunk_id = dc.chunk_id
                     {join_clause}
                     WHERE vr.tenant_id = :tenant_id
                     {filter_clause}
-                    ORDER BY vr.embedding <=> :query_vec::vector
+                    ORDER BY vr.embedding <=> CAST(:query_vec AS vector)
                     LIMIT :top_k
                     """
                 ),

@@ -14,19 +14,20 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         tenant_id: str,
         query_embedding: list[float],
     ) -> list[SearchResult] | None:
+        embedding_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
         async with engine.begin() as conn:
             # Set local tenant RLS context for select query
             await conn.execute(text("SET LOCAL app.current_tenant_id = :tenant_id"), {"tenant_id": tenant_id})
             res = await conn.execute(
                 text(
                     """
-                    SELECT search_results, (embedding <=> :embedding::vector) as distance FROM semantic_cache 
+                    SELECT search_results, (embedding <=> CAST(:embedding AS vector)) as distance FROM semantic_cache 
                     WHERE tenant_id = :tenant_id
                     AND expires_at > NOW()
-                    ORDER BY embedding <=> :embedding::vector LIMIT 1
+                    ORDER BY embedding <=> CAST(:embedding AS vector) LIMIT 1
                     """
                 ),
-                {"tenant_id": tenant_id, "embedding": query_embedding}
+                {"tenant_id": tenant_id, "embedding": embedding_str}
             )
             row = res.fetchone()
             if row and row[1] is not None and row[1] < 0.01:
@@ -50,6 +51,7 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         query_embedding: list[float],
         results: list[SearchResult],
     ) -> None:
+        embedding_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
         results_serializable = []
         for r in results:
             results_serializable.append({
@@ -67,14 +69,14 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
                     """
                     INSERT INTO semantic_cache 
                     (cache_id, tenant_id, query_text, embedding, search_results, created_at, expires_at)
-                    VALUES (:cache_id, :tenant_id, :query_text, :embedding::vector, :search_results, NOW(), NOW() + INTERVAL '24 hours')
+                    VALUES (:cache_id, :tenant_id, :query_text, CAST(:embedding AS vector), :search_results, NOW(), NOW() + INTERVAL '24 hours')
                     """
                 ),
                 {
                     "cache_id": str(uuid.uuid4()),
                     "tenant_id": tenant_id,
                     "query_text": query_text,
-                    "embedding": query_embedding,
+                    "embedding": embedding_str,
                     "search_results": results_serializable
                 }
             )

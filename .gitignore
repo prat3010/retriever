@@ -67,3 +67,6 @@ apps/api/storage/
 .env
 *.tsbuildinfo
 
+# Deployment guide (contains secrets, local reference only)
+DEPLOYMENT.md
+

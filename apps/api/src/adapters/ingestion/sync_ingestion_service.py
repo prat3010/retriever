@@ -81,6 +81,7 @@ async def ingest_file_sync(
                 meta_data=chunk_data["meta_data"],
             )
             session.add(db_chunk)
+        await session.flush()
 
         for chunk_data, embedding in zip(chunks, embeddings, strict=True):
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
@@ -90,11 +91,11 @@ async def ingest_file_sync(
                 embedding=embedding,
             )
             session.add(db_vector)
+        await session.flush()
 
         if doc:
             doc.status = "INDEXED"
             doc.updated_at = datetime.now(UTC)
-
         await session.flush()
 
     return len(chunks)

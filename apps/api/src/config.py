@@ -1,5 +1,7 @@
+import os
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +14,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "production", "testing"] = "development"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     ADMIN_MASTER_KEY: str = "dev-admin-master-key-change-in-production"
+
+    @model_validator(mode="after")
+    def detect_render(self):
+        if self.ENVIRONMENT == "development" and os.environ.get("RENDER"):
+            self.ENVIRONMENT = "production"
+        return self
 
     # Infrastructure connection strings
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"

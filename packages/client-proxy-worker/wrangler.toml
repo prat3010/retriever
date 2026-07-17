@@ -5,7 +5,7 @@ workers_dev = true
 
 [vars]
 # Point to your live Retriever API (e.g. https://api.yourdomain.com)
-RETRIEVER_API_URL = "https://retriever-gnns.onrender.com"
+RETRIEVER_API_URL = "https://retriever-1vjx.onrender.com"
 
 # [vars] settings for development. 
 # Secrets should be uploaded via: wrangler secret put RETRIEVER_API_KEY

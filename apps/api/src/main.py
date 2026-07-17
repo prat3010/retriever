@@ -228,7 +228,7 @@ llm_provider = RoutingLLMProvider(
 
 embedder = OllamaEmbeddingAdapter() if os.environ.get("EMBEDDING_PROVIDER") == "ollama" else HFEmbeddingAdapter(
     api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
-    model=os.environ.get("EMBEDDING_MODEL", "nomic-embed-text"),
+    model=os.environ.get("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5"),
 )
 
 search_service = HybridSearchService(

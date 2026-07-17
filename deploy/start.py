@@ -19,6 +19,8 @@ else:
     ollama.kill()
     sys.exit(1)
 
+subprocess.run(["ollama", "pull", "nomic-embed-text"], capture_output=True, timeout=180)
+
 uvicorn = subprocess.Popen(
     [sys.executable, "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", PORT]
 )

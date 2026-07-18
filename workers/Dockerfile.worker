@@ -21,6 +21,6 @@ COPY workers/src/ ./workers/src/
 
 # Copy shared processing-core package
 COPY packages/processing-core /app/packages/processing-core
-ENV PYTHONPATH="/app/packages/processing-core/src:/app/workers/src:${PYTHONPATH}"
+ENV PYTHONPATH="/app/packages/processing-core/src:/app/workers/src"
 
 CMD ["celery", "-A", "workers.src.celery_app", "worker", "--loglevel=info", "--concurrency=4", "-Q", "ingestion.parse,knowledge.embed,periodic,default"]

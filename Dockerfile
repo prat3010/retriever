@@ -20,7 +20,7 @@ RUN uv pip compile pyproject.toml -o requirements.txt && uv pip install --system
 
 COPY apps/api/src/ ./src/
 COPY packages/processing-core /app/packages/processing-core
-ENV PYTHONPATH="/app/packages/processing-core/src:${PYTHONPATH}"
+ENV PYTHONPATH="/app/packages/processing-core/src"
 
 EXPOSE 8000
 CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}

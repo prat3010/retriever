@@ -52,7 +52,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: Dockerfile
     container_name: retriever-api
     ports:
       - "8000:8000"

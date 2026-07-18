@@ -886,7 +886,18 @@ Server `.env` at `/opt/retriever/.env` contains:
 - `CORS_ORIGINS=*` (for client-reference frontend)
 - `LOG_LEVEL=info`
 
-### 16.6 Known Limitations / Technical Debt
+### 16.6 Admin Dashboard
+
+A separate Next.js app at `apps/web/` provides a browser-based admin interface for platform management. Deployed on Vercel:
+
+- **URL:** `https://admin.rag.prateeq.in`
+- **Source:** `apps/web/` in this repo
+- **Vercel root directory:** `apps/web`
+- **Environment variable:** `NEXT_PUBLIC_API_URL=https://rag.prateeq.in`
+- **Login:** Admin Master Key (from server `.env` `ADMIN_MASTER_KEY`)
+- **Stack:** Next.js App Router, shadcn/ui, Tailwind CSS, TanStack React Query, Zustand
+
+### 16.8 Known Limitations / Technical Debt
 
 | Issue | Impact | Fix |
 |---|---|---|
@@ -899,7 +910,7 @@ Server `.env` at `/opt/retriever/.env` contains:
 | No DB backups | Supabase data has no automated snapshot | `pg_dump` cron to object storage |
 | Local filesystem storage | Not durable; lost on VPS failure | Configure S3/MinIO adapter (exists in code, unused) |
 
-### 16.7 Quick Reference
+### 16.8 Quick Reference
 
 ```bash
 # Health check
@@ -924,7 +935,7 @@ ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo journalctl -u retriever-api
 ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo systemctl restart retriever-api.service"
 ```
 
-### 16.8 Provider Provisioning Checklist (LLM Keys)
+### 16.9 Provider Provisioning Checklist (LLM Keys)
 
 When adding a new LLM provider key:
 

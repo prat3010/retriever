@@ -28,6 +28,6 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
         return response.json()["embedding"]
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        response = await self.client.post(f"{self._base_url}/api/embeddings", json={"model": self._model, "prompts": texts})
+        response = await self.client.post(f"{self._base_url}/api/embed", json={"model": self._model, "input": texts})
         response.raise_for_status()
         return response.json()["embeddings"]

@@ -23,6 +23,14 @@ class LocalStorage(DocumentStorage):
         await asyncio.to_thread(_write)
         return file_path
 
+    async def read_file(self, storage_path: str) -> bytes | None:
+        def _read() -> bytes | None:
+            if not os.path.exists(storage_path):
+                return None
+            with open(storage_path, "rb") as f:
+                return f.read()
+        return await asyncio.to_thread(_read)
+
     async def delete_file(self, storage_path: str) -> None:
         """Asynchronously delete target file from disk."""
         def _delete() -> None:

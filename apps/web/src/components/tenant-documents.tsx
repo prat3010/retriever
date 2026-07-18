@@ -1,6 +1,6 @@
 "use client";
 
-import { useDocuments, useUploadDocument, useDeleteDocument } from "@/hooks/use-documents";
+import { useDocuments, useUploadDocument, useDeleteDocument, useProcessDocument } from "@/hooks/use-documents";
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FileText, UploadCloud, Trash2, Loader2 } from "lucide-react";
+import { FileText, UploadCloud, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useState, useRef, DragEvent } from "react";
 import { toast } from "sonner";
 
@@ -43,6 +43,7 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
   const { data: docs, isLoading } = useDocuments(tenantId);
   const uploadMutation = useUploadDocument(tenantId);
   const deleteMutation = useDeleteDocument(tenantId);
+  const processMutation = useProcessDocument(tenantId);
 
   const [isDragActive, setIsDragActive] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState<{ id: string; filename: string } | null>(null);
@@ -220,7 +221,31 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Dialog>
+                    <div className="flex items-center justify-end gap-1">
+                      {doc.status === "PENDING" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const id = toast.loading(`Processing ${doc.filename}...`);
+                            processMutation.mutate(doc.documentId, {
+                              onSuccess: (res) => {
+                                toast.success(`Indexed ${res.chunksIndexed} chunks.`, { id });
+                              },
+                              onError: (err: any) => {
+                                toast.error(`Processing failed: ${err.message || "Unknown error"}`, { id });
+                              },
+                            });
+                          }}
+                          disabled={processMutation.isPending}
+                          title="Embed"
+                        >
+                          {processMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        </Button>
+                      )}
+                      <Dialog>
                       <DialogTrigger asChild>
                         <Button
                           variant="ghost"
@@ -247,6 +272,7 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

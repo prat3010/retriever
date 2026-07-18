@@ -53,7 +53,7 @@ The Admin Dashboard connects directly to the Retriever Core FastAPI gateway (`lo
         *   `Workspace Name` (e.g., `acme-corp`).
         *   `Tier` (Dropdown: standard, premium, enterprise). This determines logical vs physical database isolation.
     *   **Step 2: Cognitive Engine:**
-        *   `AI Provider` (Dropdown: Google Gemini, OpenAI, Anthropic).
+        *   `AI Provider` (Dropdown: 12 providers — OpenAI, Gemini, OpenRouter, Anthropic, DeepSeek, Groq, Mistral, xAI, Together, Fireworks, Perplexity, Custom). Selecting a provider auto-fills `base_url` and `default_model`.
         *   `Provider API Key` (Optional. Paste the client's key for BYOK billing, or leave blank to use the platform fallback).
     *   **Step 3: Generate Access Credentials:**
         *   Click **Generate Key** to produce the tenant's first live standard client API key.
@@ -83,8 +83,9 @@ This is the most critical management page. It contains a detailed dashboard segm
 *   **Details:** A paginated grid listing all raw files uploaded by the tenant.
 *   **Columns:** Filename, File Size, Ingestion Status (`pending`, `processed`, `failed`), and Upload Date.
 *   **Actions:**
-    *   **Upload Document File Button:** Trigger file selector to upload new PDFs/Markdown files for vector slicing.
-    *   **Delete Icon:** Permanently removes the file from S3/local storage and cascades deletion to drop all related vectors.
+    *   **Upload Document File Button:** Trigger file selector to upload new PDFs/Markdown files for vector slicing. Uploads are save-only (no processing) to avoid timeouts.
+    *   **Embed Button (Sparkles icon):** Available on PENDING documents — triggers on-demand processing via `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process`. The file is read from storage, chunked, embedded, and indexed synchronously.
+    *   **Delete Icon:** Permanently removes the file from local storage and cascades deletion to drop all related vectors.
 
 #### Tab 3: Users
 *   **Details:** Lists user profiles registered under this tenant. Used for user-level RAG filters and citation validation.
@@ -109,8 +110,9 @@ This is the most critical management page. It contains a detailed dashboard segm
 *   **Actions:** Enter chat queries to test the tenant's current vector indexes and LLM responses.
 
 #### Tab 7: Configuration (Tenant Rules)
-*   **Details:** A JSON editor to customize specific tenant behaviors.
+*   **Details:** A JSON editor to customize specific tenant behaviors, plus a provider dropdown for the AI provider.
 *   **Settings Editor:**
+    *   **Provider Dropdown:** Select from 12 LLM providers (OpenAI, Gemini, OpenRouter, etc.). Auto-fills `base_url` and `default_model`. "Custom" option reveals a manual URL field.
     *   `Top K` / `Reranking Threshold`: Tweak semantic retrieval weights.
     *   `Rate Limits`: Set client API rate limits (requests per minute).
     *   `FeatureFlags`: Toggle features like `enable_hybrid_search`, `enable_web_search`, or `allow_platform_key` (managed billing).

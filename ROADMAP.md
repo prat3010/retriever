@@ -37,7 +37,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M27** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q2 2029 |
 | **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q2 2029 |
 | **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q3 2029 |
-| **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Planned** | Q3 2026 |
+| **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Completed** | Q3 2026 |
 
 ---
 

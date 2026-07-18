@@ -2,6 +2,21 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-07-18
+### Added
+- **Local Dev Script Overhaul**: `scripts/dev-local.sh` now validates Ollama is installed before starting, waits for the Ollama API to be ready (polling `/api/tags`), auto-pulls the `nomic-embed-text` model if missing, and graceful cleanup on Ctrl+C.
+- **Remote Storage Fallback**: Added `REMOTE_STORAGE_FALLBACK_URL` + `INTERNAL_API_KEY` env vars. When `LocalStorage.read_file` fails locally, it transparently fetches from a remote API instance via `GET /v1/admin/storage/internal/{path}`. Works for local dev processing VPS-uploaded documents.
+- **Provider Dropdown (Admin Dashboard)**: Created `apps/web/src/lib/providers.ts` with 12 LLM provider definitions (OpenAI, Gemini, OpenRouter, Anthropic, DeepSeek, Groq, Mistral, xAI, Together, Fireworks, Perplexity, Custom). Replaced raw `base_url` text inputs with `Select` dropdowns in both `tenant-config.tsx` and `settings/page.tsx`. Selecting a provider auto-fills `base_url` and `default_model`.
+- **Client Reference Config Form**: Replaced `prompt()` dialogs in `apps/client-reference/src/app/page.tsx` with a proper form including LLM Provider dropdown and LLM Key field. Config persists to `localStorage`.
+- **Ollama v0.5+ API Fix**: Updated `embed_batch` to use `POST /api/embed` with the `input` key (breaking change in Ollama 0.5+).
+- **Batch Embeddings**: Embedding adapter sends 20 vectors at a time with 300s timeout to prevent OOM on large PDFs.
+- **Save-Only Uploads + On-Demand Processing**: `admin_upload_document` stripped to save-only (no Celery, no sync fallback). New `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process` endpoint triggers ingestion on demand.
+- **Embed Button**: PENDING documents in the admin dashboard show a Sparkles icon button that calls the on-demand process endpoint, using `read_file` from storage and `ingest_file_sync`.
+- **base_url from Tenant Config**: `OpenAILLMAdapter._client_for_key()` now accepts optional `base_url` override. `generate()` and `generate_stream()` pass `configuration.get("base_url")` from `AIProviderConfig.model_dump()`.
+
+### Fixed
+- **Celery crash**: `send_task` calls in both admin and client upload endpoints wrapped in try/except so uploads succeed without RabbitMQ/Celery.
+
 ## [0.18.0] - 2026-07-16
 ### Added
 - **Developer Console (M25)**: Bootstrapped Next.js 16 workspace playground under `apps/developer-console/`. Integrates `@prat3010/retriever-client-js` SDK, SSE chat streaming, workspace sidebar navigation, and cited code snippet click modal view.

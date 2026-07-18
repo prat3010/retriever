@@ -4,16 +4,16 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
- ##  1. Status Overview
-  
-  - **Current Milestone**: Deployment: Free-Tier Production (Completed)
-  - **Last Completed Milestone**: Milestone 25: Developer Console & Local Ingestion
-  - **Build Status**: Passing (369 unit tests pass)
-  - **Admin Dashboard Build**: Passing (9 routes, all compile)
-  - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
-  - **Reference Client Build**: Passing
-  - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-  - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
+  ##  1. Status Overview
+   
+   - **Current Milestone**: Production Polish (M30 — Completed)
+   - **Last Completed Milestone**: Milestone 30: Production Polish
+   - **Build Status**: Passing (369 unit tests pass)
+   - **Admin Dashboard Build**: Passing (12 routes, all compile)
+   - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
+   - **Reference Client Build**: Passing
+   - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
+   - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
  
  ---
  

@@ -27,11 +27,9 @@ echo "Starting API on :8000..."
 source "$ROOT_DIR/apps/api/.venv/bin/activate"
 export EMBEDDING_PROVIDER=ollama
 export OLLAMA_BASE_URL=http://localhost:11434
-cd "$ROOT_DIR/apps/api"
 PYTHONPATH="$ROOT_DIR/apps/api:$ROOT_DIR/packages/processing-core/src" \
     uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload &
 API_PID=$!
-cd "$ROOT_DIR"
 
 # 3. Start dashboard on :3000
 echo "Starting dashboard on :3000..."

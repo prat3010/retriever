@@ -37,6 +37,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M27** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q2 2029 |
 | **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q2 2029 |
 | **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q3 2029 |
+| **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Planned** | Q3 2026 |
 
 ---
 
@@ -608,7 +609,38 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-## Cross-Cutting Concerns
+### [Planned] Milestone 30: Production Polish
+
+**Objective:** Close the gap between a feature-complete codebase and a production-hardened deployment. Real-world Oracle VPS operation revealed gaps in deployment docs, secrets management, observability, CI/CD, and LLM key lifecycle.
+
+**Prerequisites:** M25 (all prior features are complete).
+
+**Complexity:** Medium
+
+**Dependencies:** None
+
+**Expected Outcome:** Deployment topology documented accurately; secrets managed via .env with rotation process; basic monitoring and alerting active; CI/CD pipeline exists; LLM API key provisioning is documented and repeatable.
+
+**Targets:**
+- Real deployment topology documented: Oracle VPS, systemd, nginx reverse proxy, Let's Encrypt SSL, Ollama sidecar — replaces stale K8s/Docker references.
+- Secrets management: all env vars in single `.env` on server; encrypted LLM keys at rest verified; rotation process documented.
+- Observability: Sentry DSN configured and verified working on Oracle; `/metrics` endpoint exposed with Prometheus target; uptime monitoring (e.g., UptimeRobot or similar) on `rag.prateeq.in`.
+- Basic alerting: LLM API key quota monitoring — alert when < 20% remaining; health check endpoint enhanced (DB, Ollama, Redis, nginx reachability).
+- Backup automation: Supabase `pg_dump` cron for nightly DB snapshots; vector index rebuild documented as restore step.
+- CI/CD: GitHub Actions workflow for deploy (rsync + systemctl restart) and post-deploy smoke test (search + chat health).
+- Nginx hardening: rate limiting at reverse proxy layer; security headers (HSTS, CSP); fail2ban for SSH.
+- LLM key operational process: documented how to provision a new key, update tenant config, and verify chat works end-to-end. Provider provisioning checklist.
+- Staging environment: documented process for testing changes before prod deploy (local or staging Oracle instance).
+- Root cause documentation: addendum explaining why chat was broken at initial deploy (both Gemini and OpenAI keys had exhausted quota — M19 Smart Model Failover correctly routed but had no healthy provider to fall back to).
+
+**Acceptance Criteria:**
+- New developer can deploy Retriever from scratch following docs alone (no tribal knowledge).
+- CI/CD pipeline deploys code changes with zero manual SSH steps beyond initial setup.
+- Nightly DB backups exist with verified restore procedure.
+- LLM key expiry/quota exhaustion triggers an alert before it blocks chat.
+- All architecture docs reconcile with the actual Oracle VPS topology.
+
+---
 
 These are tracked across all milestones and are not individual deliverables:
 

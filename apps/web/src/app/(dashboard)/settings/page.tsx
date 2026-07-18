@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Topbar } from "@/components/topbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Save, Loader2 } from "lucide-react";
+import { PROVIDERS, providerByBaseUrl } from "@/lib/providers";
 
 interface GlobalConfig {
   ai_provider: { provider_name: string; api_key: string | null; base_url: string | null; default_model: string };
@@ -23,6 +25,30 @@ export default function SettingsPage() {
   const [config, setConfig] = useState<GlobalConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [customBaseUrl, setCustomBaseUrl] = useState(false);
+
+  const detectedProvider = useMemo(() => {
+    if (!config) return undefined;
+    return providerByBaseUrl(config.ai_provider.base_url ?? "");
+  }, [config?.ai_provider.base_url]);
+
+  const showCustomUrl = useMemo(() => {
+    if (!config) return false;
+    return customBaseUrl || !detectedProvider;
+  }, [customBaseUrl, detectedProvider, config]);
+
+  function setProvider(value: string) {
+    if (!config) return;
+    if (value === "__custom__") {
+      setCustomBaseUrl(true);
+      return;
+    }
+    setCustomBaseUrl(false);
+    const provider = PROVIDERS.find((p) => p.value === value);
+    if (!provider) return;
+    update("ai_provider.base_url", provider.baseUrl);
+    update("ai_provider.default_model", provider.defaultModel);
+  }
 
   useEffect(() => {
     api.get<GlobalConfig>("/v1/config/global")
@@ -82,24 +108,39 @@ export default function SettingsPage() {
             <CardDescription>Default LLM provider and model for all tenants</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Provider</Label>
-                <Input value={config?.ai_provider.provider_name ?? ""} onChange={(e) => update("ai_provider.provider_name", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Default Model</Label>
-                <Input value={config?.ai_provider.default_model ?? ""} onChange={(e) => update("ai_provider.default_model", e.target.value)} />
-              </div>
+            <div className="space-y-2">
+              <Label>Provider</Label>
+              <Select value={detectedProvider?.value ?? "__custom__"} onValueChange={setProvider}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a provider..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDERS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Default Model</Label>
+              <Input value={config?.ai_provider.default_model ?? ""} onChange={(e) => update("ai_provider.default_model", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>API Key</Label>
               <Input type="password" value={config?.ai_provider.api_key ?? ""} onChange={(e) => update("ai_provider.api_key", e.target.value)} placeholder="Leave blank to keep existing" />
             </div>
-            <div className="space-y-2">
-              <Label>Base URL</Label>
-              <Input value={config?.ai_provider.base_url ?? ""} onChange={(e) => update("ai_provider.base_url", e.target.value)} placeholder="https://api.openai.com/v1" />
-            </div>
+            {showCustomUrl && (
+              <div className="space-y-2">
+                <Label>Base URL</Label>
+                <Input value={config?.ai_provider.base_url ?? ""} onChange={(e) => update("ai_provider.base_url", e.target.value)} placeholder="https://api.openai.com/v1" />
+              </div>
+            )}
+            {!showCustomUrl && config?.ai_provider.base_url && (
+              <p className="text-xs text-muted-foreground">
+                Base URL: {config.ai_provider.base_url}
+                <Button variant="link" size="sm" className="h-auto p-0 ml-2 text-xs" onClick={() => setCustomBaseUrl(true)}>Edit</Button>
+              </p>
+            )}
           </CardContent>
         </Card>
 

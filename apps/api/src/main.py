@@ -23,7 +23,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 
@@ -204,7 +204,10 @@ if settings.STORAGE_PROVIDER == "s3":
         endpoint_url=settings.S3_ENDPOINT_URL,
     )
 else:
-    local_storage = LocalStorage()
+    local_storage = LocalStorage(
+        fallback_url=settings.REMOTE_STORAGE_FALLBACK_URL,
+        internal_key=settings.INTERNAL_API_KEY,
+    )
 
 # Initialize search service
 from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
@@ -2217,6 +2220,19 @@ async def serve_local_download(
         raise HTTPException(status_code=404, detail="File not found on disk.")
 
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+
+
+@app.get("/v1/admin/storage/internal/{path:path}")
+async def serve_internal_storage(
+    path: str,
+    x_internal_key: str = Header(""),
+) -> Response:
+    if not x_internal_key or x_internal_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal key.")
+    content = await local_storage.read_file(path)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found.")
+    return Response(content=content, media_type="application/octet-stream")
 
 
 @app.get("/")

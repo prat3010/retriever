@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     # Error Tracking
     SENTRY_DSN: str = ""
 
+    # Remote Storage Fallback
+    REMOTE_STORAGE_FALLBACK_URL: str = ""
+    INTERNAL_API_KEY: str = ""
+
     # OIDC Settings
     OIDC_ISSUER_URL: str = ""
     OIDC_JWKS_URI: str = ""

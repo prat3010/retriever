@@ -1,12 +1,16 @@
 import asyncio
 import os
 
+import httpx
+
 from src.domain.abstractions.ingestion import DocumentStorage
 
 
 class LocalStorage(DocumentStorage):
-    def __init__(self, storage_dir: str = "./storage") -> None:
+    def __init__(self, storage_dir: str = "./storage", fallback_url: str = "", internal_key: str = "") -> None:
         self.storage_dir = storage_dir
+        self.fallback_url = fallback_url.rstrip("/")
+        self.internal_key = internal_key
         os.makedirs(self.storage_dir, exist_ok=True)
 
     async def save_file(self, tenant_id: str, filename: str, content: bytes) -> str:
@@ -29,7 +33,21 @@ class LocalStorage(DocumentStorage):
                 return None
             with open(storage_path, "rb") as f:
                 return f.read()
-        return await asyncio.to_thread(_read)
+        content = await asyncio.to_thread(_read)
+        if content is not None:
+            return content
+        if not self.fallback_url or not self.internal_key:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(
+                    f"{self.fallback_url}/v1/admin/storage/internal/{storage_path.lstrip('/')}",
+                    headers={"X-Internal-Key": self.internal_key},
+                )
+                resp.raise_for_status()
+                return resp.content
+        except Exception:
+            return None
 
     async def delete_file(self, storage_path: str) -> None:
         """Asynchronously delete target file from disk."""

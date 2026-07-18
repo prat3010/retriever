@@ -11,18 +11,34 @@ if ! grep -q "^DATABASE_URL=" .env 2>/dev/null; then
     exit 1
 fi
 
-# 1. Start Ollama if not running
+# 1. Check Ollama installed
+if ! command -v ollama &>/dev/null; then
+    echo "ERROR: ollama not found. Install with: curl -fsSL https://ollama.com/install.sh | sh"
+    exit 1
+fi
+
+# 2. Start Ollama if not running
 OLLAMA_PID=""
 if ! pgrep -x ollama > /dev/null; then
     echo "Starting Ollama..."
     ollama serve &
     OLLAMA_PID=$!
-    sleep 2
+    echo "Waiting for Ollama..."
+    for i in $(seq 1 15); do
+        if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then break; fi
+        sleep 1
+    done
 else
     echo "Ollama already running"
 fi
 
-# 2. Start API on :8000
+# 3. Pull model if missing
+if ! ollama list 2>/dev/null | grep -q "nomic-embed-text"; then
+    echo "Pulling nomic-embed-text..."
+    ollama pull nomic-embed-text
+fi
+
+# 4. Start API on :8000
 echo "Starting API on :8000..."
 source "$ROOT_DIR/apps/api/.venv/bin/activate"
 export EMBEDDING_PROVIDER=ollama
@@ -31,7 +47,7 @@ PYTHONPATH="$ROOT_DIR/apps/api:$ROOT_DIR/packages/processing-core/src" \
     uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload &
 API_PID=$!
 
-# 3. Start dashboard on :3000
+# 5. Start dashboard on :3000
 echo "Starting dashboard on :3000..."
 npm --prefix "$ROOT_DIR/apps/web" run dev &
 DASHBOARD_PID=$!

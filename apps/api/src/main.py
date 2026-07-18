@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import sys
+import traceback
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -23,7 +24,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 
@@ -78,7 +79,6 @@ from src.domain.abstractions.inference import (
 )
 from src.domain.abstractions.ingestion import Document
 from src.domain.abstractions.retrieval import MetadataFilter, SearchQuery
-from src.domain.abstractions.tenant import Tenant
 from src.domain.config.config_service import ConfigurationService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
@@ -294,9 +294,6 @@ corrective_service = CorrectiveRetrievalService(
     corrective_provider=corrective_provider,
 )
 
-# Exception Handlers mapping to HTTP Responses
-import traceback
-from fastapi.responses import JSONResponse
 
 @app.exception_handler(Exception)
 async def handle_unhandled(request, exc):

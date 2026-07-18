@@ -27,7 +27,7 @@ def test_create_tenant_success() -> None:
             headers=headers,
         )
         assert response.status_code == 201
-        assert response.json()["tenant_id"] == "tnt_abc123"
+        assert response.json()["tenantId"] == "tnt_abc123"
         mock_create.assert_called_once_with(name="Test Corporate Workspace", tier="enterprise", isolation_level="logical")
 
 

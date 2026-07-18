@@ -866,6 +866,16 @@ async def admin_upload_document(
     )
     await document_repository.create_document(tenantId, doc)
 
+    if celery_app is not None:
+        try:
+            celery_app.send_task(
+                "process_document",
+                args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+                queue="ingestion.parse",
+            )
+        except Exception:
+            pass
+
     return {
         "documentId": str(doc_id),
         "status": "pending",

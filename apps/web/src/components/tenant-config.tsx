@@ -33,6 +33,7 @@ export function ConfigTab({ tenantId }: Props) {
   }, [customBaseUrl, detectedProvider, form]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync server data to local form state
     if (config) setForm(config);
   }, [config]);
 

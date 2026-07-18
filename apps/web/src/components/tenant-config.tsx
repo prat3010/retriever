@@ -4,11 +4,12 @@ import { useConfig, useUpdateConfig, type TenantConfig } from "@/hooks/use-confi
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { PROVIDERS, providerByBaseUrl } from "@/lib/providers";
 
 interface Props {
   tenantId: string;
@@ -19,10 +20,36 @@ export function ConfigTab({ tenantId }: Props) {
   const updateConfig = useUpdateConfig(tenantId);
 
   const [form, setForm] = useState<TenantConfig | null>(null);
+  const [customBaseUrl, setCustomBaseUrl] = useState(false);
+
+  const detectedProvider = useMemo(() => {
+    if (!form) return undefined;
+    return providerByBaseUrl(form.ai_provider.base_url ?? "");
+  }, [form?.ai_provider.base_url]);
+
+  const showCustomUrl = useMemo(() => {
+    if (!form) return false;
+    return customBaseUrl || !detectedProvider;
+  }, [customBaseUrl, detectedProvider, form]);
 
   useEffect(() => {
     if (config) setForm(config);
   }, [config]);
+
+  function setProvider(value: string) {
+    if (!form) return;
+    if (value === "__custom__") {
+      setCustomBaseUrl(true);
+      return;
+    }
+    setCustomBaseUrl(false);
+    const provider = PROVIDERS.find((p) => p.value === value);
+    if (!provider) return;
+    const updated = structuredClone(form);
+    updated.ai_provider.base_url = provider.baseUrl;
+    updated.ai_provider.default_model = provider.defaultModel;
+    setForm(updated);
+  }
 
   function handleChange(path: string, value: string | number | boolean) {
     if (!form) return;
@@ -74,6 +101,19 @@ export function ConfigTab({ tenantId }: Props) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="provider">Provider</Label>
+            <Select value={detectedProvider?.value ?? "__custom__"} onValueChange={setProvider}>
+              <SelectTrigger id="provider">
+                <SelectValue placeholder="Select a provider..." />
+              </SelectTrigger>
+              <SelectContent>
+                {PROVIDERS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="model">Default Model</Label>
             <Input
               id="model"
@@ -91,15 +131,23 @@ export function ConfigTab({ tenantId }: Props) {
               placeholder="Leave blank to use platform default"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="baseUrl">Base URL</Label>
-            <Input
-              id="baseUrl"
-              value={form.ai_provider.base_url ?? ""}
-              onChange={(e) => handleChange("ai_provider.base_url", e.target.value)}
-              placeholder="https://api.openai.com/v1"
-            />
-          </div>
+          {showCustomUrl && (
+            <div className="space-y-2">
+              <Label htmlFor="baseUrl">Base URL</Label>
+              <Input
+                id="baseUrl"
+                value={form.ai_provider.base_url ?? ""}
+                onChange={(e) => handleChange("ai_provider.base_url", e.target.value)}
+                placeholder="https://api.openai.com/v1"
+              />
+            </div>
+          )}
+          {!showCustomUrl && form.ai_provider.base_url && (
+            <p className="text-xs text-muted-foreground">
+              Base URL: {form.ai_provider.base_url}
+              <Button variant="link" size="sm" className="h-auto p-0 ml-2 text-xs" onClick={() => setCustomBaseUrl(true)}>Edit</Button>
+            </p>
+          )}
         </CardContent>
       </Card>
 

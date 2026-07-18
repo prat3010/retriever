@@ -866,43 +866,45 @@ async def admin_upload_document(
     )
     await document_repository.create_document(tenantId, doc)
 
-    queued = True
-    if celery_app is not None:
-        try:
-            celery_app.send_task(
-                "process_document",
-                args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
-                queue="ingestion.parse",
-            )
-        except Exception:
-            queued = False
-    else:
-        queued = False
-
-    if not queued:
-        from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
-        chunk_count = await ingest_file_sync(
-            tenant_id=tenantId,
-            document_id=doc_id,
-            filename=file.filename,
-            file_content=content,
-            file_hash=file_hash,
-            mime_type=file.content_type or "application/octet-stream",
-            embedder=search_service.embedder,
-        )
-        return {
-            "documentId": str(doc_id),
-            "status": "indexed",
-            "fileHash": file_hash,
-            "createdAt": doc.created_at,
-            "chunksIndexed": chunk_count,
-        }
-
     return {
         "documentId": str(doc_id),
         "status": "pending",
         "fileHash": file_hash,
         "createdAt": doc.created_at,
+    }
+
+
+@app.post(
+    "/v1/admin/tenants/{tenantId}/documents/{documentId}/process",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_process_document(tenantId: str, documentId: str) -> dict:
+    """Process a previously uploaded document: parse, chunk, embed, index."""
+    from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
+
+    doc = await document_repository.get_document(tenantId, documentId)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    file_content = await local_storage.read_file(doc.storage_path)
+    if file_content is None:
+        raise HTTPException(status_code=404, detail="Document file not found on disk.")
+
+    chunk_count = await ingest_file_sync(
+        tenant_id=tenantId,
+        document_id=documentId,
+        filename=doc.filename,
+        file_content=file_content,
+        file_hash=doc.file_hash,
+        mime_type=doc.mime_type,
+        embedder=search_service.embedder,
+    )
+
+    return {
+        "documentId": documentId,
+        "status": "indexed",
+        "chunksIndexed": chunk_count,
     }
 
 

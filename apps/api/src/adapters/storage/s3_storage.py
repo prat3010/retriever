@@ -51,6 +51,24 @@ class S3Storage(DocumentStorage):
         await asyncio.to_thread(_upload)
         return f"s3://{self.bucket_name}/{s3_key}"
 
+    async def read_file(self, storage_path: str) -> bytes | None:
+        if not storage_path.startswith("s3://"):
+            return None
+        path_parts = storage_path[5:].split("/", 1)
+        if len(path_parts) != 2:
+            return None
+        bucket = path_parts[0]
+        key = path_parts[1]
+
+        def _read() -> bytes | None:
+            try:
+                obj = self.client.get_object(Bucket=bucket, Key=key)
+                return obj["Body"].read()
+            except Exception:
+                return None
+
+        return await asyncio.to_thread(_read)
+
     async def delete_file(self, storage_path: str) -> None:
         """Remove target file key from S3."""
         if not storage_path.startswith("s3://"):

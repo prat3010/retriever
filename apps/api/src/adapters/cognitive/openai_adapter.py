@@ -38,12 +38,15 @@ class OpenAILLMAdapter(LlmProvider):
             self._async_client = openai.AsyncOpenAI(**kwargs)
         return self._async_client
 
-    def _client_for_key(self, api_key: str | None) -> openai.AsyncOpenAI:
+    def _client_for_key(self, api_key: str | None, base_url: str | None = None) -> openai.AsyncOpenAI:
+        url = base_url or self._base_url
         if api_key and api_key != self._api_key:
             kwargs: dict[str, Any] = {"api_key": api_key}
-            if self._base_url:
-                kwargs["base_url"] = self._base_url
+            if url:
+                kwargs["base_url"] = url
             return openai.AsyncOpenAI(**kwargs)
+        if url and url != self._base_url:
+            return openai.AsyncOpenAI(api_key=self._api_key, base_url=url)
         return self.client
 
     async def generate(
@@ -57,7 +60,7 @@ class OpenAILLMAdapter(LlmProvider):
                 content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
                 content_block.extend(images)
                 msg["content"] = content_block
-        client = self._client_for_key(configuration.get("api_key"))
+        client = self._client_for_key(configuration.get("api_key"), configuration.get("base_url"))
 
         kwargs: dict[str, Any] = {
             "model": model,
@@ -96,7 +99,7 @@ class OpenAILLMAdapter(LlmProvider):
                 content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
                 content_block.extend(images)
                 msg["content"] = content_block
-        client = self._client_for_key(configuration.get("api_key"))
+        client = self._client_for_key(configuration.get("api_key"), configuration.get("base_url"))
 
         kwargs: dict[str, Any] = {
             "model": model,

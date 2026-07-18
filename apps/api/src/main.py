@@ -866,6 +866,7 @@ async def admin_upload_document(
     )
     await document_repository.create_document(tenantId, doc)
 
+    queued = True
     if celery_app is not None:
         try:
             celery_app.send_task(
@@ -874,7 +875,28 @@ async def admin_upload_document(
                 queue="ingestion.parse",
             )
         except Exception:
-            pass
+            queued = False
+    else:
+        queued = False
+
+    if not queued:
+        from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
+        chunk_count = await ingest_file_sync(
+            tenant_id=tenantId,
+            document_id=doc_id,
+            filename=file.filename,
+            file_content=content,
+            file_hash=file_hash,
+            mime_type=file.content_type or "application/octet-stream",
+            embedder=search_service.embedder,
+        )
+        return {
+            "documentId": str(doc_id),
+            "status": "indexed",
+            "fileHash": file_hash,
+            "createdAt": doc.created_at,
+            "chunksIndexed": chunk_count,
+        }
 
     return {
         "documentId": str(doc_id),

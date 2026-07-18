@@ -296,3 +296,43 @@ The table below defines how the system handles critical error states:
     *   *Assumption:* Deleting a document removes metadata synchronously, and background workers clean up chunk databases and vector stores asynchronously.
 *   **Q-3: Human-in-the-Loop Expiry:** How long should a paused, human-in-the-loop inference session wait for approval before timing out?
     *   *Assumption:* Approval tokens remain valid for 24 hours. If no approval is received, the session transitions to an expired error state.
+
+---
+
+## 13. Production Readiness (Current Status)
+
+### 13.1 What Works
+
+- **Search (verified):** Hybrid search (vector + keyword) returns results end-to-end via HTTPS. Embeddings via self-hosted Ollama (`nomic-embed-text`). No API limits, no cost.
+- **Document upload:** Files upload, parse, chunk, and index. Worker runs synchronously in the API process.
+- **Admin API:** Tenant CRUD, API key management, config management, prompt templates CRUD — all functional.
+- **Multi-tenancy:** RLS isolation verified. Two tenants cannot see each other's data.
+- **SSL:** Let's Encrypt auto-renewing on `rag.prateeq.in`.
+- **Domain:** GoDaddy A record pointing to Oracle VPS static IP.
+
+### 13.2 What's Blocked
+
+- **Chat (LLM generation):** Both Gemini and OpenAI API keys have exhausted their free quota. Chat returns `500: All providers unavailable`. M19 Smart Model Failover correctly routes but has no healthy provider to fail over to. **Fix:** Provision a fresh API key with credits and update the server `.env` + tenant AI provider config.
+
+### 13.3 Known Gaps (Technical Debt)
+
+| Area | Gap | Impact | Effort |
+|---|---|---|---|
+| **Secrets management** | LLM keys live in server `.env`; rotation is manual SSH + restart | Key rotation takes 2+ minutes of downtime | Small — use tenant-config encrypted keys as primary |
+| **Observability** | Sentry DSN may not be configured; no `/metrics` scraping; no uptime monitoring | Outages go undetected until user reports | Small — add Sentry DSN to `.env`, set up UptimeRobot |
+| **Backups** | No automated Supabase DB snapshot | Data loss on corruption or accidental delete | Small — `pg_dump` cron + object storage |
+| **CI/CD** | Deploy is manual `git pull && systemctl restart` | Human error risk; no rollback automation | Medium — GitHub Actions deploy workflow |
+| **LLM key lifecycle** | No quota monitoring; keys exhaust silently | Chat breaks without warning | Small — periodic curl health check + email alert |
+| **Rate limiting** | Redis rate limiter exists in code but Redis is not deployed | No protection against abuse | Medium — deploy Redis on same VPS |
+| **Concurrency** | Single uvicorn worker (no gunicorn) | One slow request blocks all others | Small — switch to gunicorn with multiple workers |
+| **File storage** | Local filesystem (not S3/MinIO) | Not durable; lost on VPS failure | Medium — configure existing S3 adapter |
+
+### 13.4 Priority Order for Remediation
+
+1. Provision fresh LLM API key → unblock chat
+2. Set up Sentry + UptimeRobot → know when things break
+3. Add `pg_dump` cron → prevent data loss
+4. Switch to gunicorn with multiple workers → basic concurrency
+5. CI/CD deploy workflow → eliminate manual SSH deploys
+6. Deploy Redis + enable rate limiter → basic abuse protection
+7. Configure S3 adapter → durable file storage

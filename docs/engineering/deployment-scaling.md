@@ -4,22 +4,25 @@
 
 ## 0. Quick-Start Free Tier (Current)
 
-The platform runs on a **zero-cost** stack:
+The platform runs on a **near-zero-cost** stack:
 
 | Component | Provider | Cost |
 |-----------|----------|------|
-| API server | [Render](https://render.com) (free web service) | $0 — 512 MB RAM, 0.1 CPU, auto-sleep after 15 min idle |
-| Database | [Supabase](https://supabase.com) (free tier) | $0 — 500 MB, pgvector support, Row-Level Security |
-| Embeddings | [HuggingFace Inference API](https://huggingface.co/inference-api) (free) | $0 — ~1000 req/min with free token, model `all-mpnet-base-v2` (768-dim) |
-| LLM | Client BYOK (bring your own key) | $0 platform cost — tenant provides their own OpenAI/Anthropic/Gemini key |
-| Proxy | [Cloudflare Workers](https://workers.cloudflare.com) (free) | $0 — 100k req/day, routes client apps to Render |
+| API server | [Oracle Cloud](https://oracle.com/cloud/free) (free VM) | $0 — 1 OCPU, 1 GB RAM, 0.48 Gbps, Ubuntu 24.04, always-on (no cold start) |
+| Database | [Supabase](https://supabase.com) (free tier) | $0 — 500 MB, pgvector support, Row-Level Security, connection pooler |
+| Embeddings | [Ollama](https://ollama.com) self-hosted on same VM | $0 — `nomic-embed-text` (274 MB), CPU-only, always-on, no API limits |
+| LLM | BYOK (bring your own key) | $0 platform cost — tenant provides their own OpenAI/Anthropic/Gemini key |
+| Frontend CDN | [Vercel](https://vercel.com) (Hobby) | $0 — `retriever-ivory.vercel.app`, auto-deploys from GitHub |
+| Domain + SSL | GoDaddy + Let's Encrypt | ~$15/yr for domain; SSL is free and auto-renewing |
 
 ### 0.1 Architecture
 
 ```
-Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
-                                                → HuggingFace (embeddings)
-                                                → Tenant's LLM provider
+Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supabase (DB, vectors, RLS)
+                                                     ↓
+                                               Ollama (same VM, 127.0.0.1:11434)
+                                                     ↓
+                                               LLM Provider (OpenAI / Gemini / Anthropic)
 ```
 
 ### 0.2 Deployment Steps
@@ -29,24 +32,75 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
    cd apps/api
    DATABASE_URL="postgresql+asyncpg://..." uv run python -m src.adapters.database.setup
    ```
-2. **Render** — Create a new Web Service, connect GitHub repo, set:
-   - Runtime: Docker
-   - Dockerfile Path: `Dockerfile` (at repo root)
-   - Plan: Free
-   - Env vars: `DATABASE_URL`, `ENVIRONMENT=production`, `HF_API_TOKEN` (optional)
-3. **Cloudflare Workers** — Deploy the proxy (handles CORS, routing, rate limiting):
+2. **Oracle VM** — Provision `VM.Standard.E2.1.Micro` (Ubuntu 24.04). Allow ingress on ports 22, 80, 443 in VCN security list.
+3. **On the VM**:
    ```bash
-   cd packages/client-proxy-worker
-   npx wrangler deploy
+   # Install deps
+   sudo apt update && sudo apt install -y nginx certbot python3-pip git
+   curl -fsSL https://ollama.com/install.sh | sh
+   ollama pull nomic-embed-text
+
+   # Create app user and directory
+   sudo useradd -m -s /bin/bash retriever
+   sudo mkdir -p /opt/retriever && sudo chown retriever:retriever /opt/retriever
+
+   # As retriever user:
+   cd /opt/retriever
+   git clone https://github.com/anomalyco/retriever .
+   pip install uv
+   uv sync
+
+   # Create .env (see §16.5 in architecture.md for required vars)
+   cp .env.example .env && nano .env
    ```
-4. Point the proxy at `https://your-app.onrender.com` and client apps at the proxy URL.
+4. **systemd service** — Create `/etc/systemd/system/retriever-api.service`:
+   ```ini
+   [Unit]
+   Description=Retriever API
+   After=network.target ollama.service
+
+   [Service]
+   User=retriever
+   WorkingDirectory=/opt/retriever/apps/api
+   EnvironmentFile=/opt/retriever/.env
+   ExecStart=/opt/retriever/.venv/bin/uvicorn src.main:app --host 127.0.0.1 --port 8000
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+5. **Nginx reverse proxy** — Configure `/etc/nginx/sites-available/rag.prateeq.in`:
+   ```nginx
+   server {
+       listen 443 ssl;
+       server_name rag.prateeq.in;
+       ssl_certificate /etc/letsencrypt/live/rag.prateeq.in/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/rag.prateeq.in/privkey.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:8000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+6. **SSL** — `sudo certbot --nginx -d rag.prateeq.in`
+7. **Enable and start services**:
+   ```bash
+   sudo systemctl enable --now ollama retriever-api nginx
+   sudo systemctl status retriever-api  # verify running
+   ```
 
 ### 0.3 Caveats (Free Tier)
 
-- Render free service **sleeps after 15 minutes of inactivity** — first request after idle takes ~30s to cold-start.
+- 1 GB RAM is shared between Ollama (274 MB for `nomic-embed-text`) and the API — total headroom is ~500 MB.
+- No Redis, no Celery — ingestion and chat are synchronous. Large PDFs (50+ pages) may timeout the HTTP request.
+- Single uvicorn worker — requests are processed sequentially. A slow LLM response blocks concurrent search requests.
 - Supabase free tier: 500 MB DB, 2 GB bandwidth, 50k monthly active users.
-- HuggingFace free inference: ~30 req/min unauthenticated, ~1000 req/min with free token.
-- No Redis, no Celery — ingestion and chat are synchronous.
+- No automated backups — `pg_dump` cron is manual.
+- No monitoring or alerting — you must periodically check the service and LLM key quota.
+- LLM API keys from OpenAI/Gemini/Anthropic have finite free quota and will exhaust without warning.
 
 This document outlines the strategy for handling two distinct operational scenarios using the single, unified Retriever codebase:
 1.  **Scenario A (Personal/Shared Instance):** A single central deployment supporting multiple applications, each isolated logically as a separate tenant.

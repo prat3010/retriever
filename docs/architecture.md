@@ -644,55 +644,63 @@ graph LR
 
 ### 11. Deployment Topology & Performance Budgets
 
-Retriever is designed to deploy on container orchestration clusters (e.g., Kubernetes), separating stateful storage components from stateless serving APIs.
+Retriever is designed to be deployed on a single VPS for the free/startup tier, with Supabase providing managed Postgres. This matches the current production deployment on Oracle Cloud free tier.
 
-```mermaid
-graph TB
-    subgraph IngressLayer["Ingress & Routing Layer"]
-        LB["External Load Balancer"]
-        Ingress["Ingress Controller"]
-    end
+```
+                          CURRENT PRODUCTION TOPOLOGY
+                              (Oracle Cloud Free Tier)
 
-    subgraph ServiceLayer["API & Parsing Clusters (Stateless)"]
-        APIPod1["FastAPI Pod 1"]
-        APIPod2["FastAPI Pod 2"]
-        WorkerPod1["Ingestion Parser Sandbox Pod 1"]
-        WorkerPod2["Ingestion Parser Sandbox Pod 2"]
-    end
-
-    subgraph StateLayer["Data Storage & Event Clusters (Stateful)"]
-        RedisCluster["Redis Cache (Tenant Config & Traces)"]
-        RabbitMQ["RabbitMQ Broker (Task Queue)"]
-        PostgresCluster["Primary Relational DB (PostgreSQL RLS)"]
-        VectorStoreCluster["Vector Storage DB"]
-    end
-
-    %% Routing Flow
-    LB --> Ingress
-    Ingress --> APIPod1
-    Ingress --> APIPod2
-
-    %% API to Storage
-    APIPod1 --> RedisCluster
-    APIPod2 --> RedisCluster
-    APIPod1 --> PostgresCluster
-    APIPod2 --> PostgresCluster
-    
-    %% Async parsing trigger via RabbitMQ (ADR-004)
-    APIPod1 -->|Publish tasks| RabbitMQ
-    WorkerPod1 -->|Consume tasks| RabbitMQ
-    WorkerPod2 -->|Consume tasks| RabbitMQ
-    
-    %% Workers to DB
-    WorkerPod1 --> PostgresCluster
-    WorkerPod2 --> PostgresCluster
-    WorkerPod1 --> VectorStoreCluster
-    WorkerPod2 --> VectorStoreCluster
+    ┌─────────────────────┐     ┌──────────────────────────────────────────┐
+    │  End Users          │     │         Oracle Cloud VPS                 │
+    │  (Browser / Mobile) │     │     VM.Standard.E2.1.Micro (1 GB RAM)    │
+    └─────────┬───────────┘     │     Ubuntu 24.04, 1 OCPU, 0.48 Gbps     │
+              │                 │                                          │
+              ▼                 │  ┌────────────────────────────────────┐  │
+    ┌──────────────────┐        │  │          Nginx (port 443)          │  │
+    │   Vercel (CDN)   │        │  │  Reverse proxy, SSL termination   │  │
+    │  client-reference │       │  │  Let's Encrypt (certbot)           │  │
+    │  retriever-ivory  │       │  └──────────────┬─────────────────────┘  │
+    │  .vercel.app      │       │                 │                        │
+    └────────┬──────────┘       │                 ▼                        │
+             │                  │  ┌────────────────────────────────────┐  │
+             │  HTTPS           │  │     systemd: retriever-api.service  │  │
+             │  rag.prateeq.in  │  │  Uvicorn (127.0.0.1:8000)          │  │
+             ▼                  │  │  FastAPI app                        │  │
+    ┌──────────────────┐        │  └────────────────────────────────────┘  │
+    │   GoDaddy DNS    │        │                                          │
+    │   A record →     │        │  ┌────────────────────────────────────┐  │
+    │   130.210.35.134 │        │  │     systemd: ollama.service         │  │
+    └──────────────────┘        │  │  Native (not Docker)               │  │
+                                │  │  Model: nomic-embed-text (274 MB)  │  │
+                                │  │  Listens on 127.0.0.1:11434        │  │
+                                │  └────────────────────────────────────┘  │
+                                └──────────────────────────────────────────┘
+                                              │
+                                              │  TCP (asyncpg with SSL)
+                                              ▼
+                                ┌──────────────────────────────────────────┐
+                                │       Supabase (Managed Postgres)        │
+                                │  pgvector, RLS, connection pooler        │
+                                │  PostgreSQL 15                            │
+                                └──────────────────────────────────────────┘
 ```
 
-#### 11.1 Deployment Architecture Rules
+The API and embedding model run on the same VPS — acceptable for the free tier with low traffic. The database stays external on Supabase to avoid the 1 GB RAM limit.
+
+Key differences from an ideal K8s topology:
+| Component | Ideal (K8s) | Current (Oracle Free Tier) |
+|---|---|---|
+| API serving | Horizontal pod autoscaling | Single uvicorn process, systemd-managed |
+| Embeddings | Dedicated GPU node | Ollama on same VPS, CPU only |
+| Database | Managed PostgreSQL cluster | Supabase (external, managed) |
+| File storage | S3/MinIO | Local filesystem (S3 adapter exists but unused) |
+| Queue | RabbitMQ for async workers | Synchronous ingestion (no broker) |
+| Caching | Redis cluster | Not deployed (Redis adapter exists) |
+
+#### 11.1 Deployment Architecture Rules (Ideal)
 *   **Stateless Container Scaling:** API Pods and Workers MUST run in stateless configurations, scaling horizontally based on CPU utilization and request queues.
 *   **Sandboxed Parsing Pods:** Worker pods parsing documents MUST execute in restricted sandbox environments. These sandboxes MUST block all egress traffic to prevent unauthorized data transmission.
+*   **Current Reality:** The Oracle VPS runs all services on a single host. Ollama runs natively (not containerized). No horizontal scaling. No queue. Acceptable for low-traffic free tier. For production scale, add a second VPS for the API and transition to managed queue + S3.
 
 #### 11.2 Performance Budget Rules
 Every component in the query pipeline is allocated a latency budget, monitored through tracing.
@@ -820,3 +828,115 @@ LLM API keys are resolved in the following priority (first match wins):
 3. **Environment variable** `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — deployment-wide fallback
 
 This means a coaching portal can use the coaching institute's own OpenAI key, while the admin dashboard uses the platform key, and an advanced client can override per-request. All without code changes.
+
+---
+
+## 16. Current Production Topology (As Deployed)
+
+This section documents the actual production deployment as it exists today, as opposed to the ideal K8s topology in §11.
+
+### 16.1 Infrastructure
+
+| Component | Provider | Spec | Cost |
+|---|---|---|---|
+| VPS | Oracle Cloud Free Tier | VM.Standard.E2.1.Micro (1 OCPU, 1 GB RAM, 0.48 Gbps, x86) | $0/mo |
+| Domain | GoDaddy | `rag.prateeq.in` A record → `130.210.35.134` | ~$15/yr |
+| SSL | Let's Encrypt (certbot) | Auto-renewing, Nginx termination | $0 |
+| Database | Supabase (free tier) | PostgreSQL 15, pgvector, 500 MB, connection pooler | $0/mo |
+| Frontend CDN | Vercel (Hobby) | `retriever-ivory.vercel.app` | $0/mo |
+| Embedding model | Ollama (self-hosted) | `nomic-embed-text` (274 MB), CPU-only, `127.0.0.1:11434` | $0/mo |
+| LLM provider | OpenAI or Gemini (BYOK) | `gpt-4o-mini` via tenant config, key from server `.env` | Pay-as-you-go |
+
+### 16.2 Processes on Oracle VPS
+
+```
+ubuntu@130.210.35.134
+├── systemd: retriever-api.service
+│   └── uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1
+├── systemd: ollama.service
+│   └── ollama serve (native, not Docker)
+└── systemd: nginx.service
+    └── reverse proxy 443 → 127.0.0.1:8000
+```
+
+### 16.3 SSH Access
+
+```bash
+ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134
+```
+
+### 16.4 Deploy Process
+
+```bash
+# On Oracle VPS:
+cd /opt/retriever
+git pull origin main
+sudo systemctl restart retriever-api.service
+sudo journalctl -u retriever-api.service -f  # tail logs
+```
+
+### 16.5 Environment
+
+Server `.env` at `/opt/retriever/.env` contains:
+- `DATABASE_URL` (Supabase pooler connection string with asyncpg+SSL)
+- `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+- `OPENAI_API_KEY` / `GEMINI_API_KEY` (LLM provider keys)
+- `ENVIRONMENT=production`
+- `ENCRYPTION_KEY` (for AES-256-GCM of tenant LLM keys)
+- `CORS_ORIGINS=*` (for client-reference frontend)
+- `LOG_LEVEL=info`
+
+### 16.6 Known Limitations / Technical Debt
+
+| Issue | Impact | Fix |
+|---|---|---|
+| Single uvicorn worker | No concurrency — one request blocks others | Deploy with gunicorn + multiple workers, or add second VPS |
+| No Redis cache | Tenant config fetched from DB on every request | Deploy Redis on same VPS (~50 MB RAM) or use Supabase's built-in cache |
+| No Celery/RabbitMQ | Document ingestion blocks the API process | Add RabbitMQ on VPS + Celery worker |
+| Synchronous ingestion | Large PDFs (50+ pages) timeout the HTTP request | Requires async worker (previous point) |
+| LLM keys on `.env` | Rotation is a manual SSH + restart | Use tenant-config LLM keys (encrypted in DB) instead of env var fallback |
+| No monitoring | No alerts for downtime, key expiry, or disk space | Add UptimeRobot + Sentry + disk usage cron |
+| No DB backups | Supabase data has no automated snapshot | `pg_dump` cron to object storage |
+| Local filesystem storage | Not durable; lost on VPS failure | Configure S3/MinIO adapter (exists in code, unused) |
+
+### 16.7 Quick Reference
+
+```bash
+# Health check
+curl https://rag.prateeq.in/health
+
+# Search test
+curl -X POST https://rag.prateeq.in/v1/tenants/00000000-0000-0000-0000-000000000000/search \
+  -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test", "top_k": 3}'
+
+# Chat test (requires active LLM key)
+curl -X POST https://rag.prateeq.in/v1/tenants/00000000-0000-0000-0000-000000000000/chat/sessions \
+  -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "a8b819bb-61bb-450b-9662-62bd06b188d3"}'
+
+# Tail logs
+ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo journalctl -u retriever-api.service -n 50 -f"
+
+# Restart API
+ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo systemctl restart retriever-api.service"
+```
+
+### 16.8 Provider Provisioning Checklist (LLM Keys)
+
+When adding a new LLM provider key:
+
+1. Add the key to `/opt/retriever/.env` on Oracle VPS:
+   ```
+   GEMINI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+2. Restart the API: `sudo systemctl restart retriever-api.service`
+3. Update tenant AI provider config via admin API:
+   ```
+   PUT /v1/admin/tenants/{tenantId}/config
+   {"ai_provider": {"provider": "gemini", "model": "gemini-1.5-flash"}}
+   ```
+4. Verify chat works: create a session, send a message, confirm SSE stream.
+5. Set up quota monitoring (not yet automated — check provider dashboard periodically).

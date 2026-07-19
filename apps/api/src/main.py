@@ -718,6 +718,18 @@ async def admin_create_user(tenantId: str, payload: CreateUserRequest) -> UserRe
     )
 
 
+@app.delete(
+    "/v1/admin/tenants/{tenantId}/users/{userId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_delete_user(tenantId: str, userId: str) -> dict:
+    """Deactivate a user in a tenant (System-wide Admin)."""
+    await user_repository.deactivate_user(tenant_id=tenantId, user_id=userId)
+    await audit_logger.write(tenantId, "user.deactivated", f"User '{userId}' deactivated")
+    return {"status": "deactivated", "userId": userId}
+
+
 @app.get(
     "/v1/admin/tenants/{tenantId}/api-keys",
     status_code=status.HTTP_200_OK,

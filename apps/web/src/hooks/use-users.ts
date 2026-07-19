@@ -33,3 +33,14 @@ export function useCreateUser(tenantId: string) {
     },
   });
 }
+
+export function useDeleteUser(tenantId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api.delete(`/v1/admin/tenants/${tenantId}/users/${userId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users", tenantId] });
+    },
+  });
+}

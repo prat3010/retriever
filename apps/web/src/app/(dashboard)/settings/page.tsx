@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const detectedProvider = useMemo(() => {
     if (!config) return undefined;
     return providerByBaseUrl(config.ai_provider.base_url ?? "");
-  }, [config?.ai_provider.base_url]);
+  }, [config]);
 
   const showCustomUrl = useMemo(() => {
     if (!config) return false;

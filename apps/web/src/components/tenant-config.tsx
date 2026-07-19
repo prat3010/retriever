@@ -25,7 +25,7 @@ export function ConfigTab({ tenantId }: Props) {
   const detectedProvider = useMemo(() => {
     if (!form) return undefined;
     return providerByBaseUrl(form.ai_provider.base_url ?? "");
-  }, [form?.ai_provider.base_url]);
+  }, [form]);
 
   const showCustomUrl = useMemo(() => {
     if (!form) return false;

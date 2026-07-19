@@ -33,6 +33,13 @@ async def readiness_probe() -> HealthResponse:
             except Exception:
                 pass
 
+        if settings.STORAGE_PROVIDER == "s3":
+            from src.main import local_storage as s3_storage
+            if hasattr(s3_storage, "client"):
+                def _probe_s3() -> None:
+                    s3_storage.client.head_bucket(Bucket=s3_storage.bucket_name)
+                await asyncio.to_thread(_probe_s3)
+
         return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
     except Exception as e:
         raise HTTPException(

@@ -2,6 +2,54 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-07-19
+### Added
+- **Server-spec auto-detection** (`config.py`): New `InfraCapabilities` class reads total RAM and CPU cores at startup using `psutil`. Auto-enables Redis (>=2 GB RAM), RabbitMQ broker (>=2 GB), and Celery workers (>=4 GB + 2+ cores). Logs boot status with detected specs and mode. Can be overridden via `REDIS_ENABLED`, `BROKER_ENABLED`, `WORKERS_ENABLED` env vars.
+- **GitHub Actions auto-deploy**: New workflow for Oracle VM deploys.
+
+### Changed
+- **Gemini default model** (`providers.ts`): Updated from `gemini-1.5-flash` to `gemini-2.5-flash`.
+- **Docker Compose** (`docker-compose.yml`): Removed deprecated `version: '3.8'` field.
+- **Chat container height** (`rag.module.css`): Changed from `max-height: 400px` to `max-height: min(60vh, 600px)` for better desktop experience.
+
+## [0.24.0] - 2026-07-19
+### Added
+- **GitHub Actions auto-deploy** (`.github/workflows/deploy-api.yml`): New workflow that SSHes into the Oracle VM, pulls latest changes, reinstalls deps, restarts the API service, and runs a post-deploy smoke test (liveness + readiness). Triggered on changes to `apps/api/`, `packages/processing-core/`, `workers/`, or dependency files.
+- **Pagination for useAllTenants** (`use-tenants.ts`): `useAllTenants()` now accepts a configurable `limit` parameter (default 50) instead of hardcoding `limit=1000`.
+
+### Changed
+- **`useAllTenants` default page size**: Reduced from 1000 to 50 to prevent unbounded queries at scale.
+
+## [0.23.0] - 2026-07-19
+### Added
+- **Router split architecture** (`src/routers/`): Created router modules (`health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py`) establishing the pattern for splitting `main.py`. Health and admin verify-key routes migrated to routers.
+- **Shared TypeScript types** (`Prateek_website/src/lib/rag-types.ts`): Defined `SearchResult`, `DocumentMeta`, and `SearchResponse` interfaces to eliminate `any` type usage.
+
+### Changed
+- **`API_BASE` consolidated**: Removed duplicate declarations from `login/page.tsx` and `onboard/page.tsx` — both now import from `lib/api.ts`.
+- **`RetrieverClient` cleanup** (`rag-client.ts`): `uploadDocument` and `deleteDocument` now use the shared `request<T>()` method instead of duplicating fetch + header logic.
+- **Duplicate cookie clearing removed** (`sidebar.tsx`): Logout handler no longer calls `document.cookie = ...` separately — `clearKey()` in auth store already handles it.
+
+## [0.22.0] - 2026-07-19
+### Added
+- **Onboarding wizard user creation** (`onboard/page.tsx`): New Step 3 ("User") between API key generation and credentials summary. Auto-creates a user for the new tenant with pre-filled display name and external ID. Final credentials now include the real User ID (not a `user_123` placeholder).
+- **User ID in Users tab** (`tenant-users.tsx`): Added a "User ID" column to the tenant users table with a copy-to-clipboard action, so admins can easily provide the internal UUID to clients.
+- **Advanced toggle in RAG client config** (`RagInterface.tsx`): API Base URL field is now hidden behind a "Show Advanced" toggle. Default value stays as `https://rag.prateeq.in`.
+
+### Changed
+- **Client login form defaults** (`RagInterface.tsx`): `tenantId` and `userId` now start empty instead of pre-filled with production tenant/user IDs. API key placeholder changed from `sk_live_...` to `ret_live_...`.
+- **ID validation** (`RagInterface.tsx`): `isUuid()` now also accepts short ID formats (`tn_xxx`, `usr_xxx`) in addition to UUIDs.
+
+## [0.21.0] - 2026-07-19
+### Security
+- **Production secret validation** (`config.py`): Added `@model_validator` that crashes FastAPI startup with `ValueError` if `ADMIN_MASTER_KEY` or `KEY_ENCRYPTION_KEY` still have development defaults in production mode.
+- **Admin key verification endpoint**: Added `GET /v1/admin/verify-key` that validates the `X-Admin-Master-Key` header server-side. Returns 200 with `{"valid": true}` on success, 401 on failure.
+- **Proxy validation** (`proxy.ts`): Admin dashboard proxy now validates `admin_key` cookie/header against the backend `/v1/admin/verify-key` endpoint instead of only checking non-empty string. Caches validated results in a signed cookie (5 min TTL). Invalid keys are cleared and redirected to `/login`.
+
+### Fixed
+- **Security hygiene**: Exposed default `ADMIN_MASTER_KEY` and `KEY_ENCRYPTION_KEY` now crash in production instead of silently accepting defaults.
+- **Weak proxy auth**: Admin dashboard proxy previously allowed any non-empty string as a valid admin key (no server-side validation).
+
 ## [0.20.0] - 2026-07-18
 ### Added
 - **Local Dev Script Overhaul**: `scripts/dev-local.sh` now validates Ollama is installed before starting, waits for the Ollama API to be ready (polling `/api/tags`), auto-pulls the `nomic-embed-text` model if missing, and graceful cleanup on Ctrl+C.

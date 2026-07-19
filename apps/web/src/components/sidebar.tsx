@@ -36,7 +36,6 @@ export function Sidebar() {
 
   function handleLogout() {
     clearKey();
-    document.cookie = "admin_key=; path=/; max-age=0; SameSite=Lax";
     router.push("/login");
   }
 

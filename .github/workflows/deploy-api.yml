@@ -1,0 +1,37 @@
+name: Deploy API to Oracle VM
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - apps/api/**
+      - packages/processing-core/**
+      - workers/**
+      - requirements*.txt
+      - pyproject.toml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          port: ${{ secrets.ORACLE_PORT || '22' }}
+          script: |
+            set -e
+            cd /home/ubuntu/retriever
+            git pull origin main
+            source venv/bin/activate
+            pip install -r requirements.txt -r requirements-api.txt 2>&1
+            sudo systemctl daemon-reload
+            sudo systemctl restart retriever-api
+            sleep 5
+            curl -sSf http://localhost:8000/health/liveness > /dev/null && echo "Smoke test: liveness OK"
+            curl -sSf http://localhost:8000/health/readiness > /dev/null && echo "Smoke test: readiness OK"
+            echo "Deploy complete"

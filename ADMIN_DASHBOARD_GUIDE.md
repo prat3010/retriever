@@ -46,18 +46,24 @@ The Admin Dashboard connects directly to the Retriever Core FastAPI gateway (`lo
 
 ---
 
-### 🚀 3. `/onboard` (3-Step Onboarding Wizard)
+### 🚀 3. `/onboard` (4-Step Onboarding Wizard)
 *   **Purpose:** A guided wizard to register and configure a new customer workspace from scratch.
 *   **Wizard Steps:**
     *   **Step 1: Tenant Profile:**
         *   `Workspace Name` (e.g., `acme-corp`).
         *   `Tier` (Dropdown: standard, premium, enterprise). This determines logical vs physical database isolation.
-    *   **Step 2: Cognitive Engine:**
-        *   `AI Provider` (Dropdown: 12 providers — OpenAI, Gemini, OpenRouter, Anthropic, DeepSeek, Groq, Mistral, xAI, Together, Fireworks, Perplexity, Custom). Selecting a provider auto-fills `base_url` and `default_model`.
-        *   `Provider API Key` (Optional. Paste the client's key for BYOK billing, or leave blank to use the platform fallback).
-    *   **Step 3: Generate Access Credentials:**
-        *   Click **Generate Key** to produce the tenant's first live standard client API key.
-        *   Displays the resulting `RETRIEVER_TENANT_ID` (UUID) and `RETRIEVER_API_KEY` (`ret_live_...`).
+    *   **Step 2: API Key:**
+        *   `Key Name` — a label for the key (e.g., "Default Client Key").
+        *   `Role` (Dropdown: client, admin). Determines key scope.
+        *   Click **Generate Key** to produce the first API key.
+    *   **Step 3: Create User:**
+        *   `Display Name` — pre-filled from tenant name.
+        *   `External ID` — pre-filled with a generated email-like identifier.
+        *   Click **Create User** to create the tenant's initial user. This is the critical step that was previously missing — without a user, the client cannot authenticate.
+    *   **Step 4: Credentials Summary:**
+        *   Displays all four required values: `API URL`, `RETRIEVER_TENANT_ID`, `RETRIEVER_USER_ID`, `RETRIEVER_API_KEY`.
+        *   Curl examples are pre-filled with the real User ID (no `user_123` placeholder).
+        *   API Key has a copy-to-clipboard button.
 
 ---
 
@@ -89,6 +95,7 @@ This is the most critical management page. It contains a detailed dashboard segm
 
 #### Tab 3: Users
 *   **Details:** Lists user profiles registered under this tenant. Used for user-level RAG filters and citation validation.
+*   **Columns:** User ID (with copy-to-clipboard), External ID, Display Name, Status, Created.
 *   **Actions:** Add User, Edit Role (admin, developer, client), or Deactivate User.
 
 #### Tab 4: API Keys

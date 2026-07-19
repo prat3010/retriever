@@ -26,10 +26,10 @@ export function useTenants(search?: string, limit = 50, offset = 0) {
   });
 }
 
-export function useAllTenants() {
+export function useAllTenants(limit = 50) {
   return useQuery({
-    queryKey: ["tenants", "all"],
-    queryFn: () => api.get<PaginatedTenants>("/v1/admin/tenants?limit=1000"),
+    queryKey: ["tenants", "all", limit],
+    queryFn: () => api.get<PaginatedTenants>(`/v1/admin/tenants?limit=${limit}`),
   });
 }
 

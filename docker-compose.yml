@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Primary Relational & Metadata Database (ADR-001)
   postgres:

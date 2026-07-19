@@ -22,12 +22,19 @@ graph TD
 ---
 
 ## Step 1: Tenant Onboarding (Admin Dashboard)
-First, log into the **Admin Dashboard** (`http://localhost:3001` or your production domain) using the `ADMIN_MASTER_KEY` to register the new tenant workspace.
+First, log into the **Admin Dashboard** (`http://localhost:3001` or your production domain) using the `ADMIN_MASTER_KEY` to register the new tenant workspace. Use the **Onboard Client** wizard at `/onboard` for a guided 4-step flow.
 
-1. Navigate to **Tenants** and click **Create Tenant**.
-2. Input the client name (e.g., `acme-hospital`) and select the plan tier.
-3. Click **Save**. This will register the tenant and generate a unique `RETRIEVER_TENANT_ID` (UUID).
-4. Go to the tenant's profile, navigate to **API Keys**, and click **Generate Key**. Copy the raw key string (`ret_live_...`). This is the `RETRIEVER_API_KEY`.
+1. **Tenant Details:** Enter the client name (e.g., `acme-hospital`) and select the plan tier. Click **Create Tenant**. This registers the tenant and generates a unique `RETRIEVER_TENANT_ID`.
+2. **API Key:** Enter a key name and select the role (Client/Admin). Click **Generate Key**. Copy the raw key string (`ret_live_...`). This is the `RETRIEVER_API_KEY`.
+3. **Create User:** Enter a display name and external ID for the tenant's initial user. These are pre-filled based on the tenant name. Click **Create User**. This generates a `RETRIEVER_USER_ID`.
+4. **Credentials Summary:** The final screen displays all four required values:
+   - `API URL` — the base endpoint (`https://rag.prateeq.in/v1`)
+   - `RETRIEVER_TENANT_ID` — the tenant UUID
+   - `RETRIEVER_USER_ID` — the user UUID
+   - `RETRIEVER_API_KEY` — the generated key (with copy button)
+   
+   Curl examples are pre-filled with the real values (no placeholders).
+
 5. **Billing Strategy Check:**
    - **BYOK (Bring Your Own Key):** Under the tenant settings, input the client's own Gemini or OpenAI API key.
    - **Managed Platform Keys:** If the client wants you to manage billing, leave their key blank and toggle the `allow_platform_key` flag to `True` inside their tenant settings, then set their monthly budget limits.

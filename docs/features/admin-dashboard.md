@@ -54,7 +54,7 @@ apps/web/src/
 │       ├── layout.tsx          # AppShell wrapper (sidebar + topbar)
 │       ├── page.tsx            # Dashboard home (stats overview)
 │       ├── onboard/
-│       │   └── page.tsx        # Client onboarding wizard (3 steps)
+│       │   └── page.tsx        # Client onboarding wizard (4 steps: tenant → key → user → credentials)
 │       ├── tenants/
 │       │   ├── page.tsx        # Tenant list table + deactivate dialog
 │       │   └── [id]/

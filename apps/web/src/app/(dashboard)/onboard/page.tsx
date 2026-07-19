@@ -16,29 +16,33 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { useCreateApiKey } from "@/hooks/use-api-keys";
+import { API_BASE } from "@/lib/api";
+import { useCreateUser } from "@/hooks/use-users";
 import { toast } from "sonner";
-import { CheckCircle, Copy, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, Copy, ArrowLeft, Loader2 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-type Step = "tenant" | "key" | "done";
+type Step = "tenant" | "key" | "user" | "done";
 
 export default function OnboardPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("tenant");
   const [createdTenantId, setCreatedTenantId] = useState<string | null>(null);
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
+  const [createdUserId, setCreatedUserId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
 
   const createTenant = useCreateTenant();
   const createApiKey = useCreateApiKey(createdTenantId ?? "");
+  const createUser = useCreateUser(createdTenantId ?? "");
 
   const [tenantForm, setTenantForm] = useState({ name: "", tier: "standard", isolation_level: "logical" });
   const [keyForm, setKeyForm] = useState<{ name: string; role: "admin" | "client"; expires_in_days: number }>({ name: "Default Client Key", role: "client", expires_in_days: 365 });
+  const [userForm, setUserForm] = useState({ display_name: "", external_id: "" });
 
   async function handleCreateTenant() {
     const res = await createTenant.mutateAsync(tenantForm);
     setCreatedTenantId(res.tenantId);
+    setUserForm({ display_name: tenantForm.name, external_id: `${tenantForm.name.toLowerCase().replace(/\s+/g, ".")}@client.local` });
     setStep("key");
   }
 
@@ -47,9 +51,24 @@ export default function OnboardPage() {
     try {
       const res = await createApiKey.mutateAsync(keyForm);
       setCreatedApiKey(res.apiKey);
-      setStep("done");
+      setStep("user");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create key";
+      toast.error(msg);
+    }
+  }
+
+  async function handleCreateUser() {
+    if (!createdTenantId) return;
+    try {
+      const res = await createUser.mutateAsync({
+        external_id: userForm.external_id || `${createdTenantId.slice(0, 8)}@client.local`,
+        display_name: userForm.display_name || undefined,
+      });
+      setCreatedUserId(res.userId);
+      setStep("done");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to create user";
       toast.error(msg);
     }
   }
@@ -76,8 +95,12 @@ export default function OnboardPage() {
             2. API Key
           </span>
           <span className="text-muted-foreground">→</span>
+          <span className={step === "user" ? "font-semibold text-primary" : "text-muted-foreground"}>
+            3. User
+          </span>
+          <span className="text-muted-foreground">→</span>
           <span className={step === "done" ? "font-semibold text-primary" : "text-muted-foreground"}>
-            3. Credentials
+            4. Credentials
           </span>
         </div>
 
@@ -177,6 +200,44 @@ export default function OnboardPage() {
           </Card>
         )}
 
+        {step === "user" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create User</CardTitle>
+              <CardDescription>Create an initial user for the new tenant</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={userForm.display_name}
+                  onChange={(e) => setUserForm({ ...userForm, display_name: e.target.value })}
+                  placeholder={tenantForm.name}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="externalId">External ID</Label>
+                <Input
+                  id="externalId"
+                  value={userForm.external_id}
+                  onChange={(e) => setUserForm({ ...userForm, external_id: e.target.value })}
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep("key")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+                <Button className="flex-1" onClick={handleCreateUser} disabled={createUser.isPending}>
+                  {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create User
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {step === "done" && (
           <Card>
             <CardHeader>
@@ -196,6 +257,10 @@ export default function OnboardPage() {
                   <span className="text-muted-foreground">Tenant ID: </span>
                   <span className="font-semibold">{createdTenantId}</span>
                 </div>
+                <div>
+                  <span className="text-muted-foreground">User ID: </span>
+                  <span className="font-semibold">{createdUserId}</span>
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-muted-foreground">API Key: </span>
@@ -213,12 +278,12 @@ export default function OnboardPage() {
                 <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
 {`curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\
   -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
-  -H "X-User-ID: user_123"
+  -H "X-User-ID: ${createdUserId}"
 
 curl ${API_BASE}/v1/tenants/${createdTenantId}/search \\
   -X POST \\
   -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
-  -H "X-User-ID: user_123" \\
+  -H "X-User-ID: ${createdUserId}" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "hello world", "limit": 5}'`}
                 </pre>
@@ -228,7 +293,7 @@ curl ${API_BASE}/v1/tenants/${createdTenantId}/search \\
                 <Button variant="outline" onClick={() => router.push(`/tenants/${createdTenantId}`)}>
                   View Tenant
                 </Button>
-                <Button variant="outline" onClick={() => { setStep("tenant"); setTenantForm({ name: "", tier: "standard", isolation_level: "logical" }); setCreatedTenantId(null); setCreatedApiKey(null); setCopiedKey(false); }}>
+                <Button variant="outline" onClick={() => { setStep("tenant"); setTenantForm({ name: "", tier: "standard", isolation_level: "logical" }); setCreatedTenantId(null); setCreatedApiKey(null); setCreatedUserId(null); setCopiedKey(false); }}>
                   Onboard Another
                 </Button>
               </div>

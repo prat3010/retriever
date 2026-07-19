@@ -373,6 +373,87 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 
 ---
 
-## 18. Outstanding Blockers & Issues
+## 18. M31 Security Hardening & Secrets Remediation — Completed
+
+**Objective:** Eliminate credential exposure in version control, enforce fail-safe production defaults, harden network perimeter, and fix weak authentication checks in the admin proxy.
+
+### Changes Made
+- **Config validation** (`apps/api/src/config.py`): Added `@model_validator(mode="after")` that crashes FastAPI startup with `ValueError` if `ENVIRONMENT == "production"` and `ADMIN_MASTER_KEY` or `KEY_ENCRYPTION_KEY` still have their development defaults.
+- **Admin key verification endpoint** (`apps/api/src/main.py`): Added `GET /v1/admin/verify-key` that validates the `X-Admin-Master-Key` header. Returns `{"valid": true}` on success, 401 on failure. Used by the admin dashboard proxy for server-side key validation.
+- **Proxy validation** (`apps/web/src/proxy.ts`): Rewrote proxy to call the backend `/v1/admin/verify-key` endpoint and validate the key server-side. Validated results are cached in a signed `admin_key_validated` cookie (5 min TTL). Invalid keys are cleared and redirected to `/login`. Fails open (allows request) on backend timeout so dashboard availability doesn't depend on API uptime.
+- **`.gitignore`**: Confirmed `.env` and `.env*` patterns are present in both root and `apps/web/` gitignore files.
+
+### Manual Actions Required
+1. **Rotate credentials:** Use `git filter-branch` or BFG Repo-Cleaner to scrub `.env` and `apps/web/.env.local` from git history. Then rotate the Supabase DB password, OpenAI API key, and Vercel OIDC token.
+2. **SSH into Oracle VM:** Replace `ADMIN_MASTER_KEY` in production `.env` with a strong random value (`openssl rand -hex 32`). Rotate the admin dashboard login key.
+3. **Close port 8000:** Remove the port 8000 ingress rule from Oracle Cloud security group. All API traffic must route through Nginx on ports 80/443.
+
+---
+
+## 19. M32 Onboarding & Client UX Overhaul — Completed
+
+**Objective:** Fix the broken onboarding handoff (no user created during wizard), eliminate confusing defaults in the client login form, introduce human-friendly short IDs, and polish the admin and client UX around identity management.
+
+### Changes Made
+- **4-step onboarding wizard** (`onboard/page.tsx`): Inserted Step 3 ("User") between API Key generation and credentials summary. Auto-populates display name from tenant name and generates an `external_id`. Creates the user via `useCreateUser` hook. Final credentials card now shows the real User ID alongside Tenant ID and API Key.
+- **Client login form defaults** (`RagInterface.tsx`): `tenantId` and `userId` now start as empty strings (force user to enter their own). Placeholder text uses `tn_...`/`usr_...` format. API key placeholder changed from `sk_live_...` to `ret_live_...` to match Retriever's actual key format.
+- **ID validation relaxed** (`RagInterface.tsx`): `isUuid()` now accepts both UUIDs and short ID formats (`tn_X7kM2p`, `usr_Qp3N8w`) to prepare for future short ID migration.
+- **API Base URL hidden** (`RagInterface.tsx`): The API URL field is collapsed under a "Show Advanced" toggle by default. Keeps the config panel clean for most users while allowing advanced users to override.
+- **User ID column** (`tenant-users.tsx`): Added a "User ID" column to the tenant Users table with a copy-to-clipboard button, so admins can easily provide the internal UUID to clients.
+
+### Manual Actions Required
+- **Short ID migration** (recommended future work): Replace 36-character UUIDs with prefix-based short IDs (`tn_` for tenants, `usr_` for users) in the backend. Requires new DB columns and API path updates.
+
+---
+
+## 20. M33 Code Quality & Architecture — Completed
+
+**Objective:** Break down the 2,250-line `main.py` monolith, eliminate type safety gaps, consolidate duplicated constants, and clean up inconsistent patterns across both the backend and frontend codebases.
+
+### Changes Made
+- **Router split architecture** (`apps/api/src/routers/`): Created `health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py` router modules. Migrated health (liveness/readiness) and admin (verify-key) endpoints to routers. Pattern established for full split.
+- **Shared TypeScript types** (`Prateek_website/src/lib/rag-types.ts`): Defined `SearchResult`, `DocumentMeta`, and `SearchResponse` interfaces. Eliminates `any` type usage in `RagInterface.tsx`.
+- **`API_BASE` consolidated**: Removed duplicate declarations from `login/page.tsx` and `onboard/page.tsx`. Both now import `API_BASE` from `lib/api.ts`.
+- **RetrieverClient cleanup** (`rag-client.ts`): Refactored `uploadDocument` and `deleteDocument` to use the shared `request<T>()` method instead of duplicating fetch + header logic. Extracted shared auth header construction.
+- **Duplicate cookie clearing removed** (`sidebar.tsx`): Removed the separate `document.cookie = ...` line from the logout handler — `clearKey()` in the auth store already handles cookie clearing.
+
+### Remaining
+- Full `main.py` split (migrate remaining ~2,200 lines to routers) is deferred. See `TECH_DEBT.md`.
+
+---
+
+## 21. M34 Production Operations & DevOps — Completed
+
+**Objective:** Eliminate manual SSH deploys, add error tracking and uptime monitoring, fix unbounded tenant queries, and close the remaining production operations gaps.
+
+### Changes Made
+- **GitHub Actions auto-deploy** (`.github/workflows/deploy-api.yml`): Creates SSH connection to Oracle VM, pulls latest code, reinstalls Python dependencies, restarts the `retriever-api` systemd service, and runs post-deploy smoke tests (liveness + readiness). Triggered by pushes to `main` affecting `apps/api/`, `packages/processing-core/`, or `workers/`.
+- **Pagination fix** (`use-tenants.ts`): `useAllTenants()` now accepts a configurable `limit` parameter (default 50) instead of hardcoding `limit=1000`.
+
+### Manual Actions Required
+1. **Configure GitHub Secrets:** Add `ORACLE_HOST`, `ORACLE_USER`, `ORACLE_SSH_KEY` (and optionally `ORACLE_PORT`) to the repository's GitHub Secrets.
+2. **Configure Sentry:** Set `SENTRY_DSN` in the production `.env` on the Oracle VM. Verify by triggering a test error in a route handler — it should appear in Sentry within 60 seconds.
+3. **Set up uptime monitoring:** Configure UptimeRobot or Better Uptime to poll `https://rag.prateeq.in/health/liveness` every 5 minutes. Set up email/SMS alerts for downtime.
+
+---
+
+## 22. M35 Final Polish & Infrastructure Self-Detection — Completed
+
+**Objective:** Add server-spec auto-detection for infrastructure services, update stale model defaults, clean up deprecated Docker Compose syntax, and improve the client chat UI for large screens.
+
+### Changes Made
+- **Server-spec auto-detection** (`config.py`): Added `InfraCapabilities` class that reads total RAM (`psutil.virtual_memory().total`) and CPU cores at startup. Logs detected specs and auto-decides which services to enable:
+  - RAM >= 2 GB → Redis cache layer
+  - RAM >= 2 GB → RabbitMQ broker
+  - RAM >= 4 GB + 2+ cores → Celery workers
+  - Falls back to LEAN mode (synchronous processing) on 1 GB Oracle VM.
+  - Overridable via `REDIS_ENABLED`, `BROKER_ENABLED`, `WORKERS_ENABLED` env vars.
+- **Gemini model updated** (`providers.ts`): Default changed from `gemini-1.5-flash` to `gemini-2.5-flash`.
+- **Docker Compose cleaned** (`docker-compose.yml`): Removed deprecated `version: '3.8'` field.
+- **Chat container height** (`rag.module.css`): Changed from fixed `400px` to `min(60vh, 600px)`.
+
+---
+
+## 23. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.

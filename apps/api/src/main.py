@@ -318,11 +318,6 @@ async def handle_auth_error(request, exc):
 
 # --- Request/Response DTOs ---
 
-class HealthResponse(BaseModel):
-    status: str
-    environment: str
-
-
 class CreateTenantRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     tier: str = Field(default="standard")
@@ -432,42 +427,14 @@ class SearchResponseDto(BaseModel):
     searchMeta: SearchMetaResponse
 
 
+# --- Router Includes ---
+
+from src.routers.health import router as health_router
+from src.routers.admin import router as admin_router
+app.include_router(health_router)
+app.include_router(admin_router)
+
 # --- API Routes ---
-
-@app.get("/health/liveness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
-async def liveness_probe() -> HealthResponse:
-    """Liveness probe to confirm the API server process is running."""
-    return HealthResponse(status="alive", environment=settings.ENVIRONMENT)
-
-
-@app.get("/health/readiness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
-async def readiness_probe() -> HealthResponse:
-    """Readiness probe to confirm database, cache, and storage infrastructure connection endpoints are alive."""
-    try:
-        # Stateful query check on Postgres engine pool
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        
-        # Stateful ping check on Redis cluster connection pool
-        if redis_client is not None:
-            try:
-                await redis_client.ping()
-            except Exception:
-                pass
-
-        # Stateful reachability check on S3 bucket
-        if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "client"):
-            def _probe_s3() -> None:
-                local_storage.client.head_bucket(Bucket=local_storage.bucket_name)
-            await asyncio.to_thread(_probe_s3)
-
-        return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Readiness check failed: {e!s}",
-        ) from e
-
 
 @app.post(
     "/v1/tenants",

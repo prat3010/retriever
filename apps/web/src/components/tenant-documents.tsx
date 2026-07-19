@@ -21,8 +21,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FileText, UploadCloud, Trash2, Loader2, Sparkles } from "lucide-react";
-import { useState, useRef, DragEvent } from "react";
+import { FileText, UploadCloud, Trash2, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { useState, useRef, DragEvent, useCallback } from "react";
 import { toast } from "sonner";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -47,7 +47,25 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
 
   const [isDragActive, setIsDragActive] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState<{ id: string; filename: string } | null>(null);
+  const [processingDocs, setProcessingDocs] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProcess = useCallback(async (docId: string, filename: string) => {
+    setProcessingDocs((prev) => new Set(prev).add(docId));
+    const id = toast.loading(`Processing ${filename}...`);
+    try {
+      const res = await processMutation.mutateAsync(docId);
+      toast.success(`Indexed ${res.chunksIndexed} chunks.`, { id });
+    } catch (err: any) {
+      toast.error(`Processing failed: ${err.message || "Unknown error"}`, { id });
+    } finally {
+      setProcessingDocs((prev) => {
+        const next = new Set(prev);
+        next.delete(docId);
+        return next;
+      });
+    }
+  }, [processMutation]);
 
   const handleDrag = (e: DragEvent) => {
     e.preventDefault();
@@ -229,21 +247,19 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                           className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const id = toast.loading(`Processing ${doc.filename}...`);
-                            processMutation.mutate(doc.documentId, {
-                              onSuccess: (res) => {
-                                toast.success(`Indexed ${res.chunksIndexed} chunks.`, { id });
-                              },
-                              onError: (err: any) => {
-                                toast.error(`Processing failed: ${err.message || "Unknown error"}`, { id });
-                              },
-                            });
+                            handleProcess(doc.documentId, doc.filename);
                           }}
-                          disabled={processMutation.isPending}
+                          disabled={processingDocs.has(doc.documentId)}
                           title="Embed"
                         >
-                          {processMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                          {processingDocs.has(doc.documentId) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                         </Button>
+                      )}
+                      {doc.status === "INDEXED" && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      )}
+                      {doc.status === "FAILED" && (
+                        <span className="text-xs text-destructive">Failed</span>
                       )}
                       <Dialog>
                       <DialogTrigger asChild>

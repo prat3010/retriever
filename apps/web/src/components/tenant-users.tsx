@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Copy } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -107,6 +108,7 @@ export function UsersTab({ tenantId }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>User ID</TableHead>
               <TableHead>External ID</TableHead>
               <TableHead>Display Name</TableHead>
               <TableHead>Status</TableHead>
@@ -116,13 +118,25 @@ export function UsersTab({ tenantId }: Props) {
           <TableBody>
             {users?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
             )}
             {users?.map((user) => (
               <TableRow key={user.userId}>
+                <TableCell className="font-mono text-xs">
+                  <span className="flex items-center gap-1">
+                    {user.userId.slice(0, 12)}…
+                    <button
+                      className="inline-flex items-center justify-center rounded p-0.5 opacity-40 hover:opacity-100 transition-opacity"
+                      onClick={() => { navigator.clipboard.writeText(user.userId); toast.success("User ID copied"); }}
+                      title="Copy User ID"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </span>
+                </TableCell>
                 <TableCell className="font-medium">{user.externalId}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.displayName ?? "—"}

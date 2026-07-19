@@ -7,6 +7,24 @@ they start blocking you — not before.
 
 | Item | Commit |
 |------|--------|
+| `API_BASE` constant duplicated in 3 places (api.ts, login/page.tsx, onboard/page.tsx) | M33 |
+| `uploadDocument` and `deleteDocument` in `rag-client.ts` bypassed shared `request<T>()` — duplicated fetch + header logic | M33 |
+| `sidebar.tsx` logout handler had duplicate cookie-clearing code (already done by `clearKey()`) | M33 |
+| `RagInterface.tsx` used `any` types with `eslint-disable` — no shared TypeScript interfaces for SearchResult, DocumentMeta, SearchResponse | M33 |
+| `useAllTenants` fetches 1000 records at once — no pagination | M34 |
+| No auto-deploy pipeline for Oracle VM — manual SSH deploys required | M34 |
+| Gemini default model was `gemini-1.5-flash` (outdated) | M35 |
+| `version: '3.8'` in docker-compose.yml (deprecated in modern Docker Compose) | M35 |
+| Chat container `max-height: 400px` felt cramped on large screens | M35 |
+| No server-spec auto-detection for Redis/RabbitMQ/Celery enablement | M35 |
+| `main.py` god-file (2,250+ lines) — initial router split: health and admin routes extracted | M33 |
+| Onboarding wizard didn't create a user — clients got incomplete credentials (no User ID) | M32 |
+| Client login form had production data as defaults (pre-filled tenantId/userId, wrong placeholder) | M32 |
+| Users tab didn't show internal User ID for admin copy-to-clipboard | M32 |
+| Secrets committed to repo (`.env` with Supabase/OpenAI creds, `apps/web/.env.local` with Vercel OIDC token) | M31 |
+| `ADMIN_MASTER_KEY` and `KEY_ENCRYPTION_KEY` have no production guard — crash if defaults used in production | M31 |
+| `proxy.ts` only checks if `admin_key` exists, not if it's valid — any non-empty string bypasses redirect | M31 |
+| Port 8000 open to public on Oracle VM (bypasses Nginx SSL) | M31 |
 | `verify_admin_key` returns 422 instead of 401 | `a6f49a0` |
 | `verify_scopes` silently succeeds when used without `Security()` | `a6f49a0` |
 | `redact_secrets` truthy check → `is not None` | `a6f49a0` |
@@ -45,6 +63,11 @@ they start blocking you — not before.
 | Plaintext parsing loophole for binary document uploads | M25 cleanup |
 
 ## Architecture
+
+### `main.py` god-file — Partial Split (M33)
+**File:** `apps/api/src/main.py`
+
+Remaining routes (~2,200 lines) still need to be extracted into `routers/tenant.py`, `routers/document.py`, `routers/search.py`, `routers/chat.py`. The pattern is established with `routers/health.py` and `routers/admin.py`.
 
 ### ~~`DocumentRepository` port~~ (Fixed)
 **File:** `apps/api/src/main.py:577-722`

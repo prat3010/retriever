@@ -1,6 +1,6 @@
 "use client";
 
-import { useUsers, useCreateUser } from "@/hooks/use-users";
+import { useUsers, useCreateUser, useDeleteUser, type User } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -33,7 +33,9 @@ interface Props {
 export function UsersTab({ tenantId }: Props) {
   const { data: users, isLoading } = useUsers(tenantId);
   const createUser = useCreateUser(tenantId);
+  const deleteUser = useDeleteUser(tenantId);
   const [open, setOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [externalId, setExternalId] = useState("");
   const [displayName, setDisplayName] = useState("");
 
@@ -113,12 +115,14 @@ export function UsersTab({ tenantId }: Props) {
               <TableHead>Display Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead className="w-12" />
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {users?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -149,11 +153,56 @@ export function UsersTab({ tenantId }: Props) {
                 <TableCell className="text-muted-foreground">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </TableCell>
+                <TableCell>
+                  <button
+                    className="inline-flex items-center justify-center rounded p-1 opacity-40 hover:opacity-100 hover:text-red-500 transition-opacity"
+                    onClick={() => setDeleteTarget(user)}
+                    title="Delete user"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Permanently deactivate user{" "}
+            <span className="font-mono font-medium text-foreground">
+              {deleteTarget?.externalId}
+            </span>
+            ?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteUser.isPending}
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteUser.mutate(deleteTarget.userId, {
+                  onSuccess: () => {
+                    toast.success("User deactivated");
+                    setDeleteTarget(null);
+                  },
+                  onError: (err) => toast.error(err.message),
+                });
+              }}
+            >
+              {deleteUser.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

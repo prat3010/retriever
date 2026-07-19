@@ -25,10 +25,10 @@ jobs:
           port: ${{ secrets.ORACLE_PORT || '22' }}
           script: |
             set -e
-            cd /home/ubuntu/retriever
+            cd /opt/retriever
             git pull origin main
-            source venv/bin/activate
-            pip install -r requirements.txt -r requirements-api.txt 2>&1
+            . .venv/bin/activate
+            pip install -r requirements.txt 2>&1
             sudo systemctl daemon-reload
             sudo systemctl restart retriever-api
             sleep 5

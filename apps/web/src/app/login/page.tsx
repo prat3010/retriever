@@ -37,7 +37,8 @@ export default function LoginPage() {
       return;
     }
     setAdminKey(key.trim());
-    document.cookie = `admin_key=${encodeURIComponent(key.trim())}; path=/; max-age=86400; SameSite=Lax; Secure`;
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `admin_key=${encodeURIComponent(key.trim())}; path=/; max-age=86400; SameSite=Lax${secure}`;
     router.push("/");
   }
 

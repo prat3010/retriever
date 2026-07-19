@@ -14,8 +14,8 @@ def test_liveness_endpoint() -> None:
 from unittest.mock import AsyncMock, patch
 
 
-@patch("src.main.redis_client.ping", new_callable=AsyncMock)
-@patch("src.main.engine", autospec=True)
+@patch("src.routers.health.redis_client.ping", new_callable=AsyncMock)
+@patch("src.routers.health.engine", autospec=True)
 def test_readiness_endpoint(mock_engine, mock_ping) -> None:
     # Setup async context manager mocks for database connection pool
     mock_conn = AsyncMock()
@@ -27,8 +27,8 @@ def test_readiness_endpoint(mock_engine, mock_ping) -> None:
     assert response.json()["status"] == "ready"
 
 
-@patch("src.main.redis_client.ping", new_callable=AsyncMock)
-@patch("src.main.engine", autospec=True)
+@patch("src.routers.health.redis_client.ping", new_callable=AsyncMock)
+@patch("src.routers.health.engine", autospec=True)
 def test_readiness_db_down(mock_engine, mock_ping) -> None:
     mock_engine.connect.side_effect = Exception("DB unreachable")
     response = client.get("/health/readiness")

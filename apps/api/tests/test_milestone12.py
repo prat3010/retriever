@@ -149,8 +149,8 @@ async def test_sql_config_registry_encryption(mock_session_ctx):
 
 
 # 4. Test Health Readiness with S3 Probe
-@patch("src.main.redis_client.ping", new_callable=AsyncMock)
-@patch("src.main.engine", autospec=True)
+@patch("src.routers.health.redis_client.ping", new_callable=AsyncMock)
+@patch("src.routers.health.engine", autospec=True)
 def test_readiness_probe_with_s3(mock_engine, mock_redis_ping):
     mock_db_conn = AsyncMock()
     mock_engine.connect.return_value.__aenter__.return_value = mock_db_conn
@@ -159,14 +159,13 @@ def test_readiness_probe_with_s3(mock_engine, mock_redis_ping):
     client = TestClient(app)
 
     # When S3 is not active
-    with patch("src.main.settings.STORAGE_PROVIDER", "local"):
+    with patch("src.routers.health.settings.STORAGE_PROVIDER", "local"):
         response = client.get("/health/readiness")
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "ready"
 
     # When S3 is active
-    with patch("src.main.settings.STORAGE_PROVIDER", "s3"):
-        # Swap local_storage mock with an S3Storage mock containing client attribute
+    with patch("src.routers.health.settings.STORAGE_PROVIDER", "s3"):
         mock_s3_storage = MagicMock()
         mock_s3_storage.bucket_name = "test-bucket"
         mock_s3_storage.client = MagicMock()

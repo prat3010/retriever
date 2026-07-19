@@ -429,8 +429,9 @@ class SearchResponseDto(BaseModel):
 
 # --- Router Includes ---
 
-from src.routers.health import router as health_router
 from src.routers.admin import router as admin_router
+from src.routers.health import router as health_router
+
 app.include_router(health_router)
 app.include_router(admin_router)
 

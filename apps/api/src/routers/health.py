@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from src.adapters.database.connection import engine
 from src.adapters.cache.config_cache import redis_client
+from src.adapters.database.connection import engine
 from src.config import settings
 
 router = APIRouter(tags=["Health"])

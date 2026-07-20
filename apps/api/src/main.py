@@ -207,6 +207,7 @@ else:
     local_storage = LocalStorage(
         fallback_url=settings.REMOTE_STORAGE_FALLBACK_URL,
         internal_key=settings.INTERNAL_API_KEY,
+        hmac_key=settings.STORAGE_HMAC_KEY,
     )
 
 # Initialize search service
@@ -2191,7 +2192,7 @@ async def serve_local_download(
 
     # 2. Verify signature
     relative_path = f"{tenantId}/{filename}"
-    secret_key = b"local-storage-presign-key"
+    secret_key = settings.STORAGE_HMAC_KEY.encode()
     msg = f"{relative_path}:{expires}".encode()
     expected_sig = hmac.new(secret_key, msg=msg, digestmod=hashlib.sha256).hexdigest()
 

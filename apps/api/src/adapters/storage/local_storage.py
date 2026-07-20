@@ -7,10 +7,11 @@ from src.domain.abstractions.ingestion import DocumentStorage
 
 
 class LocalStorage(DocumentStorage):
-    def __init__(self, storage_dir: str = "./storage", fallback_url: str = "", internal_key: str = "") -> None:
+    def __init__(self, storage_dir: str = "./storage", fallback_url: str = "", internal_key: str = "", hmac_key: str = "local-storage-presign-key") -> None:
         self.storage_dir = storage_dir
         self.fallback_url = fallback_url.rstrip("/")
         self.internal_key = internal_key
+        self.hmac_key = hmac_key.encode() if isinstance(hmac_key, str) else hmac_key
         os.makedirs(self.storage_dir, exist_ok=True)
 
     async def save_file(self, tenant_id: str, filename: str, content: bytes) -> str:
@@ -68,8 +69,7 @@ class LocalStorage(DocumentStorage):
         expires = int(time.time()) + expiry_seconds
 
         # Cryptographic HMAC-SHA256 signature
-        secret_key = b"local-storage-presign-key"
         msg = f"{relative_path}:{expires}".encode()
-        sig = hmac.new(secret_key, msg=msg, digestmod=sha256).hexdigest()
+        sig = hmac.new(self.hmac_key, msg=msg, digestmod=sha256).hexdigest()
 
         return f"/v1/local-downloads/{relative_path}?expires={expires}&signature={sig}"

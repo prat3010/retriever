@@ -76,6 +76,11 @@ class Settings(BaseSettings):
                     "KEY_ENCRYPTION_KEY must be set to a secure 32-byte key in production. "
                     "Set KEY_ENCRYPTION_KEY env var to a base64 or hex-encoded 32-byte value."
                 )
+            if self.CORS_ORIGINS == "*":
+                logger.warning(
+                    "CORS_ORIGINS is set to '*' in production. "
+                    "Set CORS_ORIGINS to a comma-separated list of allowed origins."
+                )
         return self
 
     # Infrastructure connection strings
@@ -122,6 +127,9 @@ class Settings(BaseSettings):
 
     # Error Tracking
     SENTRY_DSN: str = ""
+
+    # Storage HMAC signing key for local presigned URLs
+    STORAGE_HMAC_KEY: str = "local-storage-presign-key"
 
     # Remote Storage Fallback
     REMOTE_STORAGE_FALLBACK_URL: str = ""

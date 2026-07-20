@@ -145,10 +145,11 @@ apps/web/src/
 - Data from `GET /v1/admin/tenants`
 
 ### Onboard Client (`/onboard`)
-- 3-step wizard: Tenant info → API Key → Credentials summary
+- 4-step wizard: Tenant info → API Key → User creation → Credentials summary
 - Step 1: name, tier, isolation_level → creates tenant via `POST /v1/tenants`
 - Step 2: key name, role, expiry → creates key via `POST /v1/admin/tenants/{id}/api-keys`
-- Step 3: shows API base URL, Tenant ID, API key (copy button), curl examples
+- Step 3: auto-creates user with display name from tenant name, generates external_id via `useCreateUser` hook
+- Step 4: shows API base URL, Tenant ID, User ID, API key (copy button), curl examples
 - Links to tenant detail page
 
 ### Tenant List (`/tenants`)

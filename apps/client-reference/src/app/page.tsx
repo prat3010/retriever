@@ -5,9 +5,9 @@ import { getConfig, saveConfig, clearConfig, RetrieverClient, type RetrieverConf
 
 const LLM_PROVIDERS = [
   { value: "", label: "Default (tenant config)" },
+  { value: "openrouter", label: "OpenRouter" },
   { value: "openai", label: "OpenAI" },
   { value: "google-ai-studio", label: "Gemini" },
-  { value: "openrouter", label: "OpenRouter" },
   { value: "anthropic", label: "Anthropic" },
   { value: "deepseek", label: "DeepSeek" },
   { value: "groq", label: "Groq" },

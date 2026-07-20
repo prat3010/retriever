@@ -62,7 +62,7 @@ Operational overview of the Retriever platform's current engineering status.
 - Paginated tenant list (`search`, `limit`, `offset` → `{items, total}`)
 - Audit log repository + list endpoint + write hooks at key mutation points
 - `bypass_rls` parameter on `PromptTemplateRegistry` (consistent with admin pattern)
-- `httpx` → `httpx2` migration (Starlette deprecation fix)
+- `httpx` upgrade for Starlette deprecation fix
 - `DocumentRepository` port extracted (`domain/abstractions/ingestion.py`), `SqlDocumentRepository` impl, 5 inline SQLAlchemy blocks removed from `main.py`
 
 ### Frontend

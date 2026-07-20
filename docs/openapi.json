@@ -2586,12 +2586,12 @@
               }
             ],
             "title": "Base Url",
-            "default": "https://generativelanguage.googleapis.com/v1beta/openai/"
+            "default": "https://openrouter.ai/api/v1"
           },
           "default_model": {
             "type": "string",
             "title": "Default Model",
-            "default": "gemini-1.5-flash"
+            "default": "openai/gpt-4o"
           }
         },
         "type": "object",

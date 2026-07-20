@@ -8,6 +8,7 @@ they start blocking you — not before.
 | Item | Commit |
 |------|--------|
 | `API_BASE` constant duplicated in 3 places (api.ts, login/page.tsx, onboard/page.tsx) | M33 |
+| `isUuid` accepted short ID formats (`tn_*`, `usr_*`) with no backend support | Reverted |
 | `uploadDocument` and `deleteDocument` in `rag-client.ts` bypassed shared `request<T>()` — duplicated fetch + header logic | M33 |
 | `sidebar.tsx` logout handler had duplicate cookie-clearing code (already done by `clearKey()`) | M33 |
 | `RagInterface.tsx` used `any` types with `eslint-disable` — no shared TypeScript interfaces for SearchResult, DocumentMeta, SearchResponse | M33 |

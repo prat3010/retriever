@@ -790,8 +790,8 @@ Client Frontend (Next.js, React, mobile app, etc.)
   │
   │  POST /v1/tenants/{tenantId}/chat/sessions
   │  Headers:
-  │    X-API-Key: sk_client_abc123
-  │    X-User-ID: user_42
+  │    Authorization: Bearer ret_live_<random>.<secret>
+  │    X-User-ID: <uuid>
   │    Content-Type: application/json
   │
   ▼
@@ -882,7 +882,7 @@ Server `.env` at `/opt/retriever/.env` contains:
 - `OLLAMA_BASE_URL=http://127.0.0.1:11434`
 - `OPENAI_API_KEY` / `GEMINI_API_KEY` (LLM provider keys)
 - `ENVIRONMENT=production`
-- `ENCRYPTION_KEY` (for AES-256-GCM of tenant LLM keys)
+- `KEY_ENCRYPTION_KEY` (for AES-256-GCM of tenant LLM keys)
 - `CORS_ORIGINS=*` (for client-reference frontend)
 - `LOG_LEVEL=info`
 
@@ -947,7 +947,7 @@ When adding a new LLM provider key:
 3. Update tenant AI provider config via admin API:
    ```
    PUT /v1/admin/tenants/{tenantId}/config
-   {"ai_provider": {"provider": "gemini", "model": "gemini-1.5-flash"}}
+    {"ai_provider": {"provider": "openrouter", "model": "openai/gpt-4o"}}
    ```
 4. Verify chat works: create a session, send a message, confirm SSE stream.
 5. Set up quota monitoring (not yet automated — check provider dashboard periodically).

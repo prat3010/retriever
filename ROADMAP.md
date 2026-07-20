@@ -38,11 +38,11 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q2 2029 |
 | **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q3 2029 |
 | **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Completed** | Q3 2026 |
-| **M31** | Security Hardening & Secrets Remediation | Credential rotation, fail-safe defaults, proxy validation, port hardening | **Planned** | Q3 2026 |
-| **M32** | Onboarding & Client UX Overhaul | User creation in wizard, fixed form defaults, short IDs, admin UX polish | **Planned** | Q3 2026 |
-| **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | **Planned** | Q4 2026 |
-| **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | **Planned** | Q4 2026 |
-| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker-compose cleanup | **Planned** | Q1 2027 |
+| **M31** | Security Hardening & Secrets Remediation | Credential rotation, fail-safe defaults, proxy validation, port hardening | *Completed* | Q3 2026 |
+| **M32** | Onboarding & Client UX Overhaul | User creation in wizard, fixed form defaults, short IDs, admin UX polish | *Completed* | Q3 2026 |
+| **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* | Q4 2026 |
+| **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* | Q4 2026 |
+| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker-compose cleanup | *Completed* | Q1 2027 |
 
 ---
 

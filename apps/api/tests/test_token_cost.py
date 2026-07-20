@@ -134,8 +134,8 @@ async def test_orchestrator_logs_cost_usd() -> None:
     )
 
     config = TenantConfiguration(tenant_id="t1")
-    # gemini-1.5-flash: input=0.075/1k, output=0.30/1k
-    # cost = 100 * 0.075/1000 + 50 * 0.30/1000 = 0.0075 + 0.015 = 0.0225
+    # openai/gpt-4o: input=2.5/1k, output=10.0/1k
+    # cost = 100 * 2.5/1000 + 50 * 10.0/1000 = 0.25 + 0.50 = 0.75
 
     await orchestrator.generate(
         tenant_id="t1",
@@ -149,7 +149,7 @@ async def test_orchestrator_logs_cost_usd() -> None:
 
     log_call = mock_log_writer.write_log.call_args[0][0]
     assert isinstance(log_call, InferenceLog)
-    assert log_call.cost_usd == 0.0225
+    assert log_call.cost_usd == 0.75
     assert log_call.input_tokens == 100
     assert log_call.output_tokens == 50
 

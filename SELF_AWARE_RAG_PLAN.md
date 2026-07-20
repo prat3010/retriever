@@ -89,7 +89,7 @@ The system tenant will ingest the following target resources:
 | **Adapters Layer** | `apps/api/src/adapters/` (database, vector, cache, cognitive, storage) | Source Code | High |
 | **Orchestration / API** | `apps/api/src/main.py`, `apps/api/src/config.py` | Source Code | High |
 | **Workers & Tasks** | `workers/src/tasks/`, `workers/src/celery_app.py`, `workers/src/event_consumer.py` | Source Code | High |
-| **Environment Config** | `docker-compose.yml`, `apps/api/pyproject.toml`, `workers/pyproject.toml`, `alembic.ini` | Configuration | Medium |
+| **Environment Config** | `apps/api/pyproject.toml`, `workers/pyproject.toml`, `alembic.ini` | Configuration | Medium |
 | **Documentation** | `docs/`, `retriever_comprehensive_guide.md`, `README.md`, `ROADMAP.md` | Documentation | Medium |
 
 ### 2.2 AST-Based Chunking for Code vs. Hierarchical Chunking for Docs
@@ -112,7 +112,7 @@ Here is the step-by-step procedure to execute the ingestion:
 ```
 
 #### Step 1: Create the System Tenant inside the Database
-We need to register the specialized System Tenant ID in the `tenants` and `tenant_configs` tables. Execute this SQL query (e.g. using `docker-compose exec postgres psql -U postgres -d retriever` or your database manager):
+We need to register the specialized System Tenant ID in the `tenants` and `tenant_configs` tables. Execute this SQL query using your database manager (e.g., Supabase SQL Editor, psql, etc.):
 
 ```sql
 -- Create the tenant row
@@ -140,26 +140,20 @@ If you hit rate limits on the Gemini free tier, you can run a 100% local embeddi
 1. Install Ollama: `brew install ollama` (or download from [ollama.com](https://ollama.com)) and make sure it is running.
 2. Download the 768-dimension embedding model: `ollama pull nomic-embed-text`
 3. Run the ingestion command pointing to the host machine's Ollama service:
-   ```bash
-   docker-compose run --rm \
-     -e EMBEDDING_MODEL=nomic-embed-text \
-     -e OPENAI_API_KEY=ollama \
-     -e OPENAI_BASE_URL=http://host.docker.internal:11434/v1 \
-     -v $(pwd)/apps/api/src:/app/src \
-     -v $(pwd):/workspace \
-     api python -m src.scripts.ingest_self
-   ```
+    ```bash
+    EMBEDDING_MODEL=nomic-embed-text \
+    OPENAI_API_KEY=ollama \
+    OPENAI_BASE_URL=http://localhost:11434/v1 \
+    uv run python -m src.scripts.ingest_self
+    ```
 
 ##### Option B: Running with Gemini API (Subject to Free Tier Rate Limits)
 If you want to use the Gemini API (e.g. `gemini-embedding-2`), run the command using your API key from the `.env` file:
 ```bash
-docker-compose run --rm \
-  -e EMBEDDING_MODEL=gemini-embedding-2 \
-  -e OPENAI_API_KEY=your_gemini_key \
-  -e OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/ \
-  -v $(pwd)/apps/api/src:/app/src \
-  -v $(pwd):/workspace \
-  api python -m src.scripts.ingest_self
+EMBEDDING_MODEL=gemini-embedding-2 \
+  OPENAI_API_KEY=your_gemini_key \
+  OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/ \
+  uv run python -m src.scripts.ingest_self
 ```
 
 Once this finishes, the database is populated, and the Meta-RAG is active and queryable.
@@ -291,7 +285,7 @@ When an agent or developer is modifying code in a multi-turn session, changes ar
 To guarantee system stability when the RAG edits itself, we implement three critical safety guardrails:
 
 1. **Git Commit Validation:** Every codebase chunk contains the system's Git commit hash in its metadata (`git_commit`). The RAG compares the retrieved chunks' commit hash with the currently checked-out Git HEAD. If they diverge, the RAG bypasses the vector cache and re-parses the active file directly from disk to ensure correctness.
-2. **Automated Sandbox Verification:** Before the RAG can suggest applying any code modifications, it must write the changes to a temporary Git branch and run the test suite using `docker-compose run api pytest` and check linting with `ruff check`. If tests fail, the change is rejected, the traceback is fed back into the RAG for correction, and the workspace is rolled back via `git checkout -- .`.
+2. **Automated Sandbox Verification:** Before the RAG can suggest applying any code modifications, it must write the changes to a temporary Git branch and run the test suite (`uv run pytest tests/` in `apps/api/`) and check linting with `ruff check`. If tests fail, the change is rejected, the traceback is fed back into the RAG for correction, and the workspace is rolled back via `git checkout -- .`.
 3. **RLS Bypass Prevention:** The system tenant database setup must never permit modifying the `tenants` or `api_keys` configurations during developer sessions to prevent escalation of privileges. All write operations to system code must be authenticated with the master admin key (`ADMIN_MASTER_KEY`).
 
 ---

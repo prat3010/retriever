@@ -155,8 +155,8 @@ To manage multiple client deployments efficiently without drowning in support ov
 Never distribute source code directly to clients if you can avoid it. Instead:
 1.  Set up a private container registry (e.g., GitHub Container Registry - GHCR, AWS ECR, or Docker Hub).
 2.  Publish your compiled, tested backend API and Worker docker images to the registry under versioned tags (e.g., `retriever-api:v1.2.0`).
-3.  On the client's server, configure `docker-compose.yml` to pull from your private registry.
-4.  To push updates or security patches, push the new image to your registry and trigger a pull/restart command (`docker compose pull && docker compose up -d`) on the client servers.
+3.  In a future Docker-based deployment, the client's server would configure `docker-compose.yml` to pull from your private registry.
+4.  To push updates or security patches, push the new image to your registry and trigger a pull/restart command (`docker compose pull && docker compose up -d`) on the client servers. *(Currently using bare systemd — Docker would be introduced when multi-client deployments require it.)*
 
 ### B. Infrastructure-as-Code (IaC)
 Automate the deployment using tools like **Terraform** or **Ansible**.

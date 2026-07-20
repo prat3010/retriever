@@ -360,7 +360,6 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 - **`apps/api/src/adapters/cache/config_cache.py`** — Lazy Redis connection (no crash if Redis is down).
 - **`apps/api/src/adapters/telemetry/setup.py`** — Updated Redis reference.
 - **`packages/client-proxy-worker/`** — Deployed to Cloudflare Workers at `retriever-client-proxy.retriever.workers.dev`.
-- **`Dockerfile`** — Moved to repo root, listens on `$PORT` env var for Render compatibility.
 
 ### Details
 

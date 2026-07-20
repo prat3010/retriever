@@ -181,7 +181,7 @@ Since Cloudflare R2 is fully S3-compatible, Retriever's `S3Storage` adapter work
 * celry background tasks will download files from this endpoint to local temp folders, extract text, and clean up.
 
 #### 2. Cloudflare DNS & Tunnels (Local Dev Sharing & Prod Deployment)
-* **Cloudflare Tunnels (`cloudflared`):** Exposes your local `docker-compose` environment to client frontends without exposing public ports or setting up static IPs.
+* **Cloudflare DNS:** Point `rag.prateeq.in` A record to your Oracle VM IP. WAF rules can be applied at the Cloudflare dashboard.
 * **WAF & Rate Limiting:** Apply Cloudflare Web Application Firewall rules to block SQL injections and enforce request-rate thresholds before traffic hits your API nodes.
 
 ---
@@ -198,7 +198,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:<password>@db.<project-id>.supabase.c
 #### 2. Preparing the Database
 Run the database setup script to compile tables, HNSW vector indices, GIN text search indices, and RLS isolation policies:
 ```bash
-docker-compose run api python -m src.adapters.database.setup
+uv run python -m src.adapters.database.setup
 ```
 
 #### 3. Supabase Auth Integration
@@ -256,67 +256,52 @@ To optimize API latency and reduce costs:
 
 ---
 
-## 7. Operational Container Topology (Docker Guide)
+## 7. Operational Topology
 
-Docker containerizes applications to ensure they run identically across dev, staging, and production environments.
+The production system runs on bare systemd services (no Docker). See `ORACLE_DEPLOYMENT_REFERENCE.md` and `DEPLOYMENT.md` for full setup.
 
-### 7.1 Local Compose Infrastructure
-The local topology is orchestrated inside [docker-compose.yml](file:///Users/prateeksharma/Developer/retriever/docker-compose.yml):
+### 7.1 Production Architecture
 
 ```
-                                      [Client Request]
-                                             │
-                                             v
-                                  +--------------------+
-                                  |    retriever-api   | (FastAPI serving node)
-                                  +---+------------+---+
-                                      |            |
-             +------------------------+            +-----------------------+
-             |                                                             |
-             v                                                             v
-+------------+------------+      +---------------------+      +------------+------------+
-|   retriever-postgres    |      |  retriever-rabbitmq |      |     retriever-redis     |
-| (PostgreSQL + pgvector) |      | (Direct task broker)|      |  (L1 config cache, rate |
-+------------+------------+      +----------+----------+      |    limiter, idempotency)|
-             ^                              |                 +------------+------------+
-             |                              v                              ^
-             |                    +---------+----------+                   |
-             |                    |  retriever-worker  |                   |
-             +--------------------+  (Celery processing|-------------------+
-                                  |   daemons)         |
-                                  +---------+----------+
-                                            │
-                                            v
-                                  +---------+----------+
-                                  |   retriever-beat   | (Celery task scheduler)
-                                  +--------------------+
+rag.prateeq.in
+        │
+    ┌───▼──────────────┐
+    │   Nginx (SSL)    │   port 443 → proxy_pass → port 8000
+    │   Let's Encrypt  │
+    └───┬──────────────┘
+        │
+    ┌───▼──────────────┐       ┌─────────────────────┐
+    │  API (systemd)   │ ──→   │  Ollama (systemd)   │
+    │  uvicorn :8000   │       │  :11434             │
+    └───┬──────────────┘       │  nomic-embed-text   │
+        │                      └─────────────────────┘
+    ┌───▼──────────────┐
+    │  Supabase        │
+    │  PostgreSQL      │
+    │  + pgvector      │
+    └──────────────────┘
 ```
 
-### 7.2 Core Commands for Development
+### 7.2 Key Commands
 
-#### Start all services in the background
+#### Restart the API
 ```bash
-docker-compose up -d
+sudo systemctl restart retriever-api
 ```
 
-#### View application logs (real-time stream)
+#### View API logs
 ```bash
-docker-compose logs -f api worker
+sudo journalctl -u retriever-api -n 50 --no-pager
 ```
 
-#### Run tests inside the api container environment
+#### Run database setup
 ```bash
-docker-compose run api pytest
+uv run python -m src.adapters.database.setup
 ```
 
-#### Rebuild worker and api container images after package changes
+#### Run tests
 ```bash
-docker-compose build --no-cache
-```
-
-#### Access database terminal directly
-```bash
-docker-compose exec postgres psql -U postgres -d retriever
+cd apps/api && uv run pytest tests/
 ```
 
 ---

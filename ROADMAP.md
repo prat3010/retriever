@@ -42,7 +42,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M32** | Onboarding & Client UX Overhaul | User creation in wizard, fixed form defaults, short IDs, admin UX polish | *Completed* | Q3 2026 |
 | **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* | Q4 2026 |
 | **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* | Q4 2026 |
-| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker-compose cleanup | *Completed* | Q1 2027 |
+| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker infrastructure removal | *Completed* | Q1 2027 |
 
 ---
 
@@ -51,7 +51,6 @@ This document outlines the implementation phases and milestones for the Retrieve
 ### [Completed] Milestone 1: Repository Foundation
 - Establish workspace structure for FastAPI, Next.js, and background workers.
 - Setup Ruff formatting and TypeScript linting boundaries.
-- Build Docker configurations and docker-compose templates.
 - Automate checks with GitHub Actions.
 
 ### [Completed] Milestone 2: Authentication & Tenant Foundation
@@ -793,7 +792,7 @@ This document outlines the implementation phases and milestones for the Retrieve
   - Log boot status: `INFO: Server specs: 0.9 GB RAM, 1 CPU core. Running in LEAN mode (synchronous processing).`
   - Allow override via env vars `REDIS_ENABLED=true|false`, `BROKER_ENABLED=true|false`, `WORKERS_ENABLED=true|false`.
 - **Update Gemini default model:** Change `defaultModel` for Gemini provider in `providers.ts` from `gemini-1.5-flash` to `gemini-2.5-flash`.
-- **Remove `version: '3.8'` from `docker-compose.yml`:** The `version` field is deprecated in modern Docker Compose (v2+). Remove the line entirely.
+- **Remove Docker infrastructure:** The Docker files (`docker-compose.yml`, `Dockerfile`, `workers/Dockerfile.worker`, `apps/api/docker-compose.test.yml`, `.github/workflows/docker.yml`) were not actively used — removed for a cleaner codebase.
 - **Chat container height:** Change `max-height: 400px` to `max-height: min(60vh, 600px)` in `rag.module.css` for a better desktop experience.
 
 **Documents to Update:**

@@ -15,7 +15,6 @@ they start blocking you — not before.
 | `useAllTenants` fetches 1000 records at once — no pagination | M34 |
 | No auto-deploy pipeline for Oracle VM — manual SSH deploys required | M34 |
 | Gemini default model was `gemini-1.5-flash` (outdated) | M35 |
-| `version: '3.8'` in docker-compose.yml (deprecated in modern Docker Compose) | M35 |
 | Chat container `max-height: 400px` felt cramped on large screens | M35 |
 | No server-spec auto-detection for Redis/RabbitMQ/Celery enablement | M35 |
 | `main.py` god-file (2,250+ lines) — initial router split: health and admin routes extracted | M33 |

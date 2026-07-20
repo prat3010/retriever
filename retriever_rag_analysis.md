@@ -199,7 +199,6 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | 17 | [RagInterface.tsx:7-14](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx#L7-L14) | Deferred features list (markdown rendering, session history, stop button, keyboard shortcuts) is reasonable. These are clearly marked and not blocking. |
 | 18 | [rag.module.css:129](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/rag.module.css#L129) | `max-height: 400px` on chat container may feel cramped on large screens. Consider `min(60vh, 600px)`. |
 | 19 | [use-tenants.ts:29-33](file:///Users/prateeksharma/Developer/retriever/apps/web/src/hooks/use-tenants.ts#L29-L33) | `useAllTenants` fetches with `?limit=1000` — not paginated. Will break at scale. |
-| 20 | [docker-compose.yml:1](file:///Users/prateeksharma/Developer/retriever/docker-compose.yml#L1) | `version: '3.8'` is deprecated in modern Docker Compose. | Remove the version field. |
 
 ---
 
@@ -228,7 +227,7 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 |----------|---------|--------------|------------|
 | [ci.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/ci.yml) | Push/PR to main | Ruff lint + pytest (API), Ruff lint (workers), ESLint (web) | ✅ Good — covers all 3 codebases |
 | [coverage.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/coverage.yml) | PR only | pytest + coverage report + Codecov upload | ✅ Good |
-| [docker.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/docker.yml) | Push/PR to main | Build + push API and Worker Docker images to GHCR | ✅ Good — uses Buildx cache |
+| [Removed — docker.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/docker.yml) | Push/PR to main | Build + push API and Worker Docker images to GHCR — **removed (not actively used)** | ✅ N/A — file deleted |
 | [security.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/security.yml) | Push/PR/Weekly cron | CodeQL (Python + JS) + Trivy scans for API, Workers, Web | ✅ Excellent — weekly security scans |
 | [deploy-proxy.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/deploy-proxy.yml) | Push to main (proxy path only) | Deploy Cloudflare Worker | ✅ Good — path-scoped |
 
@@ -244,7 +243,7 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | **ADMIN_MASTER_KEY is the default in prod** | [ORACLE_DEPLOYMENT_REFERENCE.md](file:///Users/prateeksharma/Developer/retriever/ORACLE_DEPLOYMENT_REFERENCE.md#L106) shows `ADMIN_MASTER_KEY=dev-admin-master-key-change-in-production` **in the production .env**. Anyone who guesses or reads the source code can log into the admin dashboard. | 🔴 Critical |
 | **Ephemeral IP** | Oracle's public IP (`130.210.35.134`) is ephemeral — it changes if the VM is stopped and restarted. DNS (`rag.prateeq.in`) would break. | 🟡 Medium |
 | **1 GB RAM constraint** | Ollama + FastAPI share 1 GB RAM. Under load, OOM is possible (same reason Render was abandoned). | 🟡 Medium |
-| No integration tests in CI | CI only runs unit tests (`-m "not integration"`). No docker-compose integration test job. | 🟡 Medium |
+| No integration tests in CI | CI only runs unit tests (`-m "not integration"`). Docker integration test infrastructure removed — reintroduce when needed. | 🟡 Medium |
 | No health check monitoring | No uptime monitoring for `rag.prateeq.in` | 🟡 Medium |
 | `.env` committed to repo | Credentials exposed in version control | 🔴 Critical |
 | No database migration CI | Alembic migrations exist but aren't run or validated in CI | 🟡 Medium |
@@ -552,7 +551,7 @@ The `API_BASE` string (`process.env.NEXT_PUBLIC_API_URL || "http://localhost:800
 |---|-------------|
 | 11 | Show internal User ID in the Users tab so admins can copy it for clients |
 | 12 | Update Gemini model from `gemini-1.5-flash` to `gemini-2.5-flash` in providers list |
-| 13 | Remove `version: '3.8'` from docker-compose.yml (deprecated) |
+| 13 | Remove Docker infrastructure (docker-compose.yml, Dockerfiles, GitHub Actions) — not actively used (listed as low priority) |
 | 14 | Add `min(60vh, 600px)` to chat container height for better desktop experience |
 | 15 | Add Sentry DSN for production error tracking |
 | 16 | Add health check monitoring (e.g., UptimeRobot, Better Uptime) |
@@ -584,7 +583,7 @@ All 20 recommendations from this analysis have been addressed across 5 milestone
 | 10 | Consolidate `API_BASE` constant | ✅ Done | M33 |
 | 11 | Show internal User ID in Users tab | ✅ Done | M32 |
 | 12 | Update Gemini model from 1.5-flash to 2.5-flash | ✅ Done | M35 |
-| 13 | Remove `version: '3.8'` from docker-compose.yml | ✅ Done | M35 |
+| 13 | Remove Docker infrastructure (docker-compose.yml, Dockerfiles, GitHub Actions) — not actively used | ✅ Done | M35 |
 | 14 | Add `min(60vh, 600px)` to chat container height | ✅ Done | M35 |
 | 15 | Add Sentry DSN for production error tracking | ✅ Documented (manual: set env var on Oracle) | M34 |
 | 16 | Add health check monitoring | ✅ Documented (manual: configure UptimeRobot) | M34 |

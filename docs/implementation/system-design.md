@@ -245,7 +245,6 @@ Retriever uses a monorepo structure to isolate execution contexts while sharing 
 │   │   ├── tasks/               # Celery task definitions (parsing, embedding, periodic)
 │   │   ├── celery_app.py        # Celery application configuration
 │   │   └── event_consumer.py    # Legacy pika consumer (deprecated)
-│   ├── Dockerfile.worker        # Docker configuration for Worker daemon
 │   ├── pyproject.toml
 │   └── uv.lock
 │

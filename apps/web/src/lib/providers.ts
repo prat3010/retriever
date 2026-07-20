@@ -7,6 +7,12 @@ export interface ProviderDef {
 
 export const PROVIDERS: ProviderDef[] = [
   {
+    label: "OpenRouter",
+    value: "openrouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    defaultModel: "openai/gpt-4o",
+  },
+  {
     label: "OpenAI",
     value: "openai",
     baseUrl: "https://api.openai.com/v1",
@@ -23,12 +29,6 @@ export const PROVIDERS: ProviderDef[] = [
     value: "anthropic",
     baseUrl: "https://api.anthropic.com",
     defaultModel: "claude-3-5-sonnet-20240620",
-  },
-  {
-    label: "OpenRouter",
-    value: "openrouter",
-    baseUrl: "https://openrouter.ai/api/v1",
-    defaultModel: "openai/gpt-4o",
   },
   {
     label: "DeepSeek",

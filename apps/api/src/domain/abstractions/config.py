@@ -25,6 +25,8 @@ class ModelPricing(BaseModel):
 
 
 DEFAULT_PRICING: dict[str, ModelPricing] = {
+    "openai/gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),
+    "openai/gpt-4o-mini": ModelPricing(input_cost_per_1k=0.15, output_cost_per_1k=0.60),
     "gemini-1.5-flash": ModelPricing(input_cost_per_1k=0.075, output_cost_per_1k=0.30),
     "gemini-1.5-pro": ModelPricing(input_cost_per_1k=1.25, output_cost_per_1k=5.0),
     "gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),
@@ -37,8 +39,8 @@ DEFAULT_PRICING: dict[str, ModelPricing] = {
 class AIProviderConfig(BaseModel):
     provider_name: str = "openai"
     api_key: str | None = None
-    base_url: str | None = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    default_model: str = "gemini-1.5-flash"
+    base_url: str | None = "https://openrouter.ai/api/v1"
+    default_model: str = "openai/gpt-4o"
     vision_model: str = "gpt-4o"
     fallback_provider: str = ""
     fallback_model: str = ""
@@ -77,12 +79,12 @@ class CorrectiveRetrievalSettings(BaseModel):
     enable_corrective_retrieval: bool = False
     max_retrieval_rounds: int = 2
     confidence_threshold: float = 0.4
-    judge_model: str = "gemini-1.5-flash"
+    judge_model: str = "openai/gpt-4o"
 
 
 class QueryIntentSettings(BaseModel):
     enable_query_intent: bool = False
-    classifier_model: str = "gemini-1.5-flash"
+    classifier_model: str = "openai/gpt-4o"
 
 
 class BudgetSettings(BaseModel):

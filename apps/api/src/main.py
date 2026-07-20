@@ -338,8 +338,8 @@ class PreviewPromptRequest(BaseModel):
 class ValidateKeyRequest(BaseModel):
     api_key: str = Field(default="", description="API key to validate (falls back to server key if empty)")
     base_url: str = Field(default="", description="Custom API base URL")
-    provider: str = Field(..., description="Provider name: 'openai' or 'gemini'")
-    model: str = Field(default="gemini-1.5-flash", description="Model name to ping")
+    provider: str = Field(..., description="Provider name: 'openai', 'openrouter', or 'gemini'")
+    model: str = Field(default="openai/gpt-4o", description="Model name to ping")
 
 
 class ValidateKeyResponse(BaseModel):
@@ -484,6 +484,8 @@ async def validate_api_key(
         base_url = payload.base_url
         if not base_url and payload.provider == "gemini":
             base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+        elif not base_url and payload.provider == "openrouter":
+            base_url = "https://openrouter.ai/api/v1"
         if base_url:
             kwargs["base_url"] = base_url
         
@@ -998,23 +1000,47 @@ async def admin_platform_stats() -> dict[str, Any]:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_platform_reset() -> dict[str, str]:
-    """Wipe all tenant data, documents, chunks, and embeddings except the System Tenant (System-wide Admin)."""
+async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str, str]:
+    """Wipe all tenant data, documents, chunks, and embeddings.
+
+    By default preserves the System Tenant (00000000-...). Pass
+    include_system_tenant=true to wipe everything including the system
+    tenant's documents, API keys, users, configs, and chat history.
+    """
     import shutil
 
     from src.adapters.database.connection import tenant_session
-    from src.adapters.database.models import TenantDb
+    from src.adapters.database.models import (
+        ApiKeyDb,
+        ChatMessageFeedbackDb,
+        ChatMessageDb,
+        ChatSessionDb,
+        ConfigurationDb,
+        DocumentChunkDb,
+        DocumentDb,
+        EvalDatasetDb,
+        EvalQuestionDb,
+        EvalRunDb,
+        EvalRunResultDb,
+        InferenceLogDb,
+        PromptTemplateDb,
+        SemanticCacheDb,
+        TenantDb,
+        UserDb,
+        VectorRecordDb,
+    )
+
+    SYSTEM_TENANT_UUID = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
     async with tenant_session(bypass_rls=True) as session:
+        # ── Non-system tenants: delete TenantDb row (cascades to all child data) ──
         result = await session.execute(
-            select(TenantDb).where(TenantDb.tenant_id != uuid.UUID("00000000-0000-0000-0000-000000000000"))
+            select(TenantDb).where(TenantDb.tenant_id != SYSTEM_TENANT_UUID)
         )
         tenants = result.scalars().all()
-        
+
         for t in tenants:
             tenant_id_str = str(t.tenant_id)
-            
-            # Clean local files
             for base_dir in ["./storage", "apps/api/storage"]:
                 tenant_dir = os.path.join(base_dir, tenant_id_str)
                 if os.path.exists(tenant_dir):
@@ -1022,12 +1048,119 @@ async def admin_platform_reset() -> dict[str, str]:
                         shutil.rmtree(tenant_dir)
                     except Exception:
                         pass
-                        
             await session.delete(t)
-            
+
+        # ── Optional: wipe system tenant data ──
+        if include_system_tenant:
+            # Local storage
+            for base_dir in ["./storage", "apps/api/storage"]:
+                tenant_dir = os.path.join(base_dir, str(SYSTEM_TENANT_UUID))
+                if os.path.exists(tenant_dir):
+                    try:
+                        shutil.rmtree(tenant_dir)
+                    except Exception:
+                        pass
+
+            # Vector records (FK to chunks)
+            await session.execute(
+                VectorRecordDb.__table__.delete().where(
+                    VectorRecordDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Document chunks (FK to documents + tenants)
+            await session.execute(
+                DocumentChunkDb.__table__.delete().where(
+                    DocumentChunkDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Documents
+            await session.execute(
+                DocumentDb.__table__.delete().where(
+                    DocumentDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Chat message feedback
+            await session.execute(
+                ChatMessageFeedbackDb.__table__.delete().where(
+                    ChatMessageFeedbackDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Inference logs
+            await session.execute(
+                InferenceLogDb.__table__.delete().where(
+                    InferenceLogDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Chat messages
+            await session.execute(
+                ChatMessageDb.__table__.delete().where(
+                    ChatMessageDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Chat sessions
+            await session.execute(
+                ChatSessionDb.__table__.delete().where(
+                    ChatSessionDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Evaluation data
+            await session.execute(
+                EvalRunResultDb.__table__.delete().where(
+                    EvalRunResultDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            await session.execute(
+                EvalRunDb.__table__.delete().where(
+                    EvalRunDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            await session.execute(
+                EvalQuestionDb.__table__.delete().where(
+                    EvalQuestionDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            await session.execute(
+                EvalDatasetDb.__table__.delete().where(
+                    EvalDatasetDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Semantic cache
+            await session.execute(
+                SemanticCacheDb.__table__.delete().where(
+                    SemanticCacheDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Prompt templates
+            await session.execute(
+                PromptTemplateDb.__table__.delete().where(
+                    PromptTemplateDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # API keys
+            await session.execute(
+                ApiKeyDb.__table__.delete().where(
+                    ApiKeyDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Users
+            await session.execute(
+                UserDb.__table__.delete().where(
+                    UserDb.tenant_id == SYSTEM_TENANT_UUID
+                )
+            )
+            # Configurations (both system tenant and global)
+            await session.execute(
+                ConfigurationDb.__table__.delete().where(
+                    (ConfigurationDb.tenant_id == SYSTEM_TENANT_UUID)
+                    | (ConfigurationDb.tenant_id.is_(None))
+                )
+            )
+
         await session.flush()
-        
-    return {"status": "success", "message": "All non-system tenant data cleared successfully."}
+
+    msg = "All data cleared including system tenant." if include_system_tenant \
+        else "All non-system tenant data cleared successfully."
+    return {"status": "success", "message": msg}
 
 
 

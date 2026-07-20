@@ -87,7 +87,7 @@ export default {
       if (accept) newHeaders.set("accept", accept);
 
       // Securely inject tenant authorization keys
-      newHeaders.set("X-API-Key", env.RETRIEVER_API_KEY);
+      newHeaders.set("Authorization", `Bearer ${env.RETRIEVER_API_KEY}`);
       newHeaders.set("X-User-ID", userId);
 
       // 5. Proxy the request to the Retriever backend

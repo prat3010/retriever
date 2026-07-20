@@ -1019,9 +1019,7 @@ async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str,
         DocumentChunkDb,
         DocumentDb,
         EvalDatasetDb,
-        EvalQuestionDb,
         EvalRunDb,
-        EvalRunResultDb,
         InferenceLogDb,
         PromptTemplateDb,
         SemanticCacheDb,
@@ -1103,20 +1101,16 @@ async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str,
                     ChatSessionDb.tenant_id == SYSTEM_TENANT_UUID
                 )
             )
-            # Evaluation data
-            await session.execute(
-                EvalRunResultDb.__table__.delete().where(
-                    EvalRunResultDb.tenant_id == SYSTEM_TENANT_UUID
-                )
-            )
+            # Evaluation data (EvalRunDb cascades to EvalRunResultDb;
+            # EvalDatasetDb cascades to EvalQuestionDb)
             await session.execute(
                 EvalRunDb.__table__.delete().where(
                     EvalRunDb.tenant_id == SYSTEM_TENANT_UUID
                 )
             )
             await session.execute(
-                EvalQuestionDb.__table__.delete().where(
-                    EvalQuestionDb.tenant_id == SYSTEM_TENANT_UUID
+                EvalDatasetDb.__table__.delete().where(
+                    EvalDatasetDb.tenant_id == SYSTEM_TENANT_UUID
                 )
             )
             await session.execute(

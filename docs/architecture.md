@@ -542,9 +542,14 @@ Retriever is structured as a monorepo to maintain strong typing across client-se
 │   │   │   │   ├── ingestion/    # Document upload and validation
 │   │   │   │   ├── knowledge/    # Chunking and text indexing logic
 │   │   │   │   ├── retrieval/    # Hybrid search and reranking
-│   │   │   │   └── inference/    # Prompt templating, citation, SSE pipelines
-│   │   │   ├── adapters/        # Database, LLM, and storage adapters (Physical)
-│   │   │   └── main.py          # API entrypoint
+│   │   │   │   ├── inference/    # Prompt templating, citation, SSE pipelines
+│   │   │   │   └── guardrails/   # Input guardrails, PII redaction
+│   │   │   ├── adapters/        # Database, LLM, storage, guardrails adapters (Physical)
+│   │   │   │   └── guardrails/   # LLM safety guard (imports openai)
+│   │   │   ├── schemas/         # Pydantic DTOs (7 files)
+│   │   │   ├── routers/         # Route handlers (health, admin, tenant, document, search, chat)
+│   │   │   ├── container.py     # DI wiring for all singletons
+│   │   │   └── main.py          # API entrypoint (~170 lines)
 │   │   ├── pyproject.toml
 │   │   └── uv.lock
 │   │

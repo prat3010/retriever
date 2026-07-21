@@ -52,7 +52,7 @@ async def test_semantic_cache_get_cached_search_transaction(mock_engine) -> None
 
 @pytest.mark.asyncio
 async def test_list_session_messages_ownership_checks() -> None:
-    from src.main import list_session_messages
+    from src.routers.chat import list_session_messages
 
     # User A accesses User B's session
     mock_session = ChatSessionInfo(
@@ -62,7 +62,7 @@ async def test_list_session_messages_ownership_checks() -> None:
         created_at="2026-07-15T00:00:00Z"
     )
 
-    with patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock) as mock_get_session:
+    with patch("src.routers.chat.inference_orchestrator.get_session", new_callable=AsyncMock) as mock_get_session:
         mock_get_session.return_value = mock_session
 
         with pytest.raises(HTTPException) as exc_info:

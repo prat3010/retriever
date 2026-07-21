@@ -28,9 +28,9 @@ Operational overview of the Retriever platform's current engineering status.
  - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
  
  ### Testing Status: **Green**
- - **Unit Test Coverage**: 28 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), and stream token telemetry / parsing whitelist validation (M25).
- - **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
- - **Total Tests**: 358/358 passing.
+- **Unit Test Coverage**: 28 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), and main.py decomposition.
+- **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
+- **Total Tests**: 369/369 passing (1 skipped).
  - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
  - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
  
@@ -410,14 +410,13 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 **Objective:** Break down the 2,250-line `main.py` monolith, eliminate type safety gaps, consolidate duplicated constants, and clean up inconsistent patterns across both the backend and frontend codebases.
 
 ### Changes Made
-- **Router split architecture** (`apps/api/src/routers/`): Created `health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py` router modules. Migrated health (liveness/readiness) and admin (verify-key) endpoints to routers. Pattern established for full split.
+- **Full `main.py` decomposition** (2355→170 lines): Extracted 25 Pydantic DTOs to `src/schemas/` (7 files), business logic to `src/domain/` (inference, guardrails, retrieval), and all 55+ route handlers to 6 fully populated `src/routers/` modules (`health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py`). Created `src/container.py` for DI wiring of all ~25 singletons (repos, adapters, services, LLM providers, embedder, search, orchestrator, eval). Moved `llm_safety_guard` to `src/adapters/guardrails/` for architecture conformance.
 - **Shared TypeScript types** (`Prateek_website/src/lib/rag-types.ts`): Defined `SearchResult`, `DocumentMeta`, and `SearchResponse` interfaces. Eliminates `any` type usage in `RagInterface.tsx`.
 - **`API_BASE` consolidated**: Removed duplicate declarations from `login/page.tsx` and `onboard/page.tsx`. Both now import `API_BASE` from `lib/api.ts`.
 - **RetrieverClient cleanup** (`rag-client.ts`): Refactored `uploadDocument` and `deleteDocument` to use the shared `request<T>()` method instead of duplicating fetch + header logic. Extracted shared auth header construction.
 - **Duplicate cookie clearing removed** (`sidebar.tsx`): Removed the separate `document.cookie = ...` line from the logout handler — `clearKey()` in the auth store already handles cookie clearing.
-
-### Remaining
-- Full `main.py` split (migrate remaining ~2,200 lines to routers) is deferred. See `TECH_DEBT.md`.
+- **Test `@patch` target fixes**: Updated 5 test files to patch router modules (`src.routers.chat`, `src.routers.admin`, `src.routers.document`) and new import paths (`src.adapters.cache.config_cache`, `src.schemas.document`) instead of `src.main`. All 369 tests pass (same baseline + 1 skipped).
+- **Architecture conformance**: `domain/abstractions/` has 12+ pure ABCs with zero infrastructure imports. Enforced by `tests/test_architecture.py` AST analysis.
 
 ---
 

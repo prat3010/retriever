@@ -46,7 +46,7 @@ async def test_db_connection():
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_redis_connection():
-    from src.main import redis_client
+    from src.adapters.cache.config_cache import redis_client
 
     result = await redis_client.ping()
     assert result is True

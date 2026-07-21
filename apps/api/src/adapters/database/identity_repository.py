@@ -67,6 +67,7 @@ class SqlIdentityProvider(IdentityProvider):
                 tenant_id=str(db_key.tenant_id),
                 roles=roles,
                 scopes=scopes,
+                key_id=str(db_key.key_id),
             )
 
     async def create_api_key(

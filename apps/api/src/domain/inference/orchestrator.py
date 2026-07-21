@@ -170,18 +170,20 @@ class InferenceOrchestrator:
         input_tokens: int,
         output_tokens: int,
         cost: float,
+        role: str | None = None,
     ) -> None:
         if not self.metrics:
             return
+        labels = {"tenant_id": tenant_id, "model": model_used}
+        if role:
+            labels["role"] = role
         self.metrics.increment("TOKEN_CONSUMPTION", value=input_tokens, labels={
-            "tenant_id": tenant_id, "model": model_used, "type": "input"
+            **labels, "type": "input"
         })
         self.metrics.increment("TOKEN_CONSUMPTION", value=output_tokens, labels={
-            "tenant_id": tenant_id, "model": model_used, "type": "output"
+            **labels, "type": "output"
         })
-        self.metrics.increment("COST_SPEND", value=cost, labels={
-            "tenant_id": tenant_id, "model": model_used
-        })
+        self.metrics.increment("COST_SPEND", value=cost, labels=labels)
 
     async def _check_budget(
         self,
@@ -235,12 +237,16 @@ class InferenceOrchestrator:
         latency_ms: int,
         cost: float,
         notes: str | None,
+        role: str | None = None,
+        key_id: str | None = None,
     ) -> None:
         await self.log_writer.write_log(
             InferenceLog(
                 tenant_id=tenant_id,
                 session_id=session_id,
                 user_id=user_id,
+                role=role,
+                key_id=key_id,
                 model_used=model_used,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
@@ -273,6 +279,8 @@ class InferenceOrchestrator:
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
+        role: str | None = None,
+        key_id: str | None = None,
         system_prompt_name: str = "default",
         experiment_id: str | None = None,
         experiment_variant: str | None = None,
@@ -304,9 +312,9 @@ class InferenceOrchestrator:
         elapsed = int((time.monotonic() - start) * 1000)
         notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
 
-        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost)
+        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost, role)
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
-        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes)
+        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes, role, key_id)
         await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
 
         return response
@@ -339,6 +347,8 @@ class InferenceOrchestrator:
         context_chunks: list[SearchResult],
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
+        role: str | None = None,
+        key_id: str | None = None,
         system_prompt_name: str = "default",
         experiment_id: str | None = None,
         experiment_variant: str | None = None,
@@ -394,9 +404,9 @@ class InferenceOrchestrator:
         cost = calculate_cost(usage, model_used, model_config.pricing)
         notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
 
-        await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost)
+        await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost, role)
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
-        await self._log_inference(tenant_id, session_id, user_id, model_used, input_tokens, output_tokens, elapsed, cost, notes)
+        await self._log_inference(tenant_id, session_id, user_id, model_used, input_tokens, output_tokens, elapsed, cost, notes, role, key_id)
 
         yield {
             "event": "done",

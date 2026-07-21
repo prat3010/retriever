@@ -576,13 +576,15 @@ Retriever enforces strict data isolation using PostgreSQL Row-Level Security (RL
   * `tenant_id` (UUIDv4, FK referencing `tenants.tenant_id` ON DELETE CASCADE)
   * `session_id` (UUIDv4, FK referencing `chat_sessions.session_id` ON DELETE SET NULL)
   * `user_id` (UUIDv4, FK referencing `users.user_id` ON DELETE SET NULL)
-* **Columns:** `cost_usd` (Float) — per-inference token cost, `notes` (Text) — telemetry metadata (e.g. `_actual_provider` for failover tracking)
+  * `key_id` (UUIDv4, FK referencing `api_keys.key_id` ON DELETE SET NULL)
+* **Columns:** `role` (VARCHAR(50)) — caller role (`admin` or `client`), `cost_usd` (Float) — per-inference token cost, `notes` (Text) — telemetry metadata (e.g. `_actual_provider` for failover tracking)
 * **Important Indexes:**
   * Index on `tenant_id`
   * Index on `user_id`
+  * Index on `key_id`
   * Index on `created_at`
 * **RLS:** Filtered by `tenant_id` + `user_id`. Admin bypasses user filter.
-* **Relationships:** Many-to-One with `tenants`, Many-to-One with `users`, Many-to-One with `chat_sessions`.
+* **Relationships:** Many-to-One with `tenants`, Many-to-One with `users`, Many-to-One with `chat_sessions`, Many-to-One with `api_keys`.
 * **Retention Strategy:** Retained for 180 days for auditing and billing verification, then archived to cold storage.
 
 #### 4.1.12 `audit_logs`

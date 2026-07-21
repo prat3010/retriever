@@ -68,6 +68,8 @@ class InferenceLog(BaseModel):
     tenant_id: str
     session_id: str | None = None
     user_id: str | None = None
+    role: str | None = None
+    key_id: str | None = None
     model_used: str = ""
     input_tokens: int = 0
     output_tokens: int = 0

@@ -28,6 +28,8 @@ class CorrectiveRetrievalService:
         search_query: SearchQuery,
         tenant_config: TenantConfiguration,
         user_id: str | None = None,
+        role: str | None = None,
+        key_id: str | None = None,
         system_prompt_name: str = "default",
     ) -> InferenceResponse:
         settings: CorrectiveRetrievalSettings = tenant_config.corrective_retrieval_settings
@@ -40,6 +42,8 @@ class CorrectiveRetrievalService:
             context_chunks=search_resp.results,
             tenant_config=tenant_config,
             user_id=user_id,
+            role=role,
+            key_id=key_id,
             system_prompt_name=system_prompt_name,
         )
 
@@ -67,6 +71,8 @@ class CorrectiveRetrievalService:
                 context_chunks=search_resp.results,
                 tenant_config=tenant_config,
                 user_id=user_id,
+                role=role,
+                key_id=key_id,
                 system_prompt_name=system_prompt_name,
             )
 

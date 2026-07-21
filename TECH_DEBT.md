@@ -74,6 +74,8 @@ they start blocking you — not before.
 | `isinstance(local_storage, LocalStorage)` in `serve_local_download` (breaks duck-typing for S3) | 0.27.0 |
 | Ruff `UP038` (`(X, Y)` → `X | Y`) in test_architecture.py | 0.27.0 |
 | Module-level container singletons (no `reset()`/`override()` for testability) | 0.27.0 |
+| No inference telemetry logged for admin requests — admin keys had `user_id=NULL` with no role tag | 0.28.0 |
+| `UserContext.user_id` always empty string for API key auth — no `key_id` surfaced for attribution | 0.28.0 |
 
 ## Architecture
 
@@ -150,19 +152,6 @@ construction instead.
 | `adapters/telemetry/setup.py` | 6 |
 
 ## Observability
-
-### No inference telemetry logged for admin requests
-When an admin key is used on chat endpoints, `get_current_user_id`
-returns a `None` user_id. But inference logs still record the
-interaction. Add admin-specific tags or skip logging for admin
-impersonation.
-
-### `UserContext.user_id` always empty string for API key auth
-**File:** `apps/api/src/adapters/database/identity_repository.py:60`
-
-`validate_token` always returns `user_id=""`. Document and search
-endpoints have no user-scoped audit trail. Either populate from the
-key metadata or accept the gap.
 
 ## Security
 

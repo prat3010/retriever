@@ -2,6 +2,20 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-07-21
+
+### Added
+- **Inference log attribution**: `InferenceLog` and `InferenceLogDb` gain `role` (`str | None`) and `key_id` (`str | None`) fields — admin requests now tagged `role="admin"` instead of `user_id=NULL`; API key auth surfaces `key_id` for identity-level attribution.
+- **`key_id` on `UserContext`**: `validate_token` returns the API key's UUID as `key_id`, wired through `get_current_user` into the chat router.
+- **Prometheus role label**: `_record_metrics` now includes an optional `role` label on `TOKEN_CONSUMPTION` and `COST_SPEND` counters.
+- **Alembic migration**: `4c7d8e9f0a1b` adds `role` and `key_id` columns to `inference_logs`.
+
+### Changed
+- **`InferenceOrchestrator.generate()` / `generate_stream()`**: Accept `role` and `key_id` optional params, forward to `_log_inference`.
+- **`CorrectiveRetrievalService.generate_with_correction()`**: Accepts and forwards `role`/`key_id`.
+- **`SqlInferenceLogWriter.write_log()`**: Persists `role` and `key_id` columns.
+- **Chat router `send_chat_message`**: Uses `Depends(get_current_user)` to extract caller `role`/`key_id` at request scope, passes through all orchestrator paths (streaming and non-streaming).
+
 ## [0.27.0] - 2026-07-21
 ### Added
 - **Class-based DI container** (`src/container.py`): Module-level singletons refactored into `Container` class with `reset()` and `override(contextmanager)` for testability. Full backward compat via module-level aliases.

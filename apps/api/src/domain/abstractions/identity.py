@@ -8,6 +8,7 @@ class UserContext(BaseModel):
     tenant_id: str
     roles: list[str]
     scopes: list[str]
+    key_id: str | None = None
 
 
 class ApiKeyMetadata(BaseModel):

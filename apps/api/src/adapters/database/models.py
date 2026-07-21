@@ -329,6 +329,13 @@ class InferenceLogDb(Base):
     latency_ms = Column(Integer, nullable=False, default=0)
     cost_usd = Column(Float, nullable=False, default=0.0)
     notes = Column(Text, nullable=True)
+    role = Column(String(50), nullable=True)
+    key_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("api_keys.key_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 

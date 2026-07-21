@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
 from fastapi.responses import StreamingResponse
 
 from src.adapters.api.security import (
+    get_current_user,
     get_current_user_id,
     verify_scopes,
     verify_tenant_isolation,
@@ -22,6 +23,7 @@ from src.container import (
     search_service,
     session_repo,
 )
+from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatMessageFeedback
 from src.domain.guardrails import apply_input_guardrails as _apply_input_guardrails
 from src.domain.inference.citation_formatter import (
@@ -66,6 +68,7 @@ async def send_chat_message(
     sessionId: str,
     payload: ChatMessageRequest,
     user_id: str | None = Depends(get_current_user_id),
+    user_context: UserContext = Depends(get_current_user),
     x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
     x_llm_provider: str | None = Header(None, alias="X-LLM-Provider"),
 ):
@@ -79,6 +82,9 @@ async def send_chat_message(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access Forbidden: You do not own this chat session."
         )
+
+    caller_role = user_context.roles[0] if user_context.roles else None
+    caller_key_id = user_context.key_id
 
     tenant_config = await config_service.get_tenant_config(tenantId)
 
@@ -114,6 +120,8 @@ async def send_chat_message(
                 search_query=search_query,
                 tenant_config=tenant_config,
                 user_id=user_id,
+                role=caller_role,
+                key_id=caller_key_id,
                 system_prompt_name=payload.system_prompt_name,
             )
         else:
@@ -124,6 +132,8 @@ async def send_chat_message(
                 context_chunks=search_response.results,
                 tenant_config=tenant_config,
                 user_id=user_id,
+                role=caller_role,
+                key_id=caller_key_id,
                 system_prompt_name=payload.system_prompt_name,
                 experiment_id=experiment_id,
                 experiment_variant=experiment_variant,
@@ -146,6 +156,8 @@ async def send_chat_message(
                 context_chunks=search_response.results,
                 tenant_config=tenant_config,
                 user_id=user_id,
+                role=caller_role,
+                key_id=caller_key_id,
                 system_prompt_name=payload.system_prompt_name,
                 experiment_id=experiment_id,
                 experiment_variant=experiment_variant,

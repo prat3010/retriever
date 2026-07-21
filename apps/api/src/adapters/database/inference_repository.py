@@ -281,6 +281,8 @@ class SqlInferenceLogWriter(InferenceLogWriter):
                     tenant_id=uuid.UUID(log.tenant_id),
                     session_id=uuid.UUID(log.session_id) if log.session_id else None,
                     user_id=uuid.UUID(log.user_id) if log.user_id else None,
+                    role=log.role,
+                    key_id=uuid.UUID(log.key_id) if log.key_id else None,
                     model_used=log.model_used,
                     input_tokens=log.input_tokens,
                     output_tokens=log.output_tokens,

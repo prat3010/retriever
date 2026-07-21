@@ -1,25 +1,24 @@
-import hashlib
 import logging
-import os
+import os  # noqa: F401 — re-exported for test patching (src.main.os.path.exists)
 import sys
 import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from src.adapters.database.connection import engine
-from src.adapters.storage.local_storage import LocalStorage
-from src.adapters.telemetry.setup import init_telemetry
+from src.adapters.telemetry.setup import get_tracer, init_telemetry
 from src.config import settings
 from src.container import (  # noqa: F401 — re-exported for test patching
+    admin_repository,
     audit_logger,
     config_service,
     document_repository,
+    event_publisher,
     identity_provider,
     inference_orchestrator,
     local_storage,
@@ -34,6 +33,11 @@ from src.domain.abstractions.exceptions import (
     TenantIsolationViolationError,
 )
 
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -46,10 +50,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error(f"Failed to warm up database connection pool: {e}")
 
     if settings.SENTRY_DSN:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
-
         sentry_sdk.init(
             dsn=settings.SENTRY_DSN,
             environment=settings.ENVIRONMENT,
@@ -61,12 +61,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             ],
         )
     yield
-    # Flush pending telemetry on shutdown
     if settings.SENTRY_DSN:
-        import sentry_sdk
         sentry_sdk.flush()
     try:
-        from src.adapters.telemetry.setup import get_tracer
         tracer = get_tracer()
         if tracer:
             tracer.force_flush()
@@ -133,47 +130,5 @@ app.include_router(chat_router)
 app.include_router(document_router)
 app.include_router(search_router)
 app.include_router(tenant_router)
-
-@app.get(
-    "/v1/local-downloads/{tenantId}/{filename}",
-    status_code=status.HTTP_200_OK,
-)
-async def serve_local_download(
-    tenantId: str,
-    filename: str,
-    expires: int,
-    signature: str,
-) -> Any:
-    """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
-    import hmac
-    import time
-
-    # 1. Check expiration
-    if int(time.time()) > expires:
-        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This download link has expired.")
-
-    # 2. Verify signature
-    relative_path = f"{tenantId}/{filename}"
-    secret_key = settings.STORAGE_HMAC_KEY.encode()
-    msg = f"{relative_path}:{expires}".encode()
-    expected_sig = hmac.new(secret_key, msg=msg, digestmod=hashlib.sha256).hexdigest()
-
-    if not hmac.compare_digest(signature, expected_sig):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid signature.")
-
-    # 3. Serve file from local storage directory
-    if not isinstance(local_storage, LocalStorage):
-        raise HTTPException(status_code=500, detail="Local downloads are only supported in local storage mode.")
-
-    file_path = os.path.join(local_storage.storage_dir, tenantId, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found on disk.")
-
-    return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
-
-
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Retriever Core Platform API. Visit /docs for Swagger UI."}
 
 

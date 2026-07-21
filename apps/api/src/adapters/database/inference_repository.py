@@ -247,6 +247,29 @@ class SqlChatSessionRepository(ChatSessionRepository):
 
             return items, next_cursor, has_more
 
+    async def get_message(
+        self, tenant_id: str, session_id: str, message_id: str
+    ) -> ChatMessageInfo | None:
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = select(ChatMessageDb).where(
+                ChatMessageDb.tenant_id == uuid.UUID(tenant_id),
+                ChatMessageDb.session_id == uuid.UUID(session_id),
+                ChatMessageDb.message_id == uuid.UUID(message_id),
+            )
+            result = await session.execute(stmt)
+            row = result.scalar_one_or_none()
+            if not row:
+                return None
+            return ChatMessageInfo(
+                message_id=str(row.message_id),
+                session_id=str(row.session_id),
+                tenant_id=str(row.tenant_id),
+                role=row.role,
+                content=row.content,
+                name=row.name,
+                created_at=row.created_at.isoformat() if row.created_at else "",
+            )
+
 
 class SqlInferenceLogWriter(InferenceLogWriter):
     """SQLAlchemy-backed inference log persister."""

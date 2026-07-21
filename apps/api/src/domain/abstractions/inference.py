@@ -177,6 +177,13 @@ class ChatSessionRepository(ABC):
         """Retrieve messages for a session using cursor-based pagination."""
         pass
 
+    @abstractmethod
+    async def get_message(
+        self, tenant_id: str, session_id: str, message_id: str
+    ) -> ChatMessageInfo | None:
+        """Retrieve a single message by ID within a tenant-scoped session."""
+        pass
+
 
 class InferenceLogWriter(ABC):
     """Port for persisting inference telemetry records."""

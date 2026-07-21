@@ -1,6 +1,9 @@
 """Document management routes."""
 import hashlib
+import hmac
 import json
+import os
+import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -15,20 +18,21 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import FileResponse
 
 from src.adapters.api.security import verify_scopes, verify_tenant_isolation
 from src.adapters.cache.config_cache import redis_client
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
-from src.container import document_repository, inference_orchestrator, local_storage
+from src.config import settings
+from src.container import (
+    celery_app,
+    document_repository,
+    inference_orchestrator,
+    local_storage,
+)
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.ingestion import Document
 from src.schemas.document import DocumentResponse, ExtractRequest, ExtractResponse
-
-try:
-    from src.adapters.broker.celery_publisher import celery_app
-except Exception:
-    celery_app = None
-
 
 router = APIRouter(tags=["Documents"])
 
@@ -272,3 +276,38 @@ async def get_document_download_url(
         "downloadUrl": download_url,
         "expiresInSeconds": expiry,
     }
+
+
+@router.get(
+    "/v1/local-downloads/{tenantId}/{filename}",
+    status_code=status.HTTP_200_OK,
+)
+async def serve_local_download(
+    tenantId: str,
+    filename: str,
+    expires: int,
+    signature: str,
+) -> Any:
+    """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
+    # 1. Check expiration
+    if int(time.time()) > expires:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This download link has expired.")
+
+    # 2. Verify signature
+    relative_path = f"{tenantId}/{filename}"
+    secret_key = settings.STORAGE_HMAC_KEY.encode()
+    msg = f"{relative_path}:{expires}".encode()
+    expected_sig = hmac.new(secret_key, msg=msg, digestmod=hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(signature, expected_sig):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid signature.")
+
+    # 3. Serve file from local storage directory
+    if not hasattr(local_storage, "storage_dir"):
+        raise HTTPException(status_code=500, detail="Local downloads are only supported in local storage mode.")
+
+    file_path = os.path.join(local_storage.storage_dir, tenantId, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk.")
+
+    return FileResponse(file_path, media_type="application/octet-stream", filename=filename)

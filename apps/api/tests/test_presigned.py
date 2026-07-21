@@ -136,7 +136,7 @@ async def test_serve_local_download_success(tmp_path) -> None:
     mock_local_storage = AsyncMock(spec=LocalStorage)
     mock_local_storage.storage_dir = str(tmp_path)
 
-    with patch("src.main.local_storage", mock_local_storage):
+    with patch("src.routers.document.local_storage", mock_local_storage):
         client = TestClient(app)
         response = client.get(
             f"/v1/local-downloads/{tenant_id}/{filename}?expires={future_time}&signature={valid_sig}"

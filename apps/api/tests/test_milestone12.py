@@ -171,7 +171,7 @@ def test_readiness_probe_with_s3(mock_engine, mock_redis_ping):
         mock_s3_storage.client = MagicMock()
         mock_s3_storage.client.head_bucket.return_value = {}
 
-        with patch("src.main.local_storage", mock_s3_storage):
+        with patch("src.routers.health.local_storage", mock_s3_storage):
             response = client.get("/health/readiness")
             assert response.status_code == status.HTTP_200_OK
             assert response.json()["status"] == "ready"

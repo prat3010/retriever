@@ -2,20 +2,17 @@
 import asyncio
 import json
 import logging
-import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
 
 from src.adapters.api.security import (
     get_current_user_id,
     verify_scopes,
     verify_tenant_isolation,
 )
-from src.adapters.database.models import ChatMessageDb
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.container import (
     config_service,
@@ -255,18 +252,9 @@ async def submit_message_feedback(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
 
-    from src.adapters.database.connection import tenant_session
-
-    async with tenant_session(tenant_id=tenantId) as db_session:
-        stmt = select(ChatMessageDb).where(
-            ChatMessageDb.tenant_id == uuid.UUID(tenantId),
-            ChatMessageDb.session_id == uuid.UUID(sessionId),
-            ChatMessageDb.message_id == uuid.UUID(messageId),
-        )
-        res = await db_session.execute(stmt)
-        msg = res.scalar_one_or_none()
-        if not msg:
-            raise HTTPException(status_code=404, detail="Message not found in this session.")
+    msg = await session_repo.get_message(tenantId, sessionId, messageId)
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found in this session.")
 
     feedback = ChatMessageFeedback(
         tenant_id=tenantId,

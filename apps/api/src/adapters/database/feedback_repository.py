@@ -111,7 +111,7 @@ class SqlFeedbackRepository(FeedbackRepository):
                 if not s:
                     continue
                 for k, v in s.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         dim_sums[k] = dim_sums.get(k, 0) + v
                         dim_counts[k] = dim_counts.get(k, 0) + 1
 

@@ -61,6 +61,19 @@ they start blocking you — not before.
 | SQL injection in PostgreSQL connection manager `tenant_session` | M25 cleanup |
 | Lack of automatic batching in `embed_with_retry` | M25 cleanup |
 | Plaintext parsing loophole for binary document uploads | M25 cleanup |
+| `main.py` inline `from src.adapters.database.connection import tenant_session` in admin router (10+ occurrences) | 0.27.0 |
+| `main.py` inline `from src.adapters.database.models import ChatMessageDb` in chat router | 0.27.0 |
+| `main.py` inline `from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync` (2 occurrences) | 0.27.0 |
+| `main.py` inline `from sqlalchemy import func, select` in admin router | 0.27.0 |
+| `main.py` inline `import shutil, os` in `admin_platform_reset` | 0.27.0 |
+| Router adapter leaks — routers importing adapters directly instead of through container | 0.27.0 |
+| `admin_platform_stats` and `admin_platform_reset` inline SQLAlchemy (230+ lines) in admin router | 0.27.0 |
+| `serve_local_download` and `root` route handlers still in `main.py` | 0.27.0 |
+| `sentry_sdk` and `get_tracer` inline imports inside lifespan block in `main.py` | 0.27.0 |
+| `health.py` circular import via `from src.main import local_storage` | 0.27.0 |
+| `isinstance(local_storage, LocalStorage)` in `serve_local_download` (breaks duck-typing for S3) | 0.27.0 |
+| Ruff `UP038` (`(X, Y)` → `X | Y`) in test_architecture.py | 0.27.0 |
+| Module-level container singletons (no `reset()`/`override()` for testability) | 0.27.0 |
 
 ## Architecture
 
@@ -68,6 +81,11 @@ they start blocking you — not before.
 **File:** `apps/api/src/main.py`
 
 Full decomposition completed — 2355→170 lines. All routes extracted to 6 `src/routers/` modules. DI wiring moved to `src/container.py`. DTOs moved to `src/schemas/`. Architecture conformance enforced by AST test.
+
+### ~~Module-level container singletons~~ (Fixed in 0.27.0)
+**File:** `apps/api/src/container.py`
+
+Module-level singletons refactored into `Container` class with `_build()`, `reset()`, and `override()`. Full backward compat via module-level aliases. Event publisher wired (`RabbitMQEventPublisher` / `NoOpEventPublisher`).
 
 ### ~~`DocumentRepository` port~~ (Fixed)
 **File:** `apps/api/src/main.py:577-722`

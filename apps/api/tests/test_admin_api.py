@@ -409,7 +409,7 @@ def test_admin_platform_stats(mock_session_ctx) -> None:
 
 @patch("src.main.os.path.exists")
 @patch("shutil.rmtree")
-@patch("src.adapters.database.connection.tenant_session")
+@patch("src.main.tenant_session")
 def test_admin_platform_reset(mock_session_ctx, mock_rmtree, mock_exists) -> None:
     """POST /v1/admin/platform/reset clears all non-system tenants and storage files."""
     mock_session = AsyncMock()

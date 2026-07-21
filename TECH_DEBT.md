@@ -64,10 +64,10 @@ they start blocking you — not before.
 
 ## Architecture
 
-### `main.py` god-file — Partial Split (M33)
+### ~~`main.py` god-file~~ (Fixed in 0.26.0)
 **File:** `apps/api/src/main.py`
 
-Remaining routes (~2,200 lines) still need to be extracted into `routers/tenant.py`, `routers/document.py`, `routers/search.py`, `routers/chat.py`. The pattern is established with `routers/health.py` and `routers/admin.py`.
+Full decomposition completed — 2355→170 lines. All routes extracted to 6 `src/routers/` modules. DI wiring moved to `src/container.py`. DTOs moved to `src/schemas/`. Architecture conformance enforced by AST test.
 
 ### ~~`DocumentRepository` port~~ (Fixed)
 **File:** `apps/api/src/main.py:577-722`
@@ -252,7 +252,7 @@ Web results use `document_id="__web__"` and fake `chunk_id`s, so `CitationValida
 ## Product/Deferred (M22)
 
 ### No JSON Schema validation
-**File:** `apps/api/src/main.py`  
+**File:** `apps/api/src/routers/document.py`  
 
 Extraction endpoint returns the LLM output as-is after `json.loads()`. No server-side JSON Schema validation is performed — the schema is only used as a prompt hint. Add `jsonschema` or `fastapi` built-in validation when extraction reliability needs to be guaranteed.
 
@@ -267,7 +267,7 @@ Extraction endpoint returns the LLM output as-is after `json.loads()`. No server
 Anthropic doesn't expose a `response_format={"type": "json_object"}` equivalent. The schema hint in the system prompt is best-effort. Switch to tool-calling (`tool_choice` with a single function) when Anthropic's JSON reliability becomes an issue. Claude 3.5+ models support `anthropic-json` mode via the `text` content block with a `thinking` config — revisit when the SDK stabilizes.
 
 ### No extraction streaming
-**File:** `apps/api/src/main.py`  
+**File:** `apps/api/src/routers/document.py`  
 
 Extraction endpoint returns a blocking JSON response. Add SSE streaming for large document extraction if latency becomes a concern.
 

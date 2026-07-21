@@ -181,7 +181,7 @@ def test_extract_request_schema() -> None:
 
 
 def test_extract_endpoint_local() -> None:
-    from src.main import ExtractResponse
+    from src.schemas.document import ExtractResponse
 
     resp = ExtractResponse(
         data={"key": "val"}, provider="openai", model="gpt-4o",

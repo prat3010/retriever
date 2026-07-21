@@ -2,15 +2,18 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.25.0] - 2026-07-19
+## [0.26.0] - 2026-07-21
 ### Added
-- **Server-spec auto-detection** (`config.py`): New `InfraCapabilities` class reads total RAM and CPU cores at startup using `psutil`. Auto-enables Redis (>=2 GB RAM), RabbitMQ broker (>=2 GB), and Celery workers (>=4 GB + 2+ cores). Logs boot status with detected specs and mode. Can be overridden via `REDIS_ENABLED`, `BROKER_ENABLED`, `WORKERS_ENABLED` env vars.
-- **GitHub Actions auto-deploy**: New workflow for Oracle VM deploys.
+- **Full `main.py` decomposition** (2355→170 lines): Extracted 25 Pydantic DTOs to `src/schemas/` (7 files), business logic to `src/domain/` (inference, guardrails, retrieval), and all 55+ route handlers to 6 `src/routers/` modules (`health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py`).
+- **`src/container.py`**: DI wiring for all ~25 singletons (repos, adapters, LLM providers, embedder, search service, inference orchestrator, evaluator, corrective retrieval service). Routers import singletons from container, not from `main.py`.
+- **Architecture conformance enforcement**: `domain/abstractions/` has 12+ pure ABCs with zero infrastructure imports. `llm_safety_guard` moved to `src/adapters/guardrails/` to satisfy import direction constraints. Verified by AST-based `tests/test_architecture.py`.
 
 ### Changed
-- **Gemini default model** (`providers.ts`): Updated from `gemini-1.5-flash` to `gemini-2.5-flash`.
-- **Docker Compose** (`docker-compose.yml`): Removed deprecated `version: '3.8'` field.
-- **Chat container height** (`rag.module.css`): Changed from `max-height: 400px` to `max-height: min(60vh, 600px)` for better desktop experience.
+- **Router population**: All 6 routers fully populated — `health.py` (2 routes), `admin.py` (41), `tenant.py` (7), `document.py` (7), `search.py` (1), `chat.py` (4). `src/main.py` now only contains lifespan, app factory, CORS, 3 exception handlers, router includes, `serve_local_download`, and `root`.
+- **Test patch targets updated**: 5 test files (`test_feedback.py`, `test_flaws_fixes.py`, `test_admin_api.py`, `test_milestone11.py`, `test_integration.py`, `test_extraction.py`) updated to patch router modules and new import paths instead of `src.main`. 369 tests pass (identical baseline + 1 skipped).
+- **PROJECT_STATUS.md, CHANGELOG.md, TECH_DEBT.md, docs/architecture.md**: Updated to reflect new module structure.
+
+## [0.25.0] - 2026-07-19
 
 ## [0.24.0] - 2026-07-19
 ### Added

@@ -320,7 +320,7 @@ def test_admin_list_documents_empty(mock_list, tenant_id) -> None:
     assert response.json() == []
 
 
-@patch("src.main.celery_app.send_task")
+@patch("src.routers.admin.celery_app.send_task")
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.local_storage.save_file", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
@@ -409,7 +409,7 @@ def test_admin_platform_stats(mock_session_ctx) -> None:
 
 @patch("src.main.os.path.exists")
 @patch("shutil.rmtree")
-@patch("src.main.tenant_session")
+@patch("src.adapters.database.connection.tenant_session")
 def test_admin_platform_reset(mock_session_ctx, mock_rmtree, mock_exists) -> None:
     """POST /v1/admin/platform/reset clears all non-system tenants and storage files."""
     mock_session = AsyncMock()

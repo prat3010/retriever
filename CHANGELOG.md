@@ -2,6 +2,24 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-07-21
+### Added
+- **Class-based DI container** (`src/container.py`): Module-level singletons refactored into `Container` class with `reset()` and `override(contextmanager)` for testability. Full backward compat via module-level aliases.
+- **`AdminRepository` port** (`src/domain/abstractions/admin.py`): Extracted `get_platform_stats` and `reset_platform` from inline SQLAlchemy in admin router into `SqlAdminRepository` adapter.
+- **`get_message` on `ChatSessionRepository`** (`src/domain/abstractions/inference.py`): New port method implemented in `SqlChatSessionRepository` — replaces inline `tenant_session` query in chat router.
+- **Event bus wiring** (`src/container.py`): `EventPublisher` port wired into container — selects `RabbitMQEventPublisher` when broker available, falls back to `NoOpEventPublisher`. Added architecture conformance test.
+- **`serve_local_download`** moved from `main.py` to `routers/document.py`, **`root`** moved to `routers/health.py`.
+- **Architecture conformance tests**: `test_routers_do_not_bypass_container` (checks routers don't import adapters directly) and `test_main_py_has_no_route_handlers` (checks main.py has no route decorators).
+
+### Changed
+- **Router adapter leaks fixed**: `admin.py`, `document.py`, `chat.py` no longer contain inline adapter imports (`from src.adapters.database.connection import tenant_session`, `from src.adapters.database.models import ChatMessageDb`, `from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync`, etc.) — all dependencies come through `src.container`.
+- **`admin_platform_reset` response model**: Return type `dict[str, str]` → `dict[str, Any]` to accommodate integer `tenantsDeleted`.
+- **`ingest_file_sync` re-exported**: Added to `container.py` with `# noqa: F401` for router usage.
+- **Test patch targets**: 4 test files updated — `test_admin_api.py`, `test_feedback.py` patch per-adapter `tenant_session` targets; `test_milestone12.py` and `test_presigned.py` patch router module targets.
+- **Health check S3 probe**: `health.py` now imports `local_storage` from container instead of `from src.main import local_storage`.
+- **Ruff**: 6/7 issues fixed (1 UP038 `(ast.FunctionDef, ast.AsyncFunctionDef)` → `ast.FunctionDef | ast.AsyncFunctionDef`).
+- **`sentry_sdk`/`get_tracer` imports**: Moved to top-level in `main.py`; `sentry_sdk.init()` kept inside startup block.
+
 ## [0.26.0] - 2026-07-21
 ### Added
 - **Full `main.py` decomposition** (2355→170 lines): Extracted 25 Pydantic DTOs to `src/schemas/` (7 files), business logic to `src/domain/` (inference, guardrails, retrieval), and all 55+ route handlers to 6 `src/routers/` modules (`health.py`, `admin.py`, `tenant.py`, `document.py`, `search.py`, `chat.py`).

@@ -548,8 +548,8 @@ Retriever is structured as a monorepo to maintain strong typing across client-se
 │   │   │   │   └── guardrails/   # LLM safety guard (imports openai)
 │   │   │   ├── schemas/         # Pydantic DTOs (7 files)
 │   │   │   ├── routers/         # Route handlers (health, admin, tenant, document, search, chat)
-│   │   │   ├── container.py     # DI wiring for all singletons
-│   │   │   └── main.py          # API entrypoint (~170 lines)
+│   │   │   ├── container.py     # Container class with _build/reset/override + module aliases
+│   │   │   └── main.py          # API entrypoint (~133 lines)
 │   │   ├── pyproject.toml
 │   │   └── uv.lock
 │   │
@@ -644,6 +644,7 @@ graph LR
 *   **Message Broker:** Technology options like RabbitMQ or Redis PubSub handle out-of-process task coordination. The broker architecture MUST utilize persistent queues to prevent message loss during hardware outages.
 *   **Durable Event Routing:** Task messages MUST use structured formats containing `document_id`, `tenant_id`, and `storage_url`. Message payloads MUST NOT contain raw binaries.
 *   **Dead Letter Queues (DLQ):** Task processing failures that exceed maximum retry thresholds MUST route to a Dead Letter Queue (DLQ) for auditing.
+*   **Container Wiring:** The `EventPublisher` port (`domain/abstractions/events.py`) is wired in `container.py` — selects `RabbitMQEventPublisher` when AMQP broker is available, falls back to `NoOpEventPublisher` (logs + discards).
 
 ---
 

@@ -4,7 +4,6 @@ from typing import Any
 import openai
 from fastapi import HTTPException, status
 
-from src.config import settings
 from src.domain.abstractions.config import TenantConfiguration
 
 

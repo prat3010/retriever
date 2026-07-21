@@ -7,10 +7,11 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from workers.src.tasks import process_document_async
 
+from src.container import search_service
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.retrieval import SearchResult
-from src.main import app, search_service
+from src.main import app
 
 client = TestClient(app)
 

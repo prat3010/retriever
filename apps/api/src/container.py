@@ -3,6 +3,9 @@ import os
 from src.adapters.cache.config_cache import RedisTenantConfigCache
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
+from src.adapters.cognitive.corrective_retrieval_adapter import (
+    LLMCorrectiveRetrievalAdapter,
+)
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
 from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
@@ -12,11 +15,13 @@ from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
-from src.adapters.cognitive.corrective_retrieval_adapter import LLMCorrectiveRetrievalAdapter
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
 from src.adapters.database.document_repository import SqlDocumentRepository
-from src.adapters.database.evaluation_repository import SqlEvalDatasetRepository, SqlEvalRunRepository
+from src.adapters.database.evaluation_repository import (
+    SqlEvalDatasetRepository,
+    SqlEvalRunRepository,
+)
 from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.inference_repository import (
@@ -40,7 +45,6 @@ from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.inference.prompt_builder import PromptBuilder
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
-from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 from src.domain.retrieval.search_service import HybridSearchService
 
 # --- Repositories ---

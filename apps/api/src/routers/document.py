@@ -5,8 +5,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Security, UploadFile, status
-from pydantic import BaseModel, Field
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    Security,
+    UploadFile,
+    status,
+)
 
 from src.adapters.api.security import verify_scopes, verify_tenant_isolation
 from src.adapters.cache.config_cache import redis_client

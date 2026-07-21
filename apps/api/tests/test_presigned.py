@@ -21,8 +21,9 @@ from src.adapters.api.security import (
     verify_tenant_isolation,
 )
 from src.adapters.storage.local_storage import LocalStorage
+from src.container import document_repository, local_storage
 from src.domain.abstractions.ingestion import Document
-from src.main import app, document_repository, local_storage
+from src.main import app
 
 
 @pytest.fixture

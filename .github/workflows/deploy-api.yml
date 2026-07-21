@@ -26,12 +26,18 @@ jobs:
           script: |
             set -e
             cd /opt/retriever
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             . .venv/bin/activate
             pip install -r requirements.txt 2>&1
             sudo systemctl daemon-reload
             sudo systemctl restart retriever-api
-            sleep 5
-            curl -sSf http://localhost:8000/health/liveness > /dev/null && echo "Smoke test: liveness OK"
-            curl -sSf http://localhost:8000/health/readiness > /dev/null && echo "Smoke test: readiness OK"
+            for i in $(seq 1 12); do
+              if curl -sSf http://localhost:8000/health/liveness > /dev/null 2>&1; then
+                echo "Smoke test: liveness OK"
+                curl -sSf http://localhost:8000/health/readiness > /dev/null 2>&1 && echo "Smoke test: readiness OK"
+                break
+              fi
+              sleep 5
+            done
             echo "Deploy complete"

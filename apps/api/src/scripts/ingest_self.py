@@ -120,7 +120,7 @@ def chunk_code_ast(file_content: str, rel_path: str) -> list[dict]:
 
             # Method Chunks
             for sub_node in node.body:
-                if isinstance(sub_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if isinstance(sub_node, ast.FunctionDef | ast.AsyncFunctionDef):
                     fn_content = "\n".join(lines[sub_node.lineno-1:sub_node.end_lineno])
                     chunks.append({
                         "content": f"class {node.name}:\n    " + fn_content.replace("\n", "\n    "),
@@ -133,7 +133,7 @@ def chunk_code_ast(file_content: str, rel_path: str) -> list[dict]:
                         }
                     })
 
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             # Top-level Function
             fn_content = "\n".join(lines[node.lineno-1:node.end_lineno])
             chunks.append({

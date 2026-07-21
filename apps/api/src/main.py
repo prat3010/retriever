@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 import traceback
 import uuid
@@ -47,7 +48,7 @@ from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
-from src.adapters.database.connection import engine
+from src.adapters.database.connection import engine, tenant_session
 from src.adapters.database.document_repository import SqlDocumentRepository
 from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.identity_repository import SqlIdentityProvider
@@ -55,6 +56,23 @@ from src.adapters.database.inference_repository import (
     SqlChatSessionRepository,
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
+)
+from src.adapters.database.models import (
+    ApiKeyDb,
+    ChatMessageDb,
+    ChatMessageFeedbackDb,
+    ChatSessionDb,
+    ConfigurationDb,
+    DocumentChunkDb,
+    DocumentDb,
+    EvalDatasetDb,
+    EvalRunDb,
+    InferenceLogDb,
+    PromptTemplateDb,
+    SemanticCacheDb,
+    TenantDb,
+    UserDb,
+    VectorRecordDb,
 )
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
@@ -1007,33 +1025,13 @@ async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str,
     include_system_tenant=true to wipe everything including the system
     tenant's documents, API keys, users, configs, and chat history.
     """
-    import shutil
 
-    from src.adapters.database.connection import tenant_session
-    from src.adapters.database.models import (
-        ApiKeyDb,
-        ChatMessageFeedbackDb,
-        ChatMessageDb,
-        ChatSessionDb,
-        ConfigurationDb,
-        DocumentChunkDb,
-        DocumentDb,
-        EvalDatasetDb,
-        EvalRunDb,
-        InferenceLogDb,
-        PromptTemplateDb,
-        SemanticCacheDb,
-        TenantDb,
-        UserDb,
-        VectorRecordDb,
-    )
-
-    SYSTEM_TENANT_UUID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+    system_tenant_uuid = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
     async with tenant_session(bypass_rls=True) as session:
         # ── Non-system tenants: delete TenantDb row (cascades to all child data) ──
         result = await session.execute(
-            select(TenantDb).where(TenantDb.tenant_id != SYSTEM_TENANT_UUID)
+            select(TenantDb).where(TenantDb.tenant_id != system_tenant_uuid)
         )
         tenants = result.scalars().all()
 
@@ -1052,7 +1050,7 @@ async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str,
         if include_system_tenant:
             # Local storage
             for base_dir in ["./storage", "apps/api/storage"]:
-                tenant_dir = os.path.join(base_dir, str(SYSTEM_TENANT_UUID))
+                tenant_dir = os.path.join(base_dir, str(system_tenant_uuid))
                 if os.path.exists(tenant_dir):
                     try:
                         shutil.rmtree(tenant_dir)
@@ -1062,90 +1060,90 @@ async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str,
             # Vector records (FK to chunks)
             await session.execute(
                 VectorRecordDb.__table__.delete().where(
-                    VectorRecordDb.tenant_id == SYSTEM_TENANT_UUID
+                    VectorRecordDb.tenant_id == system_tenant_uuid
                 )
             )
             # Document chunks (FK to documents + tenants)
             await session.execute(
                 DocumentChunkDb.__table__.delete().where(
-                    DocumentChunkDb.tenant_id == SYSTEM_TENANT_UUID
+                    DocumentChunkDb.tenant_id == system_tenant_uuid
                 )
             )
             # Documents
             await session.execute(
                 DocumentDb.__table__.delete().where(
-                    DocumentDb.tenant_id == SYSTEM_TENANT_UUID
+                    DocumentDb.tenant_id == system_tenant_uuid
                 )
             )
             # Chat message feedback
             await session.execute(
                 ChatMessageFeedbackDb.__table__.delete().where(
-                    ChatMessageFeedbackDb.tenant_id == SYSTEM_TENANT_UUID
+                    ChatMessageFeedbackDb.tenant_id == system_tenant_uuid
                 )
             )
             # Inference logs
             await session.execute(
                 InferenceLogDb.__table__.delete().where(
-                    InferenceLogDb.tenant_id == SYSTEM_TENANT_UUID
+                    InferenceLogDb.tenant_id == system_tenant_uuid
                 )
             )
             # Chat messages
             await session.execute(
                 ChatMessageDb.__table__.delete().where(
-                    ChatMessageDb.tenant_id == SYSTEM_TENANT_UUID
+                    ChatMessageDb.tenant_id == system_tenant_uuid
                 )
             )
             # Chat sessions
             await session.execute(
                 ChatSessionDb.__table__.delete().where(
-                    ChatSessionDb.tenant_id == SYSTEM_TENANT_UUID
+                    ChatSessionDb.tenant_id == system_tenant_uuid
                 )
             )
             # Evaluation data (EvalRunDb cascades to EvalRunResultDb;
             # EvalDatasetDb cascades to EvalQuestionDb)
             await session.execute(
                 EvalRunDb.__table__.delete().where(
-                    EvalRunDb.tenant_id == SYSTEM_TENANT_UUID
+                    EvalRunDb.tenant_id == system_tenant_uuid
                 )
             )
             await session.execute(
                 EvalDatasetDb.__table__.delete().where(
-                    EvalDatasetDb.tenant_id == SYSTEM_TENANT_UUID
+                    EvalDatasetDb.tenant_id == system_tenant_uuid
                 )
             )
             await session.execute(
                 EvalDatasetDb.__table__.delete().where(
-                    EvalDatasetDb.tenant_id == SYSTEM_TENANT_UUID
+                    EvalDatasetDb.tenant_id == system_tenant_uuid
                 )
             )
             # Semantic cache
             await session.execute(
                 SemanticCacheDb.__table__.delete().where(
-                    SemanticCacheDb.tenant_id == SYSTEM_TENANT_UUID
+                    SemanticCacheDb.tenant_id == system_tenant_uuid
                 )
             )
             # Prompt templates
             await session.execute(
                 PromptTemplateDb.__table__.delete().where(
-                    PromptTemplateDb.tenant_id == SYSTEM_TENANT_UUID
+                    PromptTemplateDb.tenant_id == system_tenant_uuid
                 )
             )
             # API keys
             await session.execute(
                 ApiKeyDb.__table__.delete().where(
-                    ApiKeyDb.tenant_id == SYSTEM_TENANT_UUID
+                    ApiKeyDb.tenant_id == system_tenant_uuid
                 )
             )
             # Users
             await session.execute(
                 UserDb.__table__.delete().where(
-                    UserDb.tenant_id == SYSTEM_TENANT_UUID
+                    UserDb.tenant_id == system_tenant_uuid
                 )
             )
             # Configurations (both system tenant and global)
             await session.execute(
                 ConfigurationDb.__table__.delete().where(
-                    (ConfigurationDb.tenant_id == SYSTEM_TENANT_UUID)
+                    (ConfigurationDb.tenant_id == system_tenant_uuid)
                     | (ConfigurationDb.tenant_id.is_(None))
                 )
             )

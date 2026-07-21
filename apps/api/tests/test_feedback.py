@@ -8,6 +8,7 @@ Verifies:
 """
 
 import uuid
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -62,13 +63,19 @@ async def test_submit_feedback_success(
     # Mock DB select for message validation (must return a row)
     mock_msg = MagicMock()
     mock_msg.message_id = uuid.UUID(message_id)
+    mock_msg.session_id = uuid.UUID(session_id)
+    mock_msg.tenant_id = uuid.UUID(tenant_id)
+    mock_msg.role = "assistant"
+    mock_msg.content = "some response"
+    mock_msg.name = None
+    mock_msg.created_at = datetime.now(UTC)
 
     # Patch the DB session inside the endpoint
     mock_db_session = AsyncMock()
     mock_db_session.execute.return_value = MagicMock(scalar_one_or_none=lambda: mock_msg)
 
     # Patch tenant_session from connection module where it is imported/used
-    with patch("src.adapters.database.connection.tenant_session") as mock_tenant_session:
+    with patch("src.adapters.database.inference_repository.tenant_session") as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_db_session
 
         # Mock repository submit method
@@ -110,7 +117,7 @@ async def test_submit_feedback_message_not_found(
     mock_db_session = AsyncMock()
     mock_db_session.execute.return_value = MagicMock(scalar_one_or_none=lambda: None)
 
-    with patch("src.adapters.database.connection.tenant_session") as mock_tenant_session:
+    with patch("src.adapters.database.inference_repository.tenant_session") as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_db_session
 
         client = TestClient(app)

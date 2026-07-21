@@ -1,7 +1,6 @@
 """Admin API routes."""
 import hashlib
 import os
-import shutil
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -18,12 +17,13 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from src.adapters.api.security import verify_admin_key
 from src.config import settings
 from src.container import (
+    admin_repository,
     audit_logger,
+    celery_app,
     config_service,
     document_repository,
     eval_dataset_repo,
@@ -32,6 +32,7 @@ from src.container import (
     feedback_repo,
     identity_provider,
     inference_orchestrator,
+    ingest_file_sync,
     local_storage,
     search_service,
     template_registry,
@@ -57,11 +58,6 @@ from src.schemas.evaluation import (
     CreateEvalDatasetRequest,
 )
 from src.schemas.tenant import TenantListItem
-
-try:
-    from src.adapters.broker.celery_publisher import celery_app
-except Exception:
-    celery_app = None
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin"])
 
@@ -358,8 +354,6 @@ async def admin_ingest_document_sync(
     file_hash = hashlib.sha256(content).hexdigest()
     doc_id = str(uuid.uuid4())
 
-    from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
-
     chunk_count = await ingest_file_sync(
         tenant_id=tenantId,
         document_id=doc_id,
@@ -384,8 +378,6 @@ async def admin_ingest_document_sync(
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_process_document(tenantId: str, documentId: str) -> dict:
-    from src.adapters.ingestion.sync_ingestion_service import ingest_file_sync
-
     doc = await document_repository.get_document(tenantId, documentId)
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found.")
@@ -469,72 +461,7 @@ async def admin_download_document_file(tenantId: str, documentId: str) -> FileRe
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_platform_stats() -> dict[str, Any]:
-    from sqlalchemy import func
-
-    from src.adapters.database.connection import tenant_session
-    from src.adapters.database.models import (
-        ApiKeyDb,
-        AuditLogDb,
-        ChatMessageDb,
-        ChatSessionDb,
-        DocumentChunkDb,
-        DocumentDb,
-        EvalRunDb,
-        TenantDb,
-        UserDb,
-        VectorRecordDb,
-    )
-
-    async with tenant_session(bypass_rls=True) as session:
-        tenants_total = (await session.execute(select(func.count(TenantDb.tenant_id)))).scalar() or 0
-        tenants_active = (await session.execute(select(func.count(TenantDb.tenant_id)).where(TenantDb.status == "active"))).scalar() or 0
-        tenants_suspended = (await session.execute(select(func.count(TenantDb.tenant_id)).where(TenantDb.status == "suspended"))).scalar() or 0
-
-        docs_total = (await session.execute(select(func.count(DocumentDb.document_id)).where(DocumentDb.is_deleted == False))).scalar() or 0
-
-        chunks_total = (await session.execute(select(func.count(DocumentChunkDb.chunk_id)))).scalar() or 0
-        vectors_total = (await session.execute(select(func.count(VectorRecordDb.chunk_id)))).scalar() or 0
-
-        keys_total = (await session.execute(select(func.count(ApiKeyDb.key_id)))).scalar() or 0
-        users_total = (await session.execute(select(func.count(UserDb.user_id)))).scalar() or 0
-        sessions_total = (await session.execute(select(func.count(ChatSessionDb.session_id)))).scalar() or 0
-        messages_total = (await session.execute(select(func.count(ChatMessageDb.message_id)))).scalar() or 0
-
-        audit_logs_total = (await session.execute(select(func.count(AuditLogDb.log_id)))).scalar() or 0
-        eval_runs_total = (await session.execute(select(func.count(EvalRunDb.run_id)))).scalar() or 0
-
-    return {
-        "tenants": {
-            "total": tenants_total,
-            "active": tenants_active,
-            "suspended": tenants_suspended,
-        },
-        "documents": {
-            "total": docs_total,
-        },
-        "chunks": {
-            "total": chunks_total,
-        },
-        "vectors": {
-            "total": vectors_total,
-        },
-        "apiKeys": {
-            "total": keys_total,
-        },
-        "users": {
-            "total": users_total,
-        },
-        "chat": {
-            "sessions": sessions_total,
-            "messages": messages_total,
-        },
-        "auditLogs": {
-            "total": audit_logs_total,
-        },
-        "evaluations": {
-            "runs": eval_runs_total,
-        }
-    }
+    return await admin_repository.get_platform_stats()
 
 
 @router.post(
@@ -542,136 +469,16 @@ async def admin_platform_stats() -> dict[str, Any]:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str, str]:
-    from src.adapters.database.connection import tenant_session
-    from src.adapters.database.models import (
-        ApiKeyDb,
-        ChatMessageDb,
-        ChatMessageFeedbackDb,
-        ChatSessionDb,
-        ConfigurationDb,
-        DocumentChunkDb,
-        DocumentDb,
-        EvalDatasetDb,
-        EvalRunDb,
-        InferenceLogDb,
-        PromptTemplateDb,
-        SemanticCacheDb,
-        TenantDb,
-        UserDb,
-        VectorRecordDb,
+async def admin_platform_reset(include_system_tenant: bool = False) -> dict[str, Any]:
+    deleted = await admin_repository.reset_platform(
+        include_system_tenant=include_system_tenant
     )
-
-    system_tenant_uuid = uuid.UUID("00000000-0000-0000-0000-000000000000")
-
-    async with tenant_session(bypass_rls=True) as session:
-        result = await session.execute(
-            select(TenantDb).where(TenantDb.tenant_id != system_tenant_uuid)
-        )
-        tenants = result.scalars().all()
-
-        for t in tenants:
-            tenant_id_str = str(t.tenant_id)
-            for base_dir in ["./storage", "apps/api/storage"]:
-                tenant_dir = os.path.join(base_dir, tenant_id_str)
-                if os.path.exists(tenant_dir):
-                    try:
-                        shutil.rmtree(tenant_dir)
-                    except Exception:
-                        pass
-            await session.delete(t)
-
-        if include_system_tenant:
-            for base_dir in ["./storage", "apps/api/storage"]:
-                tenant_dir = os.path.join(base_dir, str(system_tenant_uuid))
-                if os.path.exists(tenant_dir):
-                    try:
-                        shutil.rmtree(tenant_dir)
-                    except Exception:
-                        pass
-
-            await session.execute(
-                VectorRecordDb.__table__.delete().where(
-                    VectorRecordDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                DocumentChunkDb.__table__.delete().where(
-                    DocumentChunkDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                DocumentDb.__table__.delete().where(
-                    DocumentDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                ChatMessageFeedbackDb.__table__.delete().where(
-                    ChatMessageFeedbackDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                InferenceLogDb.__table__.delete().where(
-                    InferenceLogDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                ChatMessageDb.__table__.delete().where(
-                    ChatMessageDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                ChatSessionDb.__table__.delete().where(
-                    ChatSessionDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                EvalRunDb.__table__.delete().where(
-                    EvalRunDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                EvalDatasetDb.__table__.delete().where(
-                    EvalDatasetDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                EvalDatasetDb.__table__.delete().where(
-                    EvalDatasetDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                SemanticCacheDb.__table__.delete().where(
-                    SemanticCacheDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                PromptTemplateDb.__table__.delete().where(
-                    PromptTemplateDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                ApiKeyDb.__table__.delete().where(
-                    ApiKeyDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                UserDb.__table__.delete().where(
-                    UserDb.tenant_id == system_tenant_uuid
-                )
-            )
-            await session.execute(
-                ConfigurationDb.__table__.delete().where(
-                    (ConfigurationDb.tenant_id == system_tenant_uuid)
-                    | (ConfigurationDb.tenant_id.is_(None))
-                )
-            )
-
-        await session.flush()
-
-    msg = "All data cleared including system tenant." if include_system_tenant \
+    msg = (
+        "All data cleared including system tenant."
+        if include_system_tenant
         else "All non-system tenant data cleared successfully."
-    return {"status": "success", "message": msg}
+    )
+    return {"status": "success", "message": msg, "tenantsDeleted": deleted}
 
 
 @router.get(

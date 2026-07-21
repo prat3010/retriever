@@ -7,6 +7,7 @@ from sqlalchemy import text
 from src.adapters.cache.config_cache import redis_client
 from src.adapters.database.connection import engine
 from src.config import settings
+from src.container import local_storage
 
 router = APIRouter(tags=["Health"])
 
@@ -34,10 +35,9 @@ async def readiness_probe() -> HealthResponse:
                 pass
 
         if settings.STORAGE_PROVIDER == "s3":
-            from src.main import local_storage as s3_storage
-            if hasattr(s3_storage, "client"):
+            if hasattr(local_storage, "client"):
                 def _probe_s3() -> None:
-                    s3_storage.client.head_bucket(Bucket=s3_storage.bucket_name)
+                    local_storage.client.head_bucket(Bucket=local_storage.bucket_name)
                 await asyncio.to_thread(_probe_s3)
 
         return HealthResponse(status="ready", environment=settings.ENVIRONMENT)
@@ -46,3 +46,8 @@ async def readiness_probe() -> HealthResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Readiness check failed: {e!s}",
         ) from e
+
+
+@router.get("/", status_code=status.HTTP_200_OK)
+async def root() -> dict[str, str]:
+    return {"message": "Retriever Core Platform API. Visit /docs for Swagger UI."}

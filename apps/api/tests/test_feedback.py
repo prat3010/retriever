@@ -20,8 +20,9 @@ from src.adapters.api.security import (
     verify_scopes,
     verify_tenant_isolation,
 )
+from src.container import feedback_repo
 from src.domain.abstractions.inference import ChatMessageFeedback
-from src.main import app, feedback_repo
+from src.main import app
 
 
 @pytest.fixture

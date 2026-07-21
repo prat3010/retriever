@@ -1,4 +1,3 @@
-from typing import Any
 
 from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
 from src.domain.abstractions.config import TenantConfiguration

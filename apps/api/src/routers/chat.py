@@ -10,7 +10,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from src.adapters.api.security import get_current_user_id, verify_scopes, verify_tenant_isolation
+from src.adapters.api.security import (
+    get_current_user_id,
+    verify_scopes,
+    verify_tenant_isolation,
+)
 from src.adapters.database.models import ChatMessageDb
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.container import (
@@ -23,10 +27,16 @@ from src.container import (
 )
 from src.domain.abstractions.inference import ChatMessageFeedback
 from src.domain.guardrails import apply_input_guardrails as _apply_input_guardrails
-from src.domain.inference.citation_formatter import format_citations as _format_citations
+from src.domain.inference.citation_formatter import (
+    format_citations as _format_citations,
+)
 from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 from src.domain.retrieval.query_builder import build_search_query as _build_search_query
-from src.schemas.chat import ChatMessageRequest, CreateSessionResponse, FeedbackSubmitRequest
+from src.schemas.chat import (
+    ChatMessageRequest,
+    CreateSessionResponse,
+    FeedbackSubmitRequest,
+)
 
 router = APIRouter(tags=["Chat"])
 

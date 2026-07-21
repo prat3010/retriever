@@ -7,20 +7,32 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Header, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 
 from src.adapters.database.connection import engine
+from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.telemetry.setup import init_telemetry
 from src.config import settings
+from src.container import (  # noqa: F401 — re-exported for test patching
+    audit_logger,
+    config_service,
+    document_repository,
+    identity_provider,
+    inference_orchestrator,
+    local_storage,
+    search_service,
+    session_repo,
+    template_registry,
+    tenant_registry,
+    user_repository,
+)
 from src.domain.abstractions.exceptions import (
     AuthenticationError,
     TenantIsolationViolationError,
 )
-
-
 
 
 @asynccontextmanager
@@ -81,8 +93,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize components
-from src.container import *
+# Initialize components (singletons wired in container)
 
 
 @app.exception_handler(Exception)
@@ -136,8 +147,6 @@ async def serve_local_download(
     """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
     import hmac
     import time
-
-    from src.adapters.storage.local_storage import LocalStorage
 
     # 1. Check expiration
     if int(time.time()) > expires:

@@ -1,11 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, Security, status
-from src.adapters.api.security import verify_admin_key, verify_scopes, verify_tenant_isolation
-from src.domain.abstractions.config import TenantConfiguration
-from src.container import audit_logger, config_service, identity_provider, tenant_registry
 import openai
+from fastapi import APIRouter, Depends, Security, status
+
+from src.adapters.api.security import (
+    verify_admin_key,
+    verify_scopes,
+    verify_tenant_isolation,
+)
 from src.config import settings
+from src.container import (
+    audit_logger,
+    config_service,
+    identity_provider,
+    tenant_registry,
+)
+from src.domain.abstractions.config import TenantConfiguration
+from src.schemas.admin import (
+    ApiKeyCreatedResponse,
+    CreateApiKeyRequest,
+    ValidateKeyRequest,
+    ValidateKeyResponse,
+)
 from src.schemas.tenant import CreateTenantRequest, TenantListItem
-from src.schemas.admin import ApiKeyCreatedResponse, CreateApiKeyRequest, ValidateKeyRequest, ValidateKeyResponse
 
 router = APIRouter(prefix="/v1", tags=["Tenants"])
 

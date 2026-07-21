@@ -6,7 +6,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Header, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -34,7 +43,6 @@ from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.inference import PromptTemplate
 from src.domain.abstractions.ingestion import Document
 from src.schemas.admin import (
-    ApiKeyCreatedResponse,
     ApplyPresetRequest,
     CreateApiKeyRequest,
     CreatePromptRequest,
@@ -43,7 +51,11 @@ from src.schemas.admin import (
     UserResponse,
 )
 from src.schemas.document import DocumentResponse
-from src.schemas.evaluation import AddEvalQuestionRequest, BulkImportQuestionsRequest, CreateEvalDatasetRequest
+from src.schemas.evaluation import (
+    AddEvalQuestionRequest,
+    BulkImportQuestionsRequest,
+    CreateEvalDatasetRequest,
+)
 from src.schemas.tenant import TenantListItem
 
 try:

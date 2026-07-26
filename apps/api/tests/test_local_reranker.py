@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.domain.abstractions.retrieval import SearchResult
 

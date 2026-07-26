@@ -24,11 +24,11 @@ from src.adapters.cognitive.corrective_retrieval_adapter import (
     LLMCorrectiveRetrievalAdapter,
 )
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
+from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
 from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
-from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter

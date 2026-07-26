@@ -91,7 +91,8 @@ def test_ocr_with_tesseract_exception_returns_empty(mock_ocr_modules) -> None:
 def test_describe_with_vision_empty_api_key() -> None:
     from workers.src.tasks import _describe_with_vision
 
-    result = _describe_with_vision("/path/img.png", "image/png", {})
+    with patch.dict("os.environ", {}, clear=True):
+        result = _describe_with_vision("/path/img.png", "image/png", {}, tenant_id="11111111-1111-1111-1111-111111111111")
 
     assert result == ""
 
@@ -166,3 +167,73 @@ def test_describe_with_vision_env_api_key_fallback(mock_openai_cls) -> None:
             result = _describe_with_vision("/path/img.png", "image/png", {})
 
     assert result == "vision result"
+
+
+# ── _ocr_with_rapidocr ─────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def mock_rapidocr_module():
+    rapidocr_mod = MagicMock()
+    rapid_cls = MagicMock()
+    rapidocr_mod.RapidOCR = rapid_cls
+    sys.modules["rapidocr_onnxruntime"] = rapidocr_mod
+    yield rapid_cls
+    sys.modules.pop("rapidocr_onnxruntime", None)
+
+
+def test_ocr_with_rapidocr_image(mock_rapidocr_module) -> None:
+    from workers.src.tasks import _ocr_with_rapidocr
+
+    engine_instance = MagicMock()
+    mock_rapidocr_module.return_value = engine_instance
+    engine_instance.return_value = ([
+        [None, "RapidOCR extracted line 1", 0.99],
+        [None, "RapidOCR extracted line 2", 0.98],
+    ], None)
+
+    result = _ocr_with_rapidocr("/path/sample.png", "image/png")
+
+    assert "RapidOCR extracted line 1" in result
+    assert "RapidOCR extracted line 2" in result
+
+
+def test_ocr_with_rapidocr_pdf_multi_page(mock_rapidocr_module) -> None:
+    from workers.src.tasks import _ocr_with_rapidocr
+
+    engine_instance = MagicMock()
+    mock_rapidocr_module.return_value = engine_instance
+    engine_instance.return_value = ([
+        [None, "Page content line", 0.99]
+    ], None)
+
+    with patch("pdfplumber.open") as mock_pdfplumber:
+        mock_page = MagicMock()
+        mock_page.to_image.side_effect = Exception("no image render in mock")
+        mock_pdfplumber.return_value.__enter__.return_value.pages = [mock_page]
+
+        result = _ocr_with_rapidocr("/path/sample.pdf", "application/pdf")
+
+    assert "Page content line" in result
+
+
+def test_ocr_with_rapidocr_no_import() -> None:
+    from workers.src.tasks import _ocr_with_rapidocr
+
+    with patch.dict("sys.modules", {"rapidocr_onnxruntime": None}):
+        result = _ocr_with_rapidocr("/path/sample.png", "image/png")
+
+    assert result == ""
+
+
+def test_ocr_with_rapidocr_exception_returns_empty(mock_rapidocr_module) -> None:
+    from workers.src.tasks import _ocr_with_rapidocr
+
+    engine_instance = MagicMock()
+    mock_rapidocr_module.return_value = engine_instance
+    engine_instance.side_effect = RuntimeError("RapidOCR internal failure")
+
+    result = _ocr_with_rapidocr("/path/sample.png", "image/png")
+
+    assert result == ""
+

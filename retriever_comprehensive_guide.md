@@ -238,18 +238,33 @@ The processing and search components represent the core capability of Retriever.
                          Semantic Cache (Write) -> Return JSON
 ```
 
-### 6.1 Chunking Strategy Options
-Retriever provides three pluggable chunking strategies:
+### 6.1 Text & OCR Extraction Chain
+Document text extraction follows a 4-tier fallback strategy:
+1. **Tier 1: Native Extraction:** Parses digital text runs and tables via `pdfplumber` / plain text readers.
+2. **Tier 2: Baidu RapidOCR (`rapidocr_onnxruntime`):** High-accuracy deep-learning PP-OCRv4 model executed locally via ONNX Runtime (optimized for Apple Silicon M4 / CPU execution with zero external servers).
+3. **Tier 3: Tesseract OCR (`pytesseract`):** System fallback for scanned documents.
+4. **Tier 4: Multimodal Vision LLM (`_describe_with_vision`):** Calls `gpt-4o` Vision (or tenant-configured VLM) for zero-text pages, complex charts, or visual diagrams.
+
+### 6.2 Chunking & Contextual Retrieval Strategies
+Retriever provides pluggable chunking strategies:
 1. **`fixed_window`:** Simple sliding window using a fixed number of tokens and overlap.
 2. **`recursive`:** Splits text recursively using character sequences (paragraphs, sentences, spaces) to avoid breaking sentences mid-token.
-3. **`semantic`:** Calculates sentence similarity. Splits sentences into a new chunk only when the cosine similarity drop indicates a topic change or when the token length boundary is exceeded.
+3. **`semantic`:** Calculates sentence similarity. Splits sentences into a new chunk only when cosine similarity drops below threshold or token limits are exceeded.
+4. **`hierarchical` (Parent-Child):** Groups small child chunks (150-250 tokens) into parent sections (800-1200 tokens). Vector search targets child chunks for precise matching, while RAG prompt generation expands matched children into full parent section context.
+5. **Contextual Retrieval Prefixes (Anthropic Technique):** Prepends global document metadata summaries (`[Context: filename (doc_type)]`) to chunks before vector embedding generation to prevent loss of document context.
 
-### 6.2 Metadata Extraction
+### 6.3 Reranking & Hybrid Search
+- **Hybrid Fan-Out Search:** Executes `pgvector` HNSW cosine similarity and PostgreSQL `tsvector` keyword search in parallel, fusing candidates via Reciprocal Rank Fusion (RRF).
+- **Reranker Options:**
+  - **Local Cross-Encoder (`LocalRerankerAdapter`):** Runs offline cross-encoder models (`sentence-transformers` / ONNX) locally on Apple Silicon Metal or CPU with zero cloud API keys.
+  - **Cohere Rerank API (`CohereRerankerAdapter`):** Re-scores candidates using Cohere's `rerank-v3.5` API when `COHERE_API_KEY` is present.
+
+### 6.4 Metadata Extraction
 During ingestion, background workers run metadata extraction:
 * **Regex Extractor:** Extracts key values using regex groupings.
 * **LLM Schema Extractor:** Sends the first 3000 characters of the document to an LLM alongside a JSON schema, saving returned fields inside chunk metadata.
 
-### 6.3 Semantic Caching
+### 6.5 Semantic Caching
 To optimize API latency and reduce costs:
 * Query embeddings are matched against a cache of previous queries (`semantic_cache` table) using a HNSW index.
 * If a new query matches a cached query's coordinates above a similarity threshold (e.g., $> 0.99$), the system returns the cached search results immediately, bypassing the search index.

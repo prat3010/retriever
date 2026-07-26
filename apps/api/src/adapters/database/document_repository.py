@@ -123,6 +123,26 @@ class SqlDocumentRepository(DocumentRepository):
             )
             return [self._chunk_to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
 
+    async def get_chunks_by_ids(
+        self, tenant_id: str, chunk_ids: list[str]
+    ) -> list[DocumentChunk]:
+        if not chunk_ids:
+            return []
+        uuids = []
+        for cid in chunk_ids:
+            try:
+                uuids.append(uuid.UUID(cid))
+            except ValueError:
+                pass
+        if not uuids:
+            return []
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = select(DocumentChunkDb).where(
+                DocumentChunkDb.tenant_id == uuid.UUID(tenant_id),
+                DocumentChunkDb.chunk_id.in_(uuids),
+            )
+            return [self._chunk_to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
+
     async def list_documents_cursor(
         self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False
     ) -> tuple[list[Document], str | None, bool]:

@@ -22,6 +22,7 @@ from src.domain.abstractions.inference import (
     LlmProvider,
     Usage,
 )
+from src.domain.abstractions.ingestion import DocumentRepository
 from src.domain.abstractions.notifications import NotificationProvider
 from src.domain.abstractions.retrieval import SearchResult
 from src.domain.abstractions.telemetry import MetricsRegistry
@@ -52,6 +53,7 @@ class InferenceOrchestrator:
         log_writer: InferenceLogWriter,
         metrics_registry: MetricsRegistry | None = None,
         notification_provider: NotificationProvider | None = None,
+        document_repository: DocumentRepository | None = None,
     ) -> None:
         self.llm = llm_provider
         self.prompt_builder = prompt_builder
@@ -60,6 +62,7 @@ class InferenceOrchestrator:
         self.log_writer = log_writer
         self.metrics = metrics_registry
         self.notifier = notification_provider
+        self.doc_repo = document_repository
         self._daily_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         self._monthly_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         self._notified: set[str] = set()
@@ -138,10 +141,31 @@ class InferenceOrchestrator:
             config_dict["model"] = model_config.default_model
             history = await self._summarize_history(history, summarize_after, config_dict)
 
-        chunks_dict = [
-            {"chunk_id": c.chunk_id, "document_id": c.document_id, "content": c.content, "score": c.score, "metadata": c.metadata}
-            for c in context_chunks
-        ]
+        parent_map: dict[str, str] = {}
+        if self.doc_repo:
+            parent_ids = [
+                c.metadata.get("parent_chunk_id")
+                for c in context_chunks
+                if c.metadata and c.metadata.get("parent_chunk_id")
+            ]
+            if parent_ids:
+                try:
+                    parent_chunks = await self.doc_repo.get_chunks_by_ids(tenant_id, parent_ids)
+                    parent_map = {pc.chunk_id: pc.content for pc in parent_chunks}
+                except Exception:
+                    pass
+
+        chunks_dict = []
+        for c in context_chunks:
+            p_id = c.metadata.get("parent_chunk_id") if c.metadata else None
+            content_to_use = parent_map.get(p_id, c.content) if (p_id and p_id in parent_map) else c.content
+            chunks_dict.append({
+                "chunk_id": c.chunk_id,
+                "document_id": c.document_id,
+                "content": content_to_use,
+                "score": c.score,
+                "metadata": c.metadata,
+            })
 
         self.citation_validator.set_valid_ids([c.chunk_id for c in context_chunks])
 

@@ -22,6 +22,7 @@ dependencies = [
     "deepeval>=0.21.0",
     "datasets>=2.0.0",
     "pytesseract>=0.3.10",
+    "rapidocr-onnxruntime>=1.3.0",
 ]
 
 [dependency-groups]

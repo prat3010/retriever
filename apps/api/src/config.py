@@ -115,6 +115,7 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
     BRAVE_API_KEY: str = ""
     VISION_MODEL: str = "gpt-4o"
+    DEFAULT_OCR_PROVIDER: str = "rapidocr"
 
     # CORS
     CORS_ORIGINS: str = "*"

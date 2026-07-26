@@ -91,6 +91,47 @@ def _ocr_with_tesseract(path: str, mime_type: str) -> str:
         return ""
 
 
+# ponytail: Baidu PP-OCR fallback via rapidocr_onnxruntime for scanned PDFs and images
+def _ocr_with_rapidocr(path: str, mime_type: str) -> str:
+    try:
+        from rapidocr_onnxruntime import RapidOCR
+        engine = RapidOCR()
+    except Exception:
+        return ""
+    try:
+        if mime_type == "application/pdf":
+            import pdfplumber
+            import io
+            import numpy as np
+            from PIL import Image
+
+            texts = []
+            with pdfplumber.open(path) as pdf:
+                for i, page in enumerate(pdf.pages):
+                    try:
+                        img = page.to_image(resolution=200)
+                        buf = io.BytesIO()
+                        img.save(buf, format="PNG")
+                        buf.seek(0)
+                        pil_img = Image.open(buf)
+                        arr = np.array(pil_img)
+                    except Exception:
+                        arr = path
+                    result, _ = engine(arr)
+                    if result:
+                        page_text = "\n".join([line[1] for line in result if len(line) > 1 and line[1]])
+                        if page_text.strip():
+                            texts.append(f"--- Page {i+1} ---\n{page_text}")
+            return "\n\n".join(texts)
+        else:
+            result, _ = engine(path)
+            if result:
+                return "\n".join([line[1] for line in result if len(line) > 1 and line[1]])
+            return ""
+    except Exception:
+        return ""
+
+
 def _get_decrypted_key(config: dict, provider_key: str, env_key: str, tenant_id: str) -> str:
     """Safely retrieve and decrypt the provider API key, checking platform key permission constraints."""
     provider_config = config.get(provider_key, {})
@@ -265,9 +306,22 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
         try:
             text_content = extract_text_from_file(parse_target_path)
-            # ponytail: OCR fallback chain — tesseract first, then vision
+            # ponytail: OCR fallback chain — rapidocr first, then tesseract, then vision
+            ocr_cfg = config_val.get("ocr_settings", {})
+            ocr_provider = ocr_cfg.get("provider", os.environ.get("DEFAULT_OCR_PROVIDER", "rapidocr")).lower()
+
             if not text_content.strip() and mime_type:
-                text_content = _ocr_with_tesseract(parse_target_path, mime_type)
+                if ocr_provider == "rapidocr":
+                    text_content = _ocr_with_rapidocr(parse_target_path, mime_type)
+                    if not text_content.strip():
+                        text_content = _ocr_with_tesseract(parse_target_path, mime_type)
+                elif ocr_provider == "tesseract":
+                    text_content = _ocr_with_tesseract(parse_target_path, mime_type)
+                    if not text_content.strip():
+                        text_content = _ocr_with_rapidocr(parse_target_path, mime_type)
+                else:
+                    text_content = _ocr_with_rapidocr(parse_target_path, mime_type) or _ocr_with_tesseract(parse_target_path, mime_type)
+
             if not text_content.strip() and mime_type:
                 text_content = _describe_with_vision(parse_target_path, mime_type, config_val, tenant_id)
             # ponytail: table extraction for PDFs — stored in metadata
@@ -424,6 +478,17 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
         if extracted_tables:
             extracted_metadata["extracted_tables"] = extracted_tables
+
+        # ponytail: contextual document prefix (Anthropic Contextual Retrieval technique)
+        if chunk_cfg.get("enable_contextual_prefix", True) and text_content.strip():
+            doc_type = extracted_metadata.get("default_doc_type") or extracted_metadata.get("doc_type") or "Document"
+            topics = extracted_metadata.get("default_topics") or extracted_metadata.get("topics") or []
+            topic_str = f" regarding {', '.join(topics[:3])}" if isinstance(topics, list) and topics else ""
+            filename = os.path.basename(storage_path)
+            context_header = f"[Context: {filename} ({doc_type}{topic_str})]\n"
+            for chunk in chunks_to_insert:
+                if not chunk["content"].startswith("[Context:"):
+                    chunk["content"] = context_header + chunk["content"]
 
         chunk_ids = [c["chunk_id"] for c in chunks_to_insert]
 

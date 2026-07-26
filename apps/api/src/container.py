@@ -28,6 +28,7 @@ from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapt
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
 from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
+from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
@@ -133,11 +134,16 @@ class Container:
         embedder = self._cache["embedder"]
 
         # --- Search ---
+        reranker_instance = (
+            CohereRerankerAdapter(api_key=settings.COHERE_API_KEY)
+            if settings.COHERE_API_KEY
+            else LocalRerankerAdapter()
+        )
         self._cache["search_service"] = HybridSearchService(
             vector_search=PgVectorSearchAdapter(),
             keyword_search=PgKeywordSearchAdapter(),
             embedder=embedder,
-            reranker=CohereRerankerAdapter(api_key=settings.COHERE_API_KEY),
+            reranker=reranker_instance,
             cache_provider=PgSemanticCacheAdapter(),
             web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
             brave_search=BraveSearchAdapter(api_key=settings.BRAVE_API_KEY) if settings.BRAVE_API_KEY else None,
@@ -164,6 +170,7 @@ class Container:
             log_writer=log_writer,
             metrics_registry=get_metrics(),
             notification_provider=LoggingNotificationAdapter(),
+            document_repository=self._cache["document_repository"],
         )
 
         # --- Evaluation ---

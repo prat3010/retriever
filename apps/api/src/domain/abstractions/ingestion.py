@@ -72,6 +72,13 @@ class DocumentRepository(ABC):
         """Get all chunks for a document, ordered by chunk_index."""
         pass
 
+    @abstractmethod
+    async def get_chunks_by_ids(
+        self, tenant_id: str, chunk_ids: list[str]
+    ) -> list[DocumentChunk]:
+        """Get specific chunks by their IDs for a tenant."""
+        pass
+
 
 class DocumentStorage(ABC):
     @abstractmethod

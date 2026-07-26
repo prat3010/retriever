@@ -532,3 +532,63 @@ def test_chat_message_endpoint_streaming(
 
     assert response.status_code == 200
     assert "text/event-stream" in response.headers["content-type"]
+
+
+@pytest.mark.asyncio
+async def test_prepare_inference_parent_child_expansion() -> None:
+    from src.domain.abstractions.config import TenantConfiguration
+    from src.domain.abstractions.ingestion import DocumentChunk
+    from src.domain.abstractions.retrieval import SearchResult
+    from src.domain.inference.orchestrator import InferenceOrchestrator
+
+    mock_llm = MagicMock()
+    mock_prompt_builder = AsyncMock()
+    mock_prompt_builder.build_messages.return_value = []
+    mock_citation = MagicMock()
+    mock_session_repo = AsyncMock()
+    mock_session_repo.get_messages.return_value = []
+    mock_log_writer = AsyncMock()
+    mock_doc_repo = AsyncMock()
+
+    child_chunk = SearchResult(
+        chunk_id="child_1",
+        document_id="doc_1",
+        content="child snippet text",
+        score=0.9,
+        metadata={"parent_chunk_id": "parent_99"},
+    )
+    parent_chunk = DocumentChunk(
+        chunk_id="parent_99",
+        document_id="doc_1",
+        tenant_id="tenant_1",
+        content="full expanded parent section text",
+        token_count=100,
+        chunk_index=0,
+        created_at="2026-01-01T00:00:00",
+    )
+    mock_doc_repo.get_chunks_by_ids.return_value = [parent_chunk]
+
+    orchestrator = InferenceOrchestrator(
+        llm_provider=mock_llm,
+        prompt_builder=mock_prompt_builder,
+        citation_validator=mock_citation,
+        session_repo=mock_session_repo,
+        log_writer=mock_log_writer,
+        document_repository=mock_doc_repo,
+    )
+
+    tenant_config = TenantConfiguration(tenant_id="tenant_1")
+    await orchestrator._prepare_inference(
+        tenant_id="tenant_1",
+        session_id="ses_1",
+        query="what is context?",
+        context_chunks=[child_chunk],
+        tenant_config=tenant_config,
+        system_prompt_name="default",
+    )
+
+    mock_doc_repo.get_chunks_by_ids.assert_called_once_with("tenant_1", ["parent_99"])
+    passed_chunks = mock_prompt_builder.build_messages.call_args.kwargs["context_chunks"]
+    assert passed_chunks[0]["content"] == "full expanded parent section text"
+    assert passed_chunks[0]["chunk_id"] == "child_1"
+

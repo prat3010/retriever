@@ -280,12 +280,12 @@ Extraction endpoint returns a blocking JSON response. Add SSE streaming for larg
 
 ## Product/Deferred (M23)
 
-### ~~No local OCR (Tesseract)~~ (Fixed in C-4)
+### ~~No local OCR (Tesseract / Baidu PP-OCR)~~ (Fixed in C-4 & M4 Optimization)
 **File:** `workers/src/tasks/__init__.py`
 
-Vision extraction uses OpenAI vision API only — no local Tesseract OCR. This works for all image types but has per-call cost and latency. Add `pytesseract` + `TesseractOCR` system binary when throughput or cost requires offline processing.
+Vision extraction formerly used OpenAI vision API only. Added `_ocr_with_rapidocr()` (Baidu PP-OCRv4 via ONNX Runtime) as primary local OCR engine, chained with `_ocr_with_tesseract()` and `_describe_with_vision()`.
 
-*Fixed: `_ocr_with_tesseract()` chained before vision API, `pytesseract>=0.3.10` dep added.*
+*Fixed: `_ocr_with_rapidocr()` (Baidu PP-OCR) + `_ocr_with_tesseract()` chained before vision API, `rapidocr-onnxruntime>=1.3.0` dep added.*
 
 ### ~~First-page-only PDF vision~~ (Fixed in C-4)
 **File:** `workers/src/tasks/__init__.py` (in `_describe_with_vision`)
@@ -304,4 +304,11 @@ Worker `_describe_with_vision` hard-codes OpenAI. Add Anthropic Claude vision pa
 
 `_describe_with_vision` reads `vision_model` from the document's tenant config but uses `OPENAI_API_KEY` env var. Add per-tenant API key routing when multi-tenant vision use cases emerge.
 
-*Fixed: added _get_decrypted_key helper to resolve tenant-specific keys in tasks.*
+*Fixed: added _get_decrypted_key helper to resolve tenant-specific keys in tasks.
+
+## Product/Deferred (M28)
+
+### Per-request LLM model selector in chat UI
+**Files:** `apps/api/src/schemas/chat.py`, `apps/api/src/routers/chat.py`, `apps/web/src/components/tenant-sandbox.tsx`
+
+Chat always uses `tenant_config.ai_provider.default_model`. Add a `model` field to `ChatMessageRequest`, proxy `GET /v1/models` from OpenRouter (free models only, 24h in-memory cache), and render a `<Select>` dropdown in `tenant-sandbox.tsx`. Orchestrator already reads `model_config.default_model` — just override it in the router when `payload.model` is set. Defer until model switching is needed for demos or multi-model tenants.*

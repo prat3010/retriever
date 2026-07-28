@@ -318,3 +318,26 @@ Chat always uses `tenant_config.ai_provider.default_model`. Add a `model` field 
 
 Storage currently runs on `STORAGE_PROVIDER=local` with Remote HTTP Fallback for laptop-based embedding workflows. Defer Cloudflare R2 integration until payment setup is configured in Cloudflare Dashboard. The `S3Storage` adapter is already fully implemented and verified; migration only requires updating `.env` keys.
 
+## Product / Deferred (Future Extensions)
+
+### External SaaS Connectors Framework
+**Files:** `apps/api/src/domain/ingestion/`, `workers/src/tasks/`
+
+Currently, document ingestion requires direct API uploads or file uploads via the Admin Dashboard. Adding connectors (e.g. Google Drive, Notion, Slack, Confluence, SharePoint) would enable automated recurring document sync.
+
+### GraphRAG & Knowledge Graph Indexing
+**Files:** `apps/api/src/domain/knowledge/`, `apps/api/src/domain/retrieval/`
+
+Retrieval uses hybrid vector search + GIN text search with parent-child chunking. Adding entity-relationship extraction and graph database integration (GraphRAG) will allow multi-hop reasoning over complex relational document sets.
+
+### Agentic Workflows & Multi-Step Tool Execution
+**Files:** `apps/api/src/domain/inference/`
+
+The inference orchestrator handles conversational RAG and single-turn chat completion. Adding multi-step tool-calling loops will enable autonomous agentic workflows.
+
+### Architectural Boundary Note: Headless End-User Auth
+**Files:** `apps/api/src/domain/identity/`
+
+Retriever operates strictly as a headless engine and intentionally delegates end-user authentication/session management to downstream client frontends (passing `X-User-ID`). Ensure documentation explicitly clarifies this design boundary for evaluating developers.
+
+

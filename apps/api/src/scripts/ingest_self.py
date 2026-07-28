@@ -1,7 +1,13 @@
 import ast
 import asyncio
 import hashlib
+import json
 import os
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
 import uuid
 from pathlib import Path
 
@@ -14,6 +20,88 @@ from src.adapters.database.models import DocumentChunkDb, DocumentDb, VectorReco
 from src.config import settings
 
 SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
+
+
+def check_ollama_online(tags_urls: list[str]) -> tuple[bool, list[str]]:
+    for url in tags_urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "RetrieverSelfIngest/1.0"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    models = []
+                    if "models" in data:
+                        models = [m.get("name", "") for m in data["models"]]
+                    elif "data" in data:
+                        models = [m.get("id", "") for m in data["data"]]
+                    return True, models
+        except Exception:
+            pass
+    return False, []
+
+
+def ensure_ollama_running(base_url: str, model_name: str):
+    """Check if Ollama service is active. If offline, auto-launch it. If model is missing, auto-pull it."""
+    is_local_host = any(h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal"))
+    if not is_local_host:
+        print(f"[Ollama Check] Target base URL is remote ({base_url}). Skipping local Ollama auto-launch check.")
+        return
+
+    clean_base = base_url.rstrip("/").removesuffix("/v1")
+    tags_urls = [
+        f"{clean_base}/api/tags",
+        f"{clean_base}/v1/tags",
+        "http://localhost:11434/api/tags",
+        "http://127.0.0.1:11434/api/tags",
+    ]
+
+    is_online, models = check_ollama_online(tags_urls)
+
+    if not is_online:
+        print("[Ollama Probe] Ollama service is not responding. Attempting auto-launch...")
+        started = False
+        try:
+            res = subprocess.run(["open", "-a", "Ollama"], capture_output=True, text=True)
+            if res.returncode == 0:
+                print("  [Ollama Launch] Launched Ollama application via macOS ('open -a Ollama').")
+                started = True
+        except Exception:
+            pass
+
+        if not started:
+            try:
+                subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                print("  [Ollama Launch] Started 'ollama serve' in background process.")
+                started = True
+            except Exception as e:
+                print(f"  [Ollama Launch Warning] Could not start 'ollama serve': {e}")
+
+        print("  [Ollama Probe] Waiting for Ollama service health probe...")
+        for sec in range(15):
+            time.sleep(1)
+            is_online, models = check_ollama_online(tags_urls)
+            if is_online:
+                print(f"  [Ollama Probe] Ollama is online and healthy (after {sec + 1}s)!")
+                break
+
+        if not is_online:
+            print("\n[ERROR] Failed to connect to Ollama service after launch attempt.")
+            print("Please ensure Ollama is installed and run 'ollama serve' manually.")
+            sys.exit(1)
+
+    model_found = any(model_name in m for m in models)
+    if not model_found and is_online:
+        print(f"[Ollama Model Probe] Model '{model_name}' not found in installed Ollama models.")
+        print(f"  [Ollama Pull] Automatically pulling '{model_name}' via 'ollama pull'...")
+        try:
+            subprocess.run(["ollama", "pull", model_name], check=True)
+            print(f"  [Ollama Pull] Model '{model_name}' pulled successfully!")
+        except Exception as e:
+            print(f"  [Ollama Pull Error] Failed to pull model '{model_name}': {e}")
+            sys.exit(1)
+    else:
+        print(f"[Ollama Model Probe] Verified model '{model_name}' is active.")
+
 
 # Directories to ignore
 IGNORE_DIRS = {
@@ -316,6 +404,9 @@ async def main():
     
     print(f"Using Embedding Model: {model_name}")
     print(f"Using API Base URL: {base_url}")
+    
+    # Auto-detect, launch Ollama, and pull target model if offline
+    ensure_ollama_running(base_url, model_name)
     
     embedder = OllamaEmbeddingAdapter(
         api_key=api_key,

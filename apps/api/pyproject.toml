@@ -37,6 +37,7 @@ dependencies = [
     "ragas>=0.2.0",
     "deepeval>=0.21.0",
     "datasets>=2.0.0",
+    "psutil>=5.9.0",
 ]
 
 [dependency-groups]

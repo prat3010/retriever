@@ -43,6 +43,9 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* | Q4 2026 |
 | **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* | Q4 2026 |
 | **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker infrastructure removal | *Completed* | Q1 2027 |
+| **M36** | SaaS Data Connectors Framework | Automated document sync for Google Drive, Notion, Slack, Confluence, SharePoint | **Planned** | Q4 2029 |
+| **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Planned** | Q1 2030 |
+| **M38** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** | Q2 2030 |
 
 ---
 
@@ -805,6 +808,38 @@ This document outlines the implementation phases and milestones for the Retrieve
 - Admin dashboard provider list shows `gemini-2.5-flash` as the default for Gemini.
 - `docker compose config` validates without warnings.
 - Chat pane on a 1440px screen shows more messages before scrolling (taller container).
+
+---
+
+### [Planned] Milestone 36: SaaS Data Connectors Framework
+
+**Objective:** Build an extensible connector framework to automatically ingest and sync documents from third-party SaaS platforms (Google Drive, Notion, Slack, Confluence, SharePoint).
+
+**Targets:**
+- Define `ConnectorProvider` port in domain abstraction layer (`domain/abstractions/ingestion.py`).
+- Implement OAuth2 token storage and refresh handlers per tenant.
+- Celery background scheduler for incremental document sync and webhooks for real-time file updates.
+
+---
+
+### [Planned] Milestone 37: GraphRAG & Knowledge Graph Indexing
+
+**Objective:** Complement vector + keyword hybrid search with entity-relationship knowledge graph extraction and multi-hop graph retrieval.
+
+**Targets:**
+- Entity & relation extraction pipeline during document chunking.
+- Graph store adapter (Neo4j / PostgreSQL Apache AGE extension).
+- Graph-assisted query expansion and multi-hop entity reasoning in `InferenceOrchestrator`.
+
+---
+
+### [Planned] Milestone 38: Agentic Workflow Execution Engine
+
+**Objective:** Extend the generative inference layer from conversational RAG to autonomous multi-step tool execution loops.
+
+**Targets:**
+- Agent tool registration registry and execution sandboxes.
+- Support multi-turn function calling, tool response parsing, and dynamic step orchestration.
 
 ---
 

@@ -17,7 +17,6 @@ from sqlalchemy.future import select
 from src.adapters.cognitive.embedding_adapter import OpenAIEmbeddingAdapter
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import DocumentChunkDb, DocumentDb, VectorRecordDb
-from src.config import settings
 
 SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 
@@ -391,16 +390,18 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
         print(f"  Successfully indexed {len(chunks)} chunks.")
 
 async def main():
-    root_dir = Path("/workspace")
+    root_dir = Path(__file__).resolve().parents[3]
     if not root_dir.exists():
-        root_dir = Path(__file__).resolve().parent.parent.parent.parent
+        root_dir = Path("/workspace")
         
     print(f"Starting Ingestion of codebase in {root_dir}")
     
-    # Configure custom/Ollama settings from environment variables
+    # Configure custom/Ollama settings explicitly decoupled from Chat LLM env vars
+    base_url = os.getenv("EMBEDDING_BASE_URL", "http://localhost:11434/v1")
     model_name = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-    api_key = os.getenv("OPENAI_API_KEY", settings.OPENAI_API_KEY or "ollama")
-    base_url = os.getenv("OPENAI_BASE_URL", settings.OPENAI_BASE_URL or "http://host.docker.internal:11434/v1")
+    
+    is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal"))
+    api_key = "ollama" if is_local else os.getenv("EMBEDDING_API_KEY", "ollama")
     
     print(f"Using Embedding Model: {model_name}")
     print(f"Using API Base URL: {base_url}")

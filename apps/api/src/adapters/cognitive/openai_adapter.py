@@ -66,9 +66,8 @@ class OpenAILLMAdapter(LlmProvider):
             "model": model,
             "messages": messages,
             "temperature": request.temperature,
+            "max_tokens": request.max_tokens or 1024,
         }
-        if request.max_tokens:
-            kwargs["max_tokens"] = request.max_tokens
         if request.json_schema:
             kwargs["response_format"] = {"type": "json_object"}
 
@@ -105,11 +104,10 @@ class OpenAILLMAdapter(LlmProvider):
             "model": model,
             "messages": messages,
             "temperature": request.temperature,
+            "max_tokens": request.max_tokens or 1024,
             "stream": True,
             "stream_options": {"include_usage": True},
         }
-        if request.max_tokens:
-            kwargs["max_tokens"] = request.max_tokens
 
         try:
             stream = await client.chat.completions.create(**kwargs)

@@ -318,6 +318,7 @@ class InferenceOrchestrator:
         request = InferenceRequest(
             messages=prompt_messages,
             temperature=getattr(model_config, "temperature", 0.7),
+            max_tokens=getattr(model_config, "max_tokens", None) or 2048,
             json_schema=tenant_config.retrieval_settings.json_schema,
         )
 
@@ -386,6 +387,7 @@ class InferenceOrchestrator:
         request = InferenceRequest(
             messages=prompt_messages,
             temperature=getattr(model_config, "temperature", 0.7),
+            max_tokens=getattr(model_config, "max_tokens", None) or 2048,
             json_schema=tenant_config.retrieval_settings.json_schema,
         )
 

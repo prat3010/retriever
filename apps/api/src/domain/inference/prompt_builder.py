@@ -7,6 +7,7 @@ Depends only on domain abstractions — no infrastructure imports.
 
 import tiktoken
 
+from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.inference import (
     ChatMessage,
     PromptTemplateRegistry,
@@ -94,10 +95,10 @@ class PromptBuilder:
     async def _resolve_system_prompt(
         self, tenant_id: str, name: str
     ) -> str:
-        """Fetch system prompt from the template registry. Provide default fallback if missing."""
+        """Fetch system prompt from the template registry. Fail if missing."""
         template = await self.template_registry.get_template(tenant_id, name)
         if not template:
-            return "You are an intelligent AI coding & documentation assistant grounded on retrieved context chunks. Provide accurate, clear answers based on the retrieved context."
+            raise PromptTemplateNotFoundError(tenant_id, name)
         return template.content
 
     def _compress(

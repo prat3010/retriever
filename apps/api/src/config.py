@@ -104,6 +104,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str | None = None
+    REMOTE_STORAGE_API_URL: str = "https://rag.prateeq.in"
 
     # Cryptography
     KEY_ENCRYPTION_KEY: str = "dev-key-encryption-key-must-be-32-bytes-long="

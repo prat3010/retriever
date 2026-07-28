@@ -48,9 +48,9 @@ export function useDeleteDocument(tenantId: string | undefined) {
 export function useProcessDocument(tenantId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (documentId: string) => {
-      return api.post<{ documentId: string; status: string; chunksIndexed: number }>(
-        `/v1/admin/tenants/${tenantId}/documents/${documentId}/process`,
+    mutationFn: async ({ documentId, targetEngine = "laptop" }: { documentId: string; targetEngine?: "laptop" | "oracle" }) => {
+      return api.post<{ documentId: string; status: string; chunksIndexed: number; targetEngine: string }>(
+        `/v1/admin/tenants/${tenantId}/documents/${documentId}/process?targetEngine=${targetEngine}`,
       );
     },
     onSuccess: () => {

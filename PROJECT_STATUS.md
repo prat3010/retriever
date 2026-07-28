@@ -30,7 +30,7 @@ Operational overview of the Retriever platform's current engineering status.
  ### Testing Status: **Green**
 - **Unit Test Coverage**: 29 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
 - **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
-- **Total Tests**: 396/396 passing.
+- **Total Tests**: 379/379 passing (1 skipped).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 - **Observability**: Inference logs now tagged with caller `role` (admin/client) and `key_id` for full attribution. Admin requests no longer have `user_id=NULL` blind spot. `TOKEN_CONSUMPTION` and `COST_SPEND` Prometheus counters carry `role` label.
@@ -463,6 +463,27 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 
 ---
 
-## 23. Outstanding Blockers & Issues
+## 23. M36 Modular Target-Engine Embedding & Remote Storage Fallback — Completed
+
+**Objective:** Implement target-engine routing (Laptop vs Oracle VM) for document embedding, add real-time `PROCESSING` status visual feedback in the Admin Dashboard, implement remote HTTP file fallback for cross-environment access, and provide a bulk CLI tool.
+
+### Changes Made
+- **Target Engine Routing & Fallback** (`apps/api/src/routers/admin.py`):
+  - Added `targetEngine` (`laptop` | `oracle` | `auto`) query parameter to `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process`.
+  - Added real-time status transitions: `PENDING` → `PROCESSING` → `INDEXED`.
+  - Implemented remote HTTP file retrieval from `{REMOTE_STORAGE_API_URL}/v1/admin/tenants/{tenantId}/documents/{documentId}/file` using `ADMIN_MASTER_KEY` when physical files are missing from local disk.
+- **Admin Dashboard UI** (`apps/web/src/components/tenant-documents.tsx` & `use-documents.ts`):
+  - Updated document table to render ⚡ **Laptop** (Local Ollama) and ☁️ **Cloud** (Oracle VM) embedding target buttons on `PENDING` files.
+  - Added `PROCESSING` state badge with animated loader spinner.
+- **Batch Processing Tool** (`scripts/process-pending.sh` & `apps/api/src/scripts/process_pending.py`):
+  - Created executable script to batch process all `PENDING` documents across all tenants in one command.
+- **Config & Tech Debt Update** (`config.py` & `TECH_DEBT.md`):
+  - Added `REMOTE_STORAGE_API_URL` setting.
+  - Recorded Cloudflare R2 cloud storage setup under Product/Deferred items.
+
+---
+
+## 24. Outstanding Blockers & Issues
 
 - None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.
+

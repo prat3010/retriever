@@ -21,15 +21,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FileText, UploadCloud, Trash2, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { FileText, UploadCloud, Trash2, Loader2, Sparkles, CheckCircle2, Laptop, Cloud } from "lucide-react";
 import { useState, useRef, DragEvent, useCallback } from "react";
 import { toast } from "sonner";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   INDEXED: "default",
+  PROCESSING: "outline",
   PENDING: "secondary",
-  PARSING: "outline",
-  INDEXING: "outline",
   FAILED: "destructive",
 };
 
@@ -50,12 +49,13 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
   const [processingDocs, setProcessingDocs] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleProcess = useCallback(async (docId: string, filename: string) => {
+  const handleProcess = useCallback(async (docId: string, filename: string, targetEngine: "laptop" | "oracle" = "laptop") => {
     setProcessingDocs((prev) => new Set(prev).add(docId));
-    const id = toast.loading(`Processing ${filename}...`);
+    const engineLabel = targetEngine === "laptop" ? "Laptop" : "Oracle VM";
+    const id = toast.loading(`Processing ${filename} on ${engineLabel}...`);
     try {
-      const res = await processMutation.mutateAsync(docId);
-      toast.success(`Indexed ${res.chunksIndexed} chunks.`, { id });
+      const res = await processMutation.mutateAsync({ documentId: docId, targetEngine });
+      toast.success(`Indexed ${res.chunksIndexed} chunks on ${engineLabel}.`, { id });
     } catch (err: any) {
       toast.error(`Processing failed: ${err.message || "Unknown error"}`, { id });
     } finally {
@@ -241,19 +241,46 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {doc.status === "PENDING" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleProcess(doc.documentId, doc.filename);
-                          }}
-                          disabled={processingDocs.has(doc.documentId)}
-                          title="Embed"
-                        >
-                          {processingDocs.has(doc.documentId) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProcess(doc.documentId, doc.filename, "laptop");
+                            }}
+                            disabled={processingDocs.has(doc.documentId)}
+                            title="Embed on Laptop (Local Ollama)"
+                          >
+                            {processingDocs.has(doc.documentId) ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Laptop className="h-3.5 w-3.5" />
+                            )}
+                            <span>Laptop</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProcess(doc.documentId, doc.filename, "oracle");
+                            }}
+                            disabled={processingDocs.has(doc.documentId)}
+                            title="Embed on Oracle VM (Cloud Server)"
+                          >
+                            <Cloud className="h-3.5 w-3.5" />
+                            <span>Cloud</span>
+                          </Button>
+                        </div>
+                      )}
+                      {doc.status === "PROCESSING" && (
+                        <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          <span>Embedding...</span>
+                        </div>
                       )}
                       {doc.status === "INDEXED" && (
                         <CheckCircle2 className="h-4 w-4 text-green-500" />

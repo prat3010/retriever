@@ -312,3 +312,9 @@ Worker `_describe_with_vision` hard-codes OpenAI. Add Anthropic Claude vision pa
 **Files:** `apps/api/src/schemas/chat.py`, `apps/api/src/routers/chat.py`, `apps/web/src/components/tenant-sandbox.tsx`
 
 Chat always uses `tenant_config.ai_provider.default_model`. Add a `model` field to `ChatMessageRequest`, proxy `GET /v1/models` from OpenRouter (free models only, 24h in-memory cache), and render a `<Select>` dropdown in `tenant-sandbox.tsx`. Orchestrator already reads `model_config.default_model` — just override it in the router when `payload.model` is set. Defer until model switching is needed for demos or multi-model tenants.*
+
+### Cloudflare R2 Cloud Storage Migration
+**Files:** `apps/api/src/config.py`, `apps/api/src/container.py`, `apps/api/src/adapters/storage/s3_storage.py`
+
+Storage currently runs on `STORAGE_PROVIDER=local` with Remote HTTP Fallback for laptop-based embedding workflows. Defer Cloudflare R2 integration until payment setup is configured in Cloudflare Dashboard. The `S3Storage` adapter is already fully implemented and verified; migration only requires updating `.env` keys.
+

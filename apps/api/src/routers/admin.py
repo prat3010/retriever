@@ -3,8 +3,9 @@ import hashlib
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
+import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -12,6 +13,7 @@ from fastapi import (
     File,
     Header,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
@@ -377,30 +379,57 @@ async def admin_ingest_document_sync(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_process_document(tenantId: str, documentId: str) -> dict:
+async def admin_process_document(
+    tenantId: str,
+    documentId: str,
+    target_engine: Literal["laptop", "oracle", "auto"] = Query("auto", alias="targetEngine"),
+) -> dict:
     doc = await document_repository.get_document(tenantId, documentId)
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found.")
 
+    doc.status = "PROCESSING"
+    await document_repository.create_document(tenantId, doc)
+
     file_content = await local_storage.read_file(doc.storage_path)
+    if file_content is None and settings.REMOTE_STORAGE_API_URL:
+        try:
+            remote_url = f"{settings.REMOTE_STORAGE_API_URL.rstrip('/')}/v1/admin/tenants/{tenantId}/documents/{documentId}/file"
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                res = await client.get(
+                    remote_url,
+                    headers={"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY},
+                )
+                if res.status_code == 200:
+                    file_content = res.content
+        except Exception:
+            pass
+
     if file_content is None:
-        raise HTTPException(status_code=404, detail="Document file not found on disk.")
+        doc.status = "FAILED"
+        await document_repository.create_document(tenantId, doc)
+        raise HTTPException(status_code=404, detail="Document file not found on local disk or remote storage.")
 
-    chunk_count = await ingest_file_sync(
-        tenant_id=tenantId,
-        document_id=documentId,
-        filename=doc.filename,
-        file_content=file_content,
-        file_hash=doc.file_hash,
-        mime_type=doc.mime_type,
-        embedder=search_service.embedder,
-    )
-
-    return {
-        "documentId": documentId,
-        "status": "indexed",
-        "chunksIndexed": chunk_count,
-    }
+    try:
+        chunk_count = await ingest_file_sync(
+            tenant_id=tenantId,
+            document_id=documentId,
+            filename=doc.filename,
+            file_content=file_content,
+            file_hash=doc.file_hash,
+            mime_type=doc.mime_type,
+            embedder=search_service.embedder,
+        )
+        return {
+            "documentId": documentId,
+            "status": "indexed",
+            "chunksIndexed": chunk_count,
+            "targetEngine": target_engine,
+        }
+    except Exception as err:
+        doc.status = "FAILED"
+        await document_repository.create_document(tenantId, doc)
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {err}") from err
 
 
 @router.delete(

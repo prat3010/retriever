@@ -2,6 +2,19 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-07-28
+
+### Added
+- **Modular Target-Engine Embedding**: `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process` supports `targetEngine` query parameter (`laptop` | `oracle` | `auto`), allowing administrators to route embedding jobs to their local laptop (via local Ollama at `http://localhost:11434`) or to the cloud server (Oracle VM).
+- **Real-time Status Transitions**: On-demand process endpoint updates document status in Supabase from `PENDING` → `PROCESSING` immediately for instant visual feedback, and `INDEXED` upon completion.
+- **Remote Storage HTTP Fallback**: When running locally (`STORAGE_PROVIDER=local`) and physical file bytes are missing from local disk, the backend automatically downloads the raw file over HTTP from `{REMOTE_STORAGE_API_URL}/v1/admin/tenants/{tenantId}/documents/{documentId}/file` using `ADMIN_MASTER_KEY`.
+- **Target Selection UI in Admin Dashboard**: Updated document table ([tenant-documents.tsx](file:///Users/prateeksharma/Developer/retriever/apps/web/src/components/tenant-documents.tsx)) with ⚡ **Laptop** and ☁️ **Cloud** target selection buttons on `PENDING` files, plus animated `PROCESSING` spinner.
+- **Bulk Batch Processing CLI Tool**: Added `scripts/process-pending.sh` wrapper and `apps/api/src/scripts/process_pending.py` script to batch-process all `PENDING` documents across all tenants in one command.
+
+### Changed
+- **Config Settings**: Added `REMOTE_STORAGE_API_URL` setting (`https://rag.prateeq.in`) to `config.py`.
+- **Tech Debt Documentation**: Deferred Cloudflare R2 cloud storage setup under Product/Deferred items in `TECH_DEBT.md`.
+
 ## [0.28.0] - 2026-07-21
 
 ### Added

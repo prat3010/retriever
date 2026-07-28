@@ -89,9 +89,12 @@ This is the most critical management page. It contains a detailed dashboard segm
 *   **Details:** A paginated grid listing all raw files uploaded by the tenant.
 *   **Columns:** Filename, File Size, Ingestion Status (`pending`, `processed`, `failed`), and Upload Date.
 *   **Actions:**
-    *   **Upload Document File Button:** Trigger file selector to upload new PDFs/Markdown files for vector slicing. Uploads are save-only (no processing) to avoid timeouts.
-    *   **Embed Button (Sparkles icon):** Available on PENDING documents — triggers on-demand processing via `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process`. The file is read from storage, chunked, embedded, and indexed synchronously.
-    *   **Delete Icon:** Permanently removes the file from local storage and cascades deletion to drop all related vectors.
+    *   **Upload Document File Button:** Trigger file selector to upload new PDFs/Markdown files for vector slicing. Uploads save files as `PENDING` to conserve server RAM on low-end Oracle VM.
+    *   **Target Engine Embedding Buttons (Laptop vs Cloud):** Available on PENDING documents — triggers on-demand processing via `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process?targetEngine=laptop|oracle`.
+        *   **⚡ Laptop Button:** Runs parsing & vector embedding on your laptop via local Ollama (`http://localhost:11434`), fetching file bytes over HTTP from Oracle VM if missing locally.
+        *   **☁️ Cloud Button:** Runs processing & embedding directly on the Oracle VM.
+    *   **Bulk CLI Script:** Run `./scripts/process-pending.sh --target=laptop` from terminal to batch-process all `PENDING` documents across all tenants.
+    *   **Delete Icon:** Permanently removes the file from storage and cascades deletion to drop all related vectors.
 
 #### Tab 3: Users
 *   **Details:** Lists user profiles registered under this tenant. Used for user-level RAG filters and citation validation.

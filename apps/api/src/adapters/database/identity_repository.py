@@ -56,11 +56,13 @@ class SqlIdentityProvider(IdentityProvider):
                     raise AuthenticationError("API key token has expired.")
 
             roles = ["admin"] if db_key.role == "admin" else ["client"]
-            scopes = (
-                ["admin:*"]
-                if db_key.role == "admin"
-                else ["document:write", "document:read"]
-            )
+            db_scopes = getattr(db_key, "scopes", None)
+            if db_key.role == "admin":
+                scopes = ["admin:*"]
+            elif db_scopes and isinstance(db_scopes, list):
+                scopes = db_scopes
+            else:
+                scopes = ["document:write", "document:read", "search:read", "chat:write"]
 
             return UserContext(
                 user_id="",

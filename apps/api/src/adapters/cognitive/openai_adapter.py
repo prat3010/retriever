@@ -22,7 +22,7 @@ RETRYABLE_ERRORS = (
 class OpenAILLMAdapter(LlmProvider):
 
     def __init__(
-        self, api_key: str, base_url: str = "", default_model: str = "gemini-1.5-flash"
+        self, api_key: str, base_url: str = "", default_model: str = "meta-llama/llama-3.3-70b-instruct"
     ) -> None:
         self.default_model = default_model
         self._api_key = api_key

@@ -134,6 +134,7 @@ async def test_orchestrator_logs_cost_usd() -> None:
     )
 
     config = TenantConfiguration(tenant_id="t1")
+    config.ai_provider.default_model = "gpt-4o"
     # openai/gpt-4o: input=2.5/1k, output=10.0/1k
     # cost = 100 * 2.5/1000 + 50 * 10.0/1000 = 0.25 + 0.50 = 0.75
 

@@ -19,7 +19,7 @@ Set needs_re_retrieval=true if uncertain, off-topic, or unsupported by context. 
 
 class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
 
-    def __init__(self, llm: LlmProvider, judge_model: str = "gemini-1.5-flash") -> None:
+    def __init__(self, llm: LlmProvider, judge_model: str = "meta-llama/llama-3.3-70b-instruct") -> None:
         self.llm = llm
         self.judge_model = judge_model
 

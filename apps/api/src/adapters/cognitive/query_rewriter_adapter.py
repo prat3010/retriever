@@ -12,7 +12,7 @@ HYDE_PROMPT = (
 
 class LLMQueryRewriterAdapter(QueryRewriterProvider):
 
-    def __init__(self, llm: LlmProvider, model: str = "gemini-1.5-flash") -> None:
+    def __init__(self, llm: LlmProvider, model: str = "meta-llama/llama-3.3-70b-instruct") -> None:
         self.llm = llm
         self.model = model
 

@@ -219,6 +219,9 @@ async def verify_scopes(
                 allowed = True
             if doc_type_param and f"document_type:{doc_type_param}:write" in user_context.scopes:
                 allowed = True
+        elif scope == "chat:write":
+            if "document:write" in user_context.scopes:
+                allowed = True
                 
         if not allowed:
             raise HTTPException(

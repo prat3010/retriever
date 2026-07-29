@@ -144,7 +144,7 @@ def test_document_delete(mock_soft_delete, mock_validate) -> None:
         user_id="user_123",
         tenant_id=tenant_id,
         roles=["integrator"],
-        scopes=["document:write"],
+        scopes=["document:delete"],
     )
     mock_soft_delete.return_value = "/path"
 
@@ -175,13 +175,25 @@ def test_document_get_not_found(mock_get, mock_validate) -> None:
 def test_document_delete_not_found(mock_delete, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:write"],
+        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:delete"],
     )
     mock_delete.return_value = None
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
     assert response.status_code == 404
     assert "Document not found" in response.json()["detail"]
+
+
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+def test_document_delete_forbidden_without_delete_scope(mock_validate) -> None:
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123", tenant_id=tenant_id, roles=["client"], scopes=["document:read", "search:read", "chat:write"],
+    )
+    headers = {"Authorization": "Bearer ret_live_guesttoken.secret"}
+    response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    assert response.status_code == 403
+    assert "Missing required scope 'document:delete'" in response.json()["detail"]
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)

@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = ""
     TAVILY_API_KEY: str = ""
     BRAVE_API_KEY: str = ""
-    VISION_MODEL: str = "gpt-4o"
+    VISION_MODEL: str = "nvidia/nemotron-nano-12b-v2-vl:free"
     DEFAULT_OCR_PROVIDER: str = "rapidocr"
 
     # CORS

@@ -41,7 +41,7 @@ class AIProviderConfig(BaseModel):
     api_key: str | None = None
     base_url: str | None = "https://openrouter.ai/api/v1"
     default_model: str = "meta-llama/llama-3.3-70b-instruct"
-    vision_model: str = "gpt-4o"
+    vision_model: str = "nvidia/nemotron-nano-12b-v2-vl:free"
     fallback_provider: str = ""
     fallback_model: str = ""
     retry_attempts: int = 2

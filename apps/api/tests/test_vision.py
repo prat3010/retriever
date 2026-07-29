@@ -185,14 +185,14 @@ def test_ai_provider_config_has_vision_model() -> None:
     from src.domain.abstractions.config import AIProviderConfig
 
     cfg = AIProviderConfig()
-    assert cfg.vision_model == "gpt-4o"
+    assert cfg.vision_model == "nvidia/nemotron-nano-12b-v2-vl:free"
 
 
 def test_settings_has_vision_model() -> None:
     from src.config import Settings
 
     s = Settings()
-    assert s.VISION_MODEL == "gpt-4o"
+    assert s.VISION_MODEL == "nvidia/nemotron-nano-12b-v2-vl:free"
 
 
 # ── Step 5: Worker vision extraction ────────────────────────────────────────

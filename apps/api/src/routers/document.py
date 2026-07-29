@@ -194,7 +194,7 @@ async def get_document(tenantId: str, documentId: str) -> DocumentResponse:
 @router.delete(
     "/v1/tenants/{tenantId}/documents/{documentId}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:delete"])],
 )
 async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     """Delete document source file, cascade chunks, and mark records deleted."""

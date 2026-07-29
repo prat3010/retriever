@@ -60,6 +60,10 @@ class OpenAILLMAdapter(LlmProvider):
                 content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
                 content_block.extend(images)
                 msg["content"] = content_block
+            if not msg.get("tool_calls"):
+                msg.pop("tool_calls", None)
+            if msg.get("name") is None:
+                msg.pop("name", None)
         client = self._client_for_key(configuration.get("api_key"), configuration.get("base_url"))
 
         kwargs: dict[str, Any] = {
@@ -98,6 +102,10 @@ class OpenAILLMAdapter(LlmProvider):
                 content_block: list[dict] = [{"type": "text", "text": msg["content"]}]
                 content_block.extend(images)
                 msg["content"] = content_block
+            if not msg.get("tool_calls"):
+                msg.pop("tool_calls", None)
+            if msg.get("name") is None:
+                msg.pop("name", None)
         client = self._client_for_key(configuration.get("api_key"), configuration.get("base_url"))
 
         kwargs: dict[str, Any] = {

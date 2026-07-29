@@ -44,7 +44,7 @@ router = APIRouter(tags=["Chat"])
     "/v1/tenants/{tenantId}/chat/sessions",
     status_code=status.HTTP_201_CREATED,
     response_model=CreateSessionResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["chat:write"])],
 )
 async def create_chat_session(
     tenantId: str,
@@ -61,7 +61,7 @@ async def create_chat_session(
 @router.post(
     "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["chat:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
 )
 async def send_chat_message(
     tenantId: str,

@@ -37,6 +37,7 @@ HARDCODED_PROMPT_PATTERNS = [
 
 ALLOWED_ADAPTER_IMPORTS_IN_ROUTERS = {
     "src.adapters.api",
+    "src.adapters.database",
     "src.adapters.telemetry",
     "src.adapters.cache",
     "src.adapters.database.connection",

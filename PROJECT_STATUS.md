@@ -7,8 +7,9 @@ Operational overview of the Retriever platform's current engineering status.
   ##  1. Status Overview
    
    - **Current Milestone**: Production Polish (M30 — Completed)
-   - **Last Completed Milestone**: Milestone 30: Production Polish
-   - **Build Status**: Passing (396 unit tests pass)
+   - **Current Milestone**: Production Polish (M30 — Completed)
+   - **Last Completed Milestone**: Google OAuth & Multi-Tenant Self-Onboarding (/v1/auth/google)
+   - **Build Status**: Passing (381 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
@@ -22,15 +23,16 @@ Operational overview of the Retriever platform's current engineering status.
  ### Architecture Health: **Green**
  - **Hexagonal Architecture Compliance**: Enforced by `tests/test_architecture.py` on every test run. Core domains contain no database or framework imports.
  - **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all customer-data tables. Secure UUID context validation blocks connection-level SQL injections.
+ - **Google OAuth & Auto-Onboarding**: `/v1/auth/google` verifies Google JWKS tokens, auto-provisions Tenant & User records, issues API keys (`ret_live_...`), and returns signed JWT sessions.
  - **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
  - **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
  - **No Hardcoded Prompts**: Enforced by conformance test and `PromptTemplateNotFoundError`.
  - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
  
  ### Testing Status: **Green**
-- **Unit Test Coverage**: 29 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
+- **Unit Test Coverage**: 30 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
 - **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
-- **Total Tests**: 379/379 passing (1 skipped).
+- **Total Tests**: 381/381 passing (1 skipped).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 - **Observability**: Inference logs now tagged with caller `role` (admin/client) and `key_id` for full attribution. Admin requests no longer have `user_id=NULL` blind spot. `TOKEN_CONSUMPTION` and `COST_SPEND` Prometheus counters carry `role` label.

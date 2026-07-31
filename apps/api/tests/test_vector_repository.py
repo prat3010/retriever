@@ -91,7 +91,7 @@ async def test_search_similar_with_filters(mock_build_filter, mock_session_ctx, 
         tenant_id="tnt_001", embedding=[0.1], top_k=10, filters=flt, tags=[],
     )
 
-    mock_build_filter.assert_called_once_with(flt, [], "dc")
+    mock_build_filter.assert_called_once_with(flt, [], "dc", collection_id=None)
     call_params = mock_db_session.execute.call_args[0][1]
     assert call_params["f_0"] == "legal"
 

@@ -14,13 +14,17 @@ from src.main import app
 client = TestClient(app)
 
 
+@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
 @patch("src.routers.document.redis_client.get", new_callable=AsyncMock)
 @patch("src.routers.document.redis_client.setex", new_callable=AsyncMock)
-def test_idempotency_keys(mock_setex, mock_get, mock_send_task, mock_find_by_hash, mock_create, mock_validate) -> None:
+def test_idempotency_keys(
+    mock_setex, mock_get, mock_send_task, mock_find_by_hash, mock_create, mock_validate, mock_get_cfg, mock_check_quota
+) -> None:
     """Verify that specifying an Idempotency-Key caches upload responses and prevents duplicates."""
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(

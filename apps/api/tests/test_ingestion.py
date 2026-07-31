@@ -24,11 +24,15 @@ def clean_temp_files() -> None:
             shutil.rmtree(f)
 
 
+@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
-def test_document_upload_success(mock_send_task, mock_find_by_hash, mock_create, mock_validate) -> None:
+def test_document_upload_success(
+    mock_send_task, mock_find_by_hash, mock_create, mock_validate, mock_get_cfg, mock_check_quota
+) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
         user_id="user_123",
@@ -59,9 +63,13 @@ def test_document_upload_success(mock_send_task, mock_find_by_hash, mock_create,
     assert call_args[1]["args"][0] == doc_id
 
 
+@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
-def test_document_upload_deduplication(mock_find_by_hash, mock_validate) -> None:
+def test_document_upload_deduplication(
+    mock_find_by_hash, mock_validate, mock_get_cfg, mock_check_quota
+) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(

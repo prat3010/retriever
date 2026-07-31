@@ -674,7 +674,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 **Targets:**
 - ✅ Root `.env` never committed (verified: `git log --diff-filter=A -- .env` is empty). Credential rotation of leaked Supabase DB password / OpenAI key: ⬜ still required.
-- ⬜ `apps/web/.env.local` (Vercel OIDC token) still in git history (commit `53c6286`) — pending BFG Repo-Cleaner/`git filter-branch` scrub + token rotation.
+- ✅ `apps/web/.env.local` scrubbed from git history (commit `53c6286`, all 148 commits, branches `main` + `decompose-main-py`) via `git-filter-repo` + force-push (2026-07-31). Token verified expired on its own (2026-07-18, `exp` claim + Vercel API 403) — rotation unnecessary. Server git objects purged (`reflog expire` + `gc --prune=now`); root `.gitignore` hardened to `.env*`.
 - ✅ `@model_validator(mode="after")` in `config.py` crashes FastAPI startup with `ValueError` if `ENVIRONMENT == "production"` and `ADMIN_MASTER_KEY` or `KEY_ENCRYPTION_KEY` still have their default development values (config.py:66-84).
 - ✅ SSH into Oracle VM: `ADMIN_MASTER_KEY` and `KEY_ENCRYPTION_KEY` in production `.env` are **not** default values (verified on server).
 - ✅ Remove port 8000 ingress rule from Oracle Cloud security group — verified: `nc` to `130.210.35.134:8000` from external host times out (filtered); API only reachable via nginx 443/80.

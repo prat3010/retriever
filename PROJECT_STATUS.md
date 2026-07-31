@@ -450,7 +450,7 @@ Client App → Cloudflare Proxy → Oracle VPS (API) → Supabase (DB, vectors, 
 - **`.gitignore`**: Confirmed `.env` and `.env*` patterns are present in both root and `apps/web/` gitignore files.
 
 ### Manual Actions Required
-1. **Rotate credentials — ⬜ PENDING:** `apps/web/.env.local` (Vercel OIDC token) is still in git history (commit `53c6286`); requires BFG Repo-Cleaner / `git filter-branch` scrub, then rotate the token. Root `.env` was never committed (verified — clean history).
+1. **Rotate credentials — ✅ DONE (2026-07-31):** `apps/web/.env.local` scrubbed from git history (commit `53c6286`, all 148 commits, both branches) via `git-filter-repo` + force-push. Vercel OIDC token verified **already expired** (JWT `exp` 2026-07-18, API returns 403) — rotation not required. Server object store purged, root `.gitignore` hardened to `.env*`. Root `.env` was never committed (verified — clean history).
 2. **ADMIN_MASTER_KEY on Oracle VM — ✅ DONE:** verified non-default on server (2026-07-31).
 3. **Close port 8000 — ✅ DONE:** verified filtered/closed from external host; API reachable only via nginx 443/80.
 
@@ -551,7 +551,7 @@ Pending items (verified against live Oracle VM `130.210.35.134`, 2026-07-31):
 
 | Item | Milestone | Status |
 |---|---|---|
-| Scrub `apps/web/.env.local` from git history (BFG/filter-branch) + rotate Vercel OIDC token | M31 | ⬜ Pending |
+| Scrub `apps/web/.env.local` from git history + Vercel OIDC token | M31 | ✅ Done (git-filter-repo, 2026-07-31; token verified expired — rotation unnecessary) |
 | Set `SENTRY_DSN` on Oracle VM + verify error capture | M34 | ✅ Done (EU region, test error ingested; one-line OTel import fix in main.py) |
 | UptimeRobot/Better Uptime monitor on `rag.prateeq.in/health/liveness` | M34 | ⬜ Needs UptimeRobot account (optional) |
 | Backend short ID columns + API path acceptance (`tn_`/`usr_`) | M32 | ⬜ Deferred |

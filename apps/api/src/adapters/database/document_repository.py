@@ -21,6 +21,7 @@ class SqlDocumentRepository(DocumentRepository):
         return Document(
             document_id=str(row.document_id),
             tenant_id=str(row.tenant_id),
+            collection_id=str(row.collection_id) if row.collection_id else None,
             filename=row.filename,
             file_hash=row.file_hash or "",
             storage_path=row.storage_path or "",
@@ -32,13 +33,17 @@ class SqlDocumentRepository(DocumentRepository):
             updated_at=row.updated_at.isoformat(),
         )
 
-    async def list_documents(self, tenant_id: str, bypass_rls: bool = False) -> list[Document]:
+    async def list_documents(
+        self, tenant_id: str, collection_id: str | None = None, bypass_rls: bool = False
+    ) -> list[Document]:
         async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
-            stmt = (
-                select(DocumentDb)
-                .where(DocumentDb.tenant_id == uuid.UUID(tenant_id), DocumentDb.is_deleted == False)
-                .order_by(DocumentDb.created_at.desc())
+            stmt = select(DocumentDb).where(
+                DocumentDb.tenant_id == uuid.UUID(tenant_id),
+                DocumentDb.is_deleted == False,
             )
+            if collection_id:
+                stmt = stmt.where(DocumentDb.collection_id == uuid.UUID(collection_id))
+            stmt = stmt.order_by(DocumentDb.created_at.desc())
             return [self._to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
 
     async def get_document(self, tenant_id: str, document_id: str, bypass_rls: bool = False) -> Document | None:
@@ -67,6 +72,7 @@ class SqlDocumentRepository(DocumentRepository):
                 DocumentDb(
                     document_id=uuid.UUID(doc.document_id),
                     tenant_id=uuid.UUID(tenant_id),
+                    collection_id=uuid.UUID(doc.collection_id) if doc.collection_id else None,
                     filename=doc.filename,
                     file_hash=doc.file_hash,
                     storage_path=doc.storage_path,
@@ -101,6 +107,7 @@ class SqlDocumentRepository(DocumentRepository):
             chunk_id=str(row.chunk_id),
             document_id=str(row.document_id),
             tenant_id=str(row.tenant_id),
+            collection_id=str(row.collection_id) if row.collection_id else None,
             content=row.content,
             token_count=row.token_count,
             chunk_index=row.chunk_index,

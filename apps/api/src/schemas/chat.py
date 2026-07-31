@@ -12,6 +12,7 @@ class ChatMessageRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=4000)
     stream: bool = True
     system_prompt_name: str = "default"
+    collection_id: str | None = Field(None, alias="collectionId")
     filters: list[MetadataFilter] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 

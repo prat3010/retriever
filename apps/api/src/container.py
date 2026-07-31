@@ -48,6 +48,7 @@ from src.adapters.database.inference_repository import (
     SqlInferenceLogWriter,
     SqlPromptTemplateRegistry,
 )
+from src.adapters.database.quota_repository import SqlQuotaRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
@@ -66,6 +67,7 @@ from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.inference.prompt_builder import PromptBuilder
+from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
 
@@ -83,6 +85,7 @@ class Container:
         self._cache["identity_provider"] = SqlIdentityProvider()
         self._cache["user_repository"] = SqlUserRepository()
         self._cache["document_repository"] = SqlDocumentRepository()
+        self._cache["quota_service"] = QuotaService(repository=SqlQuotaRepository())
         config_registry = SqlConfigRegistry()
         self._cache["config_service"] = ConfigurationService(
             registry=config_registry,
@@ -248,5 +251,7 @@ user_repository = container.user_repository
 
 corrective_provider = container.corrective_provider
 corrective_service = container.corrective_service
+
+quota_service = container.quota_service
 
 event_publisher = container.event_publisher

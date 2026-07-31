@@ -6,6 +6,7 @@ from src.domain.abstractions.retrieval import MetadataFilter
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     limit: int = Field(default=5, ge=1, le=100)
+    collection_id: str | None = Field(None, alias="collectionId")
     filters: list[MetadataFilter] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 

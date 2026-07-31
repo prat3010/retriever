@@ -14,7 +14,7 @@ def assign_variant(
     user_id: str | None,
     experiment: ExperimentConfig,
 ) -> VariantConfig | None:
-    if not experiment.variants:
+    if experiment.status != "active" or not experiment.variants:
         return None
     bucket = _bucket(user_id, experiment.id)
     cumulative = 0.0

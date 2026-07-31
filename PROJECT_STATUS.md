@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Production Polish (M30 — Completed)
-   - **Last Completed Milestone**: Dynamic SaaS Pricing Engine (`/v1/config/pricing`) & Google Auth Onboarding (`/v1/auth/google`)
-   - **Build Status**: Passing (383 unit tests pass)
+   - **Current Milestone**: SaaS Data Connectors Framework (M36 — Completed)
+   - **Last Completed Milestone**: SaaS Data Connectors Framework (M36 — BaseConnector domain port, WebCrawlerConnector & MockCloudDriveConnector, admin CRUD, & document sync ingestion)
+   - **Build Status**: Passing (407 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 26: SaaS Tenant Resource Quotas
+   - **Next Recommended Milestone**: Milestone 37 / GraphRAG & Knowledge Graph Indexing
  
  ---
  
@@ -30,9 +30,9 @@ Operational overview of the Retriever platform's current engineering status.
  - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
  
  ### Testing Status: **Green**
-- **Unit Test Coverage**: 31 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
-- **Admin API Tests**: 36 tests covering all 20 admin endpoints (tenants, users, API keys, config, documents, prompts CRUD+preview, audit logs, reindex).
-- **Total Tests**: 383/383 passing (1 skipped).
+- **Unit Test Coverage**: 36 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), SaaS tenant resource quotas (`test_tenant_quotas.py`, M26), multi-workspace collections (`test_workspace_collections.py`, M27), interactive chunking auditor (`test_chunking_auditor.py`, M28), A/B testing platform (`test_ab_testing.py`, M29), SaaS data connectors framework (`test_data_connectors.py`, M36), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
+- **Admin API Tests**: 48 tests covering all 32 admin endpoints (tenants, users, API keys, config, experiments CRUD+metrics, connectors CRUD+sync, documents, prompts CRUD+preview, audit logs, reindex).
+- **Total Tests**: 407/407 passing (1 skipped).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 - **Observability**: Inference logs now tagged with caller `role` (admin/client) and `key_id` for full attribution. Admin requests no longer have `user_id=NULL` blind spot. `TOKEN_CONSUMPTION` and `COST_SPEND` Prometheus counters carry `role` label.
@@ -335,7 +335,71 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 17. Deployment: Free-Tier Production — Completed
+## 17. Milestone 26: SaaS Tenant Resource Quotas — Completed
+
+### Hard/Soft Quota Engine & Abstractions
+- **Quota Settings**: Added `TenantQuotaSettings` schema (`max_documents`, `max_storage_bytes`, `max_monthly_tokens`, `max_daily_requests`, `soft_limit_percentage`) to tenant configuration.
+- **Domain Abstraction**: Created `QuotaRepository` abstract port and `SqlQuotaRepository` database adapter to query real-time document count, storage byte sum, monthly tokens, and daily request volume.
+- **Quota Enforcement**: Created `QuotaService` domain component enforcing hard and soft quota limits.
+
+### Status Hooks & Response Headers
+- **Exception Handler**: Added FastAPI handler for `QuotaExceededError` returning HTTP status 402 (Payment Required) or 429 (Too Many Requests / Quota Exceeded) with headers (`Quota-Exceeded-Resource`, `Quota-Limit`, `Quota-Usage`).
+- **Soft Limit Warnings**: Appended `X-Quota-Warning` header when storage usage or document count exceeds configured soft limit percentage during upload.
+- **Unit Testing**: 7/7 unit tests passing in `tests/test_tenant_quotas.py`.
+
+---
+
+## 19. Milestone 27: Multi-Workspace Collections — Completed
+
+### Database & Schema Partitioning
+- **Database Schema**: Added `collection_id` (UUID, nullable=True, indexed) column to `documents`, `document_chunks`, and `vector_records` tables with compound index `(tenant_id, collection_id)`.
+- **Domain & DTO Integration**: Added `collection_id` field to `Document`, `DocumentChunk`, `SearchQuery`, `SearchRequest`, `ChatMessageRequest`, and `DocumentResponse` schemas.
+
+### Scoped Ingestion & Hybrid Search
+- **Workspace Scoped Ingestion**: Document upload (`POST /v1/tenants/{tenantId}/documents`) accepts optional `collectionId` query parameter, inheriting `collection_id` down to chunks and vector embeddings.
+- **Workspace Scoped Search & Chat**: Dense vector (`pgvector`) and sparse keyword (`tsvector`) search queries support workspace collection isolation via `build_filter_clause`. Chat inference (`POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages`) forwards `collectionId` to retrieval engine.
+- **Unit Testing**: 6/6 unit tests passing in `tests/test_workspace_collections.py`.
+
+---
+
+## 20. Milestone 28: Interactive Chunking Auditor — Completed
+
+### Dry-Run Sandbox Preview API
+- **Admin Endpoint**: Added `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview` allowing administrative users to audit chunking splits before database/vector persistence.
+- **Multi-Strategy Support**: Implemented `ChunkerFactory` supporting `sliding` (token sliding window), `semantic` (paragraph & structural units), and `hierarchical` (parent-child dual granularity) algorithms.
+- **Character Offset Metrics**: Calculates character start/end index offsets (`startCharIdx`, `endCharIdx`), character lengths, token counts, and parent-child metadata for visual UI highlighting.
+- **Unit Testing**: 5/5 unit tests passing in `tests/test_chunking_auditor.py`.
+
+---
+
+## 21. Milestone 29: A/B Testing Platform — Completed
+
+### Experiment Lifecycle & Admin CRUD
+- **Admin Management Endpoints**: Added `GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/experiments` allowing administrative users to define and manage experiment variants.
+- **Status Lifecycle Control**: Added `POST /v1/admin/tenants/{tenantId}/experiments/{experimentId}/status` with support for `draft`, `active`, `paused`, and `completed` states.
+
+### Dynamic Variant Allocation & Telemetry
+- **Deterministic Variant Bucket Allocation**: Updated `assign_variant` and `apply_overrides` to dynamically assign active experiment variants in both `chat` and `search` routers.
+- **Per-Variant Analytics Metrics**: Added `GET /v1/admin/tenants/{tenantId}/experiments/{experimentId}/metrics` aggregating total requests, token volume, average latency, and p95 latency from `inference_logs`.
+- **Unit Testing**: 3/3 unit tests passing in `tests/test_ab_testing.py`.
+
+---
+
+## 22. Milestone 36: SaaS Data Connectors Framework — Completed
+
+### Extensible BaseConnector Architecture
+- **Domain Abstractions & Port**: Defined `BaseConnector` ABC and `ConnectorConfig` domain models in `src/domain/abstractions/connector.py`.
+- **Strategy Implementations**: Implemented `WebCrawlerConnector` (HTML scraping & text conversion) and `MockCloudDriveConnector` (cloud discovery & delta sync simulation).
+- **Connector Strategy Registry**: Built `ConnectorRegistry` in `src/domain/connectors/registry.py`.
+
+### Admin APIs & Document Ingestion
+- **Admin CRUD Endpoints**: Added `GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/connectors` to create and configure external data sources.
+- **Sync Trigger & Vector Ingestion**: Added `POST /v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync` which fetches discovered documents and ingests them into vector storage via `ingest_file_sync`.
+- **Unit Testing**: 3/3 unit tests passing in `tests/test_data_connectors.py`.
+
+---
+
+## 23. Deployment: Free-Tier Production — Completed
 
 ### Stack (Zero Cost)
 

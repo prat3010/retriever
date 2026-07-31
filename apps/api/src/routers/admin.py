@@ -42,9 +42,13 @@ from src.container import (
     user_repository,
 )
 from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.connector import ConnectorConfig
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
+from src.domain.abstractions.experiment import ExperimentConfig
 from src.domain.abstractions.inference import PromptTemplate
 from src.domain.abstractions.ingestion import Document
+from src.domain.connectors.registry import ConnectorRegistry
+from src.domain.ingestion.chunker_factory import ChunkerFactory
 from src.schemas.admin import (
     ApplyPresetRequest,
     CreateApiKeyRequest,
@@ -53,11 +57,28 @@ from src.schemas.admin import (
     PreviewPromptRequest,
     UserResponse,
 )
+from src.schemas.chunking import (
+    ChunkPreviewItem,
+    ChunkPreviewRequest,
+    ChunkPreviewResponse,
+)
+from src.schemas.connector import (
+    ConnectorSyncResponse,
+    CreateConnectorRequest,
+    UpdateConnectorRequest,
+)
 from src.schemas.document import DocumentResponse
 from src.schemas.evaluation import (
     AddEvalQuestionRequest,
     BulkImportQuestionsRequest,
     CreateEvalDatasetRequest,
+)
+from src.schemas.experiment import (
+    CreateExperimentRequest,
+    ExperimentMetricsResponse,
+    UpdateExperimentRequest,
+    UpdateExperimentStatusRequest,
+    VariantMetricItem,
 )
 from src.schemas.tenant import TenantListItem
 
@@ -858,3 +879,450 @@ async def serve_internal_storage(
     if content is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found.")
     return Response(content=content, media_type="application/octet-stream")
+
+
+@router.post(
+    "/tenants/{tenantId}/documents/chunk-preview",
+    status_code=status.HTTP_200_OK,
+    response_model=ChunkPreviewResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_chunk_preview(
+    tenantId: str,
+    payload: ChunkPreviewRequest,
+) -> ChunkPreviewResponse:
+    """Dry-run sandbox text chunking split preview for auditor inspection."""
+    chunker = ChunkerFactory.get_chunker(payload.strategy)
+    items_data = chunker.split_text_with_offsets(
+        text=payload.text,
+        chunk_size=payload.chunk_size,
+        chunk_overlap=payload.chunk_overlap,
+    )
+
+    items = [
+        ChunkPreviewItem(
+            chunkIndex=c["chunk_index"],
+            content=c["content"],
+            tokenCount=c["token_count"],
+            charCount=c["char_count"],
+            startCharIdx=c["start_char_idx"],
+            endCharIdx=c["end_char_idx"],
+            metaData=c["meta_data"],
+        )
+        for c in items_data
+    ]
+
+    total_tokens = sum(c.tokenCount for c in items)
+    total_chars = len(payload.text)
+    avg_tokens = (total_tokens / len(items)) if items else 0.0
+
+    return ChunkPreviewResponse(
+        totalChunks=len(items),
+        totalTokens=total_tokens,
+        totalChars=total_chars,
+        avgChunkTokens=round(avg_tokens, 2),
+        chunks=items,
+    )
+
+
+# ── Experiment Management APIs ────────────────────────────────────────────────
+
+
+@router.get(
+    "/tenants/{tenantId}/experiments",
+    status_code=status.HTTP_200_OK,
+    response_model=list[ExperimentConfig],
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_list_experiments(tenantId: str) -> list[ExperimentConfig]:
+    config = await config_service.get_tenant_config(tenantId)
+    return config.experiments or []
+
+
+@router.post(
+    "/tenants/{tenantId}/experiments",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ExperimentConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_create_experiment(
+    tenantId: str,
+    payload: CreateExperimentRequest,
+) -> ExperimentConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    exp_id = f"exp_{uuid.uuid4().hex[:8]}"
+    now = datetime.now(UTC).isoformat()
+
+    new_exp = ExperimentConfig(
+        id=exp_id,
+        name=payload.name,
+        description=payload.description,
+        status="draft",
+        variants=payload.variants,
+        created_at=now,
+        updated_at=now,
+    )
+
+    if not config.experiments:
+        config.experiments = []
+    config.experiments.append(new_exp)
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "experiment.created", f"Created experiment '{payload.name}' ({exp_id})")
+    return new_exp
+
+
+@router.get(
+    "/tenants/{tenantId}/experiments/{experimentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=ExperimentConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_experiment(tenantId: str, experimentId: str) -> ExperimentConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    for exp in config.experiments or []:
+        if exp.id == experimentId:
+            return exp
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+
+
+@router.put(
+    "/tenants/{tenantId}/experiments/{experimentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=ExperimentConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_update_experiment(
+    tenantId: str,
+    experimentId: str,
+    payload: UpdateExperimentRequest,
+) -> ExperimentConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    target: ExperimentConfig | None = None
+    for exp in config.experiments or []:
+        if exp.id == experimentId:
+            target = exp
+            break
+
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+
+    if payload.name is not None:
+        target.name = payload.name
+    if payload.description is not None:
+        target.description = payload.description
+    if payload.variants is not None:
+        target.variants = payload.variants
+    target.updated_at = datetime.now(UTC).isoformat()
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "experiment.updated", f"Updated experiment '{experimentId}'")
+    return target
+
+
+@router.post(
+    "/tenants/{tenantId}/experiments/{experimentId}/status",
+    status_code=status.HTTP_200_OK,
+    response_model=ExperimentConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_update_experiment_status(
+    tenantId: str,
+    experimentId: str,
+    payload: UpdateExperimentStatusRequest,
+) -> ExperimentConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    target: ExperimentConfig | None = None
+    for exp in config.experiments or []:
+        if exp.id == experimentId:
+            target = exp
+            break
+
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+
+    target.status = payload.status
+    target.updated_at = datetime.now(UTC).isoformat()
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(
+        tenantId, "experiment.status_changed", f"Changed experiment '{experimentId}' status to '{payload.status}'"
+    )
+    return target
+
+
+@router.delete(
+    "/tenants/{tenantId}/experiments/{experimentId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_delete_experiment(tenantId: str, experimentId: str) -> dict[str, str]:
+    config = await config_service.get_tenant_config(tenantId)
+    original_count = len(config.experiments or [])
+    config.experiments = [e for e in (config.experiments or []) if e.id != experimentId]
+
+    if len(config.experiments) == original_count:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "experiment.deleted", f"Deleted experiment '{experimentId}'")
+    return {"status": "deleted", "experimentId": experimentId}
+
+
+@router.get(
+    "/tenants/{tenantId}/experiments/{experimentId}/metrics",
+    status_code=status.HTTP_200_OK,
+    response_model=ExperimentMetricsResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_experiment_metrics(
+    tenantId: str,
+    experimentId: str,
+) -> ExperimentMetricsResponse:
+    config = await config_service.get_tenant_config(tenantId)
+    target: ExperimentConfig | None = None
+    for exp in config.experiments or []:
+        if exp.id == experimentId:
+            target = exp
+            break
+
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+
+    # Fetch inference logs for metric calculation
+    from sqlalchemy import select
+
+    from src.adapters.database.connection import tenant_session
+    from src.adapters.database.models import InferenceLogDb
+
+    variant_metrics: list[VariantMetricItem] = []
+    total_exp_requests = 0
+
+    async with tenant_session(tenant_id=tenantId, bypass_rls=True) as session:
+        stmt = select(InferenceLogDb).where(
+            InferenceLogDb.tenant_id == uuid.UUID(tenantId),
+            InferenceLogDb.notes.like(f"%experiment={experimentId}%"),
+        )
+        logs = (await session.execute(stmt)).scalars().all()
+        total_exp_requests = len(logs)
+
+        for v in target.variants:
+            v_logs = [log for log in logs if log.notes and f"variant={v.id}" in log.notes]
+            v_count = len(v_logs)
+            v_tokens = sum((log.prompt_tokens or 0) + (log.completion_tokens or 0) for log in v_logs)
+            latencies = [float(log.latency_ms) for log in v_logs if log.latency_ms is not None]
+
+            avg_latency = (sum(latencies) / v_count) if v_count and latencies else 0.0
+            if latencies:
+                sorted_lat = sorted(latencies)
+                p95_idx = int(len(sorted_lat) * 0.95)
+                p95_latency = sorted_lat[min(p95_idx, len(sorted_lat) - 1)]
+            else:
+                p95_latency = 0.0
+
+            variant_metrics.append(
+                VariantMetricItem(
+                    variantId=v.id,
+                    variantName=v.name or v.id,
+                    trafficPct=v.traffic_pct,
+                    totalRequests=v_count,
+                    totalTokens=v_tokens,
+                    avgLatencyMs=round(avg_latency, 2),
+                    p95LatencyMs=round(p95_latency, 2),
+                    avgFeedbackRating=0.0,
+                    errorRate=0.0,
+                )
+            )
+
+    return ExperimentMetricsResponse(
+        experimentId=target.id,
+        experimentName=target.name or target.id,
+        status=target.status,
+        totalExperimentRequests=total_exp_requests,
+        variants=variant_metrics,
+    )
+
+
+# ── SaaS Data Connector APIs ──────────────────────────────────────────────────
+
+
+@router.get(
+    "/tenants/{tenantId}/connectors",
+    status_code=status.HTTP_200_OK,
+    response_model=list[ConnectorConfig],
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_list_connectors(tenantId: str) -> list[ConnectorConfig]:
+    config = await config_service.get_tenant_config(tenantId)
+    return config.connectors or []
+
+
+@router.post(
+    "/tenants/{tenantId}/connectors",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ConnectorConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_create_connector(
+    tenantId: str,
+    payload: CreateConnectorRequest,
+) -> ConnectorConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    conn_id = f"conn_{uuid.uuid4().hex[:8]}"
+    now = datetime.now(UTC).isoformat()
+
+    new_conn = ConnectorConfig(
+        id=conn_id,
+        name=payload.name,
+        connector_type=payload.connector_type,
+        status="idle",
+        sync_interval_minutes=payload.sync_interval_minutes,
+        configuration=payload.configuration,
+        created_at=now,
+        updated_at=now,
+    )
+
+    if not config.connectors:
+        config.connectors = []
+    config.connectors.append(new_conn)
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "connector.created", f"Created data connector '{payload.name}' ({conn_id})")
+    return new_conn
+
+
+@router.get(
+    "/tenants/{tenantId}/connectors/{connectorId}",
+    status_code=status.HTTP_200_OK,
+    response_model=ConnectorConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_connector(tenantId: str, connectorId: str) -> ConnectorConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    for conn in config.connectors or []:
+        if conn.id == connectorId:
+            return conn
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+
+
+@router.put(
+    "/tenants/{tenantId}/connectors/{connectorId}",
+    status_code=status.HTTP_200_OK,
+    response_model=ConnectorConfig,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_update_connector(
+    tenantId: str,
+    connectorId: str,
+    payload: UpdateConnectorRequest,
+) -> ConnectorConfig:
+    config = await config_service.get_tenant_config(tenantId)
+    target: ConnectorConfig | None = None
+    for conn in config.connectors or []:
+        if conn.id == connectorId:
+            target = conn
+            break
+
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+
+    if payload.name is not None:
+        target.name = payload.name
+    if payload.sync_interval_minutes is not None:
+        target.sync_interval_minutes = payload.sync_interval_minutes
+    if payload.configuration is not None:
+        target.configuration = payload.configuration
+    if payload.status is not None:
+        target.status = payload.status
+    target.updated_at = datetime.now(UTC).isoformat()
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "connector.updated", f"Updated connector '{connectorId}'")
+    return target
+
+
+@router.delete(
+    "/tenants/{tenantId}/connectors/{connectorId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_delete_connector(tenantId: str, connectorId: str) -> dict[str, str]:
+    config = await config_service.get_tenant_config(tenantId)
+    orig_len = len(config.connectors or [])
+    config.connectors = [c for c in (config.connectors or []) if c.id != connectorId]
+
+    if len(config.connectors) == orig_len:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+
+    await config_service.update_tenant_config(tenantId, config)
+    await audit_logger.write(tenantId, "connector.deleted", f"Deleted connector '{connectorId}'")
+    return {"status": "deleted", "connectorId": connectorId}
+
+
+@router.post(
+    "/tenants/{tenantId}/connectors/{connectorId}/sync",
+    status_code=status.HTTP_200_OK,
+    response_model=ConnectorSyncResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_trigger_connector_sync(
+    tenantId: str,
+    connectorId: str,
+) -> ConnectorSyncResponse:
+    start_time = datetime.now(UTC)
+    config = await config_service.get_tenant_config(tenantId)
+    target: ConnectorConfig | None = None
+    for conn in config.connectors or []:
+        if conn.id == connectorId:
+            target = conn
+            break
+
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+
+    target.status = "syncing"
+    await config_service.update_tenant_config(tenantId, config)
+
+    try:
+        connector = ConnectorRegistry.get_connector(target.connector_type)
+        discovered = await connector.fetch_documents(target)
+
+        ingested_count = 0
+        for doc in discovered:
+            await ingest_file_sync(
+                tenant_id=tenantId,
+                filename=doc.filename,
+                content_bytes=doc.content.encode("utf-8"),
+                mime_type=doc.mime_type,
+                tags=["connector", target.connector_type],
+            )
+            ingested_count += 1
+
+        end_time = datetime.now(UTC)
+        duration_ms = (end_time - start_time).total_seconds() * 1000.0
+
+        target.status = "idle"
+        target.last_sync_at = end_time.isoformat()
+        await config_service.update_tenant_config(tenantId, config)
+
+        await audit_logger.write(
+            tenantId,
+            "connector.synced",
+            f"Synced connector '{connectorId}' (Discovered: {len(discovered)}, Ingested: {ingested_count})",
+        )
+
+        return ConnectorSyncResponse(
+            connectorId=connectorId,
+            status="completed",
+            documentsDiscovered=len(discovered),
+            documentsIngested=ingested_count,
+            durationMs=round(duration_ms, 2),
+            message=f"Successfully synced {ingested_count} documents from {target.name}.",
+        )
+    except Exception as err:
+        target.status = "failed"
+        await config_service.update_tenant_config(tenantId, config)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Connector sync failed: {err!s}",
+        ) from err

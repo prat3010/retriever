@@ -14,6 +14,8 @@ from fastapi import (
     File,
     Header,
     HTTPException,
+    Query,
+    Response,
     Security,
     UploadFile,
     status,
@@ -26,9 +28,11 @@ from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.config import settings
 from src.container import (
     celery_app,
+    config_service,
     document_repository,
     inference_orchestrator,
     local_storage,
+    quota_service,
 )
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.ingestion import Document
@@ -61,7 +65,9 @@ async def _cache_idempotency(tenantId: str, key: str, payload: dict) -> None:
 )
 async def upload_document(
     tenantId: str,
+    response: Response,
     file: UploadFile = File(...),
+    collection_id: str | None = Query(None, alias="collectionId"),
     x_idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ) -> dict:
     """Upload and schedule document text chunking extraction pipeline."""
@@ -73,10 +79,21 @@ async def upload_document(
     content = await file.read()
     file_hash = hashlib.sha256(content).hexdigest()
 
+    # Quota Verification (Hard 402 exception / Soft Warning header)
+    tenant_config = await config_service.get_tenant_config(tenantId)
+    soft_warning = await quota_service.check_storage_quota(
+        tenant_id=tenantId,
+        new_file_size=len(content),
+        config=tenant_config,
+    )
+    if soft_warning:
+        response.headers["X-Quota-Warning"] = soft_warning
+
     existing = await document_repository.find_by_hash(tenantId, file_hash)
     if existing:
         response_payload = {
             "documentId": existing.document_id,
+            "collectionId": existing.collection_id,
             "status": "pending",
             "fileHash": file_hash,
             "createdAt": existing.created_at,
@@ -92,6 +109,7 @@ async def upload_document(
     doc = Document(
         document_id=doc_id,
         tenant_id=tenantId,
+        collection_id=collection_id,
         filename=file.filename,
         file_hash=file_hash,
         storage_path=storage_path,
@@ -115,6 +133,7 @@ async def upload_document(
 
     response_payload = {
         "documentId": str(doc_id),
+        "collectionId": collection_id,
         "status": "pending",
         "fileHash": file_hash,
         "createdAt": doc.created_at,
@@ -135,6 +154,7 @@ async def list_documents(
     tenantId: str,
     limit: int | None = None,
     cursor: str | None = None,
+    collection_id: str | None = Query(None, alias="collectionId"),
 ) -> Any:
     """List all ingestion records belonging to the tenant."""
     if limit is not None or cursor is not None:
@@ -145,15 +165,16 @@ async def list_documents(
         return {
             "items": [
                 DocumentResponse(
-                    documentId=d.document_id,
-                    filename=d.filename,
-                    fileSize=d.file_size,
-                    mimeType=d.mime_type,
-                    status=d.status,
-                    createdAt=d.created_at,
-                    updatedAt=d.updated_at
+                    documentId=doc.document_id,
+                    collectionId=doc.collection_id,
+                    filename=doc.filename,
+                    fileSize=doc.file_size,
+                    mimeType=doc.mime_type,
+                    status=doc.status,
+                    createdAt=doc.created_at,
+                    updatedAt=doc.updated_at,
                 )
-                for d in items
+                for doc in items
             ],
             "pagination": {
                 "nextCursor": next_cursor,
@@ -162,18 +183,19 @@ async def list_documents(
             }
         }
     else:
-        docs = await document_repository.list_documents(tenantId)
+        documents = await document_repository.list_documents(tenantId, collection_id=collection_id)
         return [
             DocumentResponse(
-                documentId=d.document_id,
-                filename=d.filename,
-                fileSize=d.file_size,
-                mimeType=d.mime_type,
-                status=d.status,
-                createdAt=d.created_at,
-                updatedAt=d.updated_at
+                documentId=doc.document_id,
+                collectionId=doc.collection_id,
+                filename=doc.filename,
+                fileSize=doc.file_size,
+                mimeType=doc.mime_type,
+                status=doc.status,
+                createdAt=doc.created_at,
+                updatedAt=doc.updated_at
             )
-            for d in docs
+            for doc in documents
         ]
 
 

@@ -21,10 +21,13 @@ class PgVectorSearchAdapter(VectorSearchProvider):
         top_k: int,
         filters: list[MetadataFilter],
         tags: list[str],
+        collection_id: str | None = None,
     ) -> list[SearchResult]:
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-        filter_clause, filter_params, join_clause = build_filter_clause(filters, tags, "dc")
+        filter_clause, filter_params, join_clause = build_filter_clause(
+            filters, tags, "dc", collection_id=collection_id
+        )
 
         async with tenant_session(tenant_id=tenant_id) as session:
             result = await session.execute(

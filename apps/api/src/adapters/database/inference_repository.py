@@ -117,6 +117,14 @@ class SqlChatSessionRepository(ChatSessionRepository):
         session_id = uuid.uuid4()
         user_uuid = uuid.UUID(user_id) if user_id else None
         async with tenant_session(tenant_id=tenant_id) as session:
+            if user_uuid:
+                from sqlalchemy import select
+
+                from src.adapters.database.models import UserDb
+                user_check = await session.execute(select(UserDb.user_id).where(UserDb.user_id == user_uuid))
+                if not user_check.scalar_one_or_none():
+                    user_uuid = None
+
             db_session = ChatSessionDb(
                 session_id=session_id,
                 tenant_id=uuid.UUID(tenant_id),

@@ -69,12 +69,15 @@ async def ingest_file_sync(
                 delete(DocumentChunkDb).where(DocumentChunkDb.document_id == uuid.UUID(document_id))
             )
 
+        collection_id = doc.collection_id if doc and doc.collection_id else None
+
         for chunk_data in chunks:
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
             db_chunk = DocumentChunkDb(
                 chunk_id=chunk_id,
                 document_id=uuid.UUID(document_id),
                 tenant_id=uuid.UUID(tenant_id),
+                collection_id=collection_id,
                 content=chunk_data["content"],
                 token_count=chunk_data["token_count"],
                 chunk_index=chunk_data["chunk_index"],
@@ -88,6 +91,7 @@ async def ingest_file_sync(
             db_vector = VectorRecordDb(
                 chunk_id=chunk_id,
                 tenant_id=uuid.UUID(tenant_id),
+                collection_id=collection_id,
                 embedding=embedding,
             )
             session.add(db_vector)

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class Document(BaseModel):
     document_id: str
     tenant_id: str
+    collection_id: str | None = None
     filename: str
     file_hash: str
     storage_path: str
@@ -22,6 +23,7 @@ class DocumentChunk(BaseModel):
     chunk_id: str
     document_id: str
     tenant_id: str
+    collection_id: str | None = None
     content: str
     token_count: int
     chunk_index: int
@@ -34,7 +36,9 @@ class DocumentRepository(ABC):
     """Port for document metadata CRUD."""
 
     @abstractmethod
-    async def list_documents(self, tenant_id: str, bypass_rls: bool = False) -> list[Document]:
+    async def list_documents(
+        self, tenant_id: str, collection_id: str | None = None, bypass_rls: bool = False
+    ) -> list[Document]:
         """List non-deleted documents for a tenant, newest first."""
         pass
 

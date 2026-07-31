@@ -12,6 +12,7 @@ def build_search_query(
     return SearchQuery(
         query=payload.query,
         tenant_id=tenantId,
+        collection_id=getattr(payload, "collection_id", None),
         top_k=tenant_config.retrieval_settings.top_k,
         filters=payload.filters,
         tags=payload.tags,

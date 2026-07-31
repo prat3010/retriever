@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class DocumentResponse(BaseModel):
     documentId: str
+    collectionId: str | None = None
     filename: str
     fileSize: int
     mimeType: str

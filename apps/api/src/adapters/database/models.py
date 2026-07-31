@@ -153,6 +153,7 @@ class DocumentDb(Base):
         nullable=False,
         index=True,
     )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     filename = Column(String(255), nullable=False)
     file_hash = Column(String(64), nullable=False, index=True)
     storage_path = Column(String(512), nullable=False)
@@ -184,6 +185,7 @@ class DocumentChunkDb(Base):
         nullable=False,
         index=True,
     )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     content = Column(Text, nullable=False)
     token_count = Column(Integer, nullable=False)
     chunk_index = Column(Integer, nullable=False)
@@ -194,6 +196,7 @@ class DocumentChunkDb(Base):
     __table_args__ = (
         Index("ix_document_chunks_meta_data", meta_data, postgresql_using="gin"),
         Index("idx_document_chunks_tenant_doc_idx", tenant_id, document_id, chunk_index),
+        Index("idx_document_chunks_tenant_coll", tenant_id, collection_id),
     )
 
     # Relationships
@@ -214,6 +217,7 @@ class VectorRecordDb(Base):
         nullable=False,
         index=True,
     )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     embedding = Column(Vector(768), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 

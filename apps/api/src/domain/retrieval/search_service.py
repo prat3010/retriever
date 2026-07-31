@@ -234,6 +234,7 @@ class HybridSearchService:
                 top_k=search_k,
                 filters=query.filters,
                 tags=query.tags,
+                collection_id=query.collection_id,
             )
         except Exception:
             pass
@@ -246,6 +247,7 @@ class HybridSearchService:
                     top_k=search_k,
                     filters=query.filters,
                     tags=query.tags,
+                    collection_id=query.collection_id,
                 )
             except Exception:
                 pass

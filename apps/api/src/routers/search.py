@@ -5,6 +5,7 @@ from src.adapters.api.security import verify_scopes, verify_tenant_isolation
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.container import config_service, search_service
 from src.domain.abstractions.retrieval import SearchQuery
+from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 from src.schemas.search import (
     SearchMetaResponse,
     SearchRequest,
@@ -28,9 +29,18 @@ async def search_documents(
     """Execute hybrid search across tenant document vectors and keyword indexes."""
     tenant_config = await config_service.get_tenant_config(tenantId)
 
+    if tenant_config.experiments:
+        for exp in tenant_config.experiments:
+            if exp.status == "active":
+                variant = assign_variant(user_id=None, experiment=exp)
+                if variant:
+                    tenant_config = apply_overrides(tenant_config, variant)
+                    break
+
     query = SearchQuery(
         query=payload.query,
         tenant_id=tenantId,
+        collection_id=payload.collection_id,
         top_k=payload.limit,
         filters=payload.filters,
         tags=payload.tags,

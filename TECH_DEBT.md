@@ -7,6 +7,11 @@ they start blocking you — not before.
 
 | Item | Commit |
 |------|--------|
+| SaaS Data Connectors Framework (`BaseConnector`, `WebCrawlerConnector`, `MockCloudDriveConnector`, `/v1/admin/tenants/{tenantId}/connectors`) created | M36 |
+| A/B Testing Platform (`/v1/admin/tenants/{tenantId}/experiments`) experiment CRUD, status lifecycle, search/chat variant assignment, & metrics aggregation created | M29 |
+| `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview` sandbox preview API created with character index offsets (`startCharIdx`/`endCharIdx`) and multi-strategy support | M28 |
+| `QuotaService` domain isolation refactored to depend on `QuotaRepository` abstraction port (eliminated DB adapter imports in `src/domain/`) | M26 |
+| Multi-workspace `collection_id` column added with compound index `(tenant_id, collection_id)` for high-performance workspace filtering | M27 |
 | `API_BASE` constant duplicated in 3 places (api.ts, login/page.tsx, onboard/page.tsx) | M33 |
 | `isUuid` accepted short ID formats (`tn_*`, `usr_*`) with no backend support | Reverted |
 | `uploadDocument` and `deleteDocument` in `rag-client.ts` bypassed shared `request<T>()` — duplicated fetch + header logic | M33 |

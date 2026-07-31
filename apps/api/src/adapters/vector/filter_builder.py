@@ -33,6 +33,7 @@ def build_filter_clause(
     filters: list[MetadataFilter],
     tags: list[str],
     chunk_alias: str = "dc",
+    collection_id: str | None = None,
 ) -> tuple[str, dict[str, Any], str]:
     """Build SQL filter clause, params, and optional JOIN for search queries.
 
@@ -41,6 +42,10 @@ def build_filter_clause(
     conditions: list[str] = []
     params: dict[str, Any] = {}
     join_clause = ""
+
+    if collection_id:
+        conditions.append(f"{chunk_alias}.collection_id = CAST(:collection_id AS uuid)")
+        params["collection_id"] = str(collection_id)
 
     if tags:
         join_clause = f" JOIN documents d ON {chunk_alias}.document_id = d.document_id"

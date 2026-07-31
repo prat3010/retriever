@@ -2,6 +2,57 @@
 
 All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-07-31
+
+### Added
+- **SaaS Data Connectors Framework (Milestone 36)**:
+  - Created `BaseConnector` abstract domain port and `ConnectorConfig` domain models (`src/domain/abstractions/connector.py`).
+  - Implemented `WebCrawlerConnector` (`src/domain/connectors/web_crawler.py`) for web page HTML scraping and conversion to plain text documents.
+  - Implemented `MockCloudDriveConnector` (`src/domain/connectors/cloud_drive.py`) for simulated cloud drive folder discovery and delta syncing.
+  - Built `ConnectorRegistry` (`src/domain/connectors/registry.py`) resolving connector strategy instances.
+  - Added Data Connector Admin Management CRUD APIs (`GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/connectors`).
+  - Added manual sync execution endpoint (`POST /v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync`) automatically ingesting discovered documents into tenant vector store via `ingest_file_sync`.
+  - Added unit test suite `tests/test_data_connectors.py` (3 tests).
+
+## [0.33.0] - 2026-07-31
+
+### Added
+- **A/B Testing Platform (Milestone 29)**:
+  - Added Experiment Management CRUD APIs (`GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/experiments`).
+  - Added status lifecycle endpoint (`POST /v1/admin/tenants/{tenantId}/experiments/{experimentId}/status`) with support for `draft`, `active`, `paused`, and `completed` states.
+  - Added per-variant metrics endpoint (`GET /v1/admin/tenants/{tenantId}/experiments/{experimentId}/metrics`) computing total requests, token volume, average latency, and p95 latency from `inference_logs`.
+  - Integrated `assign_variant` and `apply_overrides` into `search.py` and `chat.py` routers.
+  - Added unit test suite `tests/test_ab_testing.py` (3 tests).
+
+## [0.32.0] - 2026-07-31
+
+### Added
+- **Interactive Chunking Auditor (Milestone 28)**:
+  - Added `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview` sandbox preview endpoint.
+  - Implemented `ChunkerFactory` supporting `sliding` (token window), `semantic` (paragraph/structural bounds), and `hierarchical` (parent-child dual granularity) strategies.
+  - Calculated exact character index offsets (`startCharIdx`, `endCharIdx`), character lengths, token counts, and parent-child metadata without database or vector store side effects.
+  - Added unit test suite `tests/test_chunking_auditor.py` (5 tests).
+
+## [0.31.0] - 2026-07-31
+
+### Added
+- **Multi-Workspace Collections (Milestone 27)**:
+  - Added `collection_id` (UUID, nullable=True, indexed) column to `documents`, `document_chunks`, and `vector_records` database models with compound index `(tenant_id, collection_id)`.
+  - Added `collection_id` field to `Document`, `DocumentChunk`, `SearchQuery`, `SearchRequest`, `ChatMessageRequest`, and `DocumentResponse` domain and DTO schemas.
+  - Document upload (`POST /v1/tenants/{tenantId}/documents`) and document listing (`GET /v1/tenants/{tenantId}/documents`) accept optional `collectionId` query parameter.
+  - Dense vector (`pgvector`) and sparse keyword (`tsvector`) search queries support workspace collection isolation via `build_filter_clause`.
+  - Chat inference (`POST /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages`) forwards `collectionId` to retrieval engine.
+
+## [0.30.0] - 2026-07-31
+
+### Added
+- **SaaS Tenant Resource Quotas (Milestone 26)**:
+  - Added `TenantQuotaSettings` schema (`max_documents`, `max_storage_bytes`, `max_monthly_tokens`, `max_daily_requests`, `soft_limit_percentage`) to tenant configuration.
+  - Created `QuotaRepository` domain abstraction port and `SqlQuotaRepository` database adapter to query real-time document count, storage byte sum, monthly tokens, and daily request volume.
+  - Created `QuotaService` domain component enforcing hard and soft quota limits.
+  - Added FastAPI exception handler for `QuotaExceededError` returning HTTP status 402 (Payment Required) or 429 (Too Many Requests / Quota Exceeded) with headers (`Quota-Exceeded-Resource`, `Quota-Limit`, `Quota-Usage`).
+  - Added `X-Quota-Warning` header when soft limit percentage is crossed during document upload.
+
 ## [0.29.0] - 2026-07-28
 
 ### Added

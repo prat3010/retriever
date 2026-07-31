@@ -38,6 +38,25 @@ class PromptTemplateNotFoundError(DomainError):
         )
 
 
+class QuotaExceededError(DomainError):
+    """Exception raised when a tenant exceeds document, storage, token, or request quotas."""
+
+    def __init__(
+        self,
+        resource_type: str,
+        usage: int | float,
+        limit: int | float,
+        status_code: int = 402,
+    ) -> None:
+        self.resource_type = resource_type
+        self.usage = usage
+        self.limit = limit
+        self.status_code = status_code
+        super().__init__(
+            f"Tenant quota exceeded for {resource_type}: current usage {usage} exceeds limit {limit}"
+        )
+
+
 class ProviderUnavailableError(ConnectionError):
     """Exception raised when an LLM provider returns a retryable error (timeout, 5xx, rate limit)."""
     pass

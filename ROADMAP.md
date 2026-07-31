@@ -6,46 +6,55 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ## Roadmap Overview
 
-| Milestone | Title | Focus Area | Status | Target |
-|---|---|---|---|---|
-| **M1** | Repository Foundation | Directory layout, configurations, CI/CD, linting, Docker environment | **Completed** | Q3 2026 |
-| **M2** | Authentication & Tenant Foundation | Identity interfaces, relational schemas, Postgres RLS contexts, API keys, cache | **Completed** | Q3 2026 |
-| **M3** | Configuration & Platform Infrastructure | Global/Tenant configurations, database JSONB overrides, environment fallbacks | **Completed** | Q3 2026 |
-| **M4** | Document Ingestion & Storage | Parsing tasks, unstructured layouts, chunking, event broker lifecycle | **Completed** | Q3 2026 |
-| **M5** | Retrieval, Fusion & Rerank | pgvector indexes, hybrid search, Reciprocal Rank Fusion, Cohere reranking | **Completed** | Q3 2026 |
-| **M6** | Generative Inference & Citations | LLM adapters, prompt orchestrations, context window packing, citation audits | **Completed** | Q3 2026 |
-| **M7** | Observability & Hardening | Structured logging, Prometheus metrics, OTel tracing, rate limiting | **Completed** | Q4 2026 |
-| **M8** | Production Hardening | DB bootstrap fixes, worker consolidation, shared packages, architecture tests | **Completed** | Q4 2026 |
-| **M9** | Client Hierarchy & Admin API | Users table, sub-client RLS, per-tenant LLM keys, admin API scoping, CRUD endpoints | **Completed** | Q4 2026 |
-| **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, onboarding, playground) | *Completed* | Q1 2027 |
-| **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | **Completed** | Q1 2027 |
-| **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** | Q2 2027 |
-| **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** | Q2 2027 |
-| **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | **Completed** | Q3 2027 |
-| **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | **Completed** | Q3 2027 |
-| **M16** | User Feedback & Quality Loops | Thumbs up/down endpoints, rating logs, admin dashboard analytics | **Completed** | Q4 2027 |
-| **M17** | Secure Document Distribution | Client-scoped document download links, temporary presigned R2/S3 URLs | **Completed** | Q4 2027 |
-| **M18** | Metadata & Tag Filtering | Tag/Collection-based search filtering, advanced boolean queries | **Completed** | Q1 2028 |
-| **M19** | Smart Model Failover | Auto-retry on provider downtime, multi-LLM dynamic translation routing | **Completed** | Q1 2028 |
-| **M20** | Token Cost Optimization | Long chat history summarization compression, token billing tracking | **Completed** | Q2 2028 |
-| **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Completed** | Q2 2028 |
-| **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Completed** | Q3 2028 |
-| **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Completed** | Q3 2028 |
-| **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Completed** | Q4 2028 |
-| **M25** | Developer Console & Local Ingestion | Next.js Developer Console, local Ollama RAG ingestion, RLS verification | **Completed** | Q1 2029 |
-| **M26** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Planned** | Q1 2029 |
-| **M27** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Planned** | Q2 2029 |
-| **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Planned** | Q2 2029 |
-| **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Planned** | Q3 2029 |
-| **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Completed** | Q3 2026 |
-| **M31** | Security Hardening & Secrets Remediation | Credential rotation, fail-safe defaults, proxy validation, port hardening | *Completed* | Q3 2026 |
-| **M32** | Onboarding & Client UX Overhaul | User creation in wizard, fixed form defaults, short IDs, admin UX polish | *Completed* | Q3 2026 |
-| **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* | Q4 2026 |
-| **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* | Q4 2026 |
-| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker infrastructure removal | *Completed* | Q1 2027 |
-| **M36** | SaaS Data Connectors Framework | Automated document sync for Google Drive, Notion, Slack, Confluence, SharePoint | **Planned** | Q4 2029 |
-| **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Planned** | Q1 2030 |
-| **M38** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** | Q2 2030 |
+| Milestone | Title | Focus Area | Status |
+|---|---|---|---|
+| **M1** | Repository Foundation | Directory layout, configurations, CI/CD, linting, Docker environment | **Completed** |
+| **M2** | Authentication & Tenant Foundation | Identity interfaces, relational schemas, Postgres RLS contexts, API keys, cache | **Completed** |
+| **M3** | Configuration & Platform Infrastructure | Global/Tenant configurations, database JSONB overrides, environment fallbacks | **Completed** |
+| **M4** | Document Ingestion & Storage | Parsing tasks, unstructured layouts, chunking, event broker lifecycle | **Completed** |
+| **M5** | Retrieval, Fusion & Rerank | pgvector indexes, hybrid search, Reciprocal Rank Fusion, Cohere reranking | **Completed** |
+| **M6** | Generative Inference & Citations | LLM adapters, prompt orchestrations, context window packing, citation audits | **Completed** |
+| **M7** | Observability & Hardening | Structured logging, Prometheus metrics, OTel tracing, rate limiting | **Completed** |
+| **M8** | Production Hardening | DB bootstrap fixes, worker consolidation, shared packages, architecture tests | **Completed** |
+| **M9** | Client Hierarchy & Admin API | Users table, sub-client RLS, per-tenant LLM keys, admin API scoping, CRUD endpoints | **Completed** |
+| **M10** | Admin Dashboard | Next.js admin UI for platform management (tenants, users, configs, onboarding, playground) | *Completed* |
+| **M11** | Client SDK & API Surface | JS/TS RetrieverClient, OpenAPI 3.1 spec, pagination, rate limit headers | **Completed** |
+| **M12** | Production Storage | S3/MinIO adapter, encrypted key persistence, connection pool tuning | **Completed** |
+| **M13** | Multi-Industry Configurability | Per-tenant chunking, metadata extractors, guardrails, citation formatting | **Completed** |
+| **M14** | Performance & Scale | HNSW tuning, semantic cache, bulk ingest, SSE lifecycle, memory profiling | **Completed** |
+| **M15** | Enterprise Readiness | Audit log writer, SSO/OIDC, RBAC, data retention, backup/restore, compliance | **Completed** |
+| **M16** | User Feedback & Quality Loops | Thumbs up/down endpoints, rating logs, admin dashboard analytics | **Completed** |
+| **M17** | Secure Document Distribution | Client-scoped document download links, temporary presigned R2/S3 URLs | **Completed** |
+| **M18** | Metadata & Tag Filtering | Tag/Collection-based search filtering, advanced boolean queries | **Completed** |
+| **M19** | Smart Model Failover | Auto-retry on provider downtime, multi-LLM dynamic translation routing | **Completed** |
+| **M20** | Token Cost Optimization | Long chat history summarization compression, token billing tracking | **Completed** |
+| **M21** | Web Search Grounding | Tavily/Brave Search fallback APIs, dynamic internet context injections | **Completed** |
+| **M22** | Structured Data Extraction | JSON Schema-based document parsing endpoints, structured LLM outputs | **Completed** |
+| **M23** | Multi-Modal Processing | Image & scanned PDF OCR pipelines, vision-model page descriptors | **Completed** |
+| **M24** | Self-Querying Retrieval | Natural language query translation, SQL metadata filter compilers | **Completed** |
+| **M25** | Developer Console & Local Ingestion | Next.js Developer Console, local Ollama RAG ingestion, RLS verification | **Completed** |
+| **M26** | SaaS Tenant Resource Quotas | Hard/soft limits on files, storage, and tokens, 402/429 status hooks | **Completed** |
+| **M27** | Multi-Workspace Collections | Tenant sub-partitioning, workspace-scoped vector and GIN queries | **Completed** |
+| **M28** | Interactive Chunking Auditor | Sandbox chunk-preview APIs, visual text highlight chunk dividers | **Completed** |
+| **M29** | A/B Testing Platform | Create/start/stop experiments via admin API, per-variant metrics dashboard | **Completed** |
+| **M30** | Production Polish | Deployment hardening, observability, CI/CD, secrets management, docs alignment | **Completed** |
+| **M31** | Security Hardening & Secrets Remediation | Credential rotation, fail-safe defaults, proxy validation, port hardening | *Completed* |
+| **M32** | Onboarding & Client UX Overhaul | User creation in wizard, fixed form defaults, short IDs, admin UX polish | *Completed* |
+| **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* |
+| **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* |
+| **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker infrastructure removal | *Completed* |
+| **M36** | SaaS Data Connectors Framework | Automated document sync for Google Drive, Notion, Slack, Confluence, SharePoint | **Completed** |
+| **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Planned** |
+| **M38** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
+| **M39** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
+| **M40** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
+| **M41** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
+| **M42** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
+| **M43** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
+| **M44** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
+| **M45** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
+| **M46** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
+| **M47** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
 
 ---
 
@@ -539,25 +548,29 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 26: SaaS Tenant Resource Quotas
+### [Completed] Milestone 26: SaaS Tenant Resource Quotas
 
-**Objective:** Enforce SaaS resource limits (file counts, storage volumes, token budgets) at the tenant API level.
+**Objective:** Enforce SaaS resource limits (file counts, storage volumes, token budgets, daily requests) at the tenant API level.
 
 **Complexity:** Medium
 
 **Dependencies:** M9, M15
 
 **Targets:**
-- Add limits configuration schemas (`max_documents`, `max_storage_bytes`, `monthly_token_budget`) to `tenant_configs` DB table.
-- Implement quota validation hooks on document upload and chat message API endpoints.
-- Trigger `402 Payment Required` or `429 Quota Exceeded` exceptions when thresholds are crossed.
+- ✅ Add limits configuration schemas (`max_documents`, `max_storage_bytes`, `max_monthly_tokens`, `max_daily_requests`, `soft_limit_percentage`) to `TenantQuotaSettings`.
+- ✅ Implement `QuotaService` domain component and `SqlQuotaRepository` adapter for real-time usage calculation.
+- ✅ Implement quota validation hooks on document upload (`/v1/documents`) and chat message (`/v1/chat`) API endpoints.
+- ✅ Trigger `402 Payment Required` or `429 Quota Exceeded` exceptions with quota response headers (`Quota-Exceeded-Resource`, `Quota-Limit`, `Quota-Usage`).
+- ✅ Attach `X-Quota-Warning` header when soft limit percentage is crossed.
 
 **Acceptance Criteria:**
-- Uploading documents beyond the tenant's configured limit is blocked and throws 402.
+- ✅ Uploading documents beyond the tenant's configured limit is blocked and throws 402 Payment Required.
+- ✅ Exceeding token or request budgets returns 429 Too Many Requests.
+- ✅ 7/7 unit tests pass in `test_tenant_quotas.py`.
 
 ---
 
-### [Planned] Milestone 27: Multi-Workspace Collections
+### [Completed] Milestone 27: Multi-Workspace Collections
 
 **Objective:** Allow tenants to partition their documents into isolated collections/workspaces.
 
@@ -566,16 +579,18 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Dependencies:** M9, M13, M18
 
 **Targets:**
-- Add `collection_id` uuid column to `documents`, `document_chunks`, and `vector_records`.
-- Update API endpoints to accept optional `collection_id` scoping parameters.
-- Restrict vector and hybrid search queries to matching collection boundaries.
+- ✅ Add `collection_id` uuid column to `documents`, `document_chunks`, and `vector_records` tables with indexing.
+- ✅ Update document upload, list, search, and chat API endpoints to accept optional `collectionId` scoping parameters.
+- ✅ Restrict vector (`pgvector`), sparse (`tsvector`), and hybrid search queries to matching collection boundaries when specified.
+- ✅ Inherit `collection_id` from document down to generated chunks and vector embeddings during ingestion.
 
 **Acceptance Criteria:**
-- Search and chat queries within collection "Legal" never return search chunks from collection "HR".
+- ✅ Search and chat queries within collection "Legal" never return search chunks from collection "HR".
+- ✅ 6/6 unit tests pass in `test_workspace_collections.py`.
 
 ---
 
-### [Planned] Milestone 28: Interactive Chunking Auditor
+### [Completed] Milestone 28: Interactive Chunking Auditor
 
 **Objective:** Provide administrative users with a visual preview sandbox to audit document chunking splits before indexing.
 
@@ -584,35 +599,35 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Dependencies:** M10, M13
 
 **Targets:**
-- Implement chunk preview API: `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview`.
-- Calculate character and token bounds for different parsing algorithms (character, semantic, recursive) dynamically.
-- Build visual highlighting highlighting chunk dividers in the Admin Dashboard playground.
+- ✅ Implement chunk preview sandbox API: `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview`.
+- ✅ Build `ChunkerFactory` supporting `sliding`, `semantic`, and `hierarchical` chunking strategies.
+- ✅ Calculate character start/end index offsets (`startCharIdx`, `endCharIdx`), character lengths, and token counts without database or vector store side effects.
+- ✅ Expose structured preview payloads (`totalChunks`, `totalTokens`, `totalChars`, `avgChunkTokens`) for administrative auditor inspection.
 
 **Acceptance Criteria:**
-- Auditor endpoint returns exact split positions and token size estimations for visual dashboard rendering.
+- ✅ Auditor endpoint returns exact split positions and token size estimations for visual dashboard rendering.
+- ✅ 5/5 unit tests pass in `test_chunking_auditor.py`.
 
 ---
 
-### [Planned] Milestone 29: A/B Testing Platform
+### [Completed] Milestone 29: A/B Testing Platform
 
-**Objective:** Full experiment management lifecycle — create, start, stop experiments via admin API, with dashboard visibility into variant performance.
+**Objective:** Full experiment management lifecycle — create, start, stop experiments via admin API, with per-variant performance telemetry.
 
-**Complexity:** Large
+**Complexity:** Medium
 
-**Dependencies:** M10 (admin dashboard), E-5 minimal (foundation)
+**Dependencies:** M10, M14, M19
 
 **Targets:**
-- `experiments` DB table: `experiment_id`, `tenant_id`, `name`, `status` (draft/running/stopped), `variants` JSONB, `created_at`, `started_at`, `stopped_at`.
-- Admin CRUD API: create/edit/start/stop experiments.
-- `experiment_id` + `variant` columns on `inference_logs` and `chat_message_feedback`.
-- Admin Dashboard: experiment list view, per-variant metrics (cost, latency, feedback scores).
-- Statistical significance calculation (chi-square or Bayesian) between control & treatment.
-- Auto-stop on detected regression (negative impact > 5% with 95% confidence).
+- ✅ Admin experiment CRUD APIs: `GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/experiments`.
+- ✅ Status lifecycle management: `POST /v1/admin/tenants/{tenantId}/experiments/{experimentId}/status` (`draft`, `active`, `paused`, `completed`).
+- ✅ Per-variant metrics aggregation: `GET /v1/admin/tenants/{tenantId}/experiments/{experimentId}/metrics` (requests, tokens, avg/p95 latency).
+- ✅ Deterministic variant allocation (`assign_variant`) and overrides (`apply_overrides`) in both `chat` and `search` routers.
 
 **Acceptance Criteria:**
-- Admin can create an experiment, start it, see live per-variant metrics in the dashboard.
-- Stopping an experiment immediately routes all traffic back to the control config.
-- Dashboard shows "Statistically significant improvement" or "No significant difference" per metric.
+- ✅ Admin can create, start, pause, edit, delete, and inspect per-variant metrics for A/B experiments.
+- ✅ Pausing or stopping an experiment routes traffic back to baseline tenant configuration.
+- ✅ 3/3 unit tests pass in `test_ab_testing.py`.
 
 ---
 
@@ -811,14 +826,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 36: SaaS Data Connectors Framework
+### [Completed] Milestone 36: SaaS Data Connectors Framework
 
-**Objective:** Build an extensible connector framework to automatically ingest and sync documents from third-party SaaS platforms (Google Drive, Notion, Slack, Confluence, SharePoint).
+**Objective:** Build an extensible background data connector framework (`BaseConnector`) to discover, ingest, and sync documents from external sources (Web Crawlers, Google Drive, Notion, Slack, S3).
 
 **Targets:**
-- Define `ConnectorProvider` port in domain abstraction layer (`domain/abstractions/ingestion.py`).
-- Implement OAuth2 token storage and refresh handlers per tenant.
-- Celery background scheduler for incremental document sync and webhooks for real-time file updates.
+- ✅ Define `BaseConnector` abstract domain port and `ConnectorConfig` models in `src/domain/abstractions/connector.py`.
+- ✅ Implement `WebCrawlerConnector` (HTML-to-markdown scraping with depth and domain bounds) and `MockCloudDriveConnector` (cloud discovery & delta sync).
+- ✅ Build `ConnectorRegistry` strategy lookup.
+- ✅ Admin connector CRUD & sync trigger APIs: `GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/connectors` and `POST .../connectors/{connectorId}/sync`.
+- ✅ 3/3 unit tests pass in `test_data_connectors.py`.
 
 ---
 
@@ -840,6 +857,101 @@ This document outlines the implementation phases and milestones for the Retrieve
 **Targets:**
 - Agent tool registration registry and execution sandboxes.
 - Support multi-turn function calling, tool response parsing, and dynamic step orchestration.
+
+---
+
+### [Planned] Milestone 39: Layout-Aware Vision OCR & Table Parsing
+
+**Objective:** Upgrade document ingestion from PyPDF2 text extraction to layout-aware OCR and vision-model parsing for scanned PDFs, multi-column layouts, and complex tables.
+
+**Targets:**
+- Integrate layout-aware document parsers (Docling / Unstructured API) into `processing-core`.
+- Automatic table markdown conversion preserving headers, rows, and relationships.
+- Image description extraction via vision-language models for embedded figures and diagrams.
+
+---
+
+### [Planned] Milestone 40: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening
+
+**Objective:** Enforce zero-trust multi-tenancy and user/role-level authorization at the document chunk level.
+
+**Targets:**
+- Add `allowed_roles` and `allowed_users` metadata to `document_chunks` schema.
+- Update vector (`pgvector`) and sparse search queries to evaluate `X-User-ID` and role claims against chunk ACL lists.
+- Enforce native Postgres Row-Level Security (RLS) policies using `SET LOCAL app.current_tenant_id`.
+
+---
+
+### [Planned] Milestone 41: Active Real-Time LLM Safety Guardrails
+
+**Objective:** Protect the platform against malicious prompt injections, system prompt extraction, jailbreaks, and unverified PII leaks.
+
+**Targets:**
+- Replace naive regex PII filters with active LLM Guardrail adapters (Llama Guard 3 / NeMo Guardrails).
+- Pre-execution input validation pass blocking adversarial prompts before LLM dispatch.
+- Post-execution output validation pass scrubbing unverified sensitive data.
+
+---
+
+### [Planned] Milestone 42: Online Production Hallucination Tracing
+
+**Objective:** Transition evaluation from offline batch dataset runs to continuous online monitoring on live production API traffic.
+
+**Targets:**
+- Asynchronous online evaluator background pipeline (TruLens / Arize Phoenix integration).
+- Real-time scoring of Answer Faithfulness, Context Precision, and Hallucination Index on live sample traffic.
+- Alerting triggers when tenant hallucination rates exceed configurable SLA thresholds.
+
+---
+
+### [Planned] Milestone 43: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
+
+**Objective:** Replace basic PostgreSQL `tsvector` keyword search with learned sparse embeddings and offload cross-encoder reranking to dedicated GPU microservices.
+
+**Targets:**
+- Integration of SPLADE model for keyword expansion and semantic keyword matching.
+- Offload `CrossEncoderRerankerAdapter` from FastAPI in-process execution to an external Text Embeddings Inference (TEI) container.
+
+---
+
+### [Planned] Milestone 44: Context Compression & Zero-Trust Field Encryption
+
+**Objective:** Minimize LLM inference token overhead and protect sensitive enterprise data stored in vector databases.
+
+**Targets:**
+- Integrate context window compression algorithms (LongLLMLingua) to remove redundant tokens from retrieved context chunks before LLM prompt compilation.
+- Implement AES-256 envelope encryption for raw document chunk content and vector metadata at rest.
+
+---
+
+### [Planned] Milestone 45: Dynamic Multi-Embedding Vector Schemas & Index Scaling
+
+**Objective:** Remove rigid vector dimension constraints (`Vector(768)`) to support seamless switching across different embedding models (768, 1536, 3072 dims) without database migration failures.
+
+**Targets:**
+- Implement dynamic table partitioning/collections per embedding model dimension (`vector_records_768`, `vector_records_1536`, `vector_records_3072`).
+- Build automatic embedding re-indexing worker tasks when a tenant updates its embedding provider.
+
+---
+
+### [Planned] Milestone 46: Multi-Agent Consensus & Critic Reflection Loops
+
+**Objective:** Enhance precision for high-stakes enterprise decisions (finance, healthcare, legal) using multi-agent debate and validation loops.
+
+**Targets:**
+- Implement a Generator Agent vs. Critic/Auditor Agent reflection loop within `InferenceOrchestrator`.
+- Mandatory citation verification and logical consistency pass before response emission.
+
+---
+
+### [Planned] Milestone 47: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
+
+**Objective:** Automate data retention, PII anonymization, and GDPR right-to-be-forgotten vector deletion.
+
+**Targets:**
+- Automated background data retention purge schedulers per tenant SLA.
+- Hard delete API hooks ensuring document removal cascades across relational tables, vector stores, and semantic caches.
+- Zero-footprint inline PII anonymization during document ingestion.
 
 ---
 

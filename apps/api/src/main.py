@@ -30,6 +30,7 @@ from src.container import (  # noqa: F401 — re-exported for test patching
 )
 from src.domain.abstractions.exceptions import (
     AuthenticationError,
+    QuotaExceededError,
     TenantIsolationViolationError,
 )
 
@@ -111,6 +112,24 @@ async def handle_auth_error(request, exc):
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=str(exc),
+    )
+
+@app.exception_handler(QuotaExceededError)
+async def handle_quota_error(request, exc: QuotaExceededError):
+    headers = {
+        "Quota-Exceeded-Resource": str(exc.resource_type),
+        "Quota-Limit": str(exc.limit),
+        "Quota-Usage": str(exc.usage),
+    }
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": str(exc),
+            "resource_type": exc.resource_type,
+            "usage": exc.usage,
+            "limit": exc.limit,
+        },
+        headers=headers,
     )
 
 

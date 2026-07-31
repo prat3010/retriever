@@ -20,6 +20,7 @@ from src.container import (
     corrective_service,
     feedback_repo,
     inference_orchestrator,
+    quota_service,
     search_service,
     session_repo,
 )
@@ -87,6 +88,13 @@ async def send_chat_message(
     caller_key_id = user_context.key_id
 
     tenant_config = await config_service.get_tenant_config(tenantId)
+
+    # Token & Request Quota Verification (429 Exception on hard limit breach)
+    await quota_service.check_inference_quota(
+        tenant_id=tenantId,
+        estimated_tokens=100,
+        config=tenant_config,
+    )
 
     experiment_id = None
     experiment_variant = None

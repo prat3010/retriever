@@ -3,6 +3,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.domain.abstractions.connector import ConnectorConfig
 from src.domain.abstractions.experiment import ExperimentConfig
 
 
@@ -119,6 +120,14 @@ class RateLimits(BaseModel):
     tokens_per_minute: int = 100000
 
 
+class TenantQuotaSettings(BaseModel):
+    max_documents: int | None = None
+    max_storage_bytes: int | None = None
+    max_monthly_tokens: int | None = None
+    max_daily_requests: int | None = None
+    soft_limit_percentage: float = 80.0
+
+
 class ChunkingSettings(BaseModel):
     strategy: Literal["fixed_window", "recursive", "semantic"] = "fixed_window"
     chunk_size: int = 500
@@ -156,10 +165,12 @@ class TenantConfiguration(BaseModel):
     budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)
+    quota_settings: TenantQuotaSettings = Field(default_factory=TenantQuotaSettings)
     chunking_settings: ChunkingSettings = Field(default_factory=ChunkingSettings)
     metadata_extractors: list[MetadataExtractorConfig] = Field(default_factory=list)
     guardrails: list[GuardrailConfig] = Field(default_factory=list)
     experiments: list[ExperimentConfig] = Field(default_factory=list)
+    connectors: list[ConnectorConfig] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
 

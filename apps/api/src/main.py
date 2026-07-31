@@ -37,7 +37,9 @@ from src.domain.abstractions.exceptions import (
 if settings.SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
-    from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+    from sentry_sdk.integrations.opentelemetry.integration import (
+        OpenTelemetryIntegration,
+    )
 
 
 @asynccontextmanager

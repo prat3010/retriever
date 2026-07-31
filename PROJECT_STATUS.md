@@ -349,7 +349,7 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 19. Milestone 27: Multi-Workspace Collections — Completed
+## 18. Milestone 27: Multi-Workspace Collections — Completed
 
 ### Database & Schema Partitioning
 - **Database Schema**: Added `collection_id` (UUID, nullable=True, indexed) column to `documents`, `document_chunks`, and `vector_records` tables with compound index `(tenant_id, collection_id)`.
@@ -362,7 +362,7 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 20. Milestone 28: Interactive Chunking Auditor — Completed
+## 19. Milestone 28: Interactive Chunking Auditor — Completed
 
 ### Dry-Run Sandbox Preview API
 - **Admin Endpoint**: Added `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview` allowing administrative users to audit chunking splits before database/vector persistence.
@@ -372,7 +372,7 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 21. Milestone 29: A/B Testing Platform — Completed
+## 20. Milestone 29: A/B Testing Platform — Completed
 
 ### Experiment Lifecycle & Admin CRUD
 - **Admin Management Endpoints**: Added `GET`, `POST`, `PUT`, `DELETE` `/v1/admin/tenants/{tenantId}/experiments` allowing administrative users to define and manage experiment variants.
@@ -385,7 +385,7 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 22. Milestone 36: SaaS Data Connectors Framework — Completed
+## 21. Milestone 36: SaaS Data Connectors Framework — Completed
 
 ### Extensible BaseConnector Architecture
 - **Domain Abstractions & Port**: Defined `BaseConnector` ABC and `ConnectorConfig` domain models in `src/domain/abstractions/connector.py`.
@@ -399,13 +399,13 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 23. Deployment: Free-Tier Production — Completed
+## 22. Production Deployment (Oracle VPS + Supabase) — Completed
 
 ### Stack (Zero Cost)
 
 | Component | Provider | Notes |
 |-----------|----------|-------|
-| API server | Render (free web service) | Docker, 512 MB RAM, sleeps after 15 min idle |
+| API server | Oracle Cloud free tier (`VM.Standard.E2.1.Micro`) | systemd + nginx + Let's Encrypt SSL, ~0.9 GB RAM, Ollama sidecar |
 | Database | Supabase (free tier) | PostgreSQL + pgvector, 500 MB, RLS enabled |
 | Embeddings | HuggingFace Inference API | `all-mpnet-base-v2` (768-dim), free token for higher rate limits |
 | LLM | Client BYOK | OpenAI / Anthropic / Gemini via tenant's own API key |
@@ -414,7 +414,7 @@ Operational overview of the Retriever platform's current engineering status.
 ### Architecture
 
 ```
-Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
+Client App → Cloudflare Proxy → Oracle VPS (API) → Supabase (DB, vectors, RLS)
                                                 → HuggingFace (embeddings)
                                                 → Tenant's LLM provider
 ```
@@ -439,7 +439,7 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 
 ---
 
-## 18. M31 Security Hardening & Secrets Remediation — Completed
+## 23. M31 Security Hardening & Secrets Remediation — Completed
 
 **Objective:** Eliminate credential exposure in version control, enforce fail-safe production defaults, harden network perimeter, and fix weak authentication checks in the admin proxy.
 
@@ -450,13 +450,13 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 - **`.gitignore`**: Confirmed `.env` and `.env*` patterns are present in both root and `apps/web/` gitignore files.
 
 ### Manual Actions Required
-1. **Rotate credentials:** Use `git filter-branch` or BFG Repo-Cleaner to scrub `.env` and `apps/web/.env.local` from git history. Then rotate the Supabase DB password, OpenAI API key, and Vercel OIDC token.
-2. **SSH into Oracle VM:** Replace `ADMIN_MASTER_KEY` in production `.env` with a strong random value (`openssl rand -hex 32`). Rotate the admin dashboard login key.
-3. **Close port 8000:** Remove the port 8000 ingress rule from Oracle Cloud security group. All API traffic must route through Nginx on ports 80/443.
+1. **Rotate credentials — ⬜ PENDING:** `apps/web/.env.local` (Vercel OIDC token) is still in git history (commit `53c6286`); requires BFG Repo-Cleaner / `git filter-branch` scrub, then rotate the token. Root `.env` was never committed (verified — clean history).
+2. **ADMIN_MASTER_KEY on Oracle VM — ✅ DONE:** verified non-default on server (2026-07-31).
+3. **Close port 8000 — ✅ DONE:** verified filtered/closed from external host; API reachable only via nginx 443/80.
 
 ---
 
-## 19. M32 Onboarding & Client UX Overhaul — Completed
+## 24. M32 Onboarding & Client UX Overhaul — Completed
 
 **Objective:** Fix the broken onboarding handoff (no user created during wizard), eliminate confusing defaults in the client login form, introduce human-friendly short IDs, and polish the admin and client UX around identity management.
 
@@ -468,11 +468,11 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 - **User ID column** (`tenant-users.tsx`): Added a "User ID" column to the tenant Users table with a copy-to-clipboard button, so admins can easily provide the internal UUID to clients.
 
 ### Manual Actions Required
-- **Short ID migration** (recommended future work): Replace 36-character UUIDs with prefix-based short IDs (`tn_` for tenants, `usr_` for users) in the backend. Requires new DB columns and API path updates.
+- **Short ID migration — ⬜ DEFERRED (backend)**: Replace 36-character UUIDs with prefix-based short IDs (`tn_` for tenants, `usr_` for users) in the backend. Requires new DB columns and API path updates. Frontend side complete (`isUuid()` accepts short IDs); backend API paths are still UUID-only. Milestone status: **complete except backend short-ID columns**.
 
 ---
 
-## 20. M33 Code Quality & Architecture — Completed
+## 25. M33 Code Quality & Architecture — Completed
 
 **Objective:** Break down the 2,250-line `main.py` monolith, eliminate type safety gaps, consolidate duplicated constants, and clean up inconsistent patterns across both the backend and frontend codebases.
 
@@ -493,11 +493,11 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 - **Router adapter leak fixes**: Removed all inline adapter imports from `admin.py`, `document.py`, `chat.py` (tenant_session, ChatMessageDb, ingest_file_sync, etc.). All dependencies flow through container. 4/4 architecture conformance tests pass.
 - **Routers `serve_local_download`/`root` moved**: `serve_local_download` to `document.py`, `root` to `health.py`. `main.py` now purely bootstrap (133 lines).
 - **Ruff fixes**: 7/7 issues resolved. UP038 syntax updated.
-- **Test count**: 372/372 passing (1 skipped).
+- **Test count**: 372/372 passing (1 skipped) at the time; current suite: 407/407 passing.
 
 ---
 
-## 21. M34 Production Operations & DevOps — Completed
+## 26. M34 Production Operations & DevOps — Completed
 
 **Objective:** Eliminate manual SSH deploys, add error tracking and uptime monitoring, fix unbounded tenant queries, and close the remaining production operations gaps.
 
@@ -506,30 +506,26 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 - **Pagination fix** (`use-tenants.ts`): `useAllTenants()` now accepts a configurable `limit` parameter (default 50) instead of hardcoding `limit=1000`.
 
 ### Manual Actions Required
-1. **Configure GitHub Secrets:** Add `ORACLE_HOST`, `ORACLE_USER`, `ORACLE_SSH_KEY` (and optionally `ORACLE_PORT`) to the repository's GitHub Secrets.
-2. **Configure Sentry:** Set `SENTRY_DSN` in the production `.env` on the Oracle VM. Verify by triggering a test error in a route handler — it should appear in Sentry within 60 seconds.
-3. **Set up uptime monitoring:** Configure UptimeRobot or Better Uptime to poll `https://rag.prateeq.in/health/liveness` every 5 minutes. Set up email/SMS alerts for downtime.
+1. **Configure GitHub Secrets — ✅ DONE:** `ORACLE_HOST`, `ORACLE_USER`, `ORACLE_SSH_KEY`, `ORACLE_PORT` all present in GitHub secrets (verified 2026-07-31).
+2. **Configure Sentry — ✅ DONE:** `SENTRY_DSN` set (EU region) and verified via one-off `capture_exception` (error "Sentry wiring test from retriever-oracle-vm" ingested 2026-07-31). Required a one-line fix in `main.py:40` — OTel integration import path changed in newer sentry-sdk (`.integration` module).
+3. **Set up uptime monitoring — ⬜ UNVERIFIABLE:** Configure UptimeRobot or Better Uptime to poll `https://rag.prateeq.in/health/liveness` every 5 minutes (endpoint verified reachable, 200). External service — check the provider dashboard.
 
 ---
 
-## 22. M35 Final Polish & Infrastructure Self-Detection — Completed
+## 27. M35 Final Polish & Infrastructure Self-Detection — Completed
 
 **Objective:** Add server-spec auto-detection for infrastructure services, update stale model defaults, clean up deprecated Docker Compose syntax, and improve the client chat UI for large screens.
 
 ### Changes Made
-- **Server-spec auto-detection** (`config.py`): Added `InfraCapabilities` class that reads total RAM (`psutil.virtual_memory().total`) and CPU cores at startup. Logs detected specs and auto-decides which services to enable:
-  - RAM >= 2 GB → Redis cache layer
-  - RAM >= 2 GB → RabbitMQ broker
-  - RAM >= 4 GB + 2+ cores → Celery workers
-  - Falls back to LEAN mode (synchronous processing) on 1 GB Oracle VM.
-  - Overridable via `REDIS_ENABLED`, `BROKER_ENABLED`, `WORKERS_ENABLED` env vars.
-- **Gemini model updated** (`providers.ts`): Default changed from `gemini-1.5-flash` to `gemini-2.5-flash`.
-- **Docker Compose cleaned** (`docker-compose.yml`): Removed deprecated `version: '3.8'` field.
-- **Chat container height** (`rag.module.css`): Changed from fixed `400px` to `min(60vh, 600px)`.
+- **Server-spec auto-detection** (`config.py`): Added `InfraCapabilities` class that reads total RAM (`psutil.virtual_memory().total`) and CPU cores at startup. Computes and **logs** viability thresholds (Redis ≥ 2 GB, RabbitMQ ≥ 2 GB, Celery workers ≥ 4 GB + 2+ cores) and the resulting mode (LEAN vs FULL):
+  - ⚠️ **Known gap:** `REDIS_ENABLED`/`BROKER_ENABLED`/`WORKERS_ENABLED` env overrides are accepted by `Settings` but **not yet consumed anywhere** — no adapter or container wiring reads them. Detection is log-only today; runtime degradation is connection-failure-driven (lazy imports, `NoOpEventPublisher` fallback). Wiring into `container.py` is tracked as spec-gated deployment work.
+- **Gemini model updated** (`providers.ts`): Default changed from `gemini-1.5-flash` to `gemini-2.5-flash` (verified).
+- **Docker infrastructure removed**: `docker-compose.yml`, `Dockerfile`, `workers/Dockerfile.worker`, `apps/api/docker-compose.test.yml`, and `.github/workflows/docker.yml` deleted — repo is Docker-free (verified). *(Correction: earlier note about removing the deprecated `version: '3.8'` field referred to a file that no longer exists.)*
+- **Chat container height** (`rag.module.css`): Changed from fixed `400px` to `min(60vh, 600px)` — ⚠️ unverifiable, file no longer present in repo.
 
 ---
 
-## 23. M36 Modular Target-Engine Embedding & Remote Storage Fallback — Completed
+## 28. M36.5 (addendum) Modular Target-Engine Embedding & Remote Storage Fallback — Completed
 
 **Objective:** Implement target-engine routing (Laptop vs Oracle VM) for document embedding, add real-time `PROCESSING` status visual feedback in the Admin Dashboard, implement remote HTTP file fallback for cross-environment access, and provide a bulk CLI tool.
 
@@ -549,7 +545,25 @@ Client App → Cloudflare Proxy → Render (API) → Supabase (DB, vectors, RLS)
 
 ---
 
-## 24. Outstanding Blockers & Issues
+## 29. Outstanding Blockers & Issues
 
-- None. See `TECH_DEBT.md` for deferred architecture, test, security, migration, and product items.
+Pending items (verified against live Oracle VM `130.210.35.134`, 2026-07-31):
+
+| Item | Milestone | Status |
+|---|---|---|
+| Scrub `apps/web/.env.local` from git history (BFG/filter-branch) + rotate Vercel OIDC token | M31 | ⬜ Pending |
+| Set `SENTRY_DSN` on Oracle VM + verify error capture | M34 | ✅ Done (EU region, test error ingested; one-line OTel import fix in main.py) |
+| UptimeRobot/Better Uptime monitor on `rag.prateeq.in/health/liveness` | M34 | ⬜ Needs UptimeRobot account (optional) |
+| Backend short ID columns + API path acceptance (`tn_`/`usr_`) | M32 | ⬜ Deferred |
+| Wire `REDIS_ENABLED`/`BROKER_ENABLED`/`WORKERS_ENABLED` into `container.py` (spec-gated deployment) | M35 | ⬜ Known gap |
+| LLM key quota alerting | M30 | ✅ Done (quota-alert.sh + cron; free-tier key = non-monitorable until prepaid) |
+| Nightly DB backup cron | M30 | ✅ Done (backup-db.sh, 02:30 UTC, verified 20 tables) |
+| Nginx hardening (rate limiting, HSTS/CSP) | M30 | ✅ Done (verified live) |
+| fail2ban for SSH | M30 | ✅ Done (active, sshd jail) |
+| Staging environment | M30 | ✅ Done (documented process in DEPLOYMENT.md) |
+| Root cause addendum (initial deploy chat outage) | M30 | ✅ Done (DEPLOYMENT.md) |
+
+Resolved during verification/fixes (2026-07-31): `ADMIN_MASTER_KEY`/`KEY_ENCRYPTION_KEY` rotated (non-default), port 8000 filtered externally, `/metrics` + `/health/liveness` reachable via https (200), GitHub deploy secrets configured, nginx + `retriever-api` healthy, Ollama sidecar running, nginx rate limiting + security headers live, fail2ban active, nightly backups + quota alerting scheduled.
+
+Deferred architecture, test, security, migration, and product items: see `TECH_DEBT.md`.
 

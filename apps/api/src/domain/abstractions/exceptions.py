@@ -22,6 +22,12 @@ class ApiKeyNotFoundError(DomainError):
     pass
 
 
+class InvalidFilterError(DomainError):
+    """Exception raised when a metadata filter cannot be safely translated to SQL."""
+
+    pass
+
+
 class TenantIsolationViolationError(DomainError):
     """Exception raised if a tenant context breach is detected."""
 

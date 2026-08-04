@@ -1,7 +1,10 @@
 """Tests for M18: Metadata & Tag Filtering."""
 
 
+import pytest
+
 from src.adapters.vector.filter_builder import build_filter_clause
+from src.domain.abstractions.exceptions import InvalidFilterError
 from src.domain.abstractions.retrieval import MetadataFilter
 
 # --- filter_builder unit tests ---
@@ -107,6 +110,38 @@ def test_tags_and_filters_combined() -> None:
     assert "dc.meta_data ->> 'status' = :f_0" in sql
     assert params["f_0"] == "active"
     assert params["tag_filters"] == ["hr"]
+
+
+def test_rejects_sql_injection_field_name() -> None:
+    flt = [
+        MetadataFilter(
+            field="status'; DROP TABLE documents; --",
+            operator="eq",
+            value="active",
+        )
+    ]
+    with pytest.raises(InvalidFilterError):
+        build_filter_clause(flt, [])
+
+
+def test_rejects_field_name_with_quotes_and_spaces() -> None:
+    flt = [MetadataFilter(field="dept\" OR 1=1 --", operator="eq", value="x")]
+    with pytest.raises(InvalidFilterError):
+        build_filter_clause(flt, [])
+
+
+def test_rejects_field_name_without_quotes() -> None:
+    flt = [MetadataFilter(field="meta_data->>'secret'", operator="eq", value="x")]
+    with pytest.raises(InvalidFilterError):
+        build_filter_clause(flt, [])
+
+
+def test_rejects_unknown_operator() -> None:
+    # model_construct bypasses the pydantic Literal validation to exercise the
+    # builder's own defense-in-depth guard for unsupported operators.
+    flt = [MetadataFilter.model_construct(field="status", operator="regex_replace", value="x")]
+    with pytest.raises(InvalidFilterError):
+        build_filter_clause(flt, [])
 
 
 # --- SearchQuery with filters ---

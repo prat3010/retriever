@@ -19,6 +19,7 @@ async def _enable_rls_on_tables(conn) -> None:
         "prompt_templates", "chat_sessions", "chat_messages",
         "inference_logs", "users", "semantic_cache",
         "chat_message_feedback",
+        "eval_datasets", "eval_runs", "graph_triples",
     ]
     for table in tables:
         await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
@@ -40,6 +41,35 @@ async def _enable_rls_for_configurations(conn) -> None:
         FOR ALL USING (
             tenant_id IS NULL
             OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+            OR current_setting('app.bypass_rls', true) = 'true'
+        );
+    """))
+
+
+async def _enable_rls_on_child_tables(conn) -> None:
+    # eval_questions and eval_run_results have no tenant_id column, so they are
+    # scoped through their parent table via subquery policies.
+    await conn.execute(text("ALTER TABLE eval_questions ENABLE ROW LEVEL SECURITY;"))
+    await conn.execute(text("DROP POLICY IF EXISTS tenant_isolation_policy ON eval_questions;"))
+    await conn.execute(text("""
+        CREATE POLICY tenant_isolation_policy ON eval_questions
+        FOR ALL USING (
+            dataset_id IN (
+                SELECT dataset_id FROM eval_datasets
+                WHERE tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+            )
+            OR current_setting('app.bypass_rls', true) = 'true'
+        );
+    """))
+    await conn.execute(text("ALTER TABLE eval_run_results ENABLE ROW LEVEL SECURITY;"))
+    await conn.execute(text("DROP POLICY IF EXISTS tenant_isolation_policy ON eval_run_results;"))
+    await conn.execute(text("""
+        CREATE POLICY tenant_isolation_policy ON eval_run_results
+        FOR ALL USING (
+            run_id IN (
+                SELECT run_id FROM eval_runs
+                WHERE tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+            )
             OR current_setting('app.bypass_rls', true) = 'true'
         );
     """))
@@ -96,6 +126,7 @@ async def initialize_database() -> None:
         print("Enabling Row-Level Security policies...", file=sys.stderr)
         await _enable_rls_on_tables(conn)
         await _enable_rls_for_configurations(conn)
+        await _enable_rls_on_child_tables(conn)
 
         print("Creating HNSW vector indices...", file=sys.stderr)
         await _create_hnsw_indices(conn)

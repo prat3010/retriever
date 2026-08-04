@@ -30,6 +30,7 @@ from src.container import (  # noqa: F401 — re-exported for test patching
 )
 from src.domain.abstractions.exceptions import (
     AuthenticationError,
+    InvalidFilterError,
     QuotaExceededError,
     TenantIsolationViolationError,
 )
@@ -100,7 +101,13 @@ app.add_middleware(
 async def handle_unhandled(request, exc):
     tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     print(f"Unhandled exception: {exc}\n{tb}", file=sys.stderr)
-    return JSONResponse(status_code=500, content={"detail": str(exc), "traceback": tb})
+    # Never leak stack traces or internals to API clients.
+    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
+
+
+@app.exception_handler(InvalidFilterError)
+async def handle_invalid_filter(request, exc):
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 @app.exception_handler(TenantIsolationViolationError)
 async def handle_isolation_violation(request, exc):

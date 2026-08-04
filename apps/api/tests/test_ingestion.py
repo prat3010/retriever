@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from workers.src.tasks import process_document_async
 
+from src.config import settings
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.ingestion import Document
 from src.main import app
@@ -101,6 +102,33 @@ def test_document_upload_deduplication(
     assert response.status_code == 202
     assert response.json()["documentId"] == doc_id
     assert response.json()["status"] == "pending"
+
+
+@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
+@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
+def test_document_upload_rejects_oversized_file(
+    mock_find_by_hash, mock_validate, mock_get_cfg, mock_check_quota
+) -> None:
+    tenant_id = str(uuid.uuid4())
+    mock_validate.return_value = UserContext(
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["integrator"],
+        scopes=["document:write"],
+    )
+
+    headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
+    with patch.object(settings, "MAX_UPLOAD_BYTES", 100):
+        response = client.post(
+            f"/v1/tenants/{tenant_id}/documents",
+            files={"file": ("big.txt", b"x" * 200, "text/plain")},
+            headers=headers,
+        )
+
+    assert response.status_code == 413
+    mock_find_by_hash.assert_not_awaited()
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)

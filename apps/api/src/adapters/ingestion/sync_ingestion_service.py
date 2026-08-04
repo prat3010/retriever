@@ -102,4 +102,22 @@ async def ingest_file_sync(
             doc.updated_at = datetime.now(UTC)
         await session.flush()
 
+    # Knowledge Graph Triple Extraction Pass
+    try:
+        from src.container import container
+        from src.domain.graph.graph_extraction_service import GraphExtractor
+
+        extractor = GraphExtractor()
+        all_triples = []
+        for chunk_data in chunks:
+            c_id = chunk_data["chunk_id"]
+            c_text = chunk_data["content"]
+            t_list = extractor.extract_triples(c_text, chunk_id=c_id)
+            all_triples.extend(t_list)
+
+        if all_triples and container.graph_repository:
+            await container.graph_repository.add_triples(tenant_id, all_triples)
+    except Exception:
+        pass
+
     return len(chunks)

@@ -43,18 +43,19 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M33** | Code Quality & Architecture | Split main.py, shared TypeScript types, consolidate constants, clean up clients | *Completed* |
 | **M34** | Production Operations & DevOps | Auto-deploy pipeline, Sentry, uptime monitoring, pagination | *Completed* |
 | **M35** | Final Polish & Infrastructure Self-Detection | Server-spec auto-detection, model updates, docker infrastructure removal | *Completed* |
-| **M36** | SaaS Data Connectors Framework | Automated document sync for Google Drive, Notion, Slack, Confluence, SharePoint | **Completed** |
-| **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Planned** |
-| **M38** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
-| **M39** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
-| **M40** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
-| **M41** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
-| **M42** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
-| **M43** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
-| **M44** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
-| **M45** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
-| **M46** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
-| **M47** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
+| **M36** | SaaS Data Connectors Framework | WebCrawler + cloud-drive connectors, admin CRUD, sync ingestion | **Completed** |
+| **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Completed** |
+| **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
+| **M39** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
+| **M40** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
+| **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
+| **M42** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
+| **M43** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
+| **M44** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
+| **M45** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
+| **M46** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
+| **M47** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
+| **M48** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
 
 ---
 
@@ -821,18 +822,67 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 37: GraphRAG & Knowledge Graph Indexing
+### [Completed] Milestone 37: GraphRAG & Knowledge Graph Indexing
 
 **Objective:** Complement vector + keyword hybrid search with entity-relationship knowledge graph extraction and multi-hop graph retrieval.
 
 **Targets:**
-- Entity & relation extraction pipeline during document chunking.
-- Graph store adapter (Neo4j / PostgreSQL Apache AGE extension).
-- Graph-assisted query expansion and multi-hop entity reasoning in `InferenceOrchestrator`.
+- ✅ Environment Auto-Detection (`InfraCapabilities.detect()`): Auto-tailors execution profile between low-RAM Oracle VM (PostgreSQL) and MacBook Air M4 (Dual Engine).
+- ✅ Define `BaseGraphRepository` abstract domain port and models in `src/domain/abstractions/graph.py`.
+- ✅ Implement `PgGraphRepository` (PostgreSQL `graph_triples` + Recursive SQL) and `Neo4jGraphRepository` (async Cypher driver with auto-fallback).
+- ✅ Implement `GraphExtractor` for triple parsing during document ingestion.
+- ✅ Admin Graph & Capabilities APIs: `GET /v1/admin/tenants/{tenantId}/graph/capabilities`, `POST .../graph/engine`, `GET .../graph`, `POST .../graph/query`, `DELETE .../graph/triples/{tripleId}`.
+- ✅ 5/5 unit tests pass in `test_graphrag.py` (Total test suite: 412/412 tests passing).
 
 ---
 
-### [Planned] Milestone 38: Agentic Workflow Execution Engine
+### [Completed] Milestone 38: Critical Security Remediation (v0.36.0, 2026-08-04)
+
+**Objective:** Close the critical application-level security defects identified in the August 2026 security audit. This milestone gates any public SaaS sale: the current Google OAuth flow provisions sessions from unverified client-supplied email, the metadata filter builder interpolates unvalidated field names into SQL, and the local file-serve path allows cross-tenant path traversal with a default HMAC key. No feature milestone ships before this one.
+
+**Complexity:** Medium
+
+**Dependencies:** None
+
+**Status:** ✅ All code targets landed in v0.36.0 (2026-08-04); full suite 425 passed, 1 skipped; `ruff check` clean. Remaining follow-up outside the milestone: guest demo key provisioning and `docs/rag-lab.md` Auth section refresh. **Deploy note:** the server must set `SECRET_KEY` (>=32 chars, random), `STORAGE_HMAC_KEY` (random), and `OIDC_AUDIENCE` (Google OAuth client ID) or startup fails — see CHANGELOG v0.36.0.
+
+**Targets:**
+- **Google OAuth verification (`src/routers/auth.py`):**
+  - Enforce `aud` verification against a configured Google client ID (`OIDC_AUDIENCE`) and validate the issuer claim (`accounts.google.com`) on every ID token.
+  - Remove the unverified client-supplied `email` fallback for session provisioning, or gate it strictly behind `ENVIRONMENT != "production"`.
+  - Fix the existing-user branch that generates a new API key without persisting it (`auth.py:97`) — persist the generated key hash atomically.
+  - Replace the hardcoded JWT signing fallback (`"retriever-jwt-secret-key-2026"`) with a required `SECRET_KEY` setting enforced by the production validator (`config.py` `validate_production_secrets`).
+- **SQL-injection-safe metadata filters (`src/adapters/vector/filter_builder.py`):**
+  - Validate `MetadataFilter.field` against a strict `[a-zA-Z0-9_]+` whitelist before SQL interpolation; return 422 on invalid field names.
+  - Add regression tests with injection payloads (`"x' OR 1=1--"`, `"a') ; DROP TABLE--"`, etc.).
+- **File-serve hardening (`src/routers/document.py`, `src/adapters/storage/local_storage.py`):**
+  - Basename-only filename validation (reject `..`, absolute paths, null bytes) in `serve_local_download`.
+  - Make `STORAGE_HMAC_KEY` a required non-default secret in production (extend `validate_production_secrets`); constant-time signature comparison.
+- **Defense-in-depth batch:**
+  - Enforce an upload size cap before reading the request body into memory (`src/routers/document.py:79`).
+  - Fail startup (or warn loudly) when `RATE_LIMIT_ENABLED=False` in production.
+  - Add RLS policies for `eval_datasets`, `eval_questions`, `eval_runs`, `eval_run_results`, and `graph_triples` (`src/adapters/database/setup.py`).
+  - Redact tracebacks from the global exception handler (`src/main.py:99-103`).
+- **Demo credential resolution:** provision a server-side guest tenant + read-only API key for the `prateeq.in/rag` live demo (or remove the demo) so the public sandbox either works or is not advertised.
+
+**Documents to Update:**
+- `PROJECT_STATUS.md` — correct the "RLS active on all customer-data tables" and "`/v1/auth/google` verifies Google JWKS tokens" claims.
+- `TECH_DEBT.md` — move resolved items to the Fixed table.
+- `CHANGELOG.md` — record the remediation release.
+- `docs/rag-lab.md` — update the Auth & Security section to match the verified flow.
+
+**Acceptance Criteria:**
+- `POST /v1/auth/google` with a garbage token + client email returns 401 (test asserts rejection).
+- Forged session JWTs signed with the default secret are rejected after `SECRET_KEY` is configured.
+- `filters=[{"field": "x') OR 1=1--", ...}]` returns 422, not rows.
+- `GET /v1/local-downloads/{tenantId}/../../etc/passwd` returns 403.
+- Production startup fails with a clear `ValueError` when `SECRET_KEY` or `STORAGE_HMAC_KEY` is unset/default.
+- Uploading > `MAX_UPLOAD_BYTES` returns 413.
+- Eval/graph tables have RLS policies; exception handler returns no traceback to clients.
+
+---
+
+### [Planned] Milestone 39: Agentic Workflow Execution Engine
 
 **Objective:** Extend the generative inference layer from conversational RAG to autonomous multi-step tool execution loops.
 
@@ -842,7 +892,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 39: Layout-Aware Vision OCR & Table Parsing
+### [Planned] Milestone 40: Layout-Aware Vision OCR & Table Parsing
 
 **Objective:** Upgrade document ingestion from PyPDF2 text extraction to layout-aware OCR and vision-model parsing for scanned PDFs, multi-column layouts, and complex tables.
 
@@ -853,7 +903,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 40: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening
+### [Planned] Milestone 41: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening
 
 **Objective:** Enforce zero-trust multi-tenancy and user/role-level authorization at the document chunk level.
 
@@ -864,7 +914,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 41: Active Real-Time LLM Safety Guardrails
+### [Planned] Milestone 42: Active Real-Time LLM Safety Guardrails
 
 **Objective:** Protect the platform against malicious prompt injections, system prompt extraction, jailbreaks, and unverified PII leaks.
 
@@ -875,7 +925,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 42: Online Production Hallucination Tracing
+### [Planned] Milestone 43: Online Production Hallucination Tracing
 
 **Objective:** Transition evaluation from offline batch dataset runs to continuous online monitoring on live production API traffic.
 
@@ -886,7 +936,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 43: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
+### [Planned] Milestone 44: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
 
 **Objective:** Replace basic PostgreSQL `tsvector` keyword search with learned sparse embeddings and offload cross-encoder reranking to dedicated GPU microservices.
 
@@ -896,7 +946,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 44: Context Compression & Zero-Trust Field Encryption
+### [Planned] Milestone 45: Context Compression & Zero-Trust Field Encryption
 
 **Objective:** Minimize LLM inference token overhead and protect sensitive enterprise data stored in vector databases.
 
@@ -906,7 +956,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 45: Dynamic Multi-Embedding Vector Schemas & Index Scaling
+### [Planned] Milestone 46: Dynamic Multi-Embedding Vector Schemas & Index Scaling
 
 **Objective:** Remove rigid vector dimension constraints (`Vector(768)`) to support seamless switching across different embedding models (768, 1536, 3072 dims) without database migration failures.
 
@@ -916,7 +966,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 46: Multi-Agent Consensus & Critic Reflection Loops
+### [Planned] Milestone 47: Multi-Agent Consensus & Critic Reflection Loops
 
 **Objective:** Enhance precision for high-stakes enterprise decisions (finance, healthcare, legal) using multi-agent debate and validation loops.
 
@@ -926,7 +976,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 47: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
+### [Planned] Milestone 48: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
 
 **Objective:** Automate data retention, PII anonymization, and GDPR right-to-be-forgotten vector deletion.
 

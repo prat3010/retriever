@@ -7,6 +7,7 @@ they start blocking you — not before.
 
 | Item | Commit |
 |------|--------|
+| GraphRAG & Dual Knowledge Graph Indexing (`BaseGraphRepository`, `PgGraphRepository`, `Neo4jGraphRepository`, `GraphExtractor`, `/v1/admin/tenants/{tenantId}/graph/capabilities`) created | M37 |
 | SaaS Data Connectors Framework (`BaseConnector`, `WebCrawlerConnector`, `MockCloudDriveConnector`, `/v1/admin/tenants/{tenantId}/connectors`) created | M36 |
 | A/B Testing Platform (`/v1/admin/tenants/{tenantId}/experiments`) experiment CRUD, status lifecycle, search/chat variant assignment, & metrics aggregation created | M29 |
 | `POST /v1/admin/tenants/{tenantId}/documents/chunk-preview` sandbox preview API created with character index offsets (`startCharIdx`/`endCharIdx`) and multi-strategy support | M28 |
@@ -172,6 +173,147 @@ or enforce it.
 
 Malformed UUID → `uuid.UUID(user_id)` raises `ValueError` → 500.
 Add a try/except or validate with a regex before passing downstream.
+
+## M38 Critical Security Remediation
+
+Items from the August 2026 security audit. Tracked in `ROADMAP.md` as **M38**.
+All critical code items shipped in **v0.36.0 (2026-08-04)**; one demo-provisioning follow-up remains open.
+
+### ~~Google OAuth provisions sessions from unverified client email~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/routers/auth.py:46-69`
+
+`verify_aud=False` (line 58), and if token parsing throws *for any reason* the
+endpoint proceeded using the client-supplied `email` from the JSON body. An
+attacker posting `{"id_token":"garbage","email":"victim@x.com"}` got a valid
+session (JWT + tenant context) for an existing user/tenant, or a freshly
+provisioned one. No `ENVIRONMENT` gate. The test suite previously codified this
+bypass as intended behavior (`tests/test_google_auth.py`).
+
+*Fixed: issuer/audience/`email_verified` enforcement, dev-only fallback gate,
+6 rewritten regression tests (production rejection, claims precedence,
+audience/issuer rejection, persisted key).*
+
+### ~~Hardcoded JWT signing secret~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/routers/auth.py:149`, `apps/api/src/config.py`
+
+`settings.SECRET_KEY if hasattr(settings, "SECRET_KEY") else "retriever-jwt-secret-key-2026"`
+— `SECRET_KEY` was **not defined** in `Settings`, so every session JWT was signed
+with the public default key. Anyone could forge an owner-scoped JWT for any tenant.
+
+*Fixed: `SECRET_KEY` added to `Settings` (dev-only default), required non-default
+(>=32 chars, no `dev-` prefix) in production via `validate_production_secrets()`,
+hardcoded fallback removed.*
+
+### ~~Existing-user branch generates an API key it never persists~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/routers/auth.py:97`
+
+If an existing user had no active key, the response contained
+`ret_live_{uuid4().hex}` which was never stored — the client received a
+useless key silently.
+
+*Fixed: logins now insert the new key's hash atomically before returning it;
+old keys remain valid for existing integrations.*
+
+### ~~SQL injection via metadata filter field~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/adapters/vector/filter_builder.py:55-63`
+
+`MetadataFilter.field` is an unvalidated free string interpolated directly into
+the SQL template via `.format()` (only values are parameterized). Any
+authenticated client could inject SQL through `filters[].field` on search and
+chat endpoints.
+
+*Fixed: field names whitelisted (`^[A-Za-z0-9_]+$`), unknown operators rejected,
+`InvalidFilterError` → 422, 4 injection-payload regression tests.*
+
+### ~~Path traversal + default HMAC key in local file serving~~ (Fixed in v0.36.0)
+**Files:** `apps/api/src/routers/document.py:304-335`, `apps/api/src/config.py:142`
+
+`serve_local_download` built `{tenantId}/{filename}` with no traversal check
+on the attacker-controlled filename. `STORAGE_HMAC_KEY` defaulted to the public
+`"local-storage-presign-key"` and was not validated in production — signatures
+could be forged for `../../other-tenant/...` paths, reading arbitrary files.
+
+*Fixed: basename-only validation (rejects separators, `..`, null bytes, `.`),
+required non-default `STORAGE_HMAC_KEY` in production, constant-time compare
+(already in place), 3 traversal regression tests.*
+
+### ~~Unbounded upload reads file into memory before quota check~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/routers/document.py:79`
+
+No size cap; entire file buffered before the storage quota check → memory DoS.
+
+*Fixed: `MAX_UPLOAD_BYTES` (default 10 MiB) enforced before read (via
+Content-Length) and after read; oversized uploads → 413.*
+
+### ~~Rate limiting disabled by default~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/config.py:134`
+
+`RATE_LIMIT_ENABLED=False`; `rate_limiter_dep` silently no-ops when the limiter
+is `None`. No abuse protection on the deployed instance.
+
+*Fixed: loud warning at production startup when disabled; flip
+`RATE_LIMIT_ENABLED=true` on the server.*
+
+### ~~RLS missing on eval & graph tables~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/adapters/database/setup.py:16-22`
+
+`eval_datasets`, `eval_questions`, `eval_runs`, `eval_run_results`,
+`graph_triples` had no row-level policies. Contradicted
+`PROJECT_STATUS.md`'s "RLS active on all customer-data tables" claim.
+
+*Fixed: direct tenant_id policies on `eval_datasets`, `eval_runs`,
+`graph_triples`; subquery policies on `eval_questions`/`eval_run_results`
+through their parent tables.*
+
+### ~~Global exception handler leaks full tracebacks to clients~~ (Fixed in v0.36.0)
+**File:** `apps/api/src/main.py:99-103`
+
+*Fixed: stack traces logged server-side only; clients receive a generic 500.*
+
+### Guest demo key does not exist in the backend (open follow-up)
+**Files:** `Prateek_website/src/app/rag/page.tsx:16`, (backend: no match)
+
+Frontend hardcodes `ret_live_GuestAccessKey2026.ReadOnlyChat` for the public
+live demo; no such key exists anywhere in this repo — the sandbox 401s or
+depends on an unverifiable manual DB insert. Also violates
+`.agents/AGENTS.md` (no hardcoded guest tenant UUIDs).
+
+Fix: provision a server-side guest tenant + read-only key, or remove the demo.
+
+### Production `OIDC_AUDIENCE` is a placeholder (open follow-up)
+**File:** `/opt/retriever/.env` on the Oracle VM (`rag.prateeq.in`, `130.210.35.134`)
+
+Set to `retriever-oidc-audience-placeholder` on 2026-08-04 so the API could
+boot after the M38 security gate. Effect: `POST /v1/auth/google` rejects every
+real Google ID token in production (audience mismatch) until the real client ID
+is set — intentional safe default; API-key auth still works.
+
+**How to fix:** Google Cloud Console → project for Retriever → APIs & Services →
+Credentials → copy the **OAuth 2.0 Client ID** (format
+`xxxx.apps.googleusercontent.com`) of the web client used by the login page,
+then on the server:
+
+```sh
+ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134
+cd /opt/retriever
+sed -i 's/^OIDC_AUDIENCE=.*/OIDC_AUDIENCE=<your-client-id>.apps.googleusercontent.com/' .env
+sudo systemctl restart retriever-api
+```
+
+Verify: `curl -s https://rag.prateeq.in/health/liveness` returns 200, then test
+Google login from the frontend. If no Google OAuth app exists yet, create one
+with authorized redirect URI `https://rag.prateeq.in/v1/auth/google/callback`
+(or whatever the login page uses) before replacing the placeholder.
+
+### `RATE_LIMIT_ENABLED` intentionally off in production (open follow-up)
+**File:** `/opt/retriever/.env` on the Oracle VM
+
+Left unset (defaults `False`) because the rate limiter is Redis-backed and the
+VM (1 GB RAM) has no Redis — enabling it would 500 every protected endpoint.
+The startup warning in `validate_production_secrets` fires until this is
+resolved. Re-evaluate if Redis is added or when public SaaS traffic starts.
+
+
 
 ## Migration / Schema
 

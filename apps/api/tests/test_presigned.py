@@ -144,3 +144,58 @@ async def test_serve_local_download_success(tmp_path) -> None:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.content == b"hello temporary document context"
+
+
+@pytest.mark.asyncio
+async def test_serve_local_download_rejects_traversal_filename() -> None:
+    """Verify path-traversal filenames are rejected before any filesystem access."""
+    from fastapi import HTTPException
+
+    from src.routers.document import serve_local_download
+
+    future_time = int(time.time()) + 100
+    with pytest.raises(HTTPException) as exc_info:
+        await serve_local_download(
+            tenantId=str(uuid.uuid4()),
+            filename="../../etc/passwd",
+            expires=future_time,
+            signature="computed-over-malicious-path",
+        )
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_serve_local_download_rejects_traversal_tenant() -> None:
+    """Verify path-traversal tenant ids are rejected before any filesystem access."""
+    from fastapi import HTTPException
+
+    from src.routers.document import serve_local_download
+
+    future_time = int(time.time()) + 100
+    with pytest.raises(HTTPException) as exc_info:
+        await serve_local_download(
+            tenantId="../../../",
+            filename="report.pdf",
+            expires=future_time,
+            signature="computed-over-malicious-path",
+        )
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_serve_local_download_rejects_encoded_separator_and_null_byte() -> None:
+    """Verify backslash separators and null bytes are rejected in path segments."""
+    from fastapi import HTTPException
+
+    from src.routers.document import serve_local_download
+
+    future_time = int(time.time()) + 100
+    for bad in ("..\\..\\etc\\passwd", "report\x00.pdf"):
+        with pytest.raises(HTTPException) as exc_info:
+            await serve_local_download(
+                tenantId=str(uuid.uuid4()),
+                filename=bad,
+                expires=future_time,
+                signature="computed-over-malicious-path",
+            )
+        assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST

@@ -42,6 +42,7 @@ from src.adapters.database.evaluation_repository import (
     SqlEvalRunRepository,
 )
 from src.adapters.database.feedback_repository import SqlFeedbackRepository
+from src.adapters.database.graph_repository import PgGraphRepository
 from src.adapters.database.identity_repository import SqlIdentityProvider
 from src.adapters.database.inference_repository import (
     SqlChatSessionRepository,
@@ -52,6 +53,8 @@ from src.adapters.database.quota_repository import SqlQuotaRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
+from src.adapters.graph.neo4j_repository import Neo4jGraphRepository
+from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
 from src.adapters.ingestion.sync_ingestion_service import (
     ingest_file_sync,  # noqa: F401 — re-exported for routers
 )
@@ -142,6 +145,11 @@ class Container:
             if settings.COHERE_API_KEY
             else LocalRerankerAdapter()
         )
+        def web_search_factory(name: str, key: str) -> Any:
+            if name == "brave":
+                return BraveSearchAdapter(api_key=key)
+            return TavilySearchAdapter(api_key=key)
+
         self._cache["search_service"] = HybridSearchService(
             vector_search=PgVectorSearchAdapter(),
             keyword_search=PgKeywordSearchAdapter(),
@@ -153,6 +161,7 @@ class Container:
             self_query=LLMSelfQueryAdapter(llm=llm),
             query_rewriter=LLMQueryRewriterAdapter(llm=llm),
             query_intent_classifier=LLMQueryIntentAdapter(llm=llm),
+            web_search_factory=web_search_factory,
         )
 
         # --- Inference ---
@@ -176,6 +185,8 @@ class Container:
             document_repository=self._cache["document_repository"],
         )
 
+        self._cache["llm_safety_guard"] = apply_llm_safety_guard
+
         # --- Evaluation ---
         eval_dataset_repo = SqlEvalDatasetRepository()
         eval_run_repo = SqlEvalRunRepository()
@@ -196,6 +207,18 @@ class Container:
             orchestrator=self._cache["inference_orchestrator"],
             corrective_provider=corrective_provider,
         )
+
+        # --- Graph Repository ---
+        pg_graph = PgGraphRepository()
+        if getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
+            self._cache["graph_repository"] = Neo4jGraphRepository(
+                uri=getattr(settings, "NEO4J_URI", "bolt://localhost:7687"),
+                user=getattr(settings, "NEO4J_USER", "neo4j"),
+                password=getattr(settings, "NEO4J_PASSWORD", "password"),
+                fallback_repo=pg_graph,
+            )
+        else:
+            self._cache["graph_repository"] = pg_graph
 
         # --- Event Bus ---
         if _event_publisher_available and settings.RABBITMQ_URL:
@@ -251,7 +274,13 @@ user_repository = container.user_repository
 
 corrective_provider = container.corrective_provider
 corrective_service = container.corrective_service
+event_publisher = container.event_publisher
+llm_safety_guard = container.llm_safety_guard
+graph_repository = container.graph_repository
+
+event_publisher = container.event_publisher
 
 quota_service = container.quota_service
+graph_repository = container.graph_repository
 
 event_publisher = container.event_publisher

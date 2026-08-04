@@ -26,6 +26,14 @@ class InfraCapabilities:
         except ImportError:
             logger.warning("psutil not installed; infra auto-detection disabled")
 
+    @classmethod
+    def detect(cls) -> "InfraCapabilities":
+        return cls()
+
+    @property
+    def lean_mode(self) -> bool:
+        return self.ram_gb < 2.0
+
     @property
     def redis_viable(self) -> bool:
         return self.ram_gb >= 2.0
@@ -81,6 +89,26 @@ class Settings(BaseSettings):
                     "CORS_ORIGINS is set to '*' in production. "
                     "Set CORS_ORIGINS to a comma-separated list of allowed origins."
                 )
+            if not self.SECRET_KEY or len(self.SECRET_KEY) < 32 or self.SECRET_KEY.startswith("dev-"):
+                raise ValueError(
+                    "SECRET_KEY must be set to a secure random value of at least 32 characters "
+                    "in production. Set SECRET_KEY env var."
+                )
+            if self.STORAGE_HMAC_KEY == "local-storage-presign-key":
+                raise ValueError(
+                    "STORAGE_HMAC_KEY must be changed from the default in production. "
+                    "Set STORAGE_HMAC_KEY env var to a secure random value."
+                )
+            if not self.OIDC_AUDIENCE:
+                raise ValueError(
+                    "OIDC_AUDIENCE must be set to your Google OAuth client ID in production "
+                    "so ID tokens are scoped to your app."
+                )
+            if not self.RATE_LIMIT_ENABLED:
+                logger.warning(
+                    "RATE_LIMIT_ENABLED is False in production. Set RATE_LIMIT_ENABLED=true "
+                    "to protect public endpoints from abuse."
+                )
         return self
 
     # Infrastructure connection strings
@@ -100,6 +128,7 @@ class Settings(BaseSettings):
     # Storage Settings
     STORAGE_PROVIDER: Literal["local", "s3"] = "local"
     STORAGE_BUCKET: str = "retriever-documents"
+    MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
     S3_ENDPOINT_URL: str | None = None
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
@@ -108,6 +137,9 @@ class Settings(BaseSettings):
 
     # Cryptography
     KEY_ENCRYPTION_KEY: str = "dev-key-encryption-key-must-be-32-bytes-long="
+    # Session JWT signing secret. Development-only default; production requires a
+    # secure random value (enforced by validate_production_secrets).
+    SECRET_KEY: str = "dev-retriever-jwt-secret-change-me"
 
     # Cognitive Provider Keys
     COHERE_API_KEY: str = ""

@@ -1,6 +1,8 @@
+import re
 from collections.abc import Callable
 from typing import Any
 
+from src.domain.abstractions.exceptions import InvalidFilterError
 from src.domain.abstractions.retrieval import MetadataFilter, SearchResult
 
 _OP_TO_SQL: dict[str, tuple[str, Callable[[Any], Any]]] = {
@@ -14,6 +16,10 @@ _OP_TO_SQL: dict[str, tuple[str, Callable[[Any], Any]]] = {
     "contains": ("{alias}.meta_data @> :{param}::jsonb", lambda v: v),
     "regex":    ("{alias}.meta_data ->> '{field}' ~* :{param}", str),
 }
+
+# Metadata field names are interpolated into SQL templates verbatim, so only
+# allow conservative identifier characters to prevent SQL injection.
+_FIELD_NAME_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 def rows_to_search_results(rows: list[Any]) -> list[SearchResult]:
@@ -54,6 +60,10 @@ def build_filter_clause(
 
     for i, f in enumerate(filters):
         p = f"f_{i}"
+        if f.operator not in _OP_TO_SQL and f.operator != "exists":
+            raise InvalidFilterError(f"Unsupported metadata filter operator: {f.operator!r}")
+        if not _FIELD_NAME_RE.match(f.field):
+            raise InvalidFilterError(f"Invalid metadata field name: {f.field!r}")
         if f.operator == "exists":
             conditions.append(f"{chunk_alias}.meta_data ? :{p}")
             params[p] = f.field

@@ -6,6 +6,7 @@ reranking. Depends only on domain abstractions — no infrastructure imports.
 """
 
 import time
+from collections.abc import Callable
 from uuid import uuid4
 
 from src.domain.abstractions.retrieval import (
@@ -41,6 +42,7 @@ class HybridSearchService:
         self_query: SelfQueryProvider | None = None,
         query_rewriter: QueryRewriterProvider | None = None,
         query_intent_classifier: QueryIntentClassifier | None = None,
+        web_search_factory: Callable[[str, str], WebSearchProvider | None] | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
@@ -52,6 +54,7 @@ class HybridSearchService:
         self.self_query = self_query
         self.query_rewriter = query_rewriter
         self.query_intent_classifier = query_intent_classifier
+        self.web_search_factory = web_search_factory
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
@@ -198,16 +201,19 @@ class HybridSearchService:
             return results
 
     def _resolve_web_search_provider(self, query: SearchQuery) -> WebSearchProvider | None:
-        from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
-        from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
-
         provider_name = query.web_search_provider
         api_key = query.web_search_api_key
         if api_key:
+            if self.web_search_factory is not None:
+                provider = self.web_search_factory(provider_name, api_key)
+                if provider is not None:
+                    return provider
             if provider_name == "brave":
+                from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
                 return BraveSearchAdapter(api_key=api_key)
+            from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
             return TavilySearchAdapter(api_key=api_key)
-        if provider_name == "brave":
+        if provider_name == "brave" and self.brave_search is not None:
             return self.brave_search
         return self.web_search
 

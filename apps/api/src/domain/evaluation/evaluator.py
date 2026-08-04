@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 from src.domain.abstractions.evaluation import (
     AggregateScores,
@@ -26,11 +27,15 @@ class EvalRunService:
         eval_run_repo: EvalRunRepository,
         search_service: HybridSearchService,
         inference_orchestrator: InferenceOrchestrator,
+        ragas_fn: Any | None = None,
+        deepeval_fn: Any | None = None,
     ) -> None:
         self.dataset_repo = eval_dataset_repo
         self.run_repo = eval_run_repo
         self.search_service = search_service
         self.orchestrator = inference_orchestrator
+        self.ragas_fn = ragas_fn
+        self.deepeval_fn = deepeval_fn
 
     async def run_evaluation(self, tenant_id: str, dataset_id: str, trigger: str = "manual") -> EvalRun:
         run = await self.run_repo.create_run(EvalRun(
@@ -49,37 +54,26 @@ class EvalRunService:
         for question in questions:
             start = time.monotonic()
 
-            try:
-                search_query = SearchQuery(
-                    query=question.question,
-                    tenant_id=tenant_id,
-                    top_k=10,
-                    enable_hybrid=True,
-                    enable_reranking=True,
-                    enable_self_query=False,
-                    enable_web_search=False,
-                )
-                search_response = await self.search_service.search(search_query)
-                retrieved_chunks = search_response.results
-                context_chunks = [r.content for r in retrieved_chunks]
-                retrieved_chunk_ids = [r.chunk_id for r in retrieved_chunks]
-            except Exception:
-                retrieved_chunks = []
-                context_chunks = []
-                retrieved_chunk_ids = []
+            search_result = await self.search_service.search(
+                tenant_id,
+                SearchQuery(
+                    query_text=question.question,
+                    top_k=5,
+                ),
+            )
 
+            retrieved_chunk_ids = [r.chunk_id for r in search_result.results]
+            context_chunks = [r.content for r in search_result.results if r.content]
+
+            generated_answer: str | None = None
             try:
-                response = await self.orchestrator.generate(
-                    tenant_id=tenant_id,
-                    session_id=f"__eval__{question.question_id}",
+                result = await self.orchestrator.execute_rag(
                     query=question.question,
-                    context_chunks=retrieved_chunks,
-                    tenant_config=None,
-                    system_prompt_name="default",
+                    tenant_id=tenant_id,
                 )
-                generated_answer = response.content
+                generated_answer = result.answer
             except Exception:
-                generated_answer = ""
+                pass
 
             search_metrics = compute_search_metrics(
                 retrieved_chunk_ids=retrieved_chunk_ids,
@@ -90,30 +84,26 @@ class EvalRunService:
             deepeval_scores = DeepEvalScores()
 
             if generated_answer:
-                try:
-                    from src.adapters.cognitive.ragas_evaluator import (
-                        compute_ragas_scores,
-                    )
-                    ragas_scores = await compute_ragas_scores(
-                        question=question.question,
-                        answer=generated_answer,
-                        contexts=context_chunks,
-                        ground_truth=question.ground_truth_answer,
-                    )
-                except Exception:
-                    pass
+                if self.ragas_fn is not None:
+                    try:
+                        ragas_scores = await self.ragas_fn(
+                            question=question.question,
+                            answer=generated_answer,
+                            contexts=context_chunks,
+                            ground_truth=question.ground_truth_answer,
+                        )
+                    except Exception:
+                        pass
 
-                try:
-                    from src.adapters.cognitive.deepeval_evaluator import (
-                        compute_deepeval_scores,
-                    )
-                    deepeval_scores = await compute_deepeval_scores(
-                        question=question.question,
-                        answer=generated_answer,
-                        contexts=context_chunks,
-                    )
-                except Exception:
-                    pass
+                if self.deepeval_fn is not None:
+                    try:
+                        deepeval_scores = await self.deepeval_fn(
+                            question=question.question,
+                            answer=generated_answer,
+                            contexts=context_chunks,
+                        )
+                    except Exception:
+                        pass
 
             elapsed = int((time.monotonic() - start) * 1000)
 

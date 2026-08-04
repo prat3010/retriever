@@ -16,6 +16,7 @@ class FeatureFlags(BaseModel):
     enable_query_rewriting: bool = False
     enable_corrective_retrieval: bool = False
     enable_query_intent: bool = False
+    enable_graph_rag: bool = True
     allow_platform_key: bool = False
 
 
@@ -151,6 +152,14 @@ class GuardrailConfig(BaseModel):
     llm_prompt_template: str | None = None
 
 
+class GraphSettings(BaseModel):
+    graph_engine: Literal["postgres", "neo4j", "auto"] = "postgres"
+    max_hops: int = 2
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "password"
+
+
 class TenantConfiguration(BaseModel):
     tenant_id: str | None = None
     feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
@@ -162,6 +171,7 @@ class TenantConfiguration(BaseModel):
     mmr_settings: MMRSettings = Field(default_factory=MMRSettings)
     corrective_retrieval_settings: CorrectiveRetrievalSettings = Field(default_factory=CorrectiveRetrievalSettings)
     query_intent_settings: QueryIntentSettings = Field(default_factory=QueryIntentSettings)
+    graph_settings: GraphSettings = Field(default_factory=GraphSettings)
     budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)

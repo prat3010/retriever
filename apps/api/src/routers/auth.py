@@ -1,3 +1,5 @@
+import hashlib
+import logging
 import uuid
 
 import jwt
@@ -9,6 +11,8 @@ from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import ApiKeyDb, TenantDb, UserDb
 from src.config import settings
 from src.container import audit_logger
+
+logger = logging.getLogger("api")
 
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
@@ -43,7 +47,8 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
     name = payload.name
     google_sub = None
 
-    # 1. Attempt Google OIDC Token Verification
+    # 1. Verify Google OIDC ID Token (signature, issuer, audience, email verification)
+    token_verified = False
     try:
         unverified_header = jwt.get_unverified_header(payload.id_token)
         kid = unverified_header.get("kid")
@@ -57,16 +62,42 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
                     algorithms=["RS256"],
                     options={"verify_aud": False},
                 )
+                if claims.get("iss") not in GOOGLE_ISSUERS:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid Google ID Token issuer.",
+                    )
+                if settings.OIDC_AUDIENCE and claims.get("aud") != settings.OIDC_AUDIENCE:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid Google ID Token audience.",
+                    )
+                if claims.get("email_verified") is not True:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Google account email is not verified.",
+                    )
                 email = claims.get("email") or email
                 name = claims.get("name") or claims.get("given_name") or name
                 google_sub = claims.get("sub")
+                token_verified = True
+    except HTTPException:
+        raise
     except Exception as err:
-        # Fallback to dev/mock payload if token parsing fails in non-prod or explicit fallback
+        logger.warning("Google OIDC token verification failed: %s", err)
+
+    if not token_verified:
+        # Client-supplied credentials are only tolerated outside production for local testing.
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google ID Token or unverified token payload.",
+            )
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid Google ID Token or unverified token payload.",
-            ) from err
+            )
 
     if not email:
         raise HTTPException(
@@ -89,12 +120,23 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
         if existing_user:
             user_id = str(existing_user.user_id)
             tenant_id = str(existing_user.tenant_id)
-            
-            # Fetch active API key for tenant
-            key_stmt = select(ApiKeyDb).where(ApiKeyDb.tenant_id == existing_user.tenant_id, ApiKeyDb.status == "active")
-            key_res = await session.execute(key_stmt)
-            active_key = key_res.scalar_one_or_none()
-            api_key = active_key.key if active_key else f"ret_live_{uuid.uuid4().hex}"
+
+            # Issue a fresh API key and persist its hash so the returned key actually works.
+            # Raw keys are only ever stored hashed, so returning a key requires inserting it.
+            api_key = f"ret_live_{uuid.uuid4().hex}"
+            session.add(
+                ApiKeyDb(
+                    key_id=uuid.uuid4(),
+                    tenant_id=existing_user.tenant_id,
+                    name="Session Key",
+                    prefix="ret_live_",
+                    key_hash=hashlib.sha256(api_key.encode()).hexdigest(),
+                    role="client",
+                    status="active",
+                )
+            )
+            await session.commit()
+            await audit_logger.write(tenant_id, "auth.google_login", f"User '{email}' logged in via Google")
         else:
             # 3. Auto-provision New Tenant & User
             is_new_tenant = True
@@ -118,7 +160,6 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
             )
             session.add(new_user)
 
-            import hashlib
             api_key = f"ret_live_{uuid.uuid4().hex}"
             key_hash = hashlib.sha256(api_key.encode()).hexdigest()
             new_key_db = ApiKeyDb(
@@ -138,6 +179,11 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
             await audit_logger.write(tenant_id, "auth.google_signup", f"New user '{email}' auto-provisioned tenant")
 
     # 4. Generate Session Token
+    if not settings.SECRET_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Server is misconfigured: SECRET_KEY is not set.",
+        )
     session_jwt = jwt.encode(
         {
             "sub": user_id,
@@ -146,7 +192,7 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
             "roles": ["owner" if is_new_tenant else "member"],
             "scopes": ["document:read", "document:write", "chat:read", "chat:write"],
         },
-        settings.SECRET_KEY if hasattr(settings, "SECRET_KEY") else "retriever-jwt-secret-key-2026",
+        settings.SECRET_KEY,
         algorithm="HS256",
     )
 

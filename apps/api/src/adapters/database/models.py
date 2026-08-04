@@ -478,3 +478,27 @@ class EvalRunResultDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     run = relationship("EvalRunDb", back_populates="results")
+
+
+class GraphTripleDb(Base):
+    __tablename__ = "graph_triples"
+
+    triple_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    subject = Column(String(255), nullable=False, index=True)
+    predicate = Column(String(255), nullable=False, index=True)
+    object = Column(String(255), nullable=False, index=True)
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    confidence = Column(Float, nullable=False, default=1.0)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)

@@ -1,6 +1,32 @@
 # Changelog
 
-All notable changes to the Retriever platform will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the Retriever RAG backend platform will be documented in this file.
+
+## [v0.36.0] - 2026-08-04
+
+### Security
+- **Milestone 38: Critical Security Remediation**:
+  - **Google OIDC auth hardened** (`src/routers/auth.py`): ID tokens are now rejected unless the `kid` resolves to a valid JWKS key, the issuer is `accounts.google.com`, the audience matches `OIDC_AUDIENCE` (when configured), and `email_verified` is `true`. The client-supplied email/name fallback is now only tolerated outside production.
+  - **Removed hardcoded JWT secret**: session JWTs are signed with the required `SECRET_KEY` setting; startup fails in production when it is unset or shorter than 32 characters.
+  - **Fixed unpersisted API key bug**: returning users were handed a `ret_live_*` key that was never stored, so it could not authenticate. Logins now insert the hashed key before returning it.
+  - **SQL injection fix** (`src/adapters/vector/filter_builder.py`): metadata filter field names are validated against `^[A-Za-z0-9_]+$` and unknown operators are rejected with `InvalidFilterError` (422) instead of being interpolated into SQL.
+  - **Path traversal fix** (`src/routers/document.py`): `/v1/local-downloads/{tenantId}/{filename}` now rejects tenant ids and filenames containing separators, null bytes, or `.`/`..` before any signing or filesystem access.
+  - **Upload size cap**: uploads larger than `MAX_UPLOAD_BYTES` (default 10 MiB) are rejected with 413 before being read into memory.
+  - **Traceback disclosure fixed** (`src/main.py`): unhandled exceptions log server-side but return a generic 500 without stack traces to clients.
+  - **RLS coverage extended** (`src/adapters/database/setup.py`): tenant isolation policies added for `eval_datasets`, `eval_runs`, `graph_triples`, plus subquery policies for `eval_questions` and `eval_run_results` via their parent tables.
+  - **Production config validation**: `validate_production_secrets` now requires `SECRET_KEY` (>=32 chars), a non-default `STORAGE_HMAC_KEY`, and `OIDC_AUDIENCE`, and warns when `RATE_LIMIT_ENABLED` is off.
+  - **Regression tests**: 6 rewritten auth tests (production rejection, dev fallback, verified-token provisioning, audience/issuer rejection, persisted key), 4 SQL injection filter tests, 2 path traversal tests, and 1 upload-cap test.
+
+## [v0.35.0] - 2026-08-01
+
+### Added
+- **Milestone 37: GraphRAG & Dual Knowledge Graph Indexing**:
+  - **Domain Abstractions Port (`BaseGraphRepository`)**: Defined `EntityTriple`, `GraphSearchResult`, `GraphCapabilities`, and `BaseGraphRepository` abstract domain port in `src/domain/abstractions/graph.py`.
+  - **PostgreSQL Graph Adapter (`PgGraphRepository`)**: Implemented zero-overhead default graph engine using `graph_triples` table and PostgreSQL Recursive SQL (`WITH RECURSIVE`).
+  - **Neo4j Graph Adapter (`Neo4jGraphRepository`)**: Implemented async Cypher query driver with automatic fallback to PostgreSQL if Neo4j container is offline or unconfigured.
+  - **Triple Extraction Domain Service (`GraphExtractor`)**: Automatic subject-predicate-object triple parsing from document text during file ingestion.
+  - **Admin Graph & Capabilities APIs**: Added `GET /v1/admin/tenants/{tenantId}/graph/capabilities`, `POST .../graph/engine`, `GET .../graph`, `POST .../graph/query`, and `DELETE .../graph/triples/{tripleId}`.
+  - **Unit Testing**: 5/5 unit tests passing in `tests/test_graphrag.py` (Total test suite: 412/412 tests passing).
 
 ## [0.34.0] - 2026-07-31
 

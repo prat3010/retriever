@@ -76,7 +76,20 @@ async def upload_document(
         if cached:
             return cached
 
+    # Reject oversized uploads before reading them into memory (defense in depth:
+    # the post-read check below covers clients that omit Content-Length).
+    if file.size is not None and file.size > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"File exceeds the maximum allowed size of {settings.MAX_UPLOAD_BYTES} bytes.",
+        )
+
     content = await file.read()
+    if len(content) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"File exceeds the maximum allowed size of {settings.MAX_UPLOAD_BYTES} bytes.",
+        )
     file_hash = hashlib.sha256(content).hexdigest()
 
     # Quota Verification (Hard 402 exception / Soft Warning header)
@@ -311,6 +324,25 @@ async def serve_local_download(
     signature: str,
 ) -> Any:
     """Securely serve local document files after validating temporary HMAC signature (Local dev only)."""
+    # 0. Validate path segments before any signing or filesystem access to prevent
+    # path traversal outside the storage directory.
+    if (
+        not tenantId
+        or "/" in tenantId
+        or "\\" in tenantId
+        or "\x00" in tenantId
+        or tenantId in (".", "..")
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid tenantId.")
+    if (
+        not filename
+        or "\x00" in filename
+        or "\\" in filename
+        or filename != os.path.basename(filename)
+        or filename in (".", "..")
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename.")
+
     # 1. Check expiration
     if int(time.time()) > expires:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="This download link has expired.")

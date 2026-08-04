@@ -20,6 +20,7 @@ from src.container import (
     corrective_service,
     feedback_repo,
     inference_orchestrator,
+    llm_safety_guard,
     quota_service,
     search_service,
     session_repo,
@@ -107,7 +108,9 @@ async def send_chat_message(
                 experiment_variant = variant.id
                 break
 
-    payload.query = await _apply_input_guardrails(tenant_config, payload.query)
+    payload.query = await _apply_input_guardrails(
+        tenant_config, payload.query, llm_safety_fn=llm_safety_guard
+    )
 
     if x_llm_key:
         tenant_config.ai_provider.api_key = x_llm_key

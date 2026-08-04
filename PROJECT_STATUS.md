@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: SaaS Data Connectors Framework (M36 — Completed)
-   - **Last Completed Milestone**: SaaS Data Connectors Framework (M36 — BaseConnector domain port, WebCrawlerConnector & MockCloudDriveConnector, admin CRUD, & document sync ingestion)
+   - **Current Milestone**: Critical Security Remediation (M38 — Complete, v0.36.0)
+   - **Last Completed Milestone**: GraphRAG & Knowledge Graph Indexing (M37)
    - **Build Status**: Passing (407 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 37 / GraphRAG & Knowledge Graph Indexing
+   - **Next Recommended Milestone**: Milestone 39 / Agentic Workflow Execution Engine (after M38 security gate)
  
  ---
  
@@ -21,8 +21,8 @@ Operational overview of the Retriever platform's current engineering status.
  
  ### Architecture Health: **Green**
  - **Hexagonal Architecture Compliance**: Enforced by `tests/test_architecture.py` on every test run. Core domains contain no database or framework imports.
- - **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on all customer-data tables. Secure UUID context validation blocks connection-level SQL injections.
- - **Google OAuth & Auto-Onboarding**: `/v1/auth/google` verifies Google JWKS tokens, auto-provisions Tenant & User records, issues API keys (`ret_live_...`), and returns signed JWT sessions.
+  - **Tenancy Boundary Controls**: PostgreSQL Row-Level Security (RLS) active on customer-data tables (documents, chunks, vectors, chat, configs, audit). ✅ M38 closed the gap: eval and graph tables (`eval_datasets`, `eval_questions`, `eval_runs`, `eval_run_results`, `graph_triples`) now have RLS policies. Secure UUID context validation blocks connection-level SQL injections.
+  - **Google OAuth & Auto-Onboarding**: `/v1/auth/google` auto-provisions Tenant & User records and issues API keys (`ret_live_...`). ✅ M38 hardened the flow: ID tokens are verified against Google JWKS with issuer/audience/`email_verified` enforcement, the unverified client-email fallback is dev-only, the JWT is signed with a required `SECRET_KEY`, and returned API keys are persisted. Production requires `SECRET_KEY`, `STORAGE_HMAC_KEY`, and `OIDC_AUDIENCE` env vars (startup fails otherwise).
  - **Dynamic SaaS Pricing Engine**: `GET /v1/config/pricing` serves public INR & USD plans; `PUT /v1/admin/config/pricing` updates pricing in PostgreSQL `configurations` table.
  - **Tenancy Breach Kill-Switch**: Verified. Context-level validation disables API keys and throws 403.
  - **Dynamic Config Override (CAD)**: Supports inheritance merging tenant overrides on top of global configs.
@@ -399,7 +399,21 @@ Operational overview of the Retriever platform's current engineering status.
 
 ---
 
-## 22. Production Deployment (Oracle VPS + Supabase) — Completed
+## 23. Milestone 37: GraphRAG & Dual Knowledge Graph Indexing — Completed
+
+### Environment Auto-Detection & Dual Storage Engines
+- **Hardware Profile Auto-Detection**: Extended `InfraCapabilities` to detect low-RAM environments (`oracle_vm_lean` < 2GB RAM vs `macbook` >= 4GB RAM).
+- **PostgreSQL Recursive SQL Engine (`PgGraphRepository`)**: Zero-overhead default graph engine storing triples in `graph_triples` and performing multi-hop traversal using PostgreSQL Recursive SQL (`WITH RECURSIVE`).
+- **Neo4j Cypher Engine (`Neo4jGraphRepository`)**: High-performance Cypher query driver with automatic fallback to PostgreSQL if Neo4j container is offline or unconfigured.
+
+### Ingestion Triple Extraction & Admin APIs
+- **Document Chunk Extraction**: Built `GraphExtractor` to automatically parse `(subject, predicate, object)` triples during document ingestion.
+- **Admin Capabilities & Control Endpoints**: Added `GET /v1/admin/tenants/{tenantId}/graph/capabilities`, `POST .../graph/engine` (1-click engine switch), `GET .../graph`, `POST .../graph/query`, and `DELETE .../graph/triples/{tripleId}`.
+- **Unit Testing**: 5/5 unit tests passing in `tests/test_graphrag.py` (Total test suite: 412/412 tests passing).
+
+---
+
+## 24. Production Deployment (Oracle VPS + Supabase) — Completed
 
 ### Stack (Zero Cost)
 
@@ -566,4 +580,24 @@ Pending items (verified against live Oracle VM `130.210.35.134`, 2026-07-31):
 Resolved during verification/fixes (2026-07-31): `ADMIN_MASTER_KEY`/`KEY_ENCRYPTION_KEY` rotated (non-default), port 8000 filtered externally, `/metrics` + `/health/liveness` reachable via https (200), GitHub deploy secrets configured, nginx + `retriever-api` healthy, Ollama sidecar running, nginx rate limiting + security headers live, fail2ban active, nightly backups + quota alerting scheduled.
 
 Deferred architecture, test, security, migration, and product items: see `TECH_DEBT.md`.
+
+---
+
+## 30. M38 Critical Security Remediation — In Progress
+
+**Objective:** Fix the critical application-level security defects found in the August 2026 audit before any public SaaS sale. Details in `ROADMAP.md` M38 and `TECH_DEBT.md` (Open — M38 section).
+
+| Item | File(s) | Status |
+|---|---|---|
+| Google OAuth: enforce `aud`/issuer, remove unverified email fallback | `src/routers/auth.py` | ✅ Done (v0.36.0) |
+| Real `SECRET_KEY` setting + production validation; remove hardcoded JWT fallback | `src/config.py`, `src/routers/auth.py` | ✅ Done (v0.36.0) |
+| Fix existing-user API key generation that is never persisted | `src/routers/auth.py` | ✅ Done (v0.36.0) |
+| Whitelist `MetadataFilter.field` against SQL injection | `src/adapters/vector/filter_builder.py` | ✅ Done (v0.36.0) |
+| Path-traversal-safe `serve_local_download` + required non-default `STORAGE_HMAC_KEY` | `src/routers/document.py`, `src/config.py` | ✅ Done (v0.36.0) |
+| Upload size cap before in-memory read (413) | `src/routers/document.py` | ✅ Done (v0.36.0) |
+| Production guard for `RATE_LIMIT_ENABLED=False` | `src/config.py` | ✅ Done (v0.36.0) |
+| RLS policies on eval & graph tables | `src/adapters/database/setup.py` | ✅ Done (v0.36.0) |
+| Redact tracebacks from exception responses | `src/main.py` | ✅ Done (v0.36.0) |
+| Resolve guest demo key (provision server-side or remove demo) | frontend + provisioning | ⬜ Pending (follow-up) |
+| Regression tests: forged tokens rejected, injection payloads rejected, traversal → 400 | `tests/` | ✅ Done (v0.36.0) |
 

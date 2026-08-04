@@ -80,6 +80,13 @@ from src.schemas.experiment import (
     UpdateExperimentStatusRequest,
     VariantMetricItem,
 )
+from src.schemas.graph import (
+    GraphCapabilitiesResponse,
+    GraphEngineSwitchRequest,
+    GraphQueryRequest,
+    GraphQueryResponse,
+    GraphSummaryResponse,
+)
 from src.schemas.tenant import TenantListItem
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin"])
@@ -1326,3 +1333,136 @@ async def admin_trigger_connector_sync(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Connector sync failed: {err!s}",
         ) from err
+
+
+# ── GraphRAG & Knowledge Graph Management ───────────────────────────────────────
+
+@router.get(
+    "/tenants/{tenantId}/graph/capabilities",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=GraphCapabilitiesResponse,
+)
+async def get_graph_capabilities(tenantId: str) -> GraphCapabilitiesResponse:
+    """Check hardware RAM profile, supported graph engines, and active status."""
+    from src.config import InfraCapabilities
+    from src.container import container
+
+    infra = InfraCapabilities.detect()
+    config = await config_service.get_tenant_config(tenantId)
+    active_engine = config.graph_settings.graph_engine
+
+    neo4j_online = False
+    if hasattr(container.graph_repository, "is_online"):
+        try:
+            neo4j_online = await container.graph_repository.is_online()
+        except Exception:
+            neo4j_online = False
+
+    if infra.lean_mode or infra.ram_gb < 2.0:
+        return GraphCapabilitiesResponse(
+            machine_profile="oracle_vm_lean",
+            supported_engines=["postgres"],
+            active_engine="postgres",
+            neo4j_status="unsupported",
+            message="Neo4j engine is disabled on LEAN Oracle VM to safeguard RAM. Running PostgreSQL Recursive SQL.",
+        )
+
+    return GraphCapabilitiesResponse(
+        machine_profile="macbook",
+        supported_engines=["postgres", "neo4j"],
+        active_engine=active_engine,
+        neo4j_status="online" if neo4j_online else "offline",
+        message="Dual-engine support active on MacBook. Docker Neo4j available on port 7687.",
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/graph/engine",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def switch_graph_engine(tenantId: str, payload: GraphEngineSwitchRequest) -> dict[str, Any]:
+    """1-Click switch active graph engine ('postgres' | 'neo4j')."""
+    from src.config import InfraCapabilities
+
+    infra = InfraCapabilities.detect()
+    if payload.engine == "neo4j" and (infra.lean_mode or infra.ram_gb < 2.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Neo4j engine cannot be activated on LEAN Oracle VM (RAM < 2GB limit).",
+        )
+
+    if payload.engine not in ["postgres", "neo4j"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid graph engine '{payload.engine}'. Allowed: postgres, neo4j.",
+        )
+
+    config = await config_service.get_tenant_config(tenantId)
+    config.graph_settings.graph_engine = payload.engine
+    await config_service.update_tenant_config(tenantId, config)
+
+    await audit_logger.write(tenantId, "graph.engine_switched", f"Switched graph engine to {payload.engine}")
+    return {"tenantId": tenantId, "activeEngine": payload.engine, "status": "updated"}
+
+
+@router.get(
+    "/tenants/{tenantId}/graph",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=GraphSummaryResponse,
+)
+async def get_graph_summary(tenantId: str) -> GraphSummaryResponse:
+    """Retrieve tenant knowledge graph statistics."""
+    from src.container import container
+
+    summary = await container.graph_repository.get_graph_summary(tenantId)
+    return GraphSummaryResponse(
+        tenant_id=summary["tenant_id"],
+        total_triples=summary["total_triples"],
+        unique_entities=summary.get("unique_entities", 0),
+        storage_engine=summary.get("storage_engine", "postgres"),
+        neo4j_status=summary.get("neo4j_status"),
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/graph/query",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=GraphQueryResponse,
+)
+async def query_knowledge_graph(tenantId: str, payload: GraphQueryRequest) -> GraphQueryResponse:
+    """Execute multi-hop entity graph query."""
+    from src.container import container
+
+    res = await container.graph_repository.search_triples(
+        tenant_id=tenantId,
+        entity=payload.entity,
+        max_hops=payload.max_hops,
+    )
+    return GraphQueryResponse(
+        root_entity=res.root_entity,
+        max_hops=res.max_hops,
+        triples=res.triples,
+        connected_entities=res.connected_entities,
+    )
+
+
+@router.delete(
+    "/tenants/{tenantId}/graph/triples/{tripleId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def delete_graph_triple(tenantId: str, tripleId: str) -> dict[str, Any]:
+    """Delete a single knowledge graph triple."""
+    from src.container import container
+
+    deleted = await container.graph_repository.delete_triple(tenantId, tripleId)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Triple '{tripleId}' not found.",
+        )
+    return {"tenantId": tenantId, "tripleId": tripleId, "status": "deleted"}

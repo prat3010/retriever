@@ -5,7 +5,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
   || process.env.API_URL
   || "http://localhost:8000";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/api")) {

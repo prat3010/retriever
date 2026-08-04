@@ -13,6 +13,7 @@ import { ConfigTab } from "@/components/tenant-config";
 import { TenantDocumentsTab } from "@/components/tenant-documents";
 import { TenantPromptsTab } from "@/components/tenant-prompts";
 import { TenantSandboxTab } from "@/components/tenant-sandbox";
+import { TenantGraphTab } from "@/components/tenant-graph";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -54,6 +55,7 @@ export default function TenantDetailPage() {
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
+            <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
             <TabsTrigger value="config">Config</TabsTrigger>
           </TabsList>
 
@@ -77,6 +79,9 @@ export default function TenantDetailPage() {
           </TabsContent>
           <TabsContent value="sandbox">
             <TenantSandboxTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="graph">
+            <TenantGraphTab tenantId={tenantId} />
           </TabsContent>
           <TabsContent value="config">
             <ConfigTab tenantId={tenantId} />

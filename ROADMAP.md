@@ -56,6 +56,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M46** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
 | **M47** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
 | **M48** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
+| **M49** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects (document_id no-op delete, silent extractor failures) | **Planned** |
 
 ---
 
@@ -833,6 +834,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 - ✅ Implement `GraphExtractor` for triple parsing during document ingestion.
 - ✅ Admin Graph & Capabilities APIs: `GET /v1/admin/tenants/{tenantId}/graph/capabilities`, `POST .../graph/engine`, `GET .../graph`, `POST .../graph/query`, `DELETE .../graph/triples/{tripleId}`.
 - ✅ 5/5 unit tests pass in `test_graphrag.py` (Total test suite: 412/412 tests passing).
+- ⚠️ **Deferred to M49:** graph-aware retrieval was not wired into search/chat (M37's "hybrid graph+vector reasoning" objective is unmet), the `neo4j` driver is not a declared dependency (engine always falls back to PostgreSQL), and two Neo4j defects were verified during post-M37 review — see Milestone 49.
 
 ---
 
@@ -984,6 +986,30 @@ This document outlines the implementation phases and milestones for the Retrieve
 - Automated background data retention purge schedulers per tenant SLA.
 - Hard delete API hooks ensuring document removal cascades across relational tables, vector stores, and semantic caches.
 - Zero-footprint inline PII anonymization during document ingestion.
+
+---
+
+### [Planned] Milestone 49: GraphRAG Productionization & Retrieval Integration
+
+**Objective:** Make the M37 knowledge graph actually usable in production. The M37 milestone shipped the graph extractor, repositories, and admin APIs, but the Neo4j engine is unreachable (driver never declared as a dependency, so the repository always silently falls back to PostgreSQL), graph results never influence live search/chat retrieval (M37's stated "hybrid graph+vector reasoning" goal was not wired in), and verification surfaced two latent defects in the Neo4j adapter and ingestion pipeline. This milestone closes the GraphRAG loop.
+
+**Complexity:** Medium
+
+**Dependencies:** M37
+
+**Targets:**
+- **Neo4j driver dependency & connectivity:** add the `neo4j` Python driver to `pyproject.toml`; remove the lazy-import silent fallback in `Neo4jGraphRepository` so the engine genuinely connects (port 7687) and startup/capabilities reporting reflects real availability — today the engine switch to `neo4j` accepts the config change but every subsequent graph call runs against PostgreSQL.
+- **Fix verified Neo4j defects:**
+  - `delete_document_triples` Cypher filters on `r.document_id`, but `add_triples` never writes a `document_id` property on relationships — document-level triple deletion is a silent no-op under Neo4j.
+  - `GraphExtractor` failures during ingestion are swallowed silently — triples can go missing with no log or failure signal.
+- **Graph-aware retrieval integration:** wire `search_triples` multi-hop results into `HybridSearchService` (both `/search` and `/chat`) as graph evidence — expand the query with connected entities/relationships, merge triple context into the prompt, and surface graph citations. Today `search_triples` is reachable only via the admin query endpoint (`POST /v1/admin/tenants/{tenantId}/graph/query`).
+- **Cross-engine parity tests:** verify engine switching, triple add/query/delete parity between PostgreSQL Recursive SQL and Neo4j Cypher (MacBook dual-engine profile).
+
+**Acceptance Criteria:**
+- Engine switch to `neo4j` on a MacBook profile: `GET /v1/admin/tenants/{tenantId}/graph/capabilities` reports `neo4j_status: online` and graph operations execute against Neo4j.
+- Document ingestion deletes purge all triples for that document under both engines.
+- A chat/search query on a knowledge-graph tenant returns triples/connected entities as graph evidence alongside vector hits.
+- Deleting a document's triples in Neo4j actually deletes rows (no silent no-op).
 
 ---
 

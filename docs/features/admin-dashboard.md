@@ -73,12 +73,14 @@ apps/web/src/
 │   ├── tenant-api-keys.tsx     # API Keys tab: list + generate + revoke
 │   ├── tenant-prompts.tsx      # Prompts tab: CRUD + preview prompt templates
 │   ├── tenant-sandbox.tsx      # Sandbox tab: RAG chat via SSE
+│   ├── tenant-graph.tsx        # Knowledge Graph tab: GraphRAG engine switch, summary, multi-hop inspector, triple delete
 │   └── tenant-config.tsx       # Config tab: AI provider, retrieval, security forms
 ├── hooks/
 │   ├── use-query-client.tsx    # TanStack Query provider component
 │   ├── use-tenants.ts          # Tenants queries + mutations
 │   ├── use-users.ts            # Users per-tenant queries + mutations
 │   ├── use-api-keys.ts         # API key queries + mutations
+│   ├── use-graph.ts            # Graph capabilities/engine/query/delete queries + mutations
 │   └── use-config.ts           # Config get/update mutations
 ├── lib/
 │   ├── api.ts                  # Fetch wrapper with X-Admin-Master-Key header
@@ -86,7 +88,7 @@ apps/web/src/
 │   └── utils.ts                # shadcn cn() utility
 ├── store/
 │   └── auth.ts                 # Zustand auth store (sessionStorage)
-└── middleware.ts               # Auth guard: redirects to /login if no cookie
+└── proxy.ts                    # Auth guard: redirects to /login if no cookie
 ```
 
 ---
@@ -98,20 +100,22 @@ apps/web/src/
 2. Enters admin master key
 3. Login page:
    a. Stores key in Zustand → sessionStorage("admin_key")
-   b. Sets cookie: admin_key=<key> (for middleware)
+   b. Sets cookie: admin_key=<key> (for proxy)
    c. Router pushes to /
-4. Middleware checks cookie on every server request:
-   - Missing → redirect /login
-   - Present → allow through
+4. Proxy guards every request except /login, /_next, /api:
+   - Missing admin_key cookie → redirect /login
+   - admin_key + admin_key_validated cookie → allow through (5-min cache)
+   - Otherwise validates key against GET /v1/admin/verify-key (3s timeout);
+     invalid → clear cookies + redirect /login, valid → set validated cookie + allow
 5. API calls read key from Zustand store, send as X-Admin-Master-Key header
 6. Logout clears sessionStorage + cookie → redirect /login
 ```
 
-### Middleware (`src/middleware.ts`)
+### Proxy (`src/proxy.ts`)
 
 ```typescript
 // Guards all routes except /login, /_next, /api
-// Reads admin_key from cookie or x-admin-key header
+// Validates admin_key against the backend /v1/admin/verify-key (5-min validated cookie cache)
 ```
 
 ### Auth Store (`src/store/auth.ts`)

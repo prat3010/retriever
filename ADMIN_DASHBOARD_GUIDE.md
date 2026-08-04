@@ -77,7 +77,7 @@ The Admin Dashboard connects directly to the Retriever Core FastAPI gateway (`lo
 ---
 
 ### 🔍 5. `/tenants/[id]` (Tenant Cockpit & Detail View)
-This is the most critical management page. It contains a detailed dashboard segmented into **7 tabs**:
+This is the most critical management page. It contains a detailed dashboard segmented into **8 tabs**:
 
 #### Tab 1: Overview
 *   **Details:** Displays the tenant UUID, status, created date, tier, and basic metadata.
@@ -119,7 +119,16 @@ This is the most critical management page. It contains a detailed dashboard segm
 *   **Details:** An embedded playground chat window designed for administrative testing.
 *   **Actions:** Enter chat queries to test the tenant's current vector indexes and LLM responses.
 
-#### Tab 7: Configuration (Tenant Rules)
+#### Tab 7: Knowledge Graph (GraphRAG)
+*   **Details:** Inspect and manage the tenant's entity-relationship knowledge graph extracted during document ingestion.
+*   **Actions:**
+    *   **Hardware Profile Banner:** Shows the host machine profile (`oracle_vm_lean` vs `macbook`) and live Neo4j status — see `GET /v1/admin/tenants/{tenantId}/graph/capabilities`.
+    *   **Engine Switch:** Toggle the active storage engine between PostgreSQL (Recursive SQL) and Neo4j (Cypher) via `POST .../graph/engine`. Neo4j is locked on LEAN Oracle VMs to safeguard RAM.
+    *   **Summary Cards:** Total graph triples, unique entities, and the active storage engine — from `GET .../graph`.
+    *   **Multi-Hop Entity Inspector:** Traverse the graph from a root entity at 1–5 hop depth (`POST .../graph/query`), rendering subject → predicate → object triple cards.
+    *   **Delete Triple:** Per-triple trash icon with confirmation dialog, calling `DELETE .../graph/triples/{tripleId}`; summary and query results refresh after deletion.
+
+#### Tab 8: Configuration (Tenant Rules)
 *   **Details:** A JSON editor to customize specific tenant behaviors, plus a provider dropdown for the AI provider.
 *   **Settings Editor:**
     *   **Provider Dropdown:** Select from 12 LLM providers (OpenAI, Gemini, OpenRouter, etc.). Auto-fills `base_url` and `default_model`. "Custom" option reveals a manual URL field.

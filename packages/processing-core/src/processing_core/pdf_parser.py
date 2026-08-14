@@ -1,3 +1,5 @@
+import os
+
 import pdfplumber
 
 
@@ -25,9 +27,6 @@ def extract_tables_from_pdf(storage_path: str) -> list[dict]:
                         "rows": [[c.strip() if c else "" for c in row] for row in rows],
                     })
     return tables
-
-
-import os
 
 TEXT_EXTENSIONS = {
     ".txt", ".py", ".md", ".json", ".yaml", ".yml", ".ini", ".toml", 

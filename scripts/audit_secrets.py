@@ -6,7 +6,6 @@ and provides a production readiness status.
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add root and api directories to python path

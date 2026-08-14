@@ -27,7 +27,12 @@ from src.container import (
 )
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatMessageFeedback
-from src.domain.guardrails import apply_input_guardrails as _apply_input_guardrails
+from src.domain.guardrails import (
+    apply_input_guardrails as _apply_input_guardrails,
+)
+from src.domain.guardrails import (
+    apply_output_guardrails as _apply_output_guardrails,
+)
 from src.domain.inference.citation_formatter import (
     format_citations as _format_citations,
 )
@@ -150,6 +155,7 @@ async def send_chat_message(
                 experiment_variant=experiment_variant,
             )
         formatted_content = _format_citations(response.content, search_response.results, citation_template)
+        formatted_content = await _apply_output_guardrails(formatted_content, tenant_config)
         return {
             "content": formatted_content,
             "usage": response.usage.model_dump(),

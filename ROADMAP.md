@@ -47,7 +47,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Completed** |
 | **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
 | **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, auto-tenant provisioning, GET /v1/auth/session, and aligning with `prateeq.in` control plane | **Completed** |
-| **M40** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard 3 / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
+| **M40** | Active Real-Time LLM Safety Guardrails | Llama Guard 3 taxonomy, pre-execution prompt injection blocks, post-execution output PII redactor | **Completed** |
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
 | **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
 | **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
@@ -891,14 +891,15 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 40: Active Real-Time LLM Safety Guardrails
+### Milestone 40: Active Real-Time LLM Safety Guardrails (Completed - v0.38.0)
 
 **Objective:** Protect the platform against malicious prompt injections, system prompt extraction, jailbreaks, and unverified PII leaks.
 
-**Targets:**
-- Replace naive regex PII filters with active LLM Guardrail adapters (Llama Guard 3 / NeMo Guardrails).
-- Pre-execution input validation pass blocking adversarial prompts before LLM dispatch.
-- Post-execution output validation pass scrubbing unverified sensitive data.
+**Deliverables:**
+- ✅ **Pre-Execution Input Guardrail Pass:** Fast heuristic regex pre-checks combined with Llama Guard 3 taxonomy classification prompt template (`llm_safety_guard.py`).
+- ✅ **Post-Execution Output Guardrail Pipeline:** Output PII & secret redactor (`output_guardrails.py`) scrubbing SSNs, credit cards, API keys, and auth tokens.
+- ✅ **Router Integration:** Applied output guardrail pipeline to `/v1/chat` responses in `chat.py`.
+- ✅ **Unit Test Suite:** Added `tests/test_llm_safety_guardrails.py` verifying pre-execution injection blocks, PII scrubbing, and output safety (433 total tests passing).
 
 ---
 

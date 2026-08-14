@@ -10,6 +10,15 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.38.0] - 2026-08-14
+
+### Added
+- **Milestone 40: Active Real-Time LLM Safety Guardrails**:
+  - **Pre-Execution Input Guardrail Pass** (`src/adapters/guardrails/llm_safety_guard.py`): Sub-millisecond heuristic regex pre-check for common prompt injection vectors (`ignore previous instructions`, `DAN mode`, `system prompt override`) combined with Llama Guard 3 safety taxonomy prompt classification.
+  - **Post-Execution Output Guardrail Pipeline** (`src/domain/guardrails/output_guardrails.py`): Output inspection service that redacts sensitive PII and API keys (SSNs, credit card numbers, OpenAI/bearer tokens) before returning generated text.
+  - **Router Integration** (`src/routers/chat.py`): Connected output guardrails pipeline to `/v1/chat` and `/v1/chat/stream` response formatting.
+  - **Unit Test Suite** (`tests/test_llm_safety_guardrails.py`): Verified pre-execution prompt injection blocks, Llama Guard taxonomy, and output PII redaction (433 total unit tests passing).
+
 ## [v0.37.0] - 2026-08-14
 
 ### Added

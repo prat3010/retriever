@@ -91,6 +91,7 @@ def _setup_search_return(service, results: list[SearchResult]):
     return resp
 
 
+@pytest.mark.asyncio
 class TestCorrectiveRetrievalService:
 
     async def test_skips_correction_when_confidence_is_high(

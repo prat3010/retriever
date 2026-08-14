@@ -40,6 +40,8 @@ def build_filter_clause(
     tags: list[str],
     chunk_alias: str = "dc",
     collection_id: str | None = None,
+    user_id: str | None = None,
+    user_role: str | None = None,
 ) -> tuple[str, dict[str, Any], str]:
     """Build SQL filter clause, params, and optional JOIN for search queries.
 
@@ -57,6 +59,26 @@ def build_filter_clause(
         join_clause = f" JOIN documents d ON {chunk_alias}.document_id = d.document_id"
         conditions.append("d.tags @> ARRAY[:tag_filters]::varchar[]")
         params["tag_filters"] = tags
+
+    if user_id is not None or user_role is not None:
+        params["acl_user_id"] = str(user_id) if user_id else ""
+        user_acl_cond = (
+            f"(({chunk_alias}.meta_data -> 'allowed_users') IS NULL "
+            f"OR jsonb_typeof({chunk_alias}.meta_data -> 'allowed_users') != 'array' "
+            f"OR jsonb_array_length({chunk_alias}.meta_data -> 'allowed_users') = 0 "
+            f"OR ({chunk_alias}.meta_data -> 'allowed_users') ? :acl_user_id)"
+        )
+        conditions.append(user_acl_cond)
+
+        params["acl_user_role"] = str(user_role) if user_role else ""
+        role_acl_cond = (
+            f"(({chunk_alias}.meta_data -> 'allowed_roles') IS NULL "
+            f"OR jsonb_typeof({chunk_alias}.meta_data -> 'allowed_roles') != 'array' "
+            f"OR jsonb_array_length({chunk_alias}.meta_data -> 'allowed_roles') = 0 "
+            f"OR ({chunk_alias}.meta_data -> 'allowed_roles') ? :acl_user_role)"
+        )
+        conditions.append(role_acl_cond)
+
 
     for i, f in enumerate(filters):
         p = f"f_{i}"
@@ -76,3 +98,4 @@ def build_filter_clause(
         return " AND " + " AND ".join(conditions), params, join_clause
 
     return "", params, join_clause
+

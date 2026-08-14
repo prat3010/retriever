@@ -1,32 +1,106 @@
 import os
+from typing import Any
 
 import pdfplumber
 
 
-def extract_text_from_pdf(storage_path: str) -> str:
-    text_runs = []
-    with pdfplumber.open(storage_path) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text(layout=True)
-            if page_text:
-                text_runs.append(page_text)
-    return "\n--- Page Break ---\n".join(text_runs)
+def convert_table_to_markdown(headers: list[str], rows: list[list[str]]) -> str:
+    """Convert table headers and rows into a GitHub Flavored Markdown table."""
+    if not headers and not rows:
+        return ""
+
+    clean_headers = [str(h).strip().replace("\n", " ") if h else "" for h in headers]
+    if not any(clean_headers):
+        # Fallback headers if empty
+        max_cols = max(len(clean_headers), max((len(r) for r in rows), default=0))
+        clean_headers = [f"Header {i+1}" for i in range(max_cols)]
+
+    header_line = "| " + " | ".join(clean_headers) + " |"
+    separator_line = "| " + " | ".join(["---"] * len(clean_headers)) + " |"
+
+    row_lines = []
+    for row in rows:
+        clean_row = [str(cell).strip().replace("\n", " ") if cell else "" for cell in row]
+        # Pad row cells to match header column count
+        if len(clean_row) < len(clean_headers):
+            clean_row.extend([""] * (len(clean_headers) - len(clean_row)))
+        elif len(clean_row) > len(clean_headers):
+            clean_row = clean_row[: len(clean_headers)]
+        row_lines.append("| " + " | ".join(clean_row) + " |")
+
+    return "\n".join([header_line, separator_line] + row_lines)
 
 
-def extract_tables_from_pdf(storage_path: str) -> list[dict]:
+def extract_tables_from_pdf(storage_path: str) -> list[dict[str, Any]]:
+    """Extract tables from PDF as structured grid dictionary records."""
     tables = []
     with pdfplumber.open(storage_path) as pdf:
         for page_num, page in enumerate(pdf.pages):
             for table in page.extract_tables():
                 if table and len(table) > 1:
-                    headers = table[0]
-                    rows = table[1:]
+                    headers = [str(h).strip() if h else "" for h in table[0]]
+                    rows = [[str(c).strip() if c else "" for c in row] for row in table[1:]]
                     tables.append({
                         "page": page_num + 1,
-                        "headers": [h.strip() if h else "" for h in headers],
-                        "rows": [[c.strip() if c else "" for c in row] for row in rows],
+                        "headers": headers,
+                        "rows": rows,
+                        "markdown": convert_table_to_markdown(headers, rows),
                     })
     return tables
+
+
+def extract_layout_from_pdf(storage_path: str) -> dict[str, Any]:
+    """Extract layout-aware structured text, tables, and page metadata from PDF."""
+    page_runs = []
+    pages_meta = []
+    total_tables = 0
+
+    with pdfplumber.open(storage_path) as pdf:
+        for page_num, page in enumerate(pdf.pages):
+            page_text = page.extract_text(layout=True) or ""
+            raw_tables = page.extract_tables() or []
+            
+            md_tables = []
+            for t in raw_tables:
+                if t and len(t) > 1:
+                    h = [str(col).strip() if col else "" for col in t[0]]
+                    r = [[str(c).strip() if c else "" for c in t[1:] for c in r_item] if isinstance(r_item, list) else [str(c).strip() if c else "" for c in t[1:]]]
+                    # Use proper table row extraction
+                    headers = [str(cell).strip() if cell else "" for cell in t[0]]
+                    rows = [[str(cell).strip() if cell else "" for cell in row] for row in t[1:]]
+                    md = convert_table_to_markdown(headers, rows)
+                    if md:
+                        md_tables.append(md)
+
+            total_tables += len(md_tables)
+            combined_page_content = page_text
+            if md_tables:
+                combined_page_content += "\n\n### Document Tables\n" + "\n\n".join(md_tables)
+
+            if combined_page_content.strip():
+                page_runs.append(f"--- Page {page_num + 1} ---\n{combined_page_content}")
+
+            pages_meta.append({
+                "page": page_num + 1,
+                "has_text": bool(page_text.strip()),
+                "table_count": len(md_tables),
+            })
+
+    full_text = "\n\n".join(page_runs)
+    return {
+        "text": full_text,
+        "page_count": len(pages_meta),
+        "has_tables": total_tables > 0,
+        "table_count": total_tables,
+        "pages": pages_meta,
+    }
+
+
+def extract_text_from_pdf(storage_path: str) -> str:
+    """Extract layout-aware text (including formatted tables) from PDF."""
+    layout = extract_layout_from_pdf(storage_path)
+    return layout["text"]
+
 
 TEXT_EXTENSIONS = {
     ".txt", ".py", ".md", ".json", ".yaml", ".yml", ".ini", ".toml", 

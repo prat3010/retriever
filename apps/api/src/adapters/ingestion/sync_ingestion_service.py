@@ -22,14 +22,28 @@ async def ingest_file_sync(
     import os
     import tempfile
 
-    from processing_core import chunk_text, extract_text_from_file
+    from processing_core import (
+        chunk_text,
+        extract_layout_from_pdf,
+        extract_text_from_file,
+    )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
         tmp.write(file_content)
         tmp_path = tmp.name
 
+    layout_meta = {"has_tables": False, "table_count": 0, "layout_parsed": False}
     try:
-        text = extract_text_from_file(tmp_path)
+        if filename.lower().endswith(".pdf") or mime_type == "application/pdf":
+            layout_result = extract_layout_from_pdf(tmp_path)
+            text = layout_result["text"]
+            layout_meta = {
+                "has_tables": layout_result["has_tables"],
+                "table_count": layout_result["table_count"],
+                "layout_parsed": True,
+            }
+        else:
+            text = extract_text_from_file(tmp_path)
     finally:
         os.unlink(tmp_path)
 
@@ -43,6 +57,10 @@ async def ingest_file_sync(
         document_id=document_id,
         tenant_id=tenant_id,
     )
+
+    for chunk_item in chunks:
+        chunk_item.setdefault("meta_data", {}).update(layout_meta)
+
 
     texts_to_embed = [c["content"] for c in chunks]
     embeddings = await embedder.embed_batch(texts_to_embed)

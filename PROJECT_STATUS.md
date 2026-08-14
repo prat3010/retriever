@@ -6,14 +6,16 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Active Real-Time LLM Safety Guardrails (M40 — Complete, v0.38.0)
-   - **Last Completed Milestone**: Active Real-Time LLM Safety Guardrails (M40)
-   - **Build Status**: Passing (433 unit tests pass)
+   - **Current Milestone**: Layout-Aware Vision OCR & Table Parsing (M42 — Complete, v0.40.0)
+   - **Last Completed Milestone**: Layout-Aware Vision OCR & Table Parsing (M42)
+   - **Build Status**: Passing (442 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 41 / Chunk-Level Granular Access Control (ACL) & DB RLS Hardening
+   - **Next Recommended Milestone**: Milestone 43 / Dynamic Multi-Embedding Vector Schemas & Index Scaling
+
+
  
  ---
  

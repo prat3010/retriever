@@ -241,6 +241,8 @@ class HybridSearchService:
                 filters=query.filters,
                 tags=query.tags,
                 collection_id=query.collection_id,
+                user_id=query.user_id,
+                user_role=query.user_role,
             )
         except Exception:
             pass
@@ -254,9 +256,12 @@ class HybridSearchService:
                     filters=query.filters,
                     tags=query.tags,
                     collection_id=query.collection_id,
+                    user_id=query.user_id,
+                    user_role=query.user_role,
                 )
             except Exception:
                 pass
+
 
         return vector_results, keyword_results
 

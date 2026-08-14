@@ -10,6 +10,25 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.40.0] - 2026-08-14
+
+### Added
+- **Milestone 42: Layout-Aware Vision OCR & Table Parsing**:
+  - **GitHub Flavored Markdown Table Converter** (`packages/processing-core/src/processing_core/pdf_parser.py`): Implemented `convert_table_to_markdown` for transforming matrix grid data into structured Markdown tables with headers and aligned separators.
+  - **Layout-Aware PDF Extraction Engine** (`packages/processing-core/src/processing_core/pdf_parser.py`): Added `extract_layout_from_pdf` to preserve multi-column reading order and embedded table blocks.
+  - **Sync & Worker Ingestion Integration** (`apps/api/src/adapters/ingestion/sync_ingestion_service.py`): Connected layout-aware PDF extraction to synchronous and background Celery document ingestion pipelines.
+  - **Chunk Layout Metadata Tagging**: Enriched chunk `meta_data` dictionary with `has_tables`, `table_count`, and `layout_parsed` boolean/numeric attributes.
+  - **Unit Test Suite** (`tests/test_layout_parser.py`): Added unit tests verifying table Markdown formatting, layout extraction, and exception handling (442 total tests passing).
+
+## [v0.39.0] - 2026-08-14
+
+### Added
+- **Milestone 41: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening**:
+  - **DocumentChunk Domain Model ACL Attributes** (`src/domain/abstractions/ingestion.py`): Added `allowed_roles` and `allowed_users` fields to `DocumentChunk` schema.
+  - **Filter Builder ACL SQL Conditions** (`src/adapters/vector/filter_builder.py`): Injected JSONB SQL clauses into `build_filter_clause` checking `allowed_users` and `allowed_roles` against caller identity context with zero-trust fallbacks.
+  - **Search & Chat Router User Context Wiring** (`src/routers/search.py`, `src/routers/chat.py`, `src/domain/retrieval/query_builder.py`): Extracted `X-User-ID` and `X-User-Role` headers and passed caller context into `SearchQuery`, `HybridSearchService`, and vector/keyword repository providers.
+  - **Unit Test Suite** (`tests/test_chunk_acl.py`): Added test suite covering ACL chunk attributes, SQL clause generation, SearchQuery context binding, and query builder integration (438 total tests passing).
+
 ## [v0.38.0] - 2026-08-14
 
 ### Added

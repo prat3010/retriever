@@ -19,6 +19,8 @@ class SearchQuery(BaseModel):
     query: str
     tenant_id: str
     collection_id: str | None = None
+    user_id: str | None = None
+    user_role: str | None = None
     top_k: int = 10
     filters: list[MetadataFilter] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
@@ -71,6 +73,8 @@ class VectorSearchProvider(ABC):
         filters: list[MetadataFilter],
         tags: list[str],
         collection_id: str | None = None,
+        user_id: str | None = None,
+        user_role: str | None = None,
     ) -> list[SearchResult]:
         pass
 
@@ -86,6 +90,8 @@ class KeywordSearchProvider(ABC):
         filters: list[MetadataFilter],
         tags: list[str],
         collection_id: str | None = None,
+        user_id: str | None = None,
+        user_role: str | None = None,
     ) -> list[SearchResult]:
         pass
 

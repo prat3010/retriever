@@ -22,10 +22,13 @@ class PgKeywordSearchAdapter(KeywordSearchProvider):
         filters: list[MetadataFilter],
         tags: list[str],
         collection_id: str | None = None,
+        user_id: str | None = None,
+        user_role: str | None = None,
     ) -> list[SearchResult]:
         filter_clause, filter_params, join_clause = build_filter_clause(
-            filters, tags, "dc", collection_id=collection_id
+            filters, tags, "dc", collection_id=collection_id, user_id=user_id, user_role=user_role
         )
+
 
         async with tenant_session(tenant_id=tenant_id) as session:
             result = await session.execute(

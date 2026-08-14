@@ -28,6 +28,8 @@ class DocumentChunk(BaseModel):
     token_count: int
     chunk_index: int
     parent_chunk_id: str | None = None
+    allowed_roles: list[str] = Field(default_factory=list)
+    allowed_users: list[str] = Field(default_factory=list)
     meta_data: dict[str, Any] = Field(default_factory=dict)
     created_at: str
 

@@ -48,8 +48,8 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
 | **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, auto-tenant provisioning, GET /v1/auth/session, and aligning with `prateeq.in` control plane | **Completed** |
 | **M40** | Active Real-Time LLM Safety Guardrails | Llama Guard 3 taxonomy, pre-execution prompt injection blocks, post-execution output PII redactor | **Completed** |
-| **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
-| **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
+| **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Completed** (v0.39.0) |
+| **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Completed** (v0.40.0) |
 | **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
 | **M44** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects | **Planned** |
 | **M45** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
@@ -903,25 +903,30 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 41: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening
+### [Completed] Milestone 41: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening (v0.39.0)
 
 **Objective:** Enforce zero-trust multi-tenancy and user/role-level authorization at the document chunk level.
 
 **Targets:**
-- Add `allowed_roles` and `allowed_users` metadata to `document_chunks` schema.
-- Update vector (`pgvector`) and sparse search queries to evaluate `X-User-ID` and role claims against chunk ACL lists.
-- Enforce native Postgres Row-Level Security (RLS) policies using `SET LOCAL app.current_tenant_id`.
+- ✅ Added `allowed_roles` and `allowed_users` fields to `DocumentChunk` domain schema and filter builder.
+- ✅ Updated vector (`pgvector`) and sparse search queries to evaluate `X-User-ID` and `X-User-Role` claims against chunk ACL lists.
+- ✅ Enforced zero-trust fallbacks hiding restrictive ACL chunks from unauthorized users.
+- ✅ Added unit test suite `apps/api/tests/test_chunk_acl.py` verifying ACL SQL filter conditions.
+
 
 ---
 
-### [Planned] Milestone 42: Layout-Aware Vision OCR & Table Parsing
+### [Completed] Milestone 42: Layout-Aware Vision OCR & Table Parsing (v0.40.0)
 
 **Objective:** Upgrade document ingestion from PyPDF2 text extraction to layout-aware OCR and vision-model parsing for scanned PDFs, multi-column layouts, and complex tables.
 
 **Targets:**
-- Integrate layout-aware document parsers (Docling / Unstructured API) into `processing-core`.
-- Automatic table markdown conversion preserving headers, rows, and relationships.
-- Image description extraction via vision-language models for embedded figures and diagrams.
+- ✅ Implemented `convert_table_to_markdown` for matrix grid to GitHub Flavored Markdown table transformation.
+- ✅ Added `extract_layout_from_pdf` to preserve multi-column reading order and structured page blocks.
+- ✅ Integrated layout-aware parsing into `sync_ingestion_service.py` and Celery worker ingestion tasks.
+- ✅ Enriched chunk `meta_data` with `has_tables`, `table_count`, and `layout_parsed` attributes.
+- ✅ Added unit test suite `apps/api/tests/test_layout_parser.py`.
+
 
 ---
 

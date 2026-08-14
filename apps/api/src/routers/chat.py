@@ -122,7 +122,7 @@ async def send_chat_message(
     if x_llm_provider:
         tenant_config.ai_provider.provider_name = x_llm_provider
 
-    search_query = _build_search_query(tenantId, tenant_config, payload)
+    search_query = _build_search_query(tenantId, tenant_config, payload, user_id=user_id, user_role=caller_role)
     search_response = await search_service.search(search_query)
 
     citation_template = tenant_config.retrieval_settings.citation_template

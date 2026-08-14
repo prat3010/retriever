@@ -70,6 +70,7 @@ def orchestrator(mock_llm, mock_prompt_builder, mock_session_repo, mock_metrics)
     )
 
 
+@pytest.mark.asyncio
 class TestSearchQualityMetrics:
 
     @pytest.fixture

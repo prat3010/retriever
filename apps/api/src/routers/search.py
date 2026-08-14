@@ -1,5 +1,5 @@
 """Search routes."""
-from fastapi import APIRouter, Depends, Security, status
+from fastapi import APIRouter, Depends, Header, Security, status
 
 from src.adapters.api.security import verify_scopes, verify_tenant_isolation
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
@@ -25,6 +25,8 @@ router = APIRouter(tags=["Search"])
 async def search_documents(
     tenantId: str,
     payload: SearchRequest,
+    x_user_id: str | None = Header(None, alias="X-User-ID"),
+    x_user_role: str | None = Header(None, alias="X-User-Role"),
 ) -> SearchResponseDto:
     """Execute hybrid search across tenant document vectors and keyword indexes."""
     tenant_config = await config_service.get_tenant_config(tenantId)
@@ -32,7 +34,7 @@ async def search_documents(
     if tenant_config.experiments:
         for exp in tenant_config.experiments:
             if exp.status == "active":
-                variant = assign_variant(user_id=None, experiment=exp)
+                variant = assign_variant(user_id=x_user_id, experiment=exp)
                 if variant:
                     tenant_config = apply_overrides(tenant_config, variant)
                     break
@@ -41,7 +43,10 @@ async def search_documents(
         query=payload.query,
         tenant_id=tenantId,
         collection_id=payload.collection_id,
+        user_id=x_user_id,
+        user_role=x_user_role,
         top_k=payload.limit,
+
         filters=payload.filters,
         tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,

@@ -154,3 +154,33 @@ def test_google_auth_existing_user_persists_new_api_key(mock_tenant_session) -> 
     assert key_db.key_hash == hashlib.sha256(data["apiKey"].encode()).hexdigest()
     assert key_db.status == "active"
     assert key_db.prefix == "ret_live_"
+
+
+import pytest
+
+from src.adapters.api.security import get_current_user
+from src.domain.abstractions.exceptions import AuthenticationError
+
+
+@pytest.mark.asyncio
+async def test_supabase_jwks_token_validation() -> None:
+    """Supabase Auth RS256 JWKS tokens decode successfully into UserContext."""
+    claims = {
+        "sub": "supabase-user-uuid-123",
+        "email": "user@prateeq.in",
+        "tenant_id": "00000000-0000-0000-0000-000000000001",
+        "roles": ["client"],
+        "scopes": ["document:read", "chat:write"],
+    }
+    with patch.object(settings, "SUPABASE_URL", "https://xyz.supabase.co"), \
+         patch("src.adapters.api.security.jwt.get_unverified_header", return_value={"kid": "key-1"}), \
+         patch("src.adapters.api.security._fetch_jwks_key", new_callable=AsyncMock, return_value={"kty": "RSA"}), \
+         patch("src.adapters.api.security.jwt.algorithms.RSAAlgorithm.from_jwk", return_value=MagicMock()), \
+         patch("src.adapters.api.security.jwt.decode", return_value=claims), \
+         patch("src.adapters.api.security.identity_provider.validate_token", side_effect=AuthenticationError("Invalid API key")):
+
+        ctx = await get_current_user("Bearer fake_supabase_jwt")
+        assert ctx.user_id == "supabase-user-uuid-123"
+        assert ctx.tenant_id == "00000000-0000-0000-0000-000000000001"
+        assert "client" in ctx.roles
+

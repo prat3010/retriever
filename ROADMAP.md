@@ -46,17 +46,24 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M36** | SaaS Data Connectors Framework | WebCrawler + cloud-drive connectors, admin CRUD, sync ingestion | **Completed** |
 | **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Completed** |
 | **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
-| **M39** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
-| **M40** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
+| **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, deprecating standalone Google auth, and aligning with `prateeq.in` control plane | **Planned** |
+| **M40** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard 3 / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
-| **M42** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
-| **M43** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
-| **M44** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
-| **M45** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
-| **M46** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
-| **M47** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
-| **M48** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
-| **M49** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects (document_id no-op delete, silent extractor failures) | **Planned** |
+| **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
+| **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
+| **M44** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects | **Planned** |
+| **M45** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
+| **M46** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
+| **M47** | Recursive Language Model (RLM) Engine & REPL Sandbox | Python REPL execution sandbox, active programmatic document traversal, and recursive subroutines | **Planned** |
+| **M48** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
+| **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
+| **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
+| **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
+| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
+
+> 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
+> - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
+> - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](file:///Users/prateeksharma/Developer/Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
 
 ---
 
@@ -871,37 +878,25 @@ This document outlines the implementation phases and milestones for the Retrieve
 - `PROJECT_STATUS.md` — correct the "RLS active on all customer-data tables" and "`/v1/auth/google` verifies Google JWKS tokens" claims.
 - `TECH_DEBT.md` — move resolved items to the Fixed table.
 - `CHANGELOG.md` — record the remediation release.
-- `docs/rag-lab.md` — update the Auth & Security section to match the verified flow.
+- `docs/rag-lab.md` — update the Au### [Planned] Milestone 39: Production Multi-Tenant Identity & Workspace Portal
 
-**Acceptance Criteria:**
-- `POST /v1/auth/google` with a garbage token + client email returns 401 (test asserts rejection).
-- Forged session JWTs signed with the default secret are rejected after `SECRET_KEY` is configured.
-- `filters=[{"field": "x') OR 1=1--", ...}]` returns 422, not rows.
-- `GET /v1/local-downloads/{tenantId}/../../etc/passwd` returns 403.
-- Production startup fails with a clear `ValueError` when `SECRET_KEY` or `STORAGE_HMAC_KEY` is unset/default.
-- Uploading > `MAX_UPLOAD_BYTES` returns 413.
-- Eval/graph tables have RLS policies; exception handler returns no traceback to clients.
+**Objective:** Upgrade client authentication from guest demo tokens to production-ready multi-tenant OAuth/OIDC + Supabase Auth.
+
+**Targets:**
+- **Production Identity Adapter:** Connect Supabase Auth / OAuth 2.0 with PKCE flow to authenticate tenant users securely.
+- **Client Workspace Studio (`/rag/app`):** Enable client self-service for document uploads, API key generation, vector index controls, and billing management.
+- **Role-Based Access Control (RBAC):** Enforce tenant owner, admin, and read-only developer scopes across API routes.
 
 ---
 
-### [Planned] Milestone 39: Agentic Workflow Execution Engine
+### [Planned] Milestone 40: Active Real-Time LLM Safety Guardrails
 
-**Objective:** Extend the generative inference layer from conversational RAG to autonomous multi-step tool execution loops.
-
-**Targets:**
-- Agent tool registration registry and execution sandboxes.
-- Support multi-turn function calling, tool response parsing, and dynamic step orchestration.
-
----
-
-### [Planned] Milestone 40: Layout-Aware Vision OCR & Table Parsing
-
-**Objective:** Upgrade document ingestion from PyPDF2 text extraction to layout-aware OCR and vision-model parsing for scanned PDFs, multi-column layouts, and complex tables.
+**Objective:** Protect the platform against malicious prompt injections, system prompt extraction, jailbreaks, and unverified PII leaks.
 
 **Targets:**
-- Integrate layout-aware document parsers (Docling / Unstructured API) into `processing-core`.
-- Automatic table markdown conversion preserving headers, rows, and relationships.
-- Image description extraction via vision-language models for embedded figures and diagrams.
+- Replace naive regex PII filters with active LLM Guardrail adapters (Llama Guard 3 / NeMo Guardrails).
+- Pre-execution input validation pass blocking adversarial prompts before LLM dispatch.
+- Post-execution output validation pass scrubbing unverified sensitive data.
 
 ---
 
@@ -916,18 +911,97 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 42: Active Real-Time LLM Safety Guardrails
+### [Planned] Milestone 42: Layout-Aware Vision OCR & Table Parsing
 
-**Objective:** Protect the platform against malicious prompt injections, system prompt extraction, jailbreaks, and unverified PII leaks.
+**Objective:** Upgrade document ingestion from PyPDF2 text extraction to layout-aware OCR and vision-model parsing for scanned PDFs, multi-column layouts, and complex tables.
 
 **Targets:**
-- Replace naive regex PII filters with active LLM Guardrail adapters (Llama Guard 3 / NeMo Guardrails).
-- Pre-execution input validation pass blocking adversarial prompts before LLM dispatch.
-- Post-execution output validation pass scrubbing unverified sensitive data.
+- Integrate layout-aware document parsers (Docling / Unstructured API) into `processing-core`.
+- Automatic table markdown conversion preserving headers, rows, and relationships.
+- Image description extraction via vision-language models for embedded figures and diagrams.
 
 ---
 
-### [Planned] Milestone 43: Online Production Hallucination Tracing
+### [Planned] Milestone 43: Dynamic Multi-Embedding Vector Schemas & Index Scaling
+
+**Objective:** Remove rigid vector dimension constraints (`Vector(768)`) to support seamless switching across different embedding models (768, 1536, 3072 dims) without database migration failures.
+
+**Targets:**
+- Implement dynamic table partitioning/collections per embedding model dimension (`vector_records_768`, `vector_records_1536`, `vector_records_3072`).
+- Build automatic embedding re-indexing worker tasks when a tenant updates its embedding provider.
+
+---
+
+### [Planned] Milestone 44: GraphRAG Productionization & Retrieval Integration
+
+**Objective:** Make the M37 knowledge graph actually usable in production. The M37 milestone shipped the graph extractor, repositories, and admin APIs, but the Neo4j engine is unreachable (driver never declared as a dependency, so the repository always silently falls back to PostgreSQL), graph results never influence live search/chat retrieval (M37's stated "hybrid graph+vector reasoning" goal was not wired in), and verification surfaced two latent defects in the Neo4j adapter and ingestion pipeline. This milestone closes the GraphRAG loop.
+
+**Complexity:** Medium
+
+**Dependencies:** M37
+
+**Targets:**
+- **Neo4j driver dependency & connectivity:** add the `neo4j` Python driver to `pyproject.toml`; remove the lazy-import silent fallback in `Neo4jGraphRepository` so the engine genuinely connects (port 7687) and startup/capabilities reporting reflects real availability.
+- **Fix verified Neo4j defects:**
+  - `delete_document_triples` Cypher filters on `r.document_id`, but `add_triples` never writes a `document_id` property on relationships.
+  - `GraphExtractor` failures during ingestion are swallowed silently.
+- **Graph-aware retrieval integration:** wire `search_triples` multi-hop results into `HybridSearchService` (both `/search` and `/chat`) as graph evidence.
+
+---
+
+### [Planned] Milestone 45: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
+
+**Objective:** Replace basic PostgreSQL `tsvector` keyword search with learned sparse embeddings and offload cross-encoder reranking to dedicated GPU microservices.
+
+**Targets:**
+- Integration of SPLADE model for keyword expansion and semantic keyword matching.
+- Offload `CrossEncoderRerankerAdapter` from FastAPI in-process execution to an external Text Embeddings Inference (TEI) container.
+
+---
+
+### [Planned] Milestone 46: Agentic Workflow Execution Engine
+
+**Objective:** Extend the generative inference layer from conversational RAG to autonomous multi-step tool execution loops.
+
+**Targets:**
+- Agent tool registration registry and execution sandboxes.
+- Support multi-turn function calling, tool response parsing, and dynamic step orchestration.
+
+---
+
+### [Planned] Milestone 47: Recursive Language Model (RLM) Engine & REPL Sandbox
+
+**Objective:** Integrate a Recursive Language Model (RLM) inference super-layer (`domain.rlm`) over Retriever's hierarchical document chunk trees, enabling active programmatic data exploration, Python REPL sandboxing, and recursive sub-LLM calls for complex multi-document synthesis.
+
+**Targets:**
+- **Domain RLM Abstractions (`src/domain/rlm/abstractions/`):** Define `ReplSandboxProvider` and `RecursiveSubcallProvider` interfaces adhering to Hexagonal Architecture constraints.
+- **Tenant-Isolated REPL Sandbox (`src/adapters/sandbox/`):** Implement `RestrictedPythonSandboxAdapter` with safe AST parsing, memory bounds, execution timeouts ($15\text{s}$ limit), and PostgreSQL RLS context enforcement (`SET LOCAL app.current_tenant_id`).
+- **Hierarchical Document Tree Bindings:** Expose Retriever's `document_chunks` parent-child trees into the Python REPL namespace as interactive Python objects (`doc.tree`, `doc.search()`).
+- **Adaptive Query Router (`src/domain/retrieval/`):** Implement intent classification to route complex multi-document analytical queries to the RLM engine while preserving fast RAG for single-shot point lookups.
+
+---
+
+### [Planned] Milestone 48: Multi-Agent Consensus & Critic Reflection Loops
+
+**Objective:** Enhance precision for high-stakes enterprise decisions (finance, healthcare, legal) using multi-agent debate and validation loops.
+
+**Targets:**
+- Implement a Generator Agent vs. Critic/Auditor Agent reflection loop within `InferenceOrchestrator`.
+- Mandatory citation verification and logical consistency pass before response emission.
+
+---
+
+### [Planned] Milestone 49: Context Compression & Zero-Trust Field Encryption
+
+**Objective:** Minimize LLM inference token overhead and protect sensitive enterprise data stored in vector databases.
+
+**Targets:**
+- Integrate context window compression algorithms (LongLLMLingua) to remove redundant tokens from retrieved context chunks before LLM prompt compilation.
+- Implement AES-256 envelope encryption for raw document chunk content and vector metadata at rest.
+
+---
+
+### [Planned] Milestone 50: Online Production Hallucination Tracing
 
 **Objective:** Transition evaluation from offline batch dataset runs to continuous online monitoring on live production API traffic.
 
@@ -938,47 +1012,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 44: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
-
-**Objective:** Replace basic PostgreSQL `tsvector` keyword search with learned sparse embeddings and offload cross-encoder reranking to dedicated GPU microservices.
-
-**Targets:**
-- Integration of SPLADE model for keyword expansion and semantic keyword matching.
-- Offload `CrossEncoderRerankerAdapter` from FastAPI in-process execution to an external Text Embeddings Inference (TEI) container.
-
----
-
-### [Planned] Milestone 45: Context Compression & Zero-Trust Field Encryption
-
-**Objective:** Minimize LLM inference token overhead and protect sensitive enterprise data stored in vector databases.
-
-**Targets:**
-- Integrate context window compression algorithms (LongLLMLingua) to remove redundant tokens from retrieved context chunks before LLM prompt compilation.
-- Implement AES-256 envelope encryption for raw document chunk content and vector metadata at rest.
-
----
-
-### [Planned] Milestone 46: Dynamic Multi-Embedding Vector Schemas & Index Scaling
-
-**Objective:** Remove rigid vector dimension constraints (`Vector(768)`) to support seamless switching across different embedding models (768, 1536, 3072 dims) without database migration failures.
-
-**Targets:**
-- Implement dynamic table partitioning/collections per embedding model dimension (`vector_records_768`, `vector_records_1536`, `vector_records_3072`).
-- Build automatic embedding re-indexing worker tasks when a tenant updates its embedding provider.
-
----
-
-### [Planned] Milestone 47: Multi-Agent Consensus & Critic Reflection Loops
-
-**Objective:** Enhance precision for high-stakes enterprise decisions (finance, healthcare, legal) using multi-agent debate and validation loops.
-
-**Targets:**
-- Implement a Generator Agent vs. Critic/Auditor Agent reflection loop within `InferenceOrchestrator`.
-- Mandatory citation verification and logical consistency pass before response emission.
-
----
-
-### [Planned] Milestone 48: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
+### [Planned] Milestone 51: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
 
 **Objective:** Automate data retention, PII anonymization, and GDPR right-to-be-forgotten vector deletion.
 
@@ -989,27 +1023,14 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 49: GraphRAG Productionization & Retrieval Integration
+### [Planned] Milestone 52: Commercial Payments & Deposit Billing
 
-**Objective:** Make the M37 knowledge graph actually usable in production. The M37 milestone shipped the graph extractor, repositories, and admin APIs, but the Neo4j engine is unreachable (driver never declared as a dependency, so the repository always silently falls back to PostgreSQL), graph results never influence live search/chat retrieval (M37's stated "hybrid graph+vector reasoning" goal was not wired in), and verification surfaced two latent defects in the Neo4j adapter and ingestion pipeline. This milestone closes the GraphRAG loop.
-
-**Complexity:** Medium
-
-**Dependencies:** M37
+**Objective:** Integrate Stripe and PhonePe payment gateways for client deposit collection, automated quota management, and subscription state tracking.
 
 **Targets:**
-- **Neo4j driver dependency & connectivity:** add the `neo4j` Python driver to `pyproject.toml`; remove the lazy-import silent fallback in `Neo4jGraphRepository` so the engine genuinely connects (port 7687) and startup/capabilities reporting reflects real availability — today the engine switch to `neo4j` accepts the config change but every subsequent graph call runs against PostgreSQL.
-- **Fix verified Neo4j defects:**
-  - `delete_document_triples` Cypher filters on `r.document_id`, but `add_triples` never writes a `document_id` property on relationships — document-level triple deletion is a silent no-op under Neo4j.
-  - `GraphExtractor` failures during ingestion are swallowed silently — triples can go missing with no log or failure signal.
-- **Graph-aware retrieval integration:** wire `search_triples` multi-hop results into `HybridSearchService` (both `/search` and `/chat`) as graph evidence — expand the query with connected entities/relationships, merge triple context into the prompt, and surface graph citations. Today `search_triples` is reachable only via the admin query endpoint (`POST /v1/admin/tenants/{tenantId}/graph/query`).
-- **Cross-engine parity tests:** verify engine switching, triple add/query/delete parity between PostgreSQL Recursive SQL and Neo4j Cypher (MacBook dual-engine profile).
-
-**Acceptance Criteria:**
-- Engine switch to `neo4j` on a MacBook profile: `GET /v1/admin/tenants/{tenantId}/graph/capabilities` reports `neo4j_status: online` and graph operations execute against Neo4j.
-- Document ingestion deletes purge all triples for that document under both engines.
-- A chat/search query on a knowledge-graph tenant returns triples/connected entities as graph evidence alongside vector hits.
-- Deleting a document's triples in Neo4j actually deletes rows (no silent no-op).
+- **Webhook Receivers (`/v1/payments/webhooks`):** Handle Stripe (`checkout.session.completed`) and PhonePe payment verification events securely with signature checking.
+- **Automated Deposit & Scope Locking:** Bridge payment notifications to the client scoping engine to update lead status from `quoted` to `retained` and issue deposit receipts.
+- **Tenant Balance & Quotas:** Automatically update tenant storage/token quotas (`M26`) upon successful billing transactions.
 
 ---
 

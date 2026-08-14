@@ -169,10 +169,22 @@ class Settings(BaseSettings):
     REMOTE_STORAGE_FALLBACK_URL: str = ""
     INTERNAL_API_KEY: str = ""
 
-    # OIDC Settings
+    # OIDC & Supabase Auth Settings
+    SUPABASE_URL: str = ""
     OIDC_ISSUER_URL: str = ""
     OIDC_JWKS_URI: str = ""
     OIDC_AUDIENCE: str = ""
+
+    @model_validator(mode="after")
+    def resolve_supabase_oidc(self):
+        if self.SUPABASE_URL:
+            base_url = self.SUPABASE_URL.rstrip("/")
+            if not self.OIDC_JWKS_URI:
+                self.OIDC_JWKS_URI = f"{base_url}/auth/v1/.well-known/jwks.json"
+            if not self.OIDC_ISSUER_URL:
+                self.OIDC_ISSUER_URL = f"{base_url}/auth/v1"
+        return self
+
 
 
 settings = Settings()

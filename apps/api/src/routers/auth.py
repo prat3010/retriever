@@ -40,9 +40,14 @@ class AuthSessionResponse(BaseModel):
     "/google",
     status_code=status.HTTP_200_OK,
     response_model=AuthSessionResponse,
+    deprecated=True,
+    summary="[DEPRECATED] Verify Google OIDC token",
+    description="DEPRECATED: Use Supabase Auth RS256 JWKS tokens directly with Bearer authentication. This endpoint will be removed in a future release.",
 )
 async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
-    """Verify Google OIDC token, auto-provision tenant & user if new, and return session credentials."""
+    """Verify Google OIDC token (Deprecated in favor of Supabase Auth OIDC tokens)."""
+    logger.warning("Call to deprecated endpoint /v1/auth/google. Migrate to Supabase Auth OIDC tokens.")
+
     email = payload.email
     name = payload.name
     google_sub = None

@@ -65,35 +65,71 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
     try:
         return await identity_provider.validate_token(clean_token)
     except AuthenticationError as e:
-        # 2. Try validating as OIDC JWT token if OIDC is configured
-        if settings.OIDC_ISSUER_URL and settings.OIDC_JWKS_URI:
+        # 2. Try validating as OIDC / Supabase JWT token if OIDC or SUPABASE_URL is configured
+        jwks_uri = settings.OIDC_JWKS_URI or (
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json" if settings.SUPABASE_URL else ""
+        )
+        issuer_url = settings.OIDC_ISSUER_URL or (
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else ""
+        )
+
+        if jwks_uri or issuer_url:
             try:
                 unverified_header = jwt.get_unverified_header(clean_token)
                 kid = unverified_header.get("kid")
-                if kid:
-                    jwk = await _fetch_jwks_key(settings.OIDC_JWKS_URI, kid)
+                if kid and jwks_uri:
+                    jwk = await _fetch_jwks_key(jwks_uri, kid)
                     if jwk:
                         public_key = jwt.algorithms.RSAAlgorithm.from_jwk(jwk)
-                        payload = jwt.decode(
-                            clean_token,
-                            public_key,
-                            algorithms=["RS256"],
-                            audience=settings.OIDC_AUDIENCE,
-                            issuer=settings.OIDC_ISSUER_URL
+                        decode_kwargs: dict = {
+                            "algorithms": ["RS256"],
+                            "options": {},
+                        }
+                        if settings.OIDC_AUDIENCE:
+                            decode_kwargs["audience"] = settings.OIDC_AUDIENCE
+                        else:
+                            decode_kwargs["options"]["verify_aud"] = False
+
+                        if issuer_url:
+                            decode_kwargs["issuer"] = issuer_url
+                        else:
+                            decode_kwargs["options"]["verify_iss"] = False
+
+                        payload = jwt.decode(clean_token, public_key, **decode_kwargs)
+                        tenant_id = (
+                            payload.get("tenant_id")
+                            or payload.get("custom:tenant_id")
+                            or payload.get("app_metadata", {}).get("tenant_id")
                         )
-                        tenant_id = payload.get("tenant_id") or payload.get("custom:tenant_id")
                         user_id = payload.get("sub")
-                        roles = payload.get("roles", ["client"])
-                        scopes = payload.get("scopes", ["document:read"])
-                        
+                        email = payload.get("email")
+                        roles = payload.get("roles") or payload.get("app_metadata", {}).get("roles", ["client"])
+                        scopes = payload.get("scopes", ["document:read", "document:write", "chat:read", "chat:write"])
+
+                        if not tenant_id and (user_id or email):
+                            from sqlalchemy import select
+
+                            from src.adapters.database.connection import tenant_session
+                            from src.adapters.database.models import UserDb
+
+                            async with tenant_session(bypass_rls=True) as session:
+                                stmt = select(UserDb).where(
+                                    (UserDb.external_id == user_id) | (UserDb.external_id == email)
+                                )
+                                res = await session.execute(stmt)
+                                user_db = res.scalar_one_or_none()
+                                if user_db:
+                                    tenant_id = str(user_db.tenant_id)
+                                    user_id = str(user_db.user_id)
+
                         if not tenant_id:
-                            raise AuthenticationError("SSO token missing required tenant context claim.")
-                            
+                            raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")
+
                         return UserContext(
-                            user_id=user_id,
+                            user_id=user_id or "unknown",
                             tenant_id=tenant_id,
-                            roles=roles,
-                            scopes=scopes
+                            roles=roles if isinstance(roles, list) else [str(roles)],
+                            scopes=scopes if isinstance(scopes, list) else [str(scopes)],
                         )
             except PyJWTError as je:
                 raise HTTPException(
@@ -105,7 +141,7 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=str(ae),
                 ) from ae
-        
+
         # Raise the original validation failure if OIDC is disabled or did not match
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

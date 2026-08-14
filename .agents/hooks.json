@@ -1,0 +1,17 @@
+{
+  "ruff-linter": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "replace_file_content|write_to_file|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix .",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

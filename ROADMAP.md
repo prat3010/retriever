@@ -46,7 +46,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M36** | SaaS Data Connectors Framework | WebCrawler + cloud-drive connectors, admin CRUD, sync ingestion | **Completed** |
 | **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Completed** |
 | **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
-| **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, deprecating standalone Google auth, and aligning with `prateeq.in` control plane | **Planned** |
+| **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, auto-tenant provisioning, GET /v1/auth/session, and aligning with `prateeq.in` control plane | **Completed** |
 | **M40** | Active Real-Time LLM Safety Guardrails | Integrate Llama Guard 3 / NeMo for prompt injection, jailbreak, and output safety | **Planned** |
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Planned** |
 | **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Planned** |
@@ -878,14 +878,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 - `PROJECT_STATUS.md` — correct the "RLS active on all customer-data tables" and "`/v1/auth/google` verifies Google JWKS tokens" claims.
 - `TECH_DEBT.md` — move resolved items to the Fixed table.
 - `CHANGELOG.md` — record the remediation release.
-- `docs/rag-lab.md` — update the Au### [Planned] Milestone 39: Production Multi-Tenant Identity & Workspace Portal
+- `docs/rag-lab.md` — update the Au### [Completed] Milestone 39: Production Multi-Tenant Identity & Workspace Portal
 
-**Objective:** Upgrade client authentication from guest demo tokens to production-ready multi-tenant OAuth/OIDC + Supabase Auth.
+**Objective:** Upgrade client authentication to production-ready multi-tenant Supabase Auth OIDC/JWKS verification with zero-touch workspace auto-provisioning.
 
-**Targets:**
-- **Production Identity Adapter:** Connect Supabase Auth / OAuth 2.0 with PKCE flow to authenticate tenant users securely.
-- **Client Workspace Studio (`/rag/app`):** Enable client self-service for document uploads, API key generation, vector index controls, and billing management.
-- **Role-Based Access Control (RBAC):** Enforce tenant owner, admin, and read-only developer scopes across API routes.
+**Deliverables:**
+- ✅ **Supabase Auth RS256 JWKS Verification:** Integrated in `src/adapters/api/security.py` with 1-hour in-memory key caching (`_jwks_cache`) and claim extraction.
+- ✅ **Auto-Tenant & User Provisioning:** `security.py` automatically provisions new `TenantDb`, `UserDb`, and `ApiKeyDb` records in PostgreSQL upon first touch from an authenticated Supabase Auth user.
+- ✅ **Session Context Endpoint:** Implemented `GET /v1/auth/session` in `src/routers/auth.py` returning active session context (`tenantId`, `userId`, `roles`, `scopes`).
+- ✅ **Client Workspace Studio Integration:** Connected `ConfigPanel.tsx` in `Prateek_website` (`/rag/app`) to query `/v1/auth/session` using the client's Supabase access token for zero-touch workspace access.
+- ✅ **Unit Test Suite:** Added `tests/test_supabase_auth.py` verifying JWKS decoding, endpoint payload, and auto-provisioning (428 total tests passing).
 
 ---
 

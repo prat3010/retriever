@@ -10,3 +10,7 @@
 
 ## Code Style & Formatting Rules
 - **Always run `ruff check --fix` on modified Python files** before making commits or finishing tasks to ensure imports and formatting conform to project CI standards.
+
+## Mandatory Documentation & Markdown Audit Rule
+- **Always Audit & Update Documentation:** Whenever ANY code change is executed (even minor bug fixes, parameter tweaks, or refactors), the agent MUST check and update all relevant project documentation (`ROADMAP.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, `docs/`, etc.) to ensure roadmap statuses, feature lists, API specifications, and architecture descriptions stay 100% synchronized with the codebase before completing the task.
+

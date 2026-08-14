@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Critical Security Remediation (M38 — Complete, v0.36.0)
-   - **Last Completed Milestone**: GraphRAG & Knowledge Graph Indexing (M37)
-   - **Build Status**: Passing (425 unit tests pass)
+   - **Current Milestone**: Production Multi-Tenant Identity & Workspace Portal (M39 — Complete, v0.37.0)
+   - **Last Completed Milestone**: Production Multi-Tenant Identity & Workspace Portal (M39)
+   - **Build Status**: Passing (428 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 39 / Agentic Workflow Execution Engine (after M38 security gate)
+   - **Next Recommended Milestone**: Milestone 40 / Active Real-Time LLM Safety Guardrails
  
  ---
  

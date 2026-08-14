@@ -3,14 +3,15 @@ import logging
 import uuid
 
 import jwt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from src.adapters.api.security import _fetch_jwks_key
+from src.adapters.api.security import _fetch_jwks_key, get_current_user
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import ApiKeyDb, TenantDb, UserDb
 from src.config import settings
 from src.container import audit_logger
+from src.domain.abstractions.identity import UserContext
 
 logger = logging.getLogger("api")
 
@@ -210,3 +211,30 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
         jwtToken=session_jwt,
         isNewTenant=is_new_tenant,
     )
+
+
+class SessionContextResponse(BaseModel):
+    tenantId: str
+    userId: str
+    roles: list[str]
+    scopes: list[str]
+
+
+@router.get(
+    "/session",
+    status_code=status.HTTP_200_OK,
+    response_model=SessionContextResponse,
+    summary="Get active session context",
+    description="Retrieve tenant and user context for the authenticated Bearer token (API key or Supabase Auth JWT).",
+)
+async def get_auth_session(
+    user_context: UserContext = Depends(get_current_user),
+) -> SessionContextResponse:
+    """Resolve authenticated tenant and user context."""
+    return SessionContextResponse(
+        tenantId=user_context.tenant_id,
+        userId=user_context.user_id,
+        roles=user_context.roles,
+        scopes=user_context.scopes,
+    )
+

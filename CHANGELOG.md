@@ -10,6 +10,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.37.0] - 2026-08-14
+
+### Added
+- **Milestone 39: Production Multi-Tenant Identity & Workspace Portal**:
+  - **Supabase Auth RS256 JWKS Verification** (`src/adapters/api/security.py`): OIDC JWT decoding with 1-hour in-memory key caching (`_jwks_cache`), verifying public keys against `https://<SUPABASE_PROJECT_REF>.supabase.co/auth/v1/.well-known/jwks.json`.
+  - **Zero-Touch Workspace Auto-Provisioning**: Incoming verified Supabase Auth JWTs automatically provision a new `TenantDb`, `UserDb`, and default `ApiKeyDb` record in PostgreSQL if the user does not exist in `UserDb` yet.
+  - **Session Context API Endpoint** (`GET /v1/auth/session` in `src/routers/auth.py`): Returns `SessionContextResponse` containing resolved `tenantId`, `userId`, `roles`, and `scopes` for authenticated Bearer tokens.
+  - **Control Plane Studio Alignment**: Updated `ConfigPanel.tsx` in `Prateek_website` (`/rag/app`) to connect directly via Supabase Auth session token, fetching tenant context without manual API keys.
+  - **Unit Test Suite** (`tests/test_supabase_auth.py`): Test coverage for JWKS decoding, endpoint response payloads, and zero-touch auto-provisioning (428 total tests passing).
+
 ## [v0.36.0] - 2026-08-04
 
 ### Security

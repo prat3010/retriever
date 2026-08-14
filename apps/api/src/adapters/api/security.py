@@ -107,10 +107,16 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
                         scopes = payload.get("scopes", ["document:read", "document:write", "chat:read", "chat:write"])
 
                         if not tenant_id and (user_id or email):
+                            import uuid
+
                             from sqlalchemy import select
 
                             from src.adapters.database.connection import tenant_session
-                            from src.adapters.database.models import UserDb
+                            from src.adapters.database.models import (
+                                ApiKeyDb,
+                                TenantDb,
+                                UserDb,
+                            )
 
                             async with tenant_session(bypass_rls=True) as session:
                                 stmt = select(UserDb).where(
@@ -121,6 +127,45 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
                                 if user_db:
                                     tenant_id = str(user_db.tenant_id)
                                     user_id = str(user_db.user_id)
+                                else:
+                                    tenant_uuid = uuid.uuid4()
+                                    user_uuid = uuid.uuid4()
+                                    display_name = (email or "User").split("@")[0].capitalize()
+                                    external_id = user_id or email
+
+                                    new_tenant = TenantDb(
+                                        tenant_id=tenant_uuid,
+                                        name=f"{display_name}'s Workspace",
+                                        tier="starter",
+                                        status="active",
+                                    )
+                                    session.add(new_tenant)
+
+                                    new_user = UserDb(
+                                        user_id=user_uuid,
+                                        tenant_id=tenant_uuid,
+                                        external_id=external_id,
+                                        display_name=display_name,
+                                        is_active=True,
+                                    )
+                                    session.add(new_user)
+
+                                    api_key = f"ret_live_{uuid.uuid4().hex}"
+                                    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+                                    new_key_db = ApiKeyDb(
+                                        key_id=uuid.uuid4(),
+                                        tenant_id=tenant_uuid,
+                                        name="Default Workspace Key",
+                                        prefix="ret_live_",
+                                        key_hash=key_hash,
+                                        role="client",
+                                        status="active",
+                                    )
+                                    session.add(new_key_db)
+                                    await session.commit()
+
+                                    tenant_id = str(tenant_uuid)
+                                    user_id = str(user_uuid)
 
                         if not tenant_id:
                             raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")

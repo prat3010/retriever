@@ -985,15 +985,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 47: Recursive Language Model (RLM) Engine & REPL Sandbox
+### [Completed] Milestone 47: Recursive Language Model (RLM) Engine & REPL Sandbox (v0.45.0)
 
-**Objective:** Integrate a Recursive Language Model (RLM) inference super-layer (`domain.rlm`) over Retriever's hierarchical document chunk trees, enabling active programmatic data exploration, Python REPL sandboxing, and recursive sub-LLM calls for complex multi-document synthesis.
+**Objective:** Integrate a Recursive Language Model (RLM) inference super-layer (`src/domain/rlm/`) over Retriever's document chunk trees, enabling active programmatic data exploration, safe Python REPL sandboxing, and recursive sub-LLM calls for complex multi-document analytical synthesis.
 
-**Targets:**
-- **Domain RLM Abstractions (`src/domain/rlm/abstractions/`):** Define `ReplSandboxProvider` and `RecursiveSubcallProvider` interfaces adhering to Hexagonal Architecture constraints.
-- **Tenant-Isolated REPL Sandbox (`src/adapters/sandbox/`):** Implement `RestrictedPythonSandboxAdapter` with safe AST parsing, memory bounds, execution timeouts ($15\text{s}$ limit), and PostgreSQL RLS context enforcement (`SET LOCAL app.current_tenant_id`).
-- **Hierarchical Document Tree Bindings:** Expose Retriever's `document_chunks` parent-child trees into the Python REPL namespace as interactive Python objects (`doc.tree`, `doc.search()`).
-- **Adaptive Query Router (`src/domain/retrieval/`):** Implement intent classification to route complex multi-document analytical queries to the RLM engine while preserving fast RAG for single-shot point lookups.
+**Delivered Capabilities:**
+- **RLM Domain Abstractions** (`apps/api/src/domain/rlm/abstractions.py`): Defined Pydantic models & interfaces for `ReplExecutionResult`, `ReplSandboxProvider`, `RlmAnalysisRequest`, and `RlmAnalysisResult`.
+- **Restricted Python REPL Sandbox** (`apps/api/src/adapters/sandbox/python_sandbox_adapter.py`): Implemented `RestrictedPythonSandboxAdapter` with safe AST parsing, blocking dangerous imports (`os`, `sys`, `subprocess`, `socket`), safe built-ins, and 15-second execution timeout bounds.
+- **RLM Execution Engine** (`apps/api/src/domain/rlm/engine.py`): Built multi-pass analytical synthesis engine combining vector/graph search, programmatic Python REPL script execution, and recursive sub-LLM synthesis.
+- **FastAPI RLM Router** (`apps/api/src/routers/rlm.py`): Exposed `POST /v1/tenants/{tenantId}/rlm/analyze` endpoint.
+- **Unit Test Suite** (`apps/api/tests/test_rlm_engine.py`): Created unit tests verifying AST security blocking, REPL math execution, RLM synthesis, and router endpoints (460 total unit tests passing).
 
 ---
 

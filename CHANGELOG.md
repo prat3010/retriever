@@ -12,6 +12,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.45.0] - 2026-08-15
+
+### Added
+- **Milestone 47: Recursive Language Model (RLM) Engine & REPL Sandbox**:
+  - **RLM Domain Abstractions** (`apps/api/src/domain/rlm/abstractions.py`): Defined Pydantic models & interfaces for `ReplExecutionResult`, `ReplSandboxProvider`, `RlmAnalysisRequest`, and `RlmAnalysisResult`.
+  - **Restricted Python REPL Sandbox** (`apps/api/src/adapters/sandbox/python_sandbox_adapter.py`): Implemented `RestrictedPythonSandboxAdapter` with safe AST parsing, blocking dangerous imports (`os`, `sys`, `subprocess`, `socket`), safe built-ins, and 15-second execution timeout bounds.
+  - **RLM Execution Engine** (`apps/api/src/domain/rlm/engine.py`): Built multi-pass analytical synthesis engine combining vector/graph search, programmatic Python REPL script execution, and recursive sub-LLM synthesis.
+  - **FastAPI RLM Router** (`apps/api/src/routers/rlm.py`): Exposed `POST /v1/tenants/{tenantId}/rlm/analyze` endpoint.
+  - **Unit Test Suite** (`apps/api/tests/test_rlm_engine.py`): Created unit tests verifying AST security blocking, REPL math execution, RLM synthesis, and router endpoints (460 total unit tests passing).
+
 ## [v0.44.0] - 2026-08-15
 
 ### Added

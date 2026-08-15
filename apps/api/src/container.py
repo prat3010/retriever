@@ -60,6 +60,9 @@ from src.adapters.ingestion.sync_ingestion_service import (
     ingest_file_sync,  # noqa: F401 — re-exported for routers
 )
 from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
+from src.adapters.sandbox.python_sandbox_adapter import (
+    RestrictedPythonSandboxAdapter,
+)
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.storage.s3_storage import S3Storage
 from src.adapters.telemetry.setup import get_metrics
@@ -77,6 +80,7 @@ from src.domain.inference.prompt_builder import PromptBuilder
 from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
+from src.domain.rlm.engine import RlmExecutionEngine
 
 
 class Container:
@@ -247,6 +251,15 @@ class Container:
         self._cache["agentic_engine"] = AgenticExecutionEngine(
             llm_provider=llm,
             tool_registry=tool_reg,
+        )
+
+        # --- RLM Engine ---
+        sandbox = RestrictedPythonSandboxAdapter()
+        self._cache["python_sandbox"] = sandbox
+        self._cache["rlm_engine"] = RlmExecutionEngine(
+            llm_provider=llm,
+            sandbox_provider=sandbox,
+            search_service=self._cache["search_service"],
         )
 
     def reset(self) -> None:

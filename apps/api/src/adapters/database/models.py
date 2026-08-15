@@ -572,3 +572,24 @@ class OnlineEvaluationDb(Base):
     is_alert = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
+
+class PaymentTransactionDb(Base):
+    __tablename__ = "payment_transactions"
+
+    transaction_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    provider = Column(String(50), nullable=False)
+    event_type = Column(String(100), nullable=False)
+    amount = Column(Float, nullable=False, default=0.0)
+    currency = Column(String(10), nullable=False, default="INR")
+    status = Column(String(50), nullable=False, default="completed")
+    external_reference = Column(String(255), nullable=True)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+

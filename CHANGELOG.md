@@ -12,6 +12,17 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.50.0] - 2026-08-15
+
+### Added
+- **Milestone 52: Commercial Payments & Deposit Billing**:
+  - **Cryptographic Webhook Receivers** (`apps/api/src/routers/payments.py`): Built `/v1/payments/webhooks/{provider}` endpoints for Stripe, Razorpay, and PhonePe with HMAC signature verification.
+  - **Audit-Proof Payment Ledger Model & RLS** (`apps/api/src/adapters/database/models.py`, `setup.py`): Created `PaymentTransactionDb` (`payment_transactions` table) with Row-Level Security isolation.
+  - **Payment Transaction Repository** (`apps/api/src/adapters/database/payment_repository.py`): Implemented `SqlPaymentRepository` for transaction persistence and paginated ledger history queries.
+  - **Automated Tenant Quota Provisioning** (`apps/api/src/domain/billing/payment_service.py`): Built `PaymentService` auto-upgrading tenant storage document limits, token rate limits, and request quotas (`TenantQuotaSettings`) upon successful billing webhook notifications.
+  - **Checkout Link Generator & Admin Ledger API**: Exposed `POST /v1/payments/checkout-session` and `GET /v1/admin/tenants/{tenantId}/payments/ledger`.
+  - **Unit Test Suite** (`apps/api/tests/test_payments.py`): Created unit tests verifying webhook signature validation, ledger storage, automatic quota upgrades, checkout generation, and admin endpoints (479 total unit tests passing).
+
 ## [v0.49.0] - 2026-08-15
 
 ### Added

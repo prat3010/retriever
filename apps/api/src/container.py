@@ -305,6 +305,18 @@ class Container:
         self._cache["hard_purge_service"] = hard_purge_service
         self._cache["retention_worker"] = retention_worker
 
+        # --- Commercial Payments & Billing ---
+        from src.adapters.database.payment_repository import SqlPaymentRepository
+        from src.domain.billing.payment_service import PaymentService
+
+        payment_repo = SqlPaymentRepository()
+        payment_service = PaymentService(
+            payment_repository=payment_repo,
+            tenant_registry=self._cache["tenant_registry"],
+        )
+        self._cache["payment_repo"] = payment_repo
+        self._cache["payment_service"] = payment_service
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -361,5 +373,7 @@ quota_service = container.quota_service
 pii_anonymizer = container.pii_anonymizer
 hard_purge_service = container.hard_purge_service
 retention_worker = container.retention_worker
+payment_repo = container.payment_repo
+payment_service = container.payment_service
 
 

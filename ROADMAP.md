@@ -59,7 +59,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Completed** (v0.47.0) |
 | **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Completed** (v0.48.0) |
 | **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
-| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
+| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Planned** |
 
 > 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
@@ -1051,14 +1051,17 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 52: Commercial Payments & Deposit Billing
+### [Completed] Milestone 52: Commercial Payments & Deposit Billing (v0.50.0)
 
-**Objective:** Integrate Stripe and PhonePe payment gateways for client deposit collection, automated quota management, and subscription state tracking.
+**Objective:** Integrate Stripe, Razorpay, and PhonePe payment gateways for client deposit collection, automated quota management, and subscription state tracking.
 
-**Targets:**
-- **Webhook Receivers (`/v1/payments/webhooks`):** Handle Stripe (`checkout.session.completed`) and PhonePe payment verification events securely with signature checking.
-- **Automated Deposit & Scope Locking:** Bridge payment notifications to the client scoping engine to update lead status from `quoted` to `retained` and issue deposit receipts.
-- **Tenant Balance & Quotas:** Automatically update tenant storage/token quotas (`M26`) upon successful billing transactions.
+**Delivered Capabilities:**
+- **Cryptographic Webhook Receivers** (`apps/api/src/routers/payments.py`): Built `/v1/payments/webhooks/{provider}` endpoints for Stripe, Razorpay, and PhonePe with HMAC signature verification.
+- **Audit-Proof Payment Ledger Model & RLS** (`apps/api/src/adapters/database/models.py`, `setup.py`): Created `PaymentTransactionDb` (`payment_transactions` table) with Row-Level Security isolation.
+- **Payment Transaction Repository** (`apps/api/src/adapters/database/payment_repository.py`): Implemented `SqlPaymentRepository` for transaction persistence and paginated ledger history queries.
+- **Automated Tenant Quota Provisioning** (`apps/api/src/domain/billing/payment_service.py`): Built `PaymentService` auto-upgrading tenant storage document limits, token rate limits, and request quotas (`TenantQuotaSettings`) upon successful billing webhook notifications.
+- **Checkout Link Generator & Admin Ledger API**: Exposed `POST /v1/payments/checkout-session` and `GET /v1/admin/tenants/{tenantId}/payments/ledger`.
+- **Unit Test Suite** (`apps/api/tests/test_payments.py`): Created unit tests verifying webhook signature validation, ledger storage, automatic quota upgrades, checkout generation, and admin endpoints (479 total unit tests passing).
 
 ---
 

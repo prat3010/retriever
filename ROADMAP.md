@@ -960,13 +960,15 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 45: Learned Sparse Retrieval (SPLADE) & Reranker Microservice
+### [Completed] Milestone 45: Learned Sparse Retrieval (SPLADE) & Reranker Microservice (v0.43.0)
 
-**Objective:** Replace basic PostgreSQL `tsvector` keyword search with learned sparse embeddings and offload cross-encoder reranking to dedicated GPU microservices.
+**Objective:** Enhance sparse keyword matching with learned sparse token expansion (SPLADE) and offload cross-encoder reranking from in-process execution to an external Text Embeddings Inference (TEI) microservice container.
 
-**Targets:**
-- Integration of SPLADE model for keyword expansion and semantic keyword matching.
-- Offload `CrossEncoderRerankerAdapter` from FastAPI in-process execution to an external Text Embeddings Inference (TEI) container.
+**Delivered Capabilities:**
+- **TEI Reranker Microservice Adapter** (`apps/api/src/adapters/cognitive/tei_reranker_adapter.py`): Built `TeiRerankerAdapter(RerankerProvider)` to offload cross-encoder scoring to external TEI HTTP endpoints (`TEI_RERANK_URL`) with graceful fallback to local cross-encoders.
+- **SPLADE Learned Sparse Search Adapter** (`apps/api/src/adapters/vector/splade_sparse_adapter.py`): Implemented `SpladeSparseSearchAdapter(KeywordSearchProvider)` with term weight extraction (`extract_sparse_weights`) and expanded PostgreSQL query generation (`build_expanded_query_string`).
+- **Configuration & Resolution Wiring** (`apps/api/src/config.py`, `apps/api/src/container.py`): Added `TEI_RERANK_URL` and `SPARSE_SEARCH_PROVIDER` settings with automatic fallback resolution chains (`Cohere` -> `TEI` -> `LocalReranker`).
+- **Unit Test Suite** (`apps/api/tests/test_splade_and_reranker.py`): Created unit test suite verifying TEI HTTP API calls, threshold filtering, fallbacks, and SPLADE term expansion (451 total unit tests passing).
 
 ---
 

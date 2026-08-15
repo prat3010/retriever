@@ -149,6 +149,8 @@ class Settings(BaseSettings):
     BRAVE_API_KEY: str = ""
     VISION_MODEL: str = "nvidia/nemotron-nano-12b-v2-vl:free"
     DEFAULT_OCR_PROVIDER: str = "rapidocr"
+    TEI_RERANK_URL: str | None = None
+    SPARSE_SEARCH_PROVIDER: str = "bm25"
 
     # CORS
     CORS_ORIGINS: str = "*"

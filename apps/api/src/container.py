@@ -33,6 +33,7 @@ from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
 from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+from src.adapters.cognitive.tei_reranker_adapter import TeiRerankerAdapter
 from src.adapters.database.admin_repository import SqlAdminRepository
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
@@ -63,6 +64,7 @@ from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.storage.s3_storage import S3Storage
 from src.adapters.telemetry.setup import get_metrics
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
+from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import settings
 from src.domain.config.config_service import ConfigurationService
@@ -152,11 +154,19 @@ class Container:
             self._cache["graph_repository"] = pg_graph
 
         # --- Search ---
-        reranker_instance = (
-            CohereRerankerAdapter(api_key=settings.COHERE_API_KEY)
-            if settings.COHERE_API_KEY
-            else LocalRerankerAdapter()
+        if settings.COHERE_API_KEY:
+            reranker_instance = CohereRerankerAdapter(api_key=settings.COHERE_API_KEY)
+        elif getattr(settings, "TEI_RERANK_URL", None):
+            reranker_instance = TeiRerankerAdapter(endpoint_url=settings.TEI_RERANK_URL)
+        else:
+            reranker_instance = LocalRerankerAdapter()
+
+        keyword_search_instance = (
+            SpladeSparseSearchAdapter()
+            if getattr(settings, "SPARSE_SEARCH_PROVIDER", "bm25") == "splade"
+            else PgKeywordSearchAdapter()
         )
+
         def web_search_factory(name: str, key: str) -> Any:
             if name == "brave":
                 return BraveSearchAdapter(api_key=key)
@@ -164,7 +174,7 @@ class Container:
 
         self._cache["search_service"] = HybridSearchService(
             vector_search=PgVectorSearchAdapter(),
-            keyword_search=PgKeywordSearchAdapter(),
+            keyword_search=keyword_search_instance,
             embedder=embedder,
             reranker=reranker_instance,
             cache_provider=PgSemanticCacheAdapter(),

@@ -12,6 +12,15 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.43.0] - 2026-08-15
+
+### Added
+- **Milestone 45: Learned Sparse Retrieval (SPLADE) & Reranker Microservice**:
+  - **TEI Reranker Microservice Adapter** (`apps/api/src/adapters/cognitive/tei_reranker_adapter.py`): Built `TeiRerankerAdapter(RerankerProvider)` to offload cross-encoder scoring to external TEI HTTP endpoints (`TEI_RERANK_URL`) with graceful fallback to local cross-encoders.
+  - **SPLADE Learned Sparse Search Adapter** (`apps/api/src/adapters/vector/splade_sparse_adapter.py`): Implemented `SpladeSparseSearchAdapter(KeywordSearchProvider)` with term weight extraction (`extract_sparse_weights`) and expanded PostgreSQL query generation (`build_expanded_query_string`).
+  - **Configuration & Resolution Wiring** (`apps/api/src/config.py`, `apps/api/src/container.py`): Added `TEI_RERANK_URL` and `SPARSE_SEARCH_PROVIDER` settings with automatic fallback resolution chains (`Cohere` -> `TEI` -> `LocalReranker`).
+  - **Unit Test Suite** (`apps/api/tests/test_splade_and_reranker.py`): Created unit test suite verifying TEI HTTP API calls, threshold filtering, fallbacks, and SPLADE term expansion (451 total unit tests passing).
+
 ## [v0.42.0] - 2026-08-15
 
 ### Added

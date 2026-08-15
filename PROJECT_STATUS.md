@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: GraphRAG Productionization & Retrieval Integration (M44 — Complete, v0.42.0)
-   - **Last Completed Milestone**: GraphRAG Productionization & Retrieval Integration (M44)
-   - **Build Status**: Passing (447 unit tests pass)
+   - **Current Milestone**: Learned Sparse Retrieval (SPLADE) & Reranker Microservice (M45 — Complete, v0.43.0)
+   - **Last Completed Milestone**: Learned Sparse Retrieval (SPLADE) & Reranker Microservice (M45)
+   - **Build Status**: Passing (451 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 45 / Learned Sparse Retrieval (SPLADE) & Reranker Microservice
+   - **Next Recommended Milestone**: Milestone 46 / Agentic Workflow Execution Engine
 
 
 

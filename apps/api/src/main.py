@@ -155,6 +155,7 @@ from src.routers.health import router as health_router
 from src.routers.pricing import router as pricing_router
 from src.routers.rlm import router as rlm_router
 from src.routers.search import router as search_router
+from src.routers.security_compression import router as security_compression_router
 from src.routers.tenant import router as tenant_router
 
 app.include_router(health_router)
@@ -164,6 +165,7 @@ app.include_router(admin_router)
 app.include_router(agentic_router)
 app.include_router(consensus_router)
 app.include_router(rlm_router)
+app.include_router(security_compression_router)
 app.include_router(chat_router)
 app.include_router(document_router)
 app.include_router(search_router)

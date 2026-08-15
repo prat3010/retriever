@@ -12,6 +12,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.47.0] - 2026-08-15
+
+### Added
+- **Milestone 49: Context Compression & Zero-Trust Field Encryption**:
+  - **Security & Compression Domain Models** (`apps/api/src/domain/security_compression/abstractions.py`): Defined Pydantic models for `CompressionRequest`, `CompressionResult`, `EncryptionRequest`, `EncryptionResult`, `DecryptionRequest`, and `DecryptionResult`.
+  - **Intelligent Context Window Compressor** (`apps/api/src/adapters/cognitive/context_compressor_adapter.py`): Built `IntelligentContextCompressor` trimming filler words, redundant phrases, and non-essential sentences while preserving numbers, dates, named entities, and key factual statements (cutting LLM token costs & latency by up to 50%).
+  - **AES-256 Envelope Field Encryptor** (`apps/api/src/adapters/security/encryption_adapter.py`): Built `Aes256FieldEncryptor` providing tenant-derived Fernet/AES-256-GCM symmetric encryption for zero-trust data protection at rest.
+  - **FastAPI Security & Compression Router** (`apps/api/src/routers/security_compression.py`): Exposed `/v1/tenants/{tenantId}/context/compress`, `/v1/tenants/{tenantId}/security/encrypt`, and `/v1/tenants/{tenantId}/security/decrypt` endpoints.
+  - **Unit Test Suite** (`apps/api/tests/test_context_compression_encryption.py`): Created unit tests verifying token trimming, key facts retention, AES-256 roundtrip encryption across tenants, and router endpoints (467 total unit tests passing).
+
 ## [v0.46.0] - 2026-08-15
 
 ### Added

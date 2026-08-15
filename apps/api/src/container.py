@@ -20,6 +20,9 @@ from src.adapters.broker.noop_event_publisher import NoOpEventPublisher
 from src.adapters.cache.config_cache import RedisTenantConfigCache
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
+from src.adapters.cognitive.context_compressor_adapter import (
+    IntelligentContextCompressor,
+)
 from src.adapters.cognitive.corrective_retrieval_adapter import (
     LLMCorrectiveRetrievalAdapter,
 )
@@ -63,6 +66,7 @@ from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.adapters.sandbox.python_sandbox_adapter import (
     RestrictedPythonSandboxAdapter,
 )
+from src.adapters.security.encryption_adapter import Aes256FieldEncryptor
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.storage.s3_storage import S3Storage
 from src.adapters.telemetry.setup import get_metrics
@@ -268,6 +272,10 @@ class Container:
             default_llm=llm,
             search_service=self._cache["search_service"],
         )
+
+        # --- Security & Compression ---
+        self._cache["context_compressor"] = IntelligentContextCompressor()
+        self._cache["field_encryptor"] = Aes256FieldEncryptor()
 
     def reset(self) -> None:
         self._cache.clear()

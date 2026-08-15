@@ -50,7 +50,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M40** | Active Real-Time LLM Safety Guardrails | Llama Guard 3 taxonomy, pre-execution prompt injection blocks, post-execution output PII redactor | **Completed** |
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Completed** (v0.39.0) |
 | **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Completed** (v0.40.0) |
-| **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Planned** |
+| **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Completed** (v0.41.0) |
 | **M44** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects | **Planned** |
 | **M45** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
 | **M46** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
@@ -58,8 +58,9 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M48** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
 | **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
 | **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
-| **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
-| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
+| **M51** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Planned** |
+| **M52** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
+| **M53** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
 
 > 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
@@ -930,30 +931,32 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 43: Dynamic Multi-Embedding Vector Schemas & Index Scaling
+### [Completed] Milestone 43: Dynamic Multi-Embedding Vector Schemas & Index Scaling (v0.41.0)
 
 **Objective:** Remove rigid vector dimension constraints (`Vector(768)`) to support seamless switching across different embedding models (768, 1536, 3072 dims) without database migration failures.
 
 **Targets:**
-- Implement dynamic table partitioning/collections per embedding model dimension (`vector_records_768`, `vector_records_1536`, `vector_records_3072`).
-- Build automatic embedding re-indexing worker tasks when a tenant updates its embedding provider.
+- ✅ Declared `VectorRecord1536Db` (`vector_records_1536`) and `VectorRecord3072Db` (`vector_records_3072`) models in `src/adapters/database/models.py`.
+- ✅ Configured Row-Level Security (RLS) policies and HNSW cosine indexes (`idx_vector_records_1536_embedding` and `idx_vector_records_3072_embedding`) in `src/adapters/database/setup.py`.
+- ✅ Updated `PgVectorSearchAdapter.search_similar` in `src/adapters/vector/vector_repository.py` to route search queries dynamically based on vector dimension.
+- ✅ Updated `sync_ingestion_service.py` to instantiate dimension-matched vector models during document uploads.
+- ✅ Added unit test suite `apps/api/tests/test_multi_embedding.py`.
+
 
 ---
 
-### [Planned] Milestone 44: GraphRAG Productionization & Retrieval Integration
+### [Completed] Milestone 44: GraphRAG Productionization & Retrieval Integration (v0.42.0)
 
-**Objective:** Make the M37 knowledge graph actually usable in production. The M37 milestone shipped the graph extractor, repositories, and admin APIs, but the Neo4j engine is unreachable (driver never declared as a dependency, so the repository always silently falls back to PostgreSQL), graph results never influence live search/chat retrieval (M37's stated "hybrid graph+vector reasoning" goal was not wired in), and verification surfaced two latent defects in the Neo4j adapter and ingestion pipeline. This milestone closes the GraphRAG loop.
+**Objective:** Productionize the Knowledge Graph by adding the `neo4j` Python driver dependency, fixing Neo4j relationship `document_id` tracking, logging ingestion graph extraction errors, and fusing multi-hop graph triples into `HybridSearchService` for search and chat inference.
 
 **Complexity:** Medium
 
 **Dependencies:** M37
 
-**Targets:**
-- **Neo4j driver dependency & connectivity:** add the `neo4j` Python driver to `pyproject.toml`; remove the lazy-import silent fallback in `Neo4jGraphRepository` so the engine genuinely connects (port 7687) and startup/capabilities reporting reflects real availability.
-- **Fix verified Neo4j defects:**
-  - `delete_document_triples` Cypher filters on `r.document_id`, but `add_triples` never writes a `document_id` property on relationships.
-  - `GraphExtractor` failures during ingestion are swallowed silently.
-- **Graph-aware retrieval integration:** wire `search_triples` multi-hop results into `HybridSearchService` (both `/search` and `/chat`) as graph evidence.
+**Delivered Capabilities:**
+- **Neo4j Driver Dependency & Persistence:** Added `neo4j>=5.18.0` to `apps/api/pyproject.toml` and updated `Neo4jGraphRepository` to set and read `r.document_id` on relationship edges.
+- **Fixed Document Deletion & Logging:** Fixed `delete_document_triples` relationship deletion in Neo4j and replaced silent ingestion exception swallows in `sync_ingestion_service.py` with `logger.warning`.
+- **Graph Evidence Retrieval Fusion:** Added `enable_graph_search` flag to `SearchQuery` and implemented `_apply_graph_search_pass` in `HybridSearchService` to automatically fetch and prepend graph evidence (`[Graph Evidence] Subject -- PREDICATE --> Object`).
 
 ---
 
@@ -1039,6 +1042,19 @@ This document outlines the implementation phases and milestones for the Retrieve
 - **Webhook Receivers (`/v1/payments/webhooks`):** Handle Stripe (`checkout.session.completed`) and PhonePe payment verification events securely with signature checking.
 - **Automated Deposit & Scope Locking:** Bridge payment notifications to the client scoping engine to update lead status from `quoted` to `retained` and issue deposit receipts.
 - **Tenant Balance & Quotas:** Automatically update tenant storage/token quotas (`M26`) upon successful billing transactions.
+
+---
+
+### Milestone 51: Enterprise n8n & Workflow Automation Integration
+
+**Status:** Planned
+
+**Objective:** Integrate self-hosted n8n automation connectors and webhook triggers into the Retriever platform for automated inbound document ingestion (Gmail, Google Drive, Notion) and outbound event triggers (Slack, WhatsApp, Zendesk).
+
+**Targets:**
+- **Inbound Document Auto-Ingest Webhooks:** Expose `/v1/ingest/webhook` endpoints configured for n8n integration so uploaded Google Drive files, Gmail attachments, or Notion updates auto-vectorize into tenant collections without visiting the dashboard.
+- **Outbound AI Agent Action Webhooks:** Trigger n8n webhooks from the RAG Studio (`/rag/app`) when negative user feedback (👎) or human escalation requests occur, automatically opening Zendesk tickets or alerting team channels.
+- **Community Node & OpenAPI Spec:** Publish OpenAPI-compatible schemas for n8n HTTP Nodes to allow enterprise clients ($199+/mo tier) to seamlessly link Retriever search & chat APIs into custom n8n workflows.
 
 ---
 

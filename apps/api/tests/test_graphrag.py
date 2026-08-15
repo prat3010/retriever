@@ -150,3 +150,56 @@ def test_admin_graph_capabilities_and_summary(mock_get_cfg):
         assert "active_engine" in body
     finally:
         app.dependency_overrides.clear()
+
+
+# ── 6. Unit Test: HybridSearchService Graph Evidence Pass ────────────────────
+
+@pytest.mark.asyncio
+async def test_hybrid_search_graph_evidence_pass():
+    """Verify HybridSearchService retrieves graph triples and fuses graph evidence."""
+    from src.domain.abstractions.retrieval import SearchQuery, SearchResult
+    from src.domain.retrieval.search_service import HybridSearchService
+
+    mock_vec = AsyncMock()
+    mock_vec.search_similar.return_value = [
+        SearchResult(chunk_id="c1", document_id="d1", content="Text chunk 1", score=0.8)
+    ]
+    mock_kw = AsyncMock()
+    mock_kw.search_keywords.return_value = []
+    mock_emb = AsyncMock()
+    mock_emb.embed_text.return_value = [0.1] * 1536
+    mock_rerank = AsyncMock()
+
+    mock_graph = AsyncMock()
+    mock_graph.search_triples.return_value = MagicMock(
+        triples=[
+            EntityTriple(
+                subject="Alice",
+                predicate="LEADS",
+                object="Team Alpha",
+                chunk_id="c1",
+                document_id="d1",
+            )
+        ]
+    )
+
+    service = HybridSearchService(
+        vector_search=mock_vec,
+        keyword_search=mock_kw,
+        embedder=mock_emb,
+        reranker=mock_rerank,
+        graph_repository=mock_graph,
+    )
+
+    query = SearchQuery(
+        query="Alice leads team",
+        tenant_id=str(uuid.uuid4()),
+        enable_graph_search=True,
+        enable_reranking=False,
+    )
+
+    res = await service.search(query)
+    assert len(res.results) >= 1
+    contents = [r.content for r in res.results]
+    assert any("[Graph Evidence]" in c for c in contents)
+

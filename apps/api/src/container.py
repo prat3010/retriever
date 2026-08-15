@@ -139,6 +139,18 @@ class Container:
         llm = self._cache["llm_provider"]
         embedder = self._cache["embedder"]
 
+        # --- Graph Repository ---
+        pg_graph = PgGraphRepository()
+        if getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
+            self._cache["graph_repository"] = Neo4jGraphRepository(
+                uri=getattr(settings, "NEO4J_URI", "bolt://localhost:7687"),
+                user=getattr(settings, "NEO4J_USER", "neo4j"),
+                password=getattr(settings, "NEO4J_PASSWORD", "password"),
+                fallback_repo=pg_graph,
+            )
+        else:
+            self._cache["graph_repository"] = pg_graph
+
         # --- Search ---
         reranker_instance = (
             CohereRerankerAdapter(api_key=settings.COHERE_API_KEY)
@@ -162,6 +174,7 @@ class Container:
             query_rewriter=LLMQueryRewriterAdapter(llm=llm),
             query_intent_classifier=LLMQueryIntentAdapter(llm=llm),
             web_search_factory=web_search_factory,
+            graph_repository=self._cache["graph_repository"],
         )
 
         # --- Inference ---
@@ -207,18 +220,6 @@ class Container:
             orchestrator=self._cache["inference_orchestrator"],
             corrective_provider=corrective_provider,
         )
-
-        # --- Graph Repository ---
-        pg_graph = PgGraphRepository()
-        if getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
-            self._cache["graph_repository"] = Neo4jGraphRepository(
-                uri=getattr(settings, "NEO4J_URI", "bolt://localhost:7687"),
-                user=getattr(settings, "NEO4J_USER", "neo4j"),
-                password=getattr(settings, "NEO4J_PASSWORD", "password"),
-                fallback_repo=pg_graph,
-            )
-        else:
-            self._cache["graph_repository"] = pg_graph
 
         # --- Event Bus ---
         if _event_publisher_available and settings.RABBITMQ_URL:

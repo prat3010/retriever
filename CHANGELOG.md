@@ -5,10 +5,32 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ## [Unreleased]
 
 ### Added
+- **Milestone 51 Planned Roadmap Addition** (`ROADMAP.md`): Formulated detailed specification for Enterprise n8n & Workflow Automation Integration (inbound auto-ingest webhooks for Gmail/GDrive/Notion, outbound event triggers for Slack/WhatsApp/Zendesk, and n8n community node support).
+- **Oracle Cloud Ampere A1.Flex Auto-Claim Guide & Workflow** (`.github/workflows/oracle-claim-ampere.yml`, `ORACLE_AMPERE_CLAIM_GUIDE.md`): Configured automated background scheduled runner (every 15 minutes) using official OCI CLI to poll for 4 OCPU / 24GB RAM host capacity in Oracle Cloud, accompanied by step-by-step setup guide.
 - **Admin dashboard Knowledge Graph tab** (`apps/web/src/components/tenant-graph.tsx`, `apps/web/src/hooks/use-graph.ts`): GraphRAG management moved from the portfolio site's `/admin/analytics` page into the tenant cockpit (`/tenants/[id]`, 8th tab). Tenant-scoped capabilities banner (machine profile + Neo4j status), engine switch (postgres/neo4j, Neo4j locked on LEAN VMs), summary cards (triples, entities, active engine), multi-hop entity inspector (1–5 hops), and per-triple deletion with confirmation — authenticated via `X-Admin-Master-Key` through the shared `api` client (replaces the dead `X-Admin-API-Key` header and hardcoded key/tenant fallbacks of the removed `GraphControl.tsx`).
 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
+
+## [v0.42.0] - 2026-08-15
+
+### Added
+- **Milestone 44: GraphRAG Productionization & Retrieval Integration**:
+  - **Neo4j Driver & Relationship Persistence** (`apps/api/pyproject.toml`, `apps/api/src/adapters/graph/neo4j_repository.py`): Added `neo4j>=5.18.0` dependency and updated `Neo4jGraphRepository.add_triples` and `search_triples` to store and query `r.document_id` on Neo4j `RELATED` edges.
+  - **EntityTriple Document Tracking** (`apps/api/src/domain/abstractions/graph.py`, `apps/api/src/domain/graph/graph_extraction_service.py`): Added `document_id` field to `EntityTriple` and updated `GraphExtractor.extract_triples` to associate triples with their originating document.
+  - **Document Deletion & Logging Fixes** (`apps/api/src/adapters/ingestion/sync_ingestion_service.py`): Fixed relationship edge deletion in `Neo4jGraphRepository.delete_document_triples` and replaced silent ingestion exception swallows with `logger.warning`.
+  - **Graph Evidence Retrieval Fusion** (`apps/api/src/domain/abstractions/retrieval.py`, `apps/api/src/domain/retrieval/search_service.py`, `apps/api/src/container.py`): Added `enable_graph_search` flag to `SearchQuery`, wired `graph_repository` into `HybridSearchService`, and implemented `_apply_graph_search_pass` to prepend structured graph evidence (`[Graph Evidence] Subject -- PREDICATE --> Object`) to search and chat responses.
+  - **Unit Test Suite** (`apps/api/tests/test_graphrag.py`): Added unit tests for graph evidence fusion pass in `HybridSearchService` (447 total tests passing).
+
+## [v0.41.0] - 2026-08-14
+
+### Added
+- **Milestone 43: Dynamic Multi-Embedding Vector Schemas & Index Scaling**:
+  - **Multi-Dimension Database Models** (`src/adapters/database/models.py`): Declared `VectorRecord1536Db` (`vector_records_1536`) for 1536-dim vectors and `VectorRecord3072Db` (`vector_records_3072`) for 3072-dim vectors alongside the existing 768-dim `VectorRecordDb`.
+  - **RLS & HNSW Indexing Setup** (`src/adapters/database/setup.py`): Configured Row-Level Security policies and created HNSW cosine indexes (`idx_vector_records_1536_embedding` and `idx_vector_records_3072_embedding`).
+  - **Dynamic Dimension Search Router** (`src/adapters/vector/vector_repository.py`): Updated `PgVectorSearchAdapter.search_similar` to inspect `len(embedding)` and dynamically target the matching vector partition table.
+  - **Dynamic Ingestion Service Wiring** (`src/adapters/ingestion/sync_ingestion_service.py`): Connected `ingest_file_sync` to instantiate dimension-matched vector models during document uploads.
+  - **Unit Test Suite** (`tests/test_multi_embedding.py`): Added unit tests verifying table partition resolution, multi-dimension queries, and schema attributes (446 total tests passing).
 
 ## [v0.40.0] - 2026-08-14
 

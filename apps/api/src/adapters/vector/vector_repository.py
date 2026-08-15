@@ -1,6 +1,7 @@
 from sqlalchemy import text
 
 from src.adapters.database.connection import tenant_session
+from src.adapters.database.models import get_vector_table_name
 from src.adapters.vector.filter_builder import (
     build_filter_clause,
     rows_to_search_results,
@@ -26,6 +27,7 @@ class PgVectorSearchAdapter(VectorSearchProvider):
         user_role: str | None = None,
     ) -> list[SearchResult]:
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
+        table_name = get_vector_table_name(len(embedding))
 
         filter_clause, filter_params, join_clause = build_filter_clause(
             filters, tags, "dc", collection_id=collection_id, user_id=user_id, user_role=user_role
@@ -42,7 +44,8 @@ class PgVectorSearchAdapter(VectorSearchProvider):
                         dc.content,
                         dc.meta_data,
                         1 - (vr.embedding <=> CAST(:query_vec AS vector)) AS similarity_score
-                    FROM vector_records vr
+                    FROM {table_name} vr
+
                     JOIN document_chunks dc ON vr.chunk_id = dc.chunk_id
                     {join_clause}
                     WHERE vr.tenant_id = :tenant_id

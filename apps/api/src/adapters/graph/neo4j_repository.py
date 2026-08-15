@@ -75,7 +75,7 @@ class Neo4jGraphRepository(BaseGraphRepository):
         MERGE (s:Entity {name: item.subject, tenant_id: $tenant_id})
         MERGE (o:Entity {name: item.object, tenant_id: $tenant_id})
         MERGE (s)-[r:RELATED {predicate: item.predicate, tenant_id: $tenant_id}]->(o)
-        SET r.triple_id = item.triple_id, r.chunk_id = item.chunk_id, r.confidence = item.confidence
+        SET r.triple_id = item.triple_id, r.chunk_id = item.chunk_id, r.document_id = item.document_id, r.confidence = item.confidence
         """
         batch = [
             {
@@ -84,6 +84,7 @@ class Neo4jGraphRepository(BaseGraphRepository):
                 "predicate": t.predicate.strip().upper(),
                 "object": t.object.strip(),
                 "chunk_id": t.chunk_id,
+                "document_id": t.document_id or (t.metadata.get("document_id") if t.metadata else None),
                 "confidence": t.confidence,
             }
             for t in triples
@@ -108,7 +109,7 @@ class Neo4jGraphRepository(BaseGraphRepository):
         cypher = """
         MATCH (s:Entity {tenant_id: $tenant_id})-[r:RELATED {tenant_id: $tenant_id}]-(o:Entity {tenant_id: $tenant_id})
         WHERE toLower(s.name) = toLower($entity) OR toLower(o.name) = toLower($entity)
-        RETURN r.triple_id AS triple_id, s.name AS subject, r.predicate AS predicate, o.name AS object, r.chunk_id AS chunk_id, r.confidence AS confidence
+        RETURN r.triple_id AS triple_id, s.name AS subject, r.predicate AS predicate, o.name AS object, r.chunk_id AS chunk_id, r.document_id AS document_id, r.confidence AS confidence
         LIMIT 50
         """
 
@@ -127,6 +128,7 @@ class Neo4jGraphRepository(BaseGraphRepository):
                         predicate=record["predicate"],
                         object=record["object"],
                         chunk_id=record.get("chunk_id"),
+                        document_id=record.get("document_id"),
                         confidence=float(record.get("confidence") or 1.0),
                     )
                     triples.append(t_obj)

@@ -1,11 +1,20 @@
+import logging
 import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import delete, select
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.database.models import DocumentChunkDb, DocumentDb, VectorRecordDb
+from src.adapters.database.models import (
+    DocumentChunkDb,
+    DocumentDb,
+    VectorRecord1536Db,
+    VectorRecord3072Db,
+    VectorRecordDb,
+)
 from src.domain.abstractions.retrieval import EmbeddingProvider
+
+logger = logging.getLogger(__name__)
 
 
 async def ingest_file_sync(
@@ -106,13 +115,22 @@ async def ingest_file_sync(
 
         for chunk_data, embedding in zip(chunks, embeddings, strict=True):
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
-            db_vector = VectorRecordDb(
+            dim = len(embedding)
+            if dim == 1536:
+                vector_cls = VectorRecord1536Db
+            elif dim == 3072:
+                vector_cls = VectorRecord3072Db
+            else:
+                vector_cls = VectorRecordDb
+
+            db_vector = vector_cls(
                 chunk_id=chunk_id,
                 tenant_id=uuid.UUID(tenant_id),
                 collection_id=collection_id,
                 embedding=embedding,
             )
             session.add(db_vector)
+
         await session.flush()
 
         if doc:
@@ -130,12 +148,17 @@ async def ingest_file_sync(
         for chunk_data in chunks:
             c_id = chunk_data["chunk_id"]
             c_text = chunk_data["content"]
-            t_list = extractor.extract_triples(c_text, chunk_id=c_id)
+            t_list = extractor.extract_triples(
+                c_text, chunk_id=c_id, document_id=document_id
+            )
             all_triples.extend(t_list)
 
         if all_triples and container.graph_repository:
             await container.graph_repository.add_triples(tenant_id, all_triples)
-    except Exception:
-        pass
+    except Exception as err:
+        logger.warning(
+            f"Knowledge Graph triple extraction failed during document ingestion ({err}).",
+            exc_info=True,
+        )
 
     return len(chunks)

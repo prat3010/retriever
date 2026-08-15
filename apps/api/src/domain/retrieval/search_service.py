@@ -9,6 +9,7 @@ import time
 from collections.abc import Callable
 from uuid import uuid4
 
+from src.domain.abstractions.graph import BaseGraphRepository
 from src.domain.abstractions.retrieval import (
     EmbeddingProvider,
     KeywordSearchProvider,
@@ -43,6 +44,7 @@ class HybridSearchService:
         query_rewriter: QueryRewriterProvider | None = None,
         query_intent_classifier: QueryIntentClassifier | None = None,
         web_search_factory: Callable[[str, str], WebSearchProvider | None] | None = None,
+        graph_repository: BaseGraphRepository | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
@@ -55,6 +57,7 @@ class HybridSearchService:
         self.query_rewriter = query_rewriter
         self.query_intent_classifier = query_intent_classifier
         self.web_search_factory = web_search_factory
+        self.graph_repository = graph_repository
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline."""
@@ -138,6 +141,10 @@ class HybridSearchService:
         if query.enable_mmr and fused:
             from src.domain.retrieval.mmr import mmr_diversify
             fused = mmr_diversify(fused)
+
+        # 5c. Optional GraphRAG evidence pass
+        if query.enable_graph_search and self.graph_repository:
+            fused = await self._apply_graph_search_pass(query, fused)
 
         # 6. Trim to requested limit
         final_results = fused[: query.top_k]
@@ -349,3 +356,52 @@ class HybridSearchService:
             return reranked, strategy + "_reranked"
         except Exception:
             return candidates, strategy
+
+    async def _apply_graph_search_pass(
+        self,
+        query: SearchQuery,
+        results: list[SearchResult],
+    ) -> list[SearchResult]:
+        """Perform GraphRAG triple retrieval and fuse graph evidence into results."""
+        if not self.graph_repository or not query.query:
+            return results
+
+        terms = [t.strip() for t in query.query.split() if len(t.strip()) > 2]
+        graph_triples = []
+        for term in terms[:3]:
+            try:
+                g_res = await self.graph_repository.search_triples(
+                    tenant_id=query.tenant_id, entity=term, max_hops=2
+                )
+                if g_res and g_res.triples:
+                    graph_triples.extend(g_res.triples)
+            except Exception:
+                pass
+
+        if not graph_triples:
+            return results
+
+        seen_triples: set[tuple[str, str, str]] = set()
+        graph_results: list[SearchResult] = []
+
+        for t in graph_triples:
+            key = (t.subject.lower(), t.predicate.lower(), t.object.lower())
+            if key not in seen_triples:
+                seen_triples.add(key)
+                graph_results.append(
+                    SearchResult(
+                        chunk_id=f"graph_{uuid4().hex[:12]}",
+                        document_id=t.document_id or "__graph__",
+                        content=f"[Graph Evidence] {t.subject} -- {t.predicate} --> {t.object}",
+                        score=0.95,
+                        metadata={
+                            "type": "graph_evidence",
+                            "subject": t.subject,
+                            "predicate": t.predicate,
+                            "object": t.object,
+                            "confidence": t.confidence,
+                        },
+                    )
+                )
+
+        return graph_results + results

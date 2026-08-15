@@ -1,0 +1,74 @@
+name: Oracle Cloud Ampere A1.Flex Auto-Claim
+
+on:
+  schedule:
+    # Runs every 15 minutes to check Oracle capacity
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  claim-ampere:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OCI CLI
+        run: |
+          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults
+          echo "/home/runner/bin" >> $GITHUB_PATH
+          exec -l $SHELL
+
+      - name: Configure OCI CLI Credentials
+        env:
+          OCI_USER: ${{ secrets.OCI_USER_OCID }}
+          OCI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_KEY_CONTENT: ${{ secrets.OCI_KEY_CONTENT }}
+          OCI_REGION: ${{ secrets.OCI_REGION }}
+        run: |
+          mkdir -p ~/.oci
+          echo "$OCI_KEY_CONTENT" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+
+          cat <<EOF > ~/.oci/config
+          [DEFAULT]
+          user=${OCI_USER}
+          fingerprint=${OCI_FINGERPRINT}
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=${OCI_TENANCY}
+          region=${OCI_REGION:-us-ashburn-1}
+          EOF
+
+      - name: Attempt Ampere A1.Flex Instance Launch
+        env:
+          COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          SUBNET_ID: ${{ secrets.OCI_SUBNET_OCID }}
+          AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
+          IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: |
+          echo "🔍 Attempting to launch Oracle Ampere A1.Flex (4 OCPU, 24GB RAM)..."
+          
+          # Execute OCI launch command
+          OUTPUT=$(oci compute instance launch \
+            --compartment-id "$COMPARTMENT_ID" \
+            --availability-domain "$AVAILABILITY_DOMAIN" \
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+            --display-name "retriever-ampere-24gb" \
+            --image-id "$IMAGE_ID" \
+            --subnet-id "$SUBNET_ID" \
+            --assign-public-ip true \
+            --ssh-authorized-keys-file <(echo "$SSH_PUBLIC_KEY") \
+            2>&1) || true
+
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Out of host capacity"; then
+            echo "⚠️ Capacity currently full. Will retry automatically on next scheduled run."
+          elif echo "$OUTPUT" | grep -q '"lifecycle-state": "PROVISIONING"'; then
+            echo "🎉 SUCCESS! Oracle Ampere 24GB Instance has been claimed and is provisioning!"
+          else
+            echo "ℹ️ Result logged."
+          fi

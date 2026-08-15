@@ -222,6 +222,54 @@ class VectorRecordDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 
+class VectorRecord1536Db(Base):
+    __tablename__ = "vector_records_1536"
+
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    embedding = Column(Vector(1536), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class VectorRecord3072Db(Base):
+    __tablename__ = "vector_records_3072"
+
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    embedding = Column(Vector(3072), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+def get_vector_table_name(dimension: int) -> str:
+    """Return matching vector partition table name based on embedding dimension."""
+    if dimension == 1536:
+        return "vector_records_1536"
+    if dimension == 3072:
+        return "vector_records_3072"
+    return "vector_records"
+
+
+
 class PromptTemplateDb(Base):
     __tablename__ = "prompt_templates"
 

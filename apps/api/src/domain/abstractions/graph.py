@@ -14,6 +14,7 @@ class EntityTriple(BaseModel):
     predicate: str = Field(..., description="Relationship or predicate type")
     object: str = Field(..., description="Target entity or object term")
     chunk_id: str | None = Field(default=None, description="Source document chunk ID")
+    document_id: str | None = Field(default=None, description="Source document ID")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

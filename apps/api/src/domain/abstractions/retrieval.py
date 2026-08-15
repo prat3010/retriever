@@ -31,6 +31,7 @@ class SearchQuery(BaseModel):
     enable_mmr: bool = False
     enable_query_rewriting: bool = False
     enable_query_intent: bool = False
+    enable_graph_search: bool = False
     rrf_k: int = 60
     reranking_threshold: float = 0.7
     rerank_candidate_multiplier: int = 5

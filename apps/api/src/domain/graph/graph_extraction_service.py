@@ -21,7 +21,10 @@ class GraphExtractor:
     """Extracts entity relationship triples from text chunks during document ingestion."""
 
     def extract_triples(
-        self, text: str, chunk_id: str | None = None
+        self,
+        text: str,
+        chunk_id: str | None = None,
+        document_id: str | None = None,
     ) -> list[EntityTriple]:
         """Parse text and extract subject-predicate-object relationship triples."""
         if not text or not text.strip():
@@ -59,6 +62,7 @@ class GraphExtractor:
                                     predicate=pred,
                                     object=obj,
                                     chunk_id=chunk_id,
+                                    document_id=document_id,
                                     confidence=0.9,
                                 )
                             )

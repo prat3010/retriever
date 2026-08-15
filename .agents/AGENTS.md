@@ -1,6 +1,7 @@
 # Workspace Coding Rules & Constraints
 
 ## Architectural Constraints (Hexagonal & Multi-Tenancy)
+- **Enforced Codebase Patterns:** Always follow the learned architectural conventions documented in `.agents/rules/patterns.md`.
 - **Hexagonal Boundary Rule:** Code under `src/domain/` MUST ONLY import abstract interfaces from `src/domain/abstractions/` or standard Python libraries. **NEVER** import infrastructure adapters (`src/adapters/`), API routers (`src/routers/`), database frameworks (`sqlalchemy`), or external API SDKs directly in domain files.
 - **Multi-Tenancy Isolation Rule:** Every database entity, query method, and backend API MUST strictly scope operations by `tenant_id`. Frontend components MUST NOT hardcode fallback tenant UUIDs or silently default unauthenticated requests to guest UUIDs.
 

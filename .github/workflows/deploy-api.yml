@@ -26,7 +26,8 @@ jobs:
           script: |
             set -e
             cd /opt/retriever
-            git fetch origin
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git fetch origin main
             git reset --hard origin/main
             . .venv/bin/activate
             pip install -r requirements.txt 2>&1

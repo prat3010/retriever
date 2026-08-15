@@ -59,6 +59,10 @@ async def ingest_file_sync(
     if not text:
         text = file_content.decode("utf-8", errors="ignore")
 
+    from src.domain.compliance.pii_anonymizer import PiiAnonymizer
+    anonymizer = PiiAnonymizer()
+    text = anonymizer.anonymize_text(text)
+
     chunks = chunk_text(
         text=text,
         chunk_size=chunk_size,

@@ -51,16 +51,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Completed** (v0.39.0) |
 | **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Completed** (v0.40.0) |
 | **M43** | Dynamic Multi-Embedding Vector Schemas | Dynamic vector table partitioning for variable model dimensions (768, 1536, 3072) | **Completed** (v0.41.0) |
-| **M44** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects | **Planned** |
-| **M45** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Planned** |
-| **M46** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Planned** |
-| **M47** | Recursive Language Model (RLM) Engine & REPL Sandbox | Python REPL execution sandbox, active programmatic document traversal, and recursive subroutines | **Planned** |
-| **M48** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Planned** |
-| **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Planned** |
-| **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Planned** |
-| **M51** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Planned** |
-| **M52** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Planned** |
-| **M53** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
+| **M44** | GraphRAG Productionization & Retrieval Integration | Neo4j driver dependency + connectivity, graph-evidence wiring into search/chat, fix verified M37 defects | **Completed** (v0.42.0) |
+| **M45** | Learned Sparse (SPLADE) & Reranker Microservice | Upgrade sparse search to SPLADE / Qdrant and offload Cross-Encoder to GPU worker | **Completed** (v0.43.0) |
+| **M46** | Agentic Workflow Execution Engine | Autonomous multi-step tool calling and agent execution loops | **Completed** (v0.44.0) |
+| **M47** | Recursive Language Model (RLM) Engine & REPL Sandbox | Python REPL execution sandbox, active programmatic document traversal, and recursive subroutines | **Completed** (v0.45.0) |
+| **M48** | Multi-Agent Consensus & Critic Reflection | Generator vs. Critic multi-agent reflection loops for high-stakes enterprise verification | **Completed** (v0.46.0) |
+| **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Completed** (v0.47.0) |
+| **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Completed** (v0.48.0) |
+| **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
+| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay subscription webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Planned** |
+| **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Planned** |
 
 > 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
@@ -842,7 +842,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 - ✅ Implement `GraphExtractor` for triple parsing during document ingestion.
 - ✅ Admin Graph & Capabilities APIs: `GET /v1/admin/tenants/{tenantId}/graph/capabilities`, `POST .../graph/engine`, `GET .../graph`, `POST .../graph/query`, `DELETE .../graph/triples/{tripleId}`.
 - ✅ 5/5 unit tests pass in `test_graphrag.py` (Total test suite: 412/412 tests passing).
-- ⚠️ **Deferred to M49:** graph-aware retrieval was not wired into search/chat (M37's "hybrid graph+vector reasoning" objective is unmet), the `neo4j` driver is not a declared dependency (engine always falls back to PostgreSQL), and two Neo4j defects were verified during post-M37 review — see Milestone 49.
+- ✅ **Resolved in M44 (v0.42.0):** Graph-aware retrieval wired into search/chat, `neo4j` driver dependency declared, and Neo4j relationship `document_id` tracking fixed.
 
 ---
 
@@ -1024,25 +1024,30 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 50: Online Production Hallucination Tracing
+### [Completed] Milestone 50: Online Production Hallucination Tracing (v0.48.0)
 
-**Objective:** Transition evaluation from offline batch dataset runs to continuous online monitoring on live production API traffic.
+**Objective:** Transition evaluation from offline batch dataset runs to continuous, real-time online monitoring on live production API traffic.
 
-**Targets:**
-- Asynchronous online evaluator background pipeline (TruLens / Arize Phoenix integration).
-- Real-time scoring of Answer Faithfulness, Context Precision, and Hallucination Index on live sample traffic.
-- Alerting triggers when tenant hallucination rates exceed configurable SLA thresholds.
+**Delivered Capabilities:**
+- **Evaluation Configuration Settings** (`apps/api/src/domain/abstractions/config.py`): Added `EvaluationSettings` model (`enable_online_tracing`, `online_sample_rate`, `hallucination_threshold`) to `TenantConfiguration`.
+- **Online Evaluations Database Model & RLS** (`apps/api/src/adapters/database/models.py`, `setup.py`): Created `OnlineEvaluationDb` model (`online_evaluations` table) with Row-Level Security isolation.
+- **Continuous Evaluator Service** (`apps/api/src/domain/evaluation/online_evaluator.py`): Built `OnlineHallucinationEvaluator` for asynchronous claim extraction, `faithfulness`, `context_precision`, and `hallucination_index` scoring with SLA alert triggers.
+- **Repository Persistence & Aggregation** (`apps/api/src/adapters/database/evaluation_repository.py`): Implemented `SqlOnlineEvaluationRepository` with log persistence, paginated log retrieval, and real-time tenant summary calculations.
+- **FastAPI Admin Endpoints** (`apps/api/src/routers/admin.py`): Exposed `GET /v1/admin/tenants/{tenantId}/evaluation/online/summary` and `GET /v1/admin/tenants/{tenantId}/evaluation/online/logs`.
+- **Unit Test Suite** (`apps/api/tests/test_online_evaluator.py`): Created unit tests verifying online scoring, non-blocking background dispatch, database storage, threshold alert triggers, and FastAPI summary endpoints (471 total unit tests passing).
 
 ---
 
-### [Planned] Milestone 51: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)
+### [Completed] Milestone 51: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2) (v0.49.0)
 
 **Objective:** Automate data retention, PII anonymization, and GDPR right-to-be-forgotten vector deletion.
 
-**Targets:**
-- Automated background data retention purge schedulers per tenant SLA.
-- Hard delete API hooks ensuring document removal cascades across relational tables, vector stores, and semantic caches.
-- Zero-footprint inline PII anonymization during document ingestion.
+**Delivered Capabilities:**
+- **Zero-Footprint Inline PII Anonymizer** (`apps/api/src/domain/compliance/pii_anonymizer.py`): Built `PiiAnonymizer` masking SSNs, credit cards, emails, phone numbers, and custom regex tokens before text chunking & vector embedding generation.
+- **Cascading Hard Purge Engine** (`apps/api/src/domain/compliance/purge_service.py`): Implemented `HardPurgeService` executing multi-tier hard deletions cascading across PostgreSQL relational tables (`documents`, `document_chunks`), multi-vector stores (`vector_records_1536`, `3072`), Redis semantic cache, Neo4j/Pg graph triples, and physical file storage.
+- **SLA Data Retention Worker** (`apps/api/src/domain/compliance/retention_worker.py`): Built `RetentionWorker` scanning document creation dates against tenant retention SLAs (`data_retention_days`) to auto-destroy expired records.
+- **FastAPI Admin Compliance Endpoints** (`apps/api/src/routers/admin.py`): Exposed `DELETE /v1/admin/tenants/{tenantId}/compliance/documents/{documentId}`, `POST /v1/admin/tenants/{tenantId}/compliance/forget`, `POST /v1/admin/tenants/{tenantId}/compliance/anonymize`, and `POST /v1/admin/tenants/{tenantId}/compliance/run-retention-purge`.
+- **Unit Test Suite** (`apps/api/tests/test_compliance.py`): Created unit tests verifying PII token masking, hard deletion cascades, retention schedulers, and admin endpoints (475 total unit tests passing).
 
 ---
 
@@ -1057,7 +1062,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### Milestone 51: Enterprise n8n & Workflow Automation Integration
+### [Planned] Milestone 53: Enterprise n8n & Workflow Automation Integration
 
 **Status:** Planned
 

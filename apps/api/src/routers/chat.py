@@ -5,7 +5,15 @@ import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Security,
+    status,
+)
 from fastapi.responses import StreamingResponse
 
 from src.adapters.api.security import (
@@ -21,6 +29,7 @@ from src.container import (
     feedback_repo,
     inference_orchestrator,
     llm_safety_guard,
+    online_evaluator,
     quota_service,
     search_service,
     session_repo,
@@ -74,6 +83,7 @@ async def send_chat_message(
     tenantId: str,
     sessionId: str,
     payload: ChatMessageRequest,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     user_id: str | None = Depends(get_current_user_id),
     user_context: UserContext = Depends(get_current_user),
     x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
@@ -156,6 +166,15 @@ async def send_chat_message(
             )
         formatted_content = _format_citations(response.content, search_response.results, citation_template)
         formatted_content = await _apply_output_guardrails(formatted_content, tenant_config)
+        background_tasks.add_task(
+            online_evaluator.evaluate_inference,
+            tenant_id=tenantId,
+            query=payload.query,
+            answer=response.content,
+            contexts=[r.content for r in search_response.results if r.content],
+            config=tenant_config,
+            session_id=sessionId,
+        )
         return {
             "content": formatted_content,
             "usage": response.usage.model_dump(),

@@ -21,6 +21,7 @@ async def _enable_rls_on_tables(conn) -> None:
         "inference_logs", "users", "semantic_cache",
         "chat_message_feedback",
         "eval_datasets", "eval_runs", "graph_triples",
+        "online_evaluations",
     ]
     for table in tables:
         await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))

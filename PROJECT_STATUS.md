@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Context Compression & Zero-Trust Field Encryption (M49 — Complete, v0.47.0)
-   - **Last Completed Milestone**: Context Compression & Zero-Trust Field Encryption (M49)
-   - **Build Status**: Passing (467 unit tests pass)
+   - **Current Milestone**: Compliance & Data Sovereignty Lifecycle (M51 — Complete, v0.49.0)
+   - **Last Completed Milestone**: Compliance & Data Sovereignty Lifecycle (M51)
+   - **Build Status**: Passing (475 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 50 / Online Production Hallucination Tracing
+   - **Next Recommended Milestone**: Milestone 52 / Commercial SaaS Quota Sync & Webhook Provisioning
 
 
 

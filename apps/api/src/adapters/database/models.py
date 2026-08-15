@@ -550,3 +550,25 @@ class GraphTripleDb(Base):
     confidence = Column(Float, nullable=False, default=1.0)
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class OnlineEvaluationDb(Base):
+    __tablename__ = "online_evaluations"
+
+    eval_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_id = Column(String(255), nullable=True)
+    message_id = Column(String(255), nullable=True)
+    query = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    faithfulness = Column(Float, nullable=False, default=1.0)
+    context_precision = Column(Float, nullable=False, default=1.0)
+    hallucination_index = Column(Float, nullable=False, default=0.0)
+    is_alert = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+

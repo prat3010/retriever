@@ -8,7 +8,7 @@
 
 ## 1. Executive Overview & Strategic Purpose
 
-The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicated Next.js 14 web application engineered to serve as the **Single Operational Helm** for managing the global multi-tenant infrastructure, configuration, and security bounds of the Retriever platform.
+The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicated Next.js 16 web application engineered to serve as the **Single Operational Helm** for managing the global multi-tenant infrastructure, configuration, and security bounds of the Retriever platform.
 
 ### Strategic Boundaries
 * **Decoupled Control Panel:** The Admin Dashboard is restricted to platform administrators. End-user clients and RAG subscribers never access this dashboard; they interact exclusively through the **Client SaaS Studio** (`prateeq.in/rag/app`) and **Client Workspace** (`prateeq.in/dashboard`).
@@ -107,7 +107,7 @@ timeline
 ```
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)
-- ✅ Next.js 14 scaffold with shadcn/ui, Tailwind v4, TanStack Query, and Zustand.
+- ✅ Next.js 16 scaffold with shadcn/ui, Tailwind v4, TanStack Query, and Zustand.
 - ✅ Full implementation of all 7 routes and 8 tenant cockpit tabs.
 - ✅ Dual Target Engine embedding integration (Laptop local Ollama vs Cloud VPS).
 - ✅ Knowledge Graph (GraphRAG) tab with Neo4j/Postgres engine toggles.

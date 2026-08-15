@@ -9,6 +9,7 @@ from src.adapters.database.models import (
     EvalQuestionDb,
     EvalRunDb,
     EvalRunResultDb,
+    OnlineEvaluationDb,
 )
 from src.domain.abstractions.evaluation import (
     AggregateScores,
@@ -235,3 +236,107 @@ class SqlEvalRunRepository(EvalRunRepository):
                 text("UPDATE eval_runs SET completed_count = completed_count + 1 WHERE run_id = :run_id"),
                 {"run_id": run_id},
             )
+
+
+class SqlOnlineEvaluationRepository:
+    async def save_evaluation(self, eval_data: dict) -> dict:
+        async with tenant_session(tenant_id=eval_data["tenant_id"]) as session:
+            db = OnlineEvaluationDb(
+                eval_id=uuid4(),
+                tenant_id=UUID(eval_data["tenant_id"]),
+                session_id=eval_data.get("session_id"),
+                message_id=eval_data.get("message_id"),
+                query=eval_data["query"],
+                answer=eval_data["answer"],
+                faithfulness=float(eval_data.get("faithfulness", 1.0)),
+                context_precision=float(eval_data.get("context_precision", 1.0)),
+                hallucination_index=float(eval_data.get("hallucination_index", 0.0)),
+                is_alert=bool(eval_data.get("is_alert", False)),
+            )
+            session.add(db)
+            await session.commit()
+            return {
+                "eval_id": str(db.eval_id),
+                "tenant_id": str(db.tenant_id),
+                "session_id": db.session_id,
+                "message_id": db.message_id,
+                "query": db.query,
+                "answer": db.answer,
+                "faithfulness": db.faithfulness,
+                "context_precision": db.context_precision,
+                "hallucination_index": db.hallucination_index,
+                "is_alert": db.is_alert,
+                "created_at": str(db.created_at),
+            }
+
+    async def get_online_summary(self, tenant_id: str) -> dict:
+        async with tenant_session(tenant_id=tenant_id) as session:
+            res = await session.execute(
+                text("""
+                    SELECT
+                        COUNT(*) AS total_evaluations,
+                        COALESCE(AVG(faithfulness), 1.0) AS avg_faithfulness,
+                        COALESCE(AVG(context_precision), 1.0) AS avg_context_precision,
+                        COALESCE(AVG(hallucination_index), 0.0) AS avg_hallucination_index,
+                        COUNT(CASE WHEN is_alert THEN 1 END) AS total_alerts
+                    FROM online_evaluations
+                    WHERE tenant_id = :tenant_id
+                """),
+                {"tenant_id": UUID(tenant_id)},
+            )
+            row = res.fetchone()
+            if not row or row.total_evaluations == 0:
+                return {
+                    "tenant_id": tenant_id,
+                    "total_evaluations": 0,
+                    "avg_faithfulness": 1.0,
+                    "avg_context_precision": 1.0,
+                    "avg_hallucination_index": 0.0,
+                    "total_alerts": 0,
+                }
+            return {
+                "tenant_id": tenant_id,
+                "total_evaluations": int(row.total_evaluations),
+                "avg_faithfulness": round(float(row.avg_faithfulness), 4),
+                "avg_context_precision": round(float(row.avg_context_precision), 4),
+                "avg_hallucination_index": round(float(row.avg_hallucination_index), 4),
+                "total_alerts": int(row.total_alerts),
+            }
+
+    async def list_online_logs(
+        self, tenant_id: str, limit: int = 20, offset: int = 0
+    ) -> tuple[list[dict], int]:
+        async with tenant_session(tenant_id=tenant_id) as session:
+            count_res = await session.execute(
+                text("SELECT COUNT(*) FROM online_evaluations WHERE tenant_id = :tenant_id"),
+                {"tenant_id": UUID(tenant_id)},
+            )
+            total = count_res.scalar() or 0
+
+            rows_res = await session.execute(
+                text("""
+                    SELECT * FROM online_evaluations
+                    WHERE tenant_id = :tenant_id
+                    ORDER BY created_at DESC
+                    LIMIT :limit OFFSET :offset
+                """),
+                {"tenant_id": UUID(tenant_id), "limit": limit, "offset": offset},
+            )
+            logs = [
+                {
+                    "eval_id": str(r.eval_id),
+                    "tenant_id": str(r.tenant_id),
+                    "session_id": r.session_id,
+                    "message_id": r.message_id,
+                    "query": r.query,
+                    "answer": r.answer,
+                    "faithfulness": float(r.faithfulness),
+                    "context_precision": float(r.context_precision),
+                    "hallucination_index": float(r.hallucination_index),
+                    "is_alert": bool(r.is_alert),
+                    "created_at": str(r.created_at),
+                }
+                for r in rows_res.fetchall()
+            ]
+            return logs, total
+

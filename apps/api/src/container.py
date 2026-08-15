@@ -44,6 +44,7 @@ from src.adapters.database.document_repository import SqlDocumentRepository
 from src.adapters.database.evaluation_repository import (
     SqlEvalDatasetRepository,
     SqlEvalRunRepository,
+    SqlOnlineEvaluationRepository,
 )
 from src.adapters.database.feedback_repository import SqlFeedbackRepository
 from src.adapters.database.graph_repository import PgGraphRepository
@@ -224,8 +225,14 @@ class Container:
         # --- Evaluation ---
         eval_dataset_repo = SqlEvalDatasetRepository()
         eval_run_repo = SqlEvalRunRepository()
+        online_eval_repo = SqlOnlineEvaluationRepository()
+        from src.domain.evaluation.online_evaluator import OnlineHallucinationEvaluator
+
         self._cache["eval_dataset_repo"] = eval_dataset_repo
         self._cache["eval_run_repo"] = eval_run_repo
+        self._cache["online_eval_repo"] = online_eval_repo
+        self._cache["online_evaluator"] = OnlineHallucinationEvaluator(repository=online_eval_repo)
+
         self._cache["eval_service"] = EvalRunService(
             eval_dataset_repo=eval_dataset_repo,
             eval_run_repo=eval_run_repo,
@@ -277,6 +284,27 @@ class Container:
         self._cache["context_compressor"] = IntelligentContextCompressor()
         self._cache["field_encryptor"] = Aes256FieldEncryptor()
 
+        from src.adapters.database.compliance_repository import SqlComplianceRepository
+        from src.domain.compliance.pii_anonymizer import PiiAnonymizer
+        from src.domain.compliance.purge_service import HardPurgeService
+        from src.domain.compliance.retention_worker import RetentionWorker
+
+        compliance_repo = SqlComplianceRepository()
+        pii_anonymizer = PiiAnonymizer()
+        hard_purge_service = HardPurgeService(
+            compliance_repo=compliance_repo,
+            graph_repository=self._cache["graph_repository"],
+            storage_provider=self._cache["local_storage"],
+        )
+        retention_worker = RetentionWorker(
+            purge_service=hard_purge_service,
+            compliance_repo=compliance_repo,
+        )
+
+        self._cache["pii_anonymizer"] = pii_anonymizer
+        self._cache["hard_purge_service"] = hard_purge_service
+        self._cache["retention_worker"] = retention_worker
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -327,9 +355,11 @@ event_publisher = container.event_publisher
 llm_safety_guard = container.llm_safety_guard
 graph_repository = container.graph_repository
 
-event_publisher = container.event_publisher
-
+online_eval_repo = container.online_eval_repo
+online_evaluator = container.online_evaluator
 quota_service = container.quota_service
-graph_repository = container.graph_repository
+pii_anonymizer = container.pii_anonymizer
+hard_purge_service = container.hard_purge_service
+retention_worker = container.retention_worker
 
-event_publisher = container.event_publisher
+

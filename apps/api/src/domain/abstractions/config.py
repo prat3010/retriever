@@ -114,6 +114,7 @@ class SecuritySettings(BaseModel):
     enable_rls: bool = True
     api_key_expiration_days: int = 90
     data_retention_ttl_days: int | None = None
+    enable_pii_anonymization: bool = False
 
 
 class RateLimits(BaseModel):
@@ -160,6 +161,12 @@ class GraphSettings(BaseModel):
     neo4j_password: str = "password"
 
 
+class EvaluationSettings(BaseModel):
+    enable_online_tracing: bool = True
+    online_sample_rate: float = 0.2
+    hallucination_threshold: float = 0.2
+
+
 class TenantConfiguration(BaseModel):
     tenant_id: str | None = None
     feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
@@ -172,6 +179,7 @@ class TenantConfiguration(BaseModel):
     corrective_retrieval_settings: CorrectiveRetrievalSettings = Field(default_factory=CorrectiveRetrievalSettings)
     query_intent_settings: QueryIntentSettings = Field(default_factory=QueryIntentSettings)
     graph_settings: GraphSettings = Field(default_factory=GraphSettings)
+    evaluation_settings: EvaluationSettings = Field(default_factory=EvaluationSettings)
     budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)

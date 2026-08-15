@@ -32,10 +32,14 @@ from src.container import (
     eval_run_repo,
     eval_service,
     feedback_repo,
+    hard_purge_service,
     identity_provider,
     inference_orchestrator,
     ingest_file_sync,
     local_storage,
+    online_eval_repo,
+    pii_anonymizer,
+    retention_worker,
     search_service,
     template_registry,
     tenant_registry,
@@ -873,6 +877,84 @@ async def get_eval_run(tenantId: str, runId: str) -> Any:
 async def get_eval_run_results(tenantId: str, runId: str) -> Any:
     results = await eval_run_repo.list_results(runId)
     return [r.model_dump() for r in results]
+
+
+@router.get(
+    "/tenants/{tenantId}/evaluation/online/summary",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_online_evaluation_summary(tenantId: str) -> Any:
+    return await online_eval_repo.get_online_summary(tenantId)
+
+
+@router.get(
+    "/tenants/{tenantId}/evaluation/online/logs",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_online_evaluation_logs(
+    tenantId: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> Any:
+    logs, total = await online_eval_repo.list_online_logs(tenantId, limit=limit, offset=offset)
+    return {"items": logs, "total": total, "limit": limit, "offset": offset}
+
+
+class AnonymizeRequest(BaseModel):
+    text: str
+    types: list[str] | None = None
+    custom_patterns: list[str] | None = None
+
+
+@router.delete(
+    "/tenants/{tenantId}/compliance/documents/{documentId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_hard_purge_document(tenantId: str, documentId: str) -> Any:
+    stats = await hard_purge_service.hard_purge_document(tenantId, documentId)
+    return {"status": "purged", "documentId": documentId, "stats": stats}
+
+
+@router.post(
+    "/tenants/{tenantId}/compliance/forget",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_forget_tenant(tenantId: str) -> Any:
+    stats = await hard_purge_service.hard_purge_tenant_data(tenantId)
+    return {"status": "tenant_purged", "tenantId": tenantId, "stats": stats}
+
+
+@router.post(
+    "/tenants/{tenantId}/compliance/anonymize",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_anonymize_text(tenantId: str, payload: AnonymizeRequest) -> Any:
+    redacted = pii_anonymizer.anonymize_text(
+        payload.text,
+        enabled_types=payload.types,
+        custom_patterns=payload.custom_patterns,
+    )
+    return {"redacted_text": redacted}
+
+
+@router.post(
+    "/tenants/{tenantId}/compliance/run-retention-purge",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_run_retention_purge(
+    tenantId: str,
+    retention_days: int = Query(default=90, ge=1),
+) -> Any:
+    res = await retention_worker.scan_and_purge_expired_documents(tenantId, retention_days)
+    return {"status": "completed", "tenantId": tenantId, "result": res}
+
+
 
 
 @router.get("/storage/internal/{path:path}")

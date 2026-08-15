@@ -1,6 +1,6 @@
 # Retriever Admin Dashboard Guide
 
-The **Admin Dashboard** (`apps/web`) is a Next.js 14 application built to manage the global multi-tenant infrastructure, configuration, and security settings of the Retriever platform. It acts as the "root control panel" and is restricted to the platform owner.
+The **Admin Dashboard** (`apps/web`) is a Next.js 16 application built to manage the global multi-tenant infrastructure, configuration, and security settings of the Retriever platform. It acts as the "root control panel" and is restricted to the platform owner.
 
 ---
 

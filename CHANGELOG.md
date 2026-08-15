@@ -12,6 +12,27 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.49.0] - 2026-08-15
+
+### Added
+- **Milestone 51: Compliance & Data Sovereignty Lifecycle (GDPR/SOC2)**:
+  - **Zero-Footprint Inline PII Anonymizer** (`apps/api/src/domain/compliance/pii_anonymizer.py`): Built `PiiAnonymizer` masking SSNs, credit cards, emails, phone numbers, and custom regex tokens before text chunking & vector embedding generation.
+  - **Cascading Hard Purge Engine** (`apps/api/src/domain/compliance/purge_service.py`): Implemented `HardPurgeService` executing multi-tier hard deletions cascading across PostgreSQL relational tables (`documents`, `document_chunks`), multi-vector stores (`vector_records_1536`, `3072`), Redis semantic cache, Neo4j/Pg graph triples, and physical file storage.
+  - **SLA Data Retention Worker** (`apps/api/src/domain/compliance/retention_worker.py`): Built `RetentionWorker` scanning document creation dates against tenant retention SLAs (`data_retention_days`) to auto-destroy expired records.
+  - **FastAPI Admin Compliance Endpoints** (`apps/api/src/routers/admin.py`): Exposed `DELETE /v1/admin/tenants/{tenantId}/compliance/documents/{documentId}`, `POST /v1/admin/tenants/{tenantId}/compliance/forget`, `POST /v1/admin/tenants/{tenantId}/compliance/anonymize`, and `POST /v1/admin/tenants/{tenantId}/compliance/run-retention-purge`.
+  - **Unit Test Suite** (`apps/api/tests/test_compliance.py`): Created unit tests verifying PII token masking, hard deletion cascades, retention schedulers, and admin endpoints (475 total unit tests passing).
+
+## [v0.48.0] - 2026-08-15
+
+### Added
+- **Milestone 50: Online Production Hallucination Tracing**:
+  - **Evaluation Configuration Settings** (`apps/api/src/domain/abstractions/config.py`): Added `EvaluationSettings` model (`enable_online_tracing`, `online_sample_rate`, `hallucination_threshold`) to `TenantConfiguration`.
+  - **Online Evaluations Database Model & RLS** (`apps/api/src/adapters/database/models.py`, `setup.py`): Created `OnlineEvaluationDb` model (`online_evaluations` table) with Row-Level Security isolation.
+  - **Continuous Evaluator Service** (`apps/api/src/domain/evaluation/online_evaluator.py`): Built `OnlineHallucinationEvaluator` for asynchronous claim extraction, `faithfulness`, `context_precision`, and `hallucination_index` scoring with SLA alert triggers.
+  - **Repository Persistence & Aggregation** (`apps/api/src/adapters/database/evaluation_repository.py`): Implemented `SqlOnlineEvaluationRepository` with log persistence, paginated log retrieval, and real-time tenant summary calculations.
+  - **FastAPI Admin Endpoints** (`apps/api/src/routers/admin.py`): Exposed `GET /v1/admin/tenants/{tenantId}/evaluation/online/summary` and `GET /v1/admin/tenants/{tenantId}/evaluation/online/logs`.
+  - **Unit Test Suite** (`apps/api/tests/test_online_evaluator.py`): Created unit tests verifying online scoring, non-blocking background dispatch, database storage, threshold alert triggers, and FastAPI summary endpoints (471 total unit tests passing).
+
 ## [v0.47.0] - 2026-08-15
 
 ### Added

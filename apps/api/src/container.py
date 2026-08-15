@@ -67,6 +67,8 @@ from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import settings
+from src.domain.agentic.execution_engine import AgenticExecutionEngine
+from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.config.config_service import ConfigurationService
 from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.inference.citation_validator import CitationValidator
@@ -238,6 +240,14 @@ class Container:
             )
         else:
             self._cache["event_publisher"] = NoOpEventPublisher()
+
+        # --- Agentic Engine ---
+        tool_reg = ToolRegistry()
+        self._cache["tool_registry"] = tool_reg
+        self._cache["agentic_engine"] = AgenticExecutionEngine(
+            llm_provider=llm,
+            tool_registry=tool_reg,
+        )
 
     def reset(self) -> None:
         self._cache.clear()

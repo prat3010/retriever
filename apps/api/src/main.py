@@ -146,6 +146,7 @@ async def handle_quota_error(request, exc: QuotaExceededError):
 # --- Router Includes ---
 
 from src.routers.admin import router as admin_router
+from src.routers.agentic import router as agentic_router
 from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
 from src.routers.document import router as document_router
@@ -158,6 +159,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(pricing_router)
 app.include_router(admin_router)
+app.include_router(agentic_router)
 app.include_router(chat_router)
 app.include_router(document_router)
 app.include_router(search_router)

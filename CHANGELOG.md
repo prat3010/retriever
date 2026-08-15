@@ -12,6 +12,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.44.0] - 2026-08-15
+
+### Added
+- **Milestone 46: Agentic Workflow Execution Engine**:
+  - **Agent Domain Models** (`apps/api/src/domain/agentic/abstractions.py`): Defined Pydantic models for `ToolDefinition`, `ToolCall`, `ToolResult`, `AgentStep`, `AgentExecutionRequest`, and `AgentExecutionResult`.
+  - **Tool Registry** (`apps/api/src/domain/agentic/tool_registry.py`): Built central registry to register, unregister, whitelist, and execute sync/async tool handlers (including built-in safe `calculator` tool).
+  - **Agentic Execution Engine** (`apps/api/src/domain/agentic/execution_engine.py`): Implemented `AgenticExecutionEngine` for multi-turn ReAct reasoning loops, thought extraction, tool call parsing, and final response synthesis.
+  - **FastAPI Agentic Router** (`apps/api/src/routers/agentic.py`): Exposed `POST /v1/tenants/{tenantId}/agentic/execute` and `GET /v1/tenants/{tenantId}/agentic/tools` endpoints.
+  - **Unit Test Suite** (`apps/api/tests/test_agentic_engine.py`): Created unit tests verifying tool registry, calculator execution, ReAct loop reasoning, and router endpoints (456 total unit tests passing).
+
 ## [v0.43.0] - 2026-08-15
 
 ### Added

@@ -12,6 +12,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.51.0] - 2026-08-15
+
+### Added
+- **Milestone 53: Enterprise n8n & Workflow Automation Integration**:
+  - **Outbound Webhook Dispatcher** (`apps/api/src/domain/workflow/n8n_dispatcher.py`): Built `N8nWebhookDispatcher` domain service dispatching event triggers (chat feedback, escalations) to external n8n HTTP webhooks.
+  - **Inbound Auto-Ingest Webhook Endpoint** (`apps/api/src/routers/workflow.py`): Exposed `POST /v1/tenants/{tenantId}/ingest/webhook` accepting text/markdown or base64 PDF/Docx payloads from n8n workflows with inline PII anonymization.
+  - **Outbound Webhook Configuration API**: Exposed `POST /v1/admin/tenants/{tenantId}/workflow/webhooks` to configure active n8n target URLs per tenant.
+  - **n8n OpenAPI Spec Generator API**: Exposed `GET /v1/workflow/n8n-spec` providing OpenAPI 3.0.3 specifications for 1-click import into n8n HTTP Nodes.
+  - **Unit Test Suite** (`apps/api/tests/test_workflow_n8n.py`): Created unit tests verifying inbound text/file ingestion, PII redaction pass-through, outbound event dispatching, and OpenAPI schema generation (483 total unit tests passing).
+
 ## [v0.50.0] - 2026-08-15
 
 ### Added

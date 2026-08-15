@@ -60,7 +60,7 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Completed** (v0.48.0) |
 | **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
 | **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
-| **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Planned** |
+| **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
 
 > 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
@@ -1065,16 +1065,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 53: Enterprise n8n & Workflow Automation Integration
-
-**Status:** Planned
+### [Completed] Milestone 53: Enterprise n8n & Workflow Automation Integration (v0.51.0)
 
 **Objective:** Integrate self-hosted n8n automation connectors and webhook triggers into the Retriever platform for automated inbound document ingestion (Gmail, Google Drive, Notion) and outbound event triggers (Slack, WhatsApp, Zendesk).
 
-**Targets:**
-- **Inbound Document Auto-Ingest Webhooks:** Expose `/v1/ingest/webhook` endpoints configured for n8n integration so uploaded Google Drive files, Gmail attachments, or Notion updates auto-vectorize into tenant collections without visiting the dashboard.
-- **Outbound AI Agent Action Webhooks:** Trigger n8n webhooks from the RAG Studio (`/rag/app`) when negative user feedback (👎) or human escalation requests occur, automatically opening Zendesk tickets or alerting team channels.
-- **Community Node & OpenAPI Spec:** Publish OpenAPI-compatible schemas for n8n HTTP Nodes to allow enterprise clients ($199+/mo tier) to seamlessly link Retriever search & chat APIs into custom n8n workflows.
+**Delivered Capabilities:**
+- **Outbound Webhook Dispatcher** (`apps/api/src/domain/workflow/n8n_dispatcher.py`): Built `N8nWebhookDispatcher` domain service dispatching event triggers (chat feedback, escalations) to external n8n HTTP webhooks.
+- **Inbound Auto-Ingest Webhook Endpoint** (`apps/api/src/routers/workflow.py`): Exposed `POST /v1/tenants/{tenantId}/ingest/webhook` accepting text/markdown or base64 PDF/Docx payloads from n8n workflows with inline PII anonymization.
+- **Outbound Webhook Configuration API**: Exposed `POST /v1/admin/tenants/{tenantId}/workflow/webhooks` to configure active n8n target URLs per tenant.
+- **n8n OpenAPI Spec Generator API**: Exposed `GET /v1/workflow/n8n-spec` providing OpenAPI 3.0.3 specifications for 1-click import into n8n HTTP Nodes.
+- **Unit Test Suite** (`apps/api/tests/test_workflow_n8n.py`): Created unit tests verifying inbound text/file ingestion, PII redaction pass-through, outbound event dispatching, and OpenAPI schema generation (483 total unit tests passing).
 
 ---
 

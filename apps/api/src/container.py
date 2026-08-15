@@ -317,6 +317,12 @@ class Container:
         self._cache["payment_repo"] = payment_repo
         self._cache["payment_service"] = payment_service
 
+        # --- Enterprise n8n & Workflow Automation ---
+        from src.domain.workflow.n8n_dispatcher import N8nWebhookDispatcher
+
+        n8n_dispatcher = N8nWebhookDispatcher()
+        self._cache["n8n_dispatcher"] = n8n_dispatcher
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -375,5 +381,6 @@ hard_purge_service = container.hard_purge_service
 retention_worker = container.retention_worker
 payment_repo = container.payment_repo
 payment_service = container.payment_service
+n8n_dispatcher = container.n8n_dispatcher
 
 

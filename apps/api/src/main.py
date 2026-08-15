@@ -158,11 +158,13 @@ from src.routers.rlm import router as rlm_router
 from src.routers.search import router as search_router
 from src.routers.security_compression import router as security_compression_router
 from src.routers.tenant import router as tenant_router
+from src.routers.workflow import router as workflow_router
 
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
+app.include_router(workflow_router)
 app.include_router(admin_router)
 app.include_router(agentic_router)
 app.include_router(consensus_router)

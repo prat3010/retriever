@@ -149,6 +149,7 @@ from src.routers.admin import router as admin_router
 from src.routers.agentic import router as agentic_router
 from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
+from src.routers.consensus import router as consensus_router
 from src.routers.document import router as document_router
 from src.routers.health import router as health_router
 from src.routers.pricing import router as pricing_router
@@ -161,6 +162,7 @@ app.include_router(auth_router)
 app.include_router(pricing_router)
 app.include_router(admin_router)
 app.include_router(agentic_router)
+app.include_router(consensus_router)
 app.include_router(rlm_router)
 app.include_router(chat_router)
 app.include_router(document_router)

@@ -73,6 +73,7 @@ from src.config import settings
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.config.config_service import ConfigurationService
+from src.domain.consensus.reflection_loop import MultiAgentConsensusEngine
 from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
@@ -259,6 +260,12 @@ class Container:
         self._cache["rlm_engine"] = RlmExecutionEngine(
             llm_provider=llm,
             sandbox_provider=sandbox,
+            search_service=self._cache["search_service"],
+        )
+
+        # --- Consensus Engine ---
+        self._cache["consensus_engine"] = MultiAgentConsensusEngine(
+            default_llm=llm,
             search_service=self._cache["search_service"],
         )
 

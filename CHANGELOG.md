@@ -12,6 +12,16 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Fixed
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 
+## [v0.46.0] - 2026-08-15
+
+### Added
+- **Milestone 48: Multi-Agent Consensus & Critic Reflection Loops**:
+  - **Consensus Domain Models** (`apps/api/src/domain/consensus/abstractions.py`): Defined Pydantic models for `CriticEvaluation`, `ConsensusRequest`, and `ConsensusResult`.
+  - **Multi-Agent Reflection Engine** (`apps/api/src/domain/consensus/reflection_loop.py`): Built `MultiAgentConsensusEngine` running an iterative reflection loop between Generator and Critic/Auditor agents to eliminate hallucinations and enforce evidence compliance.
+  - **Dual-Provider AI Switching**: Added dynamic provider resolution allowing Generator and Critic roles to use separate LLM providers (e.g. Gemini as Generator, Anthropic/OpenAI as Critic) or fall back seamlessly to single-provider mode.
+  - **FastAPI Consensus Router** (`apps/api/src/routers/consensus.py`): Exposed `POST /v1/tenants/{tenantId}/consensus/generate` endpoint.
+  - **Unit Test Suite** (`apps/api/tests/test_consensus_loop.py`): Created unit tests verifying single-provider, dual-provider cross-model auditing, revision loops, and router endpoints (463 total unit tests passing).
+
 ## [v0.45.0] - 2026-08-15
 
 ### Added

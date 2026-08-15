@@ -998,13 +998,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 
 ---
 
-### [Planned] Milestone 48: Multi-Agent Consensus & Critic Reflection Loops
+### [Completed] Milestone 48: Multi-Agent Consensus & Critic Reflection Loops (v0.46.0)
 
-**Objective:** Enhance precision for high-stakes enterprise decisions (finance, healthcare, legal) using multi-agent debate and validation loops.
+**Objective:** Enhance response precision for high-stakes enterprise decisions using multi-agent debate and validation loops (Generator Agent vs. Critic/Auditor Agent), featuring dynamic dual-provider AI model switching capabilities.
 
-**Targets:**
-- Implement a Generator Agent vs. Critic/Auditor Agent reflection loop within `InferenceOrchestrator`.
-- Mandatory citation verification and logical consistency pass before response emission.
+**Delivered Capabilities:**
+- **Consensus Domain Models** (`apps/api/src/domain/consensus/abstractions.py`): Defined Pydantic models for `CriticEvaluation`, `ConsensusRequest`, and `ConsensusResult`.
+- **Multi-Agent Reflection Engine** (`apps/api/src/domain/consensus/reflection_loop.py`): Built `MultiAgentConsensusEngine` running an iterative reflection loop between Generator and Critic/Auditor agents to eliminate hallucinations and enforce evidence compliance.
+- **Dual-Provider AI Switching**: Added dynamic provider resolution allowing Generator and Critic roles to use separate LLM providers (e.g. Gemini as Generator, Anthropic/OpenAI as Critic) or fall back seamlessly to single-provider mode.
+- **FastAPI Consensus Router** (`apps/api/src/routers/consensus.py`): Exposed `POST /v1/tenants/{tenantId}/consensus/generate` endpoint.
+- **Unit Test Suite** (`apps/api/tests/test_consensus_loop.py`): Created unit tests verifying single-provider, dual-provider cross-model auditing, revision loops, and router endpoints (463 total unit tests passing).
 
 ---
 

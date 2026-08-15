@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from src.config import settings
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.tenant import Tenant
 from src.main import app
@@ -20,7 +21,7 @@ def test_create_tenant_success() -> None:
 
     with patch("src.main.tenant_registry.create_tenant", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_tenant
-        headers = {"X-Admin-Master-Key": "dev-admin-master-key-change-in-production"}
+        headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
         response = client.post(
             "/v1/tenants",
             json={"name": "Test Corporate Workspace", "tier": "enterprise", "isolation_level": "logical"},

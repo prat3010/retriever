@@ -7,13 +7,14 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from processing_core.chunker import chunk_recursive, chunk_semantic
 
+from src.config import settings
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import InferenceResponse, Usage
 from src.domain.abstractions.retrieval import SearchMeta, SearchResponse, SearchResult
 from src.main import app
 
-ADMIN_KEY = "dev-admin-master-key-change-in-production"
+ADMIN_KEY = settings.ADMIN_MASTER_KEY
 
 
 @pytest.fixture

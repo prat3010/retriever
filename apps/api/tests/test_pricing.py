@@ -2,11 +2,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
+from src.config import settings
 from src.main import app
 
 client = TestClient(app)
 
-ADMIN_KEY = "dev-admin-master-key-change-in-production"
+ADMIN_KEY = settings.ADMIN_MASTER_KEY
 auth_header = {"X-Admin-Master-Key": ADMIN_KEY}
 
 

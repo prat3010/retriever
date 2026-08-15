@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from src.config import settings
 from src.domain.abstractions.config import FeatureFlags, TenantConfiguration
 from src.domain.abstractions.identity import UserContext
 from src.main import app
@@ -16,7 +17,7 @@ def test_global_config_crud_admin_auth() -> None:
         feature_flags=FeatureFlags(enable_hybrid_search=False)
     )
     with patch("src.main.config_service.update_global_config", new_callable=AsyncMock) as mock_update:
-        headers = {"X-Admin-Master-Key": "dev-admin-master-key-change-in-production"}
+        headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
         response = client.put("/v1/config/global", json=mock_payload.model_dump(), headers=headers)
         assert response.status_code == 200
         assert response.json()["scope"] == "global"
@@ -30,7 +31,7 @@ def test_global_config_crud_admin_auth() -> None:
 
     with patch("src.main.config_service.get_global_config", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_config
-        headers = {"X-Admin-Master-Key": "dev-admin-master-key-change-in-production"}
+        headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
         response = client.get("/v1/config/global", headers=headers)
         assert response.status_code == 200
         # Assert secrets are redacted

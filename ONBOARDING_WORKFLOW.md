@@ -31,9 +31,9 @@ First, log into the **Admin Dashboard** (`http://localhost:3001` or your product
    - `API URL` — the base endpoint (`https://rag.prateeq.in/v1`)
    - `RETRIEVER_TENANT_ID` — the tenant UUID
    - `RETRIEVER_USER_ID` — the user UUID
-   - `RETRIEVER_API_KEY` — the generated key (with copy button)
+   - `RETRIEVER_API_KEY` — the full un-truncated generated key (with instant copy button)
    
-   Curl examples are pre-filled with the real values (no placeholders).
+   Curl examples are pre-filled with full active credentials and feature a 1-click **Copy Commands** action button for seamless testing.
 
 5. **Billing Strategy Check:**
    - **BYOK (Bring Your Own Key):** Under the tenant settings, input the client's own Gemini or OpenAI API key.

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 from src.adapters.telemetry.rate_limiter import RateLimitResult
+from src.config import settings
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatMessageInfo
 from src.domain.abstractions.ingestion import Document
@@ -86,7 +87,7 @@ def test_admin_list_tenants_cursor(mock_list_cursor, mock_validate) -> None:
         True
     )
 
-    headers = {"X-Admin-Master-Key": "dev-admin-master-key-change-in-production"}
+    headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
     response = client.get("/v1/admin/tenants?cursor=", headers=headers)
     assert response.status_code == 200
     body = response.json()

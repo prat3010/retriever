@@ -18,6 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from src.config import settings
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.identity import UserInfo
 from src.domain.abstractions.inference import PromptTemplate
@@ -26,7 +27,7 @@ from src.main import app
 
 client = TestClient(app)
 
-ADMIN_KEY = "dev-admin-master-key-change-in-production"
+ADMIN_KEY = settings.ADMIN_MASTER_KEY
 auth_header = {"X-Admin-Master-Key": ADMIN_KEY}
 
 

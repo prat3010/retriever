@@ -261,28 +261,43 @@ export default function OnboardPage() {
                   <span className="text-muted-foreground">User ID: </span>
                   <span className="font-semibold">{createdUserId}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="truncate">
                     <span className="text-muted-foreground">API Key: </span>
-                    <span className="font-semibold">{createdApiKey?.slice(0, 20)}...</span>
+                    <span className="font-semibold break-all">{createdApiKey}</span>
                   </div>
-                  <Button size="sm" variant="outline" onClick={copyKey}>
+                  <Button size="sm" variant="outline" className="shrink-0" onClick={copyKey}>
                     <Copy className="mr-1 h-3 w-3" />
-                    {copiedKey ? "Copied" : "Copy"}
+                    {copiedKey ? "Copied" : "Copy Key"}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Quick-start: curl</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Quick-start: curl</Label>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      const curlText = `curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}"\n\ncurl ${API_BASE}/v1/tenants/${createdTenantId}/search \\\n  -X POST \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "hello world", "limit": 5}'`;
+                      navigator.clipboard.writeText(curlText);
+                      toast.success("Curl commands copied");
+                    }}
+                  >
+                    <Copy className="mr-1 h-3 w-3" />
+                    Copy Commands
+                  </Button>
+                </div>
                 <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
 {`curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\
-  -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
+  -H "Authorization: Bearer ${createdApiKey}" \\
   -H "X-User-ID: ${createdUserId}"
 
 curl ${API_BASE}/v1/tenants/${createdTenantId}/search \\
   -X POST \\
-  -H "Authorization: Bearer ${createdApiKey?.slice(0, 20)}..." \\
+  -H "Authorization: Bearer ${createdApiKey}" \\
   -H "X-User-ID: ${createdUserId}" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "hello world", "limit": 5}'`}

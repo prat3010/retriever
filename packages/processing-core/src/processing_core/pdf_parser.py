@@ -63,9 +63,6 @@ def extract_layout_from_pdf(storage_path: str) -> dict[str, Any]:
             md_tables = []
             for t in raw_tables:
                 if t and len(t) > 1:
-                    h = [str(col).strip() if col else "" for col in t[0]]
-                    r = [[str(c).strip() if c else "" for c in t[1:] for c in r_item] if isinstance(r_item, list) else [str(c).strip() if c else "" for c in t[1:]]]
-                    # Use proper table row extraction
                     headers = [str(cell).strip() if cell else "" for cell in t[0]]
                     rows = [[str(cell).strip() if cell else "" for cell in row] for row in t[1:]]
                     md = convert_table_to_markdown(headers, rows)

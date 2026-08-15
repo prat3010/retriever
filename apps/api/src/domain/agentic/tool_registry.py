@@ -123,7 +123,7 @@ class ToolRegistry:
 
             def _eval_node(node):
                 if isinstance(node, ast.Constant) and isinstance(
-                    node.value, (int, float)
+                    node.value, int | float
                 ):
                     return node.value
                 if isinstance(node, ast.BinOp):

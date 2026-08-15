@@ -5,13 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Send, Loader2, Terminal } from "lucide-react";
-import { api } from "@/lib/api";
+import { useUsers } from "@/hooks/use-users";
 
 export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
+  const { data: users, isLoading: loadingUsers } = useUsers(tenantId);
   const [apiKey, setApiKey] = useState("");
-  const [userId, setUserId] = useState("admin_demo");
+  const [userId, setUserId] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [input, setInput] = useState("");
@@ -20,11 +28,18 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
   const chatEnd = useRef<HTMLDivElement>(null);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+  // Auto-select first active user when users load
+  useEffect(() => {
+    if (users && users.length > 0 && !userId) {
+      setUserId(users[0].userId);
+    }
+  }, [users, userId]);
+
   useEffect(() => { chatEnd.current?.scrollIntoView(); }, [messages]);
 
   async function startSession() {
     if (!apiKey.trim()) { toast.error("Enter a tenant API key first"); return; }
-    if (!userId.trim()) { toast.error("Enter a user ID"); return; }
+    if (!userId.trim()) { toast.error("Enter or select a user ID"); return; }
     setCreatingSession(true);
     try {
       const res = await fetch(`${API_BASE}/v1/tenants/${tenantId}/chat/sessions`, {
@@ -100,19 +115,44 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {!sessionId && (
-            <div className="space-y-2">
-              <Label>Tenant API Key</Label>
-              <Input
-                placeholder="sk_..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-              <Label>User ID</Label>
-              <Input
-                placeholder="user_123"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-              />
+            <div className="space-y-3">
+              <div>
+                <Label>Tenant API Key</Label>
+                <Input
+                  placeholder="sk_..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label>User Context (Select or Enter User ID)</Label>
+                {users && users.length > 0 ? (
+                  <Select value={userId} onValueChange={(val) => setUserId(val)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select a tenant user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u.userId} value={u.userId}>
+                          {u.displayName || u.externalId} ({u.userId.slice(0, 8)}...)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    className="mt-1"
+                    placeholder="User UUID (e.g., 00000000-0000-0000-0000-000000000001)"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                  />
+                )}
+                {loadingUsers && (
+                  <p className="text-xs text-muted-foreground mt-1">Loading registered tenant users...</p>
+                )}
+              </div>
+
               <Button onClick={startSession} disabled={creatingSession}>
                 {creatingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {creatingSession ? "Starting..." : "Start Session"}

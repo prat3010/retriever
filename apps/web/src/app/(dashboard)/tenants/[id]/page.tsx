@@ -14,6 +14,10 @@ import { TenantDocumentsTab } from "@/components/tenant-documents";
 import { TenantPromptsTab } from "@/components/tenant-prompts";
 import { TenantSandboxTab } from "@/components/tenant-sandbox";
 import { TenantGraphTab } from "@/components/tenant-graph";
+import { TenantHallucinationsTab } from "@/components/tenant-hallucinations";
+import { TenantComplianceTab } from "@/components/tenant-compliance";
+import { TenantBillingTab } from "@/components/tenant-billing";
+import { TenantWorkflowTab } from "@/components/tenant-workflow";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -48,7 +52,7 @@ export default function TenantDetailPage() {
       <Topbar title={tenant.name} description={`Tenant ID: ${tenant.tenantId}`} />
       <div className="p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
@@ -57,6 +61,10 @@ export default function TenantDetailPage() {
             <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
             <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
             <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="hallucinations">📈 Hallucinations</TabsTrigger>
+            <TabsTrigger value="compliance">🛡️ Compliance</TabsTrigger>
+            <TabsTrigger value="billing">💳 Billing</TabsTrigger>
+            <TabsTrigger value="workflow">⚡ n8n Workflow</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -85,6 +93,18 @@ export default function TenantDetailPage() {
           </TabsContent>
           <TabsContent value="config">
             <ConfigTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="hallucinations">
+            <TenantHallucinationsTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="compliance">
+            <TenantComplianceTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="billing">
+            <TenantBillingTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="workflow">
+            <TenantWorkflowTab tenantId={tenantId} />
           </TabsContent>
         </Tabs>
       </div>

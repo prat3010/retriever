@@ -28,23 +28,19 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
   const chatEnd = useRef<HTMLDivElement>(null);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Auto-select first active user when users load
-  useEffect(() => {
-    if (users && users.length > 0 && !userId) {
-      setUserId(users[0].userId);
-    }
-  }, [users, userId]);
+  // Derive effective user ID from state or auto-select first active user
+  const effectiveUserId = userId || (users && users.length > 0 ? users[0].userId : "");
 
   useEffect(() => { chatEnd.current?.scrollIntoView(); }, [messages]);
 
   async function startSession() {
     if (!apiKey.trim()) { toast.error("Enter a tenant API key first"); return; }
-    if (!userId.trim()) { toast.error("Enter or select a user ID"); return; }
+    if (!effectiveUserId.trim()) { toast.error("Enter or select a user ID"); return; }
     setCreatingSession(true);
     try {
       const res = await fetch(`${API_BASE}/v1/tenants/${tenantId}/chat/sessions`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${apiKey.trim()}`, "X-User-ID": userId.trim(), "Content-Type": "application/json" },
+        headers: { "Authorization": `Bearer ${apiKey.trim()}`, "X-User-ID": effectiveUserId.trim(), "Content-Type": "application/json" },
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -69,7 +65,7 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey.trim()}`,
-          "X-User-ID": userId.trim(),
+          "X-User-ID": effectiveUserId.trim(),
           "Content-Type": "application/json",
           Accept: "text/event-stream",
         },
@@ -128,7 +124,7 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
               <div>
                 <Label>User Context (Select or Enter User ID)</Label>
                 {users && users.length > 0 ? (
-                  <Select value={userId} onValueChange={(val) => setUserId(val)}>
+                  <Select value={effectiveUserId} onValueChange={(val) => setUserId(val)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select a tenant user..." />
                     </SelectTrigger>

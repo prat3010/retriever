@@ -22,7 +22,7 @@ RETRYABLE_ERRORS = (
 class OpenAILLMAdapter(LlmProvider):
 
     def __init__(
-        self, api_key: str, base_url: str = "", default_model: str = "gemini-2.5-flash"
+        self, api_key: str, base_url: str = "", default_model: str = "meta-llama/llama-3.3-70b-instruct"
     ) -> None:
         self.default_model = default_model
         self._api_key = api_key
@@ -34,18 +34,21 @@ class OpenAILLMAdapter(LlmProvider):
         if self._async_client is None:
             kwargs: dict[str, Any] = {"api_key": self._api_key}
             if self._base_url:
-                kwargs["base_url"] = self._base_url
+                url = self._base_url if self._base_url.endswith("/") else f"{self._base_url}/"
+                kwargs["base_url"] = url
             self._async_client = openai.AsyncOpenAI(**kwargs)
         return self._async_client
 
     def _client_for_key(self, api_key: str | None, base_url: str | None = None) -> openai.AsyncOpenAI:
         url = base_url or self._base_url
+        if url and not url.endswith("/"):
+            url = f"{url}/"
         if api_key and api_key != self._api_key:
             kwargs: dict[str, Any] = {"api_key": api_key}
             if url:
                 kwargs["base_url"] = url
             return openai.AsyncOpenAI(**kwargs)
-        if url and url != self._base_url:
+        if url and url != (self._base_url + "/" if self._base_url and not self._base_url.endswith("/") else self._base_url):
             return openai.AsyncOpenAI(api_key=self._api_key, base_url=url)
         return self.client
 
@@ -112,7 +115,7 @@ class OpenAILLMAdapter(LlmProvider):
             "model": model,
             "messages": messages,
             "temperature": request.temperature,
-            "max_tokens": request.max_tokens or 1024,
+            "max_tokens": request.max_tokens or 512,
             "stream": True,
             "stream_options": {"include_usage": True},
         }

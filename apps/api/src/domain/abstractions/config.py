@@ -29,6 +29,8 @@ class ModelPricing(BaseModel):
 DEFAULT_PRICING: dict[str, ModelPricing] = {
     "openai/gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),
     "openai/gpt-4o-mini": ModelPricing(input_cost_per_1k=0.15, output_cost_per_1k=0.60),
+    "gemini-3.6-flash": ModelPricing(input_cost_per_1k=0.075, output_cost_per_1k=0.30),
+    "gemini-2.5-flash": ModelPricing(input_cost_per_1k=0.075, output_cost_per_1k=0.30),
     "gemini-1.5-flash": ModelPricing(input_cost_per_1k=0.075, output_cost_per_1k=0.30),
     "gemini-1.5-pro": ModelPricing(input_cost_per_1k=1.25, output_cost_per_1k=5.0),
     "gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),

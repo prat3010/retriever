@@ -22,7 +22,7 @@ export const PROVIDERS: ProviderDef[] = [
     label: "Google Gemini",
     value: "gemini",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.6-flash",
   },
   {
     label: "Anthropic",

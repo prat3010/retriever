@@ -14,6 +14,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Next.js 16 proxy migration** (`apps/web/src/proxy.ts`): renamed the `middleware` export to `proxy`, unblocking `next build` (Turbopack) which failed with "Proxy is missing expected function export name". Auth-guard behavior (cookie check + backend `/v1/admin/verify-key` validation with 5-min validated cookie cache) is unchanged.
 - **Vercel Monorepo Workspace Build Fix** (`package.json`, `vercel.json`): Fixed npm workspace target name in root `package.json` scripts (`--workspace=retriever-web` instead of `--workspace=apps/web`) and included `packages/*` in workspace definitions, resolving Vercel CLI `npm error No workspaces found` deployment failures.
 - **React 19 ESLint fix in tenant sandbox tab** (`apps/web/src/components/tenant-sandbox.tsx`): Replaced synchronous `setUserId` inside `useEffect` with derived `effectiveUserId` calculated during render, eliminating cascading render warnings and passing `npm run lint` cleanly.
+- **Next.js 16.2.10 Version Pinning** (`apps/web/package.json`): Pinned exact `next: 16.2.10` dependency version, bypassing Vercel static asset output bug on unpinned Next 16.3.1 releases.
 
 ### Removed
 - **Legacy Client Reference App (`apps/client-reference`)**: Removed unused standalone client reference web application and deleted duplicate Vercel deployment project (`retriever`), consolidating all live client demos under the primary website (`prateeq.in/rag`).

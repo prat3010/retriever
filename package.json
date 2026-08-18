@@ -2,12 +2,13 @@
   "name": "retriever",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/web",
-    "start": "npm run start --workspace=apps/web"
+    "dev": "npm run dev --workspace=retriever-web",
+    "build": "npm run build --workspace=retriever-web",
+    "start": "npm run start --workspace=retriever-web"
   },
   "devDependencies": {
     "@dietrichgebert/ponytail": "^4.8.4"

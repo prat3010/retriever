@@ -15,6 +15,9 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Vercel Monorepo Workspace Build Fix** (`package.json`, `vercel.json`): Fixed npm workspace target name in root `package.json` scripts (`--workspace=retriever-web` instead of `--workspace=apps/web`) and included `packages/*` in workspace definitions, resolving Vercel CLI `npm error No workspaces found` deployment failures.
 - **React 19 ESLint fix in tenant sandbox tab** (`apps/web/src/components/tenant-sandbox.tsx`): Replaced synchronous `setUserId` inside `useEffect` with derived `effectiveUserId` calculated during render, eliminating cascading render warnings and passing `npm run lint` cleanly.
 
+### Removed
+- **Legacy Client Reference App (`apps/client-reference`)**: Removed unused standalone client reference web application and deleted duplicate Vercel deployment project (`retriever`), consolidating all live client demos under the primary website (`prateeq.in/rag`).
+
 ## [v0.51.0] - 2026-08-15
 
 ### Added

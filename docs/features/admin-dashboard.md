@@ -335,14 +335,9 @@ Create in `src/hooks/use-*.ts` following existing patterns.
 
 ---
 
-## 10. Reference Client
+## 10. Client Integration
 
-Location: `apps/client-reference/`
-
-A standalone Next.js app that demonstrates how to integrate with the Retriever API from a client frontend. It shows the `X-API-Key` + `X-User-ID` header pattern.
-
-**Tabs:** Config, Chat, Search, Documents
-**Port:** 3001 (dev)
+Client integration and live RAG demos are hosted directly within the main portfolio web app (`src/app/rag/` and `src/components/rag/`). The legacy standalone `apps/client-reference` app has been retired to streamline monorepo maintenance.
 
 ---
 

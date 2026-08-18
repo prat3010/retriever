@@ -553,13 +553,11 @@ Retriever is structured as a monorepo to maintain strong typing across client-se
 │   │   ├── pyproject.toml
 │   │   └── uv.lock
 │   │
-│   ├── web/                     # Admin Dashboard (Next.js)
-│   │   ├── src/
-│   │   │   └── app/             # Web Router layouts and pages
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── client-reference/        # Reference client integration example (Next.js)
+│   └── web/                     # Admin Dashboard (Next.js)
+│       ├── src/
+│       │   └── app/             # Web Router layouts and pages
+│       ├── package.json
+│       └── tsconfig.json
 │
 ├── workers/                     # Celery background workers (async ingestion)
 │
@@ -664,9 +662,9 @@ Retriever is designed to be deployed on a single VPS for the free/startup tier, 
               ▼                 │  ┌────────────────────────────────────┐  │
     ┌──────────────────┐        │  │          Nginx (port 443)          │  │
     │   Vercel (CDN)   │        │  │  Reverse proxy, SSL termination   │  │
-    │  client-reference │       │  │  Let's Encrypt (certbot)           │  │
-    │  retriever-ivory  │       │  └──────────────┬─────────────────────┘  │
-    │  .vercel.app      │       │                 │                        │
+    │   apps/web       │        │  │  Let's Encrypt (certbot)           │  │
+    │   admin.rag.     │        │  └──────────────┬─────────────────────┘  │
+    │   prateeq.in     │        │                 │                        │
     └────────┬──────────┘       │                 ▼                        │
              │                  │  ┌────────────────────────────────────┐  │
              │  HTTPS           │  │     systemd: retriever-api.service  │  │
@@ -889,7 +887,7 @@ Server `.env` at `/opt/retriever/.env` contains:
 - `OPENAI_API_KEY` / `GEMINI_API_KEY` (LLM provider keys)
 - `ENVIRONMENT=production`
 - `KEY_ENCRYPTION_KEY` (for AES-256-GCM of tenant LLM keys)
-- `CORS_ORIGINS=*` (for client-reference frontend)
+- `CORS_ORIGINS=*` (for admin dashboard & client web apps)
 - `LOG_LEVEL=info`
 
 ### 16.6 Admin Dashboard

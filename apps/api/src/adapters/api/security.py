@@ -49,8 +49,14 @@ async def _fetch_jwks_key(jwks_uri: str, kid: str) -> dict | None:
     return None
 
 
-async def get_current_user(token: str | None = Security(api_key_header)) -> UserContext:
+async def get_current_user(
+    request: Request,
+    token: str | None = Security(api_key_header),
+) -> UserContext:
     """Validate incoming Bearer API key token or OIDC JWT token and return active UserContext."""
+    if hasattr(request.state, "user_context") and request.state.user_context:
+        return request.state.user_context
+
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -63,7 +69,9 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
 
     # 1. Try validating as internal API key
     try:
-        return await identity_provider.validate_token(clean_token)
+        user_ctx = await identity_provider.validate_token(clean_token)
+        request.state.user_context = user_ctx
+        return user_ctx
     except AuthenticationError as e:
         # 2. Try validating as OIDC / Supabase JWT token if OIDC or SUPABASE_URL is configured
         jwks_uri = settings.OIDC_JWKS_URI or (
@@ -170,12 +178,14 @@ async def get_current_user(token: str | None = Security(api_key_header)) -> User
                         if not tenant_id:
                             raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")
 
-                        return UserContext(
+                        user_ctx = UserContext(
                             user_id=user_id or "unknown",
                             tenant_id=tenant_id,
                             roles=roles if isinstance(roles, list) else [str(roles)],
                             scopes=scopes if isinstance(scopes, list) else [str(scopes)],
                         )
+                        request.state.user_context = user_ctx
+                        return user_ctx
             except PyJWTError as je:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

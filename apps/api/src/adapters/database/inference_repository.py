@@ -115,23 +115,33 @@ class SqlChatSessionRepository(ChatSessionRepository):
         self, tenant_id: str, user_id: str | None = None
     ) -> ChatSessionInfo:
         session_id = uuid.uuid4()
-        user_uuid = uuid.UUID(user_id) if user_id else None
+        if not user_id or user_id in ("00000000-0000-0000-0000-000000000001", "guest-demo"):
+            user_uuid = None
+        else:
+            try:
+                user_uuid = uuid.UUID(user_id)
+            except ValueError:
+                user_uuid = None
         async with tenant_session(tenant_id=tenant_id) as session:
-            if user_uuid:
-                from sqlalchemy import select
-
-                from src.adapters.database.models import UserDb
-                user_check = await session.execute(select(UserDb.user_id).where(UserDb.user_id == user_uuid))
-                if not user_check.scalar_one_or_none():
-                    user_uuid = None
-
             db_session = ChatSessionDb(
                 session_id=session_id,
                 tenant_id=uuid.UUID(tenant_id),
                 user_id=user_uuid,
             )
             session.add(db_session)
-            await session.flush()
+            try:
+                await session.flush()
+            except Exception:
+                # Fallback if user_uuid is not found in users table
+                await session.rollback()
+                db_session = ChatSessionDb(
+                    session_id=session_id,
+                    tenant_id=uuid.UUID(tenant_id),
+                    user_id=None,
+                )
+                session.add(db_session)
+                await session.flush()
+
             return ChatSessionInfo(
                 session_id=str(db_session.session_id),
                 tenant_id=str(db_session.tenant_id),

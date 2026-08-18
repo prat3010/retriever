@@ -89,9 +89,12 @@ class RoutingLLMProvider(LlmProvider):
                 async for chunk in provider.generate_stream(request, configuration):
                     yield chunk
                 return
-            except ProviderUnavailableError:
+            except Exception as exc:
                 if provider_name == providers_to_try[-1]:
-                    raise
+                    if isinstance(exc, ProviderUnavailableError):
+                        raise
+                    raise ProviderUnavailableError(f"Provider {provider_name} failed: {exc}") from exc
+                logger.warning(f"Provider {provider_name} streaming failed ({exc}), attempting failover...")
                 sleep_sec = (2 ** (retries or 1)) * delay / 1000
                 await asyncio.sleep(sleep_sec)
                 continue

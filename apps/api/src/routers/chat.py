@@ -204,7 +204,8 @@ async def send_chat_message(
                     buffer = _format_citations(buffer, search_response.results, citation_template)
 
                     last_bracket = buffer.rfind("[")
-                    if last_bracket != -1 and ("source".startswith(buffer[last_bracket+1:last_bracket+8].lower()) or len(buffer) - last_bracket < 50):
+                    check_slice = buffer[last_bracket + 1 : last_bracket + 8].lower() if last_bracket != -1 else ""
+                    if last_bracket != -1 and ("source".startswith(check_slice) or check_slice.startswith("source") or len(buffer) - last_bracket < 50):
                         safe_to_yield = buffer[:last_bracket]
                         buffer = buffer[last_bracket:]
                     else:
@@ -222,6 +223,11 @@ async def send_chat_message(
         except asyncio.CancelledError:
             logger.info(f"SSE client disconnected for session {sessionId} on tenant {tenantId}.")
             raise
+        except Exception as e:
+            logger.error(f"Error during SSE stream for session {sessionId}: {e}", exc_info=True)
+            if buffer:
+                yield f"data: {json.dumps({'event': 'token', 'delta': buffer})}\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
 
     return StreamingResponse(
         event_stream(),

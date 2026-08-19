@@ -9,7 +9,7 @@ import logging
 import time
 from uuid import uuid4
 
-from src.domain.abstractions.inference import ChatMessage, LlmProvider
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.agentic.abstractions import (
     AgentExecutionRequest,
     AgentExecutionResult,
@@ -77,9 +77,11 @@ class AgenticExecutionEngine:
         for step_idx in range(request.max_steps):
             try:
                 response = await self.llm.generate(
-                    messages=messages,
-                    temperature=0.1,
-                    max_tokens=1000,
+                    InferenceRequest(
+                        messages=messages,
+                        temperature=0.1,
+                        max_tokens=1000,
+                    )
                 )
                 raw_text = response.content.strip()
 

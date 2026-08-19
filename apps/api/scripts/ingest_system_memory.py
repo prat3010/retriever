@@ -34,8 +34,8 @@ SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 RETRIEVER_ROOT = API_ROOT.parent.parent
 WEBSITE_ROOT = Path("/Users/prateeksharma/Developer/Prateek_website")
 
-SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or "https://osaqaemntuzrjouzobvx.supabase.co"
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zYXFhZW1udHV6cmpvdXpvYnZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDI5MjY0MCwiZXhwIjoyMDk1ODY4NjQwfQ.A4lUxpuAVQ3nqqqgLFeWJn3Hj37hteN9_6kF3KyckG8"
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "https://osaqaemntuzrjouzobvx.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # ------------------------------------------------------------------------------
 # AST & Chunkers

@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Any
 
@@ -11,12 +12,15 @@ from src.domain.abstractions.evaluation import (
     EvalRunResultScores,
     RagasScores,
 )
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.retrieval import (
     SearchQuery,
 )
 from src.domain.evaluation.search_metrics import compute_search_metrics
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.retrieval.search_service import HybridSearchService
+
+logger = logging.getLogger(__name__)
 
 
 class EvalRunService:
@@ -55,11 +59,11 @@ class EvalRunService:
             start = time.monotonic()
 
             search_result = await self.search_service.search(
-                tenant_id,
                 SearchQuery(
-                    query_text=question.question,
+                    tenant_id=tenant_id,
+                    query=question.question,
                     top_k=5,
-                ),
+                )
             )
 
             retrieved_chunk_ids = [r.chunk_id for r in search_result.results]
@@ -67,13 +71,15 @@ class EvalRunService:
 
             generated_answer: str | None = None
             try:
-                result = await self.orchestrator.execute_rag(
-                    query=question.question,
-                    tenant_id=tenant_id,
+                result = await self.orchestrator.generate(
+                    InferenceRequest(
+                        messages=[ChatMessage(role="user", content=question.question)],
+                        tenant_id=tenant_id,
+                    )
                 )
-                generated_answer = result.answer
-            except Exception:
-                pass
+                generated_answer = result.answer if hasattr(result, "answer") else getattr(result, "content", str(result))
+            except Exception as err:
+                logger.warning(f"Evaluation orchestrator generation failed for question {question.question_id}: {err}")
 
             search_metrics = compute_search_metrics(
                 retrieved_chunk_ids=retrieved_chunk_ids,

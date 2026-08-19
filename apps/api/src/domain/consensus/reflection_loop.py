@@ -9,7 +9,7 @@ import logging
 import time
 from typing import Any
 
-from src.domain.abstractions.inference import ChatMessage, LlmProvider
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import SearchQuery
 from src.domain.consensus.abstractions import (
     ConsensusRequest,
@@ -20,8 +20,9 @@ from src.domain.retrieval.search_service import HybridSearchService
 
 logger = logging.getLogger(__name__)
 
-GENERATOR_SYSTEM_PROMPT = """You are an expert AI Generator Agent.
-Draft a precise, factual response to the user's prompt based strictly on the provided document evidence.
+GENERATOR_SYSTEM_PROMPT = """You are an expert AI Solution Generator.
+Your task is to answer the user's prompt accurately based on provided document evidence.
+If previous critique feedback is provided, you MUST explicitly address and correct every flaw identified.
 
 Document Evidence:
 {evidence}
@@ -29,25 +30,28 @@ Document Evidence:
 {feedback_section}
 """
 
-CRITIC_SYSTEM_PROMPT = """You are a strict AI Auditor & Critic Agent.
-Your job is to audit the Draft Response against the Document Evidence to eliminate hallucinations or unsupported claims.
+CRITIC_SYSTEM_PROMPT = """You are an uncompromising AI Quality Auditor and Fact Checker.
+Your task is to audit the candidate draft response against the provided document evidence.
 
 Document Evidence:
 {evidence}
 
-Draft Response:
+Candidate Draft:
 {draft}
 
-INSTRUCTIONS:
-Evaluate whether every claim in the Draft Response is directly supported by the Document Evidence.
-Output a JSON object matching this exact schema:
+CRITIQUE CRITERIA:
+1. Groundedness: Are all facts in the draft strictly supported by the evidence?
+2. Completeness: Does the draft fully answer the user's request?
+3. Accuracy: Is there any hallucination, vagueness, or contradiction?
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object matching this schema:
 {{
-  "is_approved": true/false,
-  "critique_score": 0.0 to 1.0,
-  "critique_feedback": "Detailed feedback on errors or missing conditions, or 'Looks good' if approved.",
-  "unsupported_claims": ["List of unverified claims if any"]
+  "approved": true | false,
+  "confidence_score": float between 0.0 and 1.0,
+  "critique_feedback": "Detailed explanation of flaws if not approved, or approval confirmation",
+  "missing_facts": ["fact 1", "fact 2"]
 }}
-Output strictly valid JSON without markdown wrapping.
 """
 
 
@@ -85,9 +89,7 @@ class MultiAgentConsensusEngine:
             top_k=5,
             enable_hybrid=True,
         )
-        search_resp = await self.search.search(
-            tenant_id=request.tenant_id, query=search_query
-        )
+        search_resp = await self.search.search(search_query)
         evidence_text = "\n".join(
             [f"- [{c.document_id}]: {c.content}" for c in search_resp.results]
         ) or "No document evidence found."
@@ -109,11 +111,13 @@ class MultiAgentConsensusEngine:
 
             # Generator Draft
             gen_resp = await generator_llm.generate(
-                messages=[
-                    ChatMessage(role="system", content=gen_sys),
-                    ChatMessage(role="user", content=request.prompt),
-                ],
-                temperature=0.1,
+                InferenceRequest(
+                    messages=[
+                        ChatMessage(role="system", content=gen_sys),
+                        ChatMessage(role="user", content=request.prompt),
+                    ],
+                    temperature=0.1,
+                )
             )
             draft_text = gen_resp.content.strip()
 
@@ -122,11 +126,13 @@ class MultiAgentConsensusEngine:
                 evidence=evidence_text, draft=draft_text
             )
             critic_resp = await critic_llm.generate(
-                messages=[
-                    ChatMessage(role="system", content=critic_sys),
-                    ChatMessage(role="user", content="Audit the draft response now."),
-                ],
-                temperature=0.0,
+                InferenceRequest(
+                    messages=[
+                        ChatMessage(role="system", content=critic_sys),
+                        ChatMessage(role="user", content="Audit the draft response now."),
+                    ],
+                    temperature=0.0,
+                )
             )
 
             raw_critic = critic_resp.content.strip()

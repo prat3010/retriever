@@ -11,12 +11,10 @@ from pydantic import BaseModel, Field
 from src.adapters.api.security import verify_admin_key
 from src.container import (
     config_service,
-    document_repository,
     ingest_file_sync,
     n8n_dispatcher,
     pii_anonymizer,
 )
-from src.domain.abstractions.ingestion import Document
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +36,7 @@ class ConfigureWebhookRequest(BaseModel):
 @router.post(
     "/tenants/{tenantId}/ingest/webhook",
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_admin_key)],
 )
 async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookRequest) -> Any:
     """Inbound n8n auto-ingest webhook for Gmail, Google Drive, and Notion documents."""
@@ -60,37 +59,18 @@ async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookReques
     elif payload.content:
         # Inline PII anonymization pass-through
         anonymized_text = pii_anonymizer.anonymize_text(payload.content)
-
-        import hashlib
-        from datetime import UTC, datetime
-
-        now_str = datetime.now(UTC).isoformat()
-        content_hash = hashlib.sha256(anonymized_text.encode("utf-8")).hexdigest()
-
-        doc = Document(
-            document_id=doc_id,
-            tenant_id=tenantId,
-            filename=f"{payload.title}.md",
-            file_hash=content_hash,
-            storage_path="n8n_webhook",
-            file_size=len(anonymized_text.encode("utf-8")),
-            mime_type="text/markdown",
-            status="completed",
-            created_at=now_str,
-            updated_at=now_str,
-        )
-        await document_repository.create_document(tenantId, doc)
-
-        from processing_core import chunk_text
-
-        chunks = chunk_text(
-            text=anonymized_text,
-            chunk_size=512,
-            chunk_overlap=64,
-            document_id=doc_id,
-            tenant_id=tenantId,
-        )
-        chunk_count = len(chunks)
+        raw_bytes = anonymized_text.encode("utf-8")
+        filename = f"{payload.title}.md"
+        try:
+            chunk_count = await ingest_file_sync(
+                file_content=raw_bytes,
+                filename=filename,
+                document_id=doc_id,
+                tenant_id=tenantId,
+            )
+        except Exception as err:
+            logger.error(f"Failed to process text content webhook for tenant '{tenantId}': {err}")
+            raise HTTPException(status_code=400, detail=f"Failed to ingest content: {err}") from err
 
     else:
         raise HTTPException(status_code=400, detail="Must supply either 'content' or 'file_base64' and 'filename'.")

@@ -483,7 +483,7 @@ async def admin_delete_document(tenantId: str, documentId: str) -> dict[str, str
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_get_document_download_url(tenantId: str, documentId: str) -> dict[str, str]:
-    doc = await document_repository.get_document(documentId, bypass_rls=True)
+    doc = await document_repository.get_document(tenantId, documentId, bypass_rls=True)
     if not doc or str(doc.tenant_id) != tenantId:
         raise HTTPException(status_code=404, detail="Document not found.")
 
@@ -502,7 +502,7 @@ async def admin_get_document_download_url(tenantId: str, documentId: str) -> dic
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_download_document_file(tenantId: str, documentId: str) -> FileResponse:
-    doc = await document_repository.get_document(documentId, bypass_rls=True)
+    doc = await document_repository.get_document(tenantId, documentId, bypass_rls=True)
     if not doc or str(doc.tenant_id) != tenantId:
         raise HTTPException(status_code=404, detail="Document not found.")
 

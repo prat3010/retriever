@@ -8,7 +8,7 @@ import logging
 import time
 from typing import Any
 
-from src.domain.abstractions.inference import ChatMessage, LlmProvider
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import SearchQuery
 from src.domain.retrieval.search_service import HybridSearchService
 from src.domain.rlm.abstractions import (
@@ -64,9 +64,7 @@ class RlmExecutionEngine:
             enable_hybrid=True,
             enable_graph_search=True,
         )
-        search_resp = await self.search.search(
-            tenant_id=request.tenant_id, query=search_query
-        )
+        search_resp = await self.search.search(search_query)
         chunks = search_resp.results
 
         # Wrap chunks for Python REPL sandbox context
@@ -88,7 +86,7 @@ class RlmExecutionEngine:
             ),
         ]
         llm_code_resp = await self.llm.generate(
-            messages=code_gen_messages, temperature=0.1, max_tokens=600
+            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=600)
         )
         raw_code = llm_code_resp.content.strip()
 
@@ -134,7 +132,7 @@ Extracted Evidence Highlights:
             ChatMessage(role="user", content=synthesis_prompt),
         ]
         synth_resp = await self.llm.generate(
-            messages=synth_messages, temperature=0.2, max_tokens=1000
+            InferenceRequest(messages=synth_messages, temperature=0.2, max_tokens=1000)
         )
 
         elapsed_ms = (time.monotonic() - start_time) * 1000

@@ -4,12 +4,18 @@ from contextlib import ExitStack, contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from src.adapters.database.models import ApiKeyDb
 from src.config import settings
 from src.main import app
 
 client = TestClient(app)
+
+
+def _security_request() -> Request:
+    return Request({"type": "http", "method": "GET", "path": "/", "headers": []})
+
 
 _VALID_CLAIMS = {
     "iss": "https://accounts.google.com",
@@ -25,18 +31,34 @@ _VALID_CLAIMS = {
 def _mock_verified_token(claims: dict):
     with ExitStack() as stack:
         stack.enter_context(
-            patch("src.routers.auth._fetch_jwks_key", new_callable=AsyncMock, return_value={"kty": "RSA"})
+            patch(
+                "src.routers.auth._fetch_jwks_key",
+                new_callable=AsyncMock,
+                return_value={"kty": "RSA"},
+            )
         )
         stack.enter_context(patch("src.routers.auth.jwt.decode", return_value=claims))
-        stack.enter_context(patch("src.routers.auth.jwt.get_unverified_header", return_value={"kid": "key-1"}))
         stack.enter_context(
-            patch("src.routers.auth.jwt.algorithms.RSAAlgorithm.from_jwk", return_value=MagicMock())
+            patch(
+                "src.routers.auth.jwt.get_unverified_header",
+                return_value={"kid": "key-1"},
+            )
+        )
+        stack.enter_context(
+            patch(
+                "src.routers.auth.jwt.algorithms.RSAAlgorithm.from_jwk",
+                return_value=MagicMock(),
+            )
         )
         yield
 
 
 def _mock_db(mock_tenant_session, existing_user=None) -> MagicMock:
-    mock_session = AsyncMock()
+    # SQLAlchemy's session.add is synchronous; keeping the mock faithful avoids
+    # hiding un-awaited coroutine warnings in authentication tests.
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
     result = MagicMock()
     result.scalar_one_or_none.return_value = existing_user
     mock_session.execute.return_value = result
@@ -109,8 +131,11 @@ def test_google_auth_rejects_token_with_wrong_audience(mock_tenant_session) -> N
     """ID tokens minted for a different OAuth client must be rejected."""
     claims = dict(_VALID_CLAIMS, aud="evil-client-id")
 
-    with _mock_verified_token(claims), patch.object(
-        settings, "OIDC_AUDIENCE", "my-client-id.apps.googleusercontent.com"
+    with (
+        _mock_verified_token(claims),
+        patch.object(
+            settings, "OIDC_AUDIENCE", "my-client-id.apps.googleusercontent.com"
+        ),
     ):
         response = client.post(
             "/v1/auth/google",
@@ -172,15 +197,28 @@ async def test_supabase_jwks_token_validation() -> None:
         "roles": ["client"],
         "scopes": ["document:read", "chat:write"],
     }
-    with patch.object(settings, "SUPABASE_URL", "https://xyz.supabase.co"), \
-         patch("src.adapters.api.security.jwt.get_unverified_header", return_value={"kid": "key-1"}), \
-         patch("src.adapters.api.security._fetch_jwks_key", new_callable=AsyncMock, return_value={"kty": "RSA"}), \
-         patch("src.adapters.api.security.jwt.algorithms.RSAAlgorithm.from_jwk", return_value=MagicMock()), \
-         patch("src.adapters.api.security.jwt.decode", return_value=claims), \
-         patch("src.adapters.api.security.identity_provider.validate_token", side_effect=AuthenticationError("Invalid API key")):
-
-        ctx = await get_current_user("Bearer fake_supabase_jwt")
+    with (
+        patch.object(settings, "SUPABASE_URL", "https://xyz.supabase.co"),
+        patch(
+            "src.adapters.api.security.jwt.get_unverified_header",
+            return_value={"kid": "key-1"},
+        ),
+        patch(
+            "src.adapters.api.security._fetch_jwks_key",
+            new_callable=AsyncMock,
+            return_value={"kty": "RSA"},
+        ),
+        patch(
+            "src.adapters.api.security.jwt.algorithms.RSAAlgorithm.from_jwk",
+            return_value=MagicMock(),
+        ),
+        patch("src.adapters.api.security.jwt.decode", return_value=claims),
+        patch(
+            "src.adapters.api.security.identity_provider.validate_token",
+            side_effect=AuthenticationError("Invalid API key"),
+        ),
+    ):
+        ctx = await get_current_user(_security_request(), "Bearer fake_supabase_jwt")
         assert ctx.user_id == "supabase-user-uuid-123"
         assert ctx.tenant_id == "00000000-0000-0000-0000-000000000001"
         assert "client" in ctx.roles
-

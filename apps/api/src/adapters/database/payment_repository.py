@@ -4,6 +4,7 @@ import logging
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import PaymentTransactionDb
@@ -40,7 +41,20 @@ class SqlPaymentRepository:
 
         async with tenant_session(tenant_id=tenant_id) as session:
             session.add(tx)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                logger.info(
+                    "Ignoring duplicate payment event for provider '%s' and reference '%s'.",
+                    provider,
+                    external_reference,
+                )
+                return {
+                    "duplicate": True,
+                    "provider": provider,
+                    "external_reference": external_reference,
+                }
             await session.refresh(tx)
 
             return {

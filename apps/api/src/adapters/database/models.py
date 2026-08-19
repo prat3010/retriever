@@ -37,9 +37,16 @@ class TenantDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     # Relationships
-    config = relationship("TenantConfigDb", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
+    config = relationship(
+        "TenantConfigDb",
+        back_populates="tenant",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     api_keys = relationship("ApiKeyDb", back_populates="tenant", cascade="all, delete")
-    sessions = relationship("ChatSessionDb", back_populates="tenant", cascade="all, delete")
+    sessions = relationship(
+        "ChatSessionDb", back_populates="tenant", cascade="all, delete"
+    )
     users = relationship("UserDb", back_populates="tenant", cascade="all, delete")
 
 
@@ -104,7 +111,9 @@ class UserDb(Base):
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="users")
-    sessions = relationship("ChatSessionDb", back_populates="user", cascade="all, delete")
+    sessions = relationship(
+        "ChatSessionDb", back_populates="user", cascade="all, delete"
+    )
 
 
 class AuditLogDb(Base):
@@ -162,11 +171,15 @@ class DocumentDb(Base):
     status = Column(String(50), nullable=False, default="PENDING")
     tags = Column(ARRAY(String), nullable=False, default=list)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
     is_deleted = Column(Boolean, nullable=False, default=False)
 
     # Relationships
-    chunks = relationship("DocumentChunkDb", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship(
+        "DocumentChunkDb", back_populates="document", cascade="all, delete-orphan"
+    )
 
 
 class DocumentChunkDb(Base):
@@ -189,13 +202,19 @@ class DocumentChunkDb(Base):
     content = Column(Text, nullable=False)
     token_count = Column(Integer, nullable=False)
     chunk_index = Column(Integer, nullable=False)
-    parent_chunk_id = Column(UUID(as_uuid=True), ForeignKey("document_chunks.chunk_id", ondelete="SET NULL"), nullable=True)
+    parent_chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="SET NULL"),
+        nullable=True,
+    )
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (
         Index("ix_document_chunks_meta_data", meta_data, postgresql_using="gin"),
-        Index("idx_document_chunks_tenant_doc_idx", tenant_id, document_id, chunk_index),
+        Index(
+            "idx_document_chunks_tenant_doc_idx", tenant_id, document_id, chunk_index
+        ),
         Index("idx_document_chunks_tenant_coll", tenant_id, collection_id),
     )
 
@@ -269,7 +288,6 @@ def get_vector_table_name(dimension: int) -> str:
     return "vector_records"
 
 
-
 class PromptTemplateDb(Base):
     __tablename__ = "prompt_templates"
 
@@ -289,7 +307,9 @@ class PromptTemplateDb(Base):
 class ChatSessionDb(Base):
     __tablename__ = "chat_sessions"
     __table_args__ = (
-        UniqueConstraint("session_id", "tenant_id", name="uq_chat_sessions_session_tenant"),
+        UniqueConstraint(
+            "session_id", "tenant_id", name="uq_chat_sessions_session_tenant"
+        ),
         Index("ix_chat_sessions_user_id", "user_id"),
     )
 
@@ -308,8 +328,10 @@ class ChatSessionDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     messages = relationship(
-        "ChatMessageDb", back_populates="session",
-        cascade="all, delete-orphan", order_by="ChatMessageDb.created_at"
+        "ChatMessageDb",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessageDb.created_at",
     )
     user = relationship("UserDb", back_populates="sessions")
     tenant = relationship("TenantDb", back_populates="sessions")
@@ -457,7 +479,9 @@ class EvalDatasetDb(Base):
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
 
-    questions = relationship("EvalQuestionDb", back_populates="dataset", cascade="all, delete-orphan")
+    questions = relationship(
+        "EvalQuestionDb", back_populates="dataset", cascade="all, delete-orphan"
+    )
 
 
 class EvalQuestionDb(Base):
@@ -501,7 +525,9 @@ class EvalRunDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
-    results = relationship("EvalRunResultDb", back_populates="run", cascade="all, delete-orphan")
+    results = relationship(
+        "EvalRunResultDb", back_populates="run", cascade="all, delete-orphan"
+    )
 
 
 class EvalRunResultDb(Base):
@@ -592,4 +618,12 @@ class PaymentTransactionDb(Base):
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
-
+    __table_args__ = (
+        Index(
+            "uq_payment_transactions_provider_external_reference",
+            provider,
+            external_reference,
+            unique=True,
+            postgresql_where=external_reference.is_not(None),
+        ),
+    )

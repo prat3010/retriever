@@ -21,7 +21,8 @@ class InfraCapabilities:
         self.cpu_cores = 1
         try:
             import psutil
-            self.ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+
+            self.ram_gb = psutil.virtual_memory().total / (1024**3)
             self.cpu_cores = os.cpu_count() or 1
         except ImportError:
             logger.warning("psutil not installed; infra auto-detection disabled")
@@ -47,11 +48,26 @@ class InfraCapabilities:
         return self.ram_gb >= 4.0 and self.cpu_cores >= 2
 
     def log_boot_status(self) -> None:
-        mode = "LEAN (synchronous processing)" if not self.workers_viable else "FULL (async workers available)"
-        logger.info("Server specs: %.1f GB RAM, %d CPU core(s)", self.ram_gb, self.cpu_cores)
-        logger.info("Redis: %s (need >=2 GB RAM)", "ENABLED" if self.redis_viable else "DISABLED")
-        logger.info("RabbitMQ: %s (need >=2 GB RAM)", "ENABLED" if self.broker_viable else "DISABLED")
-        logger.info("Celery workers: %s (need >=4 GB RAM, >=2 cores)", "ENABLED" if self.workers_viable else "DISABLED")
+        mode = (
+            "LEAN (synchronous processing)"
+            if not self.workers_viable
+            else "FULL (async workers available)"
+        )
+        logger.info(
+            "Server specs: %.1f GB RAM, %d CPU core(s)", self.ram_gb, self.cpu_cores
+        )
+        logger.info(
+            "Redis: %s (need >=2 GB RAM)",
+            "ENABLED" if self.redis_viable else "DISABLED",
+        )
+        logger.info(
+            "RabbitMQ: %s (need >=2 GB RAM)",
+            "ENABLED" if self.broker_viable else "DISABLED",
+        )
+        logger.info(
+            "Celery workers: %s (need >=4 GB RAM, >=2 cores)",
+            "ENABLED" if self.workers_viable else "DISABLED",
+        )
         logger.info("Running in %s mode", mode)
 
 
@@ -89,7 +105,11 @@ class Settings(BaseSettings):
                     "CORS_ORIGINS is set to '*' in production. "
                     "Set CORS_ORIGINS to a comma-separated list of allowed origins."
                 )
-            if not self.SECRET_KEY or len(self.SECRET_KEY) < 32 or self.SECRET_KEY.startswith("dev-"):
+            if (
+                not self.SECRET_KEY
+                or len(self.SECRET_KEY) < 32
+                or self.SECRET_KEY.startswith("dev-")
+            ):
                 raise ValueError(
                     "SECRET_KEY must be set to a secure random value of at least 32 characters "
                     "in production. Set SECRET_KEY env var."
@@ -112,7 +132,9 @@ class Settings(BaseSettings):
         return self
 
     # Infrastructure connection strings
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"
+    )
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
@@ -177,6 +199,13 @@ class Settings(BaseSettings):
     OIDC_JWKS_URI: str = ""
     OIDC_AUDIENCE: str = ""
 
+    # Payment webhooks are deliberately disabled until each provider secret is
+    # configured.  Empty values are safer than a development fallback: payment
+    # events must never provision a tenant without cryptographic verification.
+    STRIPE_WEBHOOK_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+    PHONEPE_WEBHOOK_SECRET: str = ""
+
     @model_validator(mode="after")
     def resolve_supabase_oidc(self):
         if self.SUPABASE_URL:
@@ -186,7 +215,6 @@ class Settings(BaseSettings):
             if not self.OIDC_ISSUER_URL:
                 self.OIDC_ISSUER_URL = f"{base_url}/auth/v1"
         return self
-
 
 
 settings = Settings()

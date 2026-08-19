@@ -3,18 +3,43 @@
 import hashlib
 import hmac
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # SaaS Plan Quotas Mapping
 PLAN_QUOTA_MAPPING = {
-    "starter_inr": {"max_documents": 20, "tokens_per_minute": 50000, "requests_per_minute": 30},
-    "starter_usd": {"max_documents": 20, "tokens_per_minute": 50000, "requests_per_minute": 30},
-    "pro_inr": {"max_documents": 100, "tokens_per_minute": 150000, "requests_per_minute": 90},
-    "pro_usd": {"max_documents": 100, "tokens_per_minute": 150000, "requests_per_minute": 90},
-    "business_inr": {"max_documents": 500, "tokens_per_minute": 500000, "requests_per_minute": 300},
-    "business_usd": {"max_documents": 500, "tokens_per_minute": 500000, "requests_per_minute": 300},
+    "starter_inr": {
+        "max_documents": 20,
+        "tokens_per_minute": 50000,
+        "requests_per_minute": 30,
+    },
+    "starter_usd": {
+        "max_documents": 20,
+        "tokens_per_minute": 50000,
+        "requests_per_minute": 30,
+    },
+    "pro_inr": {
+        "max_documents": 100,
+        "tokens_per_minute": 150000,
+        "requests_per_minute": 90,
+    },
+    "pro_usd": {
+        "max_documents": 100,
+        "tokens_per_minute": 150000,
+        "requests_per_minute": 90,
+    },
+    "business_inr": {
+        "max_documents": 500,
+        "tokens_per_minute": 500000,
+        "requests_per_minute": 300,
+    },
+    "business_usd": {
+        "max_documents": 500,
+        "tokens_per_minute": 500000,
+        "requests_per_minute": 300,
+    },
 }
 
 
@@ -29,42 +54,51 @@ class PaymentService:
         self, provider: str, payload_bytes: bytes, signature: str | None, secret: str
     ) -> bool:
         """Verify HMAC signature for incoming payment webhooks."""
-        if not secret or secret == "dev_secret":
-            # In dev mode without configured secret, allow testing
-            return True
-
-        if not signature:
+        if not secret or not signature:
             return False
 
         try:
             if provider == "stripe":
                 # Stripe signature format: t=123,v1=abc
-                parts = dict(pair.split("=") for pair in signature.split(",") if "=" in pair)
+                parts = dict(
+                    pair.split("=") for pair in signature.split(",") if "=" in pair
+                )
                 timestamp = parts.get("t", "")
                 expected_v1 = parts.get("v1", "")
+                if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > 300:
+                    return False
                 signed_payload = f"{timestamp}.{payload_bytes.decode('utf-8')}"
                 computed = hmac.new(
-                    secret.encode("utf-8"), signed_payload.encode("utf-8"), hashlib.sha256
+                    secret.encode("utf-8"),
+                    signed_payload.encode("utf-8"),
+                    hashlib.sha256,
                 ).hexdigest()
                 return hmac.compare_digest(computed, expected_v1)
 
-            elif provider in ("razorpay", "phonepe"):
+            if provider in ("razorpay", "phonepe"):
                 computed = hmac.new(
                     secret.encode("utf-8"), payload_bytes, hashlib.sha256
                 ).hexdigest()
                 return hmac.compare_digest(computed, signature)
         except Exception as err:
-            logger.error(f"Signature verification error for provider '{provider}': {err}")
+            logger.error(
+                f"Signature verification error for provider '{provider}': {err}"
+            )
             return False
 
-        return True
+        return False
 
     async def process_payment_webhook(
-        self, provider: str, payload: dict[str, Any], tenant_id_override: str | None = None
+        self,
+        provider: str,
+        payload: dict[str, Any],
+        tenant_id_override: str | None = None,
     ) -> dict[str, Any]:
         """Process validated payment payload, log to transaction ledger, and upgrade tenant quotas."""
         meta = payload.get("metadata", {})
-        tenant_id = tenant_id_override or meta.get("tenant_id") or payload.get("tenant_id")
+        tenant_id = (
+            tenant_id_override or meta.get("tenant_id") or payload.get("tenant_id")
+        )
 
         if not tenant_id:
             logger.warning("Payment webhook missing tenant_id in payload metadata.")
@@ -73,8 +107,19 @@ class PaymentService:
         event_type = payload.get("event") or payload.get("type") or "payment.succeeded"
         amount = float(payload.get("amount", 0.0))
         currency = payload.get("currency", "INR").upper()
-        ext_ref = payload.get("id") or payload.get("payment_id") or payload.get("subscription_id")
+        ext_ref = (
+            payload.get("event_id")
+            or payload.get("id")
+            or payload.get("payment_id")
+            or payload.get("subscription_id")
+        )
         plan_id = meta.get("plan_id") or payload.get("plan_id")
+
+        if not ext_ref:
+            logger.warning(
+                "Payment webhook missing a provider event or payment reference."
+            )
+            return {"status": "ignored", "reason": "missing_event_reference"}
 
         tx_record = {}
         if self.repo:
@@ -89,23 +134,51 @@ class PaymentService:
                 metadata=meta,
             )
 
+        if tx_record.get("duplicate"):
+            return {
+                "status": "ignored",
+                "reason": "duplicate_event",
+                "tenant_id": tenant_id,
+                "event_type": event_type,
+            }
+
         # Provision / upgrade tenant quotas if event indicates successful payment or subscription
         is_success = any(
             kw in event_type.lower()
-            for kw in ("completed", "succeeded", "charged", "created", "active", "payment.succeeded")
+            for kw in (
+                "completed",
+                "succeeded",
+                "charged",
+                "created",
+                "active",
+                "payment.succeeded",
+            )
         )
-        if is_success and plan_id and plan_id in PLAN_QUOTA_MAPPING and self.tenant_registry:
+        if (
+            is_success
+            and plan_id
+            and plan_id in PLAN_QUOTA_MAPPING
+            and self.tenant_registry
+        ):
             try:
                 config = await self.tenant_registry.get_config(tenant_id)
                 if config:
                     quota_updates = PLAN_QUOTA_MAPPING[plan_id]
                     config.quota_settings.max_documents = quota_updates["max_documents"]
-                    config.rate_limits.tokens_per_minute = quota_updates["tokens_per_minute"]
-                    config.rate_limits.requests_per_minute = quota_updates["requests_per_minute"]
+                    config.rate_limits.tokens_per_minute = quota_updates[
+                        "tokens_per_minute"
+                    ]
+                    config.rate_limits.requests_per_minute = quota_updates[
+                        "requests_per_minute"
+                    ]
                     await self.tenant_registry.save_config(tenant_id, config)
-                    logger.info(f"Upgraded tenant '{tenant_id}' quotas for plan '{plan_id}'.")
+                    logger.info(
+                        f"Upgraded tenant '{tenant_id}' quotas for plan '{plan_id}'."
+                    )
             except Exception as err:
-                logger.error(f"Failed to update tenant quotas for '{tenant_id}' ({err}).")
+                logger.error(
+                    f"Failed to update tenant quotas for '{tenant_id}' ({err})."
+                )
 
         return {
             "status": "processed",
@@ -123,8 +196,13 @@ class PaymentService:
         cancel_url: str = "https://prateeq.in/rag",
     ) -> dict[str, Any]:
         """Generate hosted checkout session metadata."""
-        plan_info = PLAN_QUOTA_MAPPING.get(plan_id, {"max_documents": 20})
-        checkout_id = f"cs_test_{hashlib.md5(f'{tenant_id}:{plan_id}'.encode()).hexdigest()[:12]}"
+        if plan_id not in PLAN_QUOTA_MAPPING:
+            raise ValueError("Unknown payment plan.")
+
+        plan_info = PLAN_QUOTA_MAPPING[plan_id]
+        checkout_id = (
+            f"cs_test_{hashlib.md5(f'{tenant_id}:{plan_id}'.encode()).hexdigest()[:12]}"
+        )
 
         return {
             "checkout_session_id": checkout_id,

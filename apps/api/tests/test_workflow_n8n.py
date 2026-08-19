@@ -39,29 +39,59 @@ async def test_n8n_webhook_dispatcher_success():
         mock_post.assert_awaited_once()
 
 
-# ── 2. Integration Test: Inbound n8n Auto-Ingest Webhook (Text) ───────────────
-
-@patch("src.routers.workflow.document_repository.create_document", new_callable=AsyncMock)
-def test_inbound_n8n_text_ingest(mock_create_doc):
-    """Verify inbound text ingestion from n8n passes through PII anonymization and saves chunks."""
+@pytest.mark.asyncio
+async def test_n8n_webhook_dispatcher_ssrf_blocked():
+    """Verify N8nWebhookDispatcher blocks SSRF attempts targeting localhost or private IPs."""
+    dispatcher = N8nWebhookDispatcher()
     tenant_id = str(uuid.uuid4())
 
-    res = client.post(
-        f"/v1/tenants/{tenant_id}/ingest/webhook",
-        json={
-            "title": "n8n Email Summary",
-            "content": "User SSN is 123-45-6789 and email is info@test.com.",
-            "source": "gmail_n8n",
-        },
-    )
+    for unsafe_url in [
+        "http://localhost:8000/internal",
+        "http://127.0.0.1/admin",
+        "http://169.254.169.254/latest/meta-data",
+        "http://192.168.1.1/router",
+        "http://10.0.0.1/secret",
+    ]:
+        res = await dispatcher.dispatch_event(
+            webhook_url=unsafe_url,
+            event_type="test.ssrf",
+            tenant_id=tenant_id,
+            payload={},
+        )
+        assert res["success"] is False
+        assert res["reason"] == "invalid_or_unsafe_webhook_url"
 
-    assert res.status_code == 201
-    body = res.json()
-    assert body["status"] == "ingested"
-    assert body["tenant_id"] == tenant_id
-    assert body["source"] == "gmail_n8n"
-    assert body["chunks"] > 0
-    mock_create_doc.assert_awaited_once()
+
+# ── 2. Integration Test: Inbound n8n Auto-Ingest Webhook (Text) ───────────────
+
+@patch("src.routers.workflow.ingest_file_sync", new_callable=AsyncMock)
+def test_inbound_n8n_text_ingest(mock_ingest_sync):
+    """Verify inbound text ingestion from n8n passes through PII anonymization and saves chunks."""
+    from src.adapters.api.security import verify_admin_key
+    app.dependency_overrides[verify_admin_key] = lambda: True
+
+    try:
+        tenant_id = str(uuid.uuid4())
+        mock_ingest_sync.return_value = 3
+
+        res = client.post(
+            f"/v1/tenants/{tenant_id}/ingest/webhook",
+            json={
+                "title": "n8n Email Summary",
+                "content": "User SSN is 123-45-6789 and email is info@test.com.",
+                "source": "gmail_n8n",
+            },
+        )
+
+        assert res.status_code == 201
+        body = res.json()
+        assert body["status"] == "ingested"
+        assert body["tenant_id"] == tenant_id
+        assert body["source"] == "gmail_n8n"
+        assert body["chunks"] == 3
+        mock_ingest_sync.assert_awaited_once()
+    finally:
+        app.dependency_overrides.clear()
 
 
 # ── 3. Integration Test: Inbound n8n Base64 File Ingest Webhook ───────────────
@@ -69,25 +99,31 @@ def test_inbound_n8n_text_ingest(mock_create_doc):
 @patch("src.routers.workflow.ingest_file_sync", new_callable=AsyncMock)
 def test_inbound_n8n_base64_file_ingest(mock_ingest_sync):
     """Verify inbound base64 binary file ingestion from n8n/Google Drive."""
-    tenant_id = str(uuid.uuid4())
-    dummy_pdf_base64 = base64.b64encode(b"%PDF-1.4 Dummy File Content").decode("utf-8")
-    mock_ingest_sync.return_value = 5
+    from src.adapters.api.security import verify_admin_key
+    app.dependency_overrides[verify_admin_key] = lambda: True
 
-    res = client.post(
-        f"/v1/tenants/{tenant_id}/ingest/webhook",
-        json={
-            "title": "Q3 Report.pdf",
-            "file_base64": dummy_pdf_base64,
-            "filename": "Q3_Report.pdf",
-            "source": "gdrive_n8n",
-        },
-    )
+    try:
+        tenant_id = str(uuid.uuid4())
+        dummy_pdf_base64 = base64.b64encode(b"%PDF-1.4 Dummy File Content").decode("utf-8")
+        mock_ingest_sync.return_value = 5
 
-    assert res.status_code == 201
-    body = res.json()
-    assert body["status"] == "ingested"
-    assert body["chunks"] == 5
-    mock_ingest_sync.assert_awaited_once()
+        res = client.post(
+            f"/v1/tenants/{tenant_id}/ingest/webhook",
+            json={
+                "title": "Q3 Report.pdf",
+                "file_base64": dummy_pdf_base64,
+                "filename": "Q3_Report.pdf",
+                "source": "gdrive_n8n",
+            },
+        )
+
+        assert res.status_code == 201
+        body = res.json()
+        assert body["status"] == "ingested"
+        assert body["chunks"] == 5
+        mock_ingest_sync.assert_awaited_once()
+    finally:
+        app.dependency_overrides.clear()
 
 
 # ── 4. Integration Test: n8n Webhook Config & OpenAPI Spec Endpoints ─────────

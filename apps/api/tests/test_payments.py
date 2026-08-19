@@ -1,11 +1,17 @@
 """Unit tests for Milestone 52: Commercial Payments & Deposit Billing."""
 
+import hashlib
+import hmac
+import json
+import time
 import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from src.config import settings
+from src.domain.abstractions.identity import UserContext
 from src.domain.billing.payment_service import PaymentService
 from src.main import app
 
@@ -14,26 +20,41 @@ client = TestClient(app)
 
 # ── 1. Unit Test: Signature Verification ──────────────────────────────────────
 
+
 def test_verify_signature():
     """Verify HMAC signature validation for Stripe and Razorpay."""
     service = PaymentService()
     secret = "secret_key_123"
     payload = b'{"event":"payment.succeeded"}'
 
-    # Dev fallback test
-    assert service.verify_signature("stripe", payload, None, "dev_secret") is True
+    # Missing configuration or a signature must never be accepted.
+    assert service.verify_signature("stripe", payload, None, "") is False
 
     # Valid Razorpay signature
     import hashlib
     import hmac
+
     valid_sig = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     assert service.verify_signature("razorpay", payload, valid_sig, secret) is True
 
     # Invalid signature
     assert service.verify_signature("razorpay", payload, "invalid_sig", secret) is False
 
+    timestamp = str(int(time.time()))
+    stripe_payload = f"{timestamp}.{payload.decode('utf-8')}".encode()
+    stripe_signature = hmac.new(
+        secret.encode("utf-8"), stripe_payload, hashlib.sha256
+    ).hexdigest()
+    assert (
+        service.verify_signature(
+            "stripe", payload, f"t={timestamp},v1={stripe_signature}", secret
+        )
+        is True
+    )
+
 
 # ── 2. Unit Test: Webhook Processing & Tenant Quota Upgrade ───────────────────
+
 
 @pytest.mark.asyncio
 async def test_process_payment_webhook_upgrades_quota():
@@ -44,11 +65,14 @@ async def test_process_payment_webhook_upgrades_quota():
     mock_config = AsyncMock()
     mock_registry.get_config.return_value = mock_config
 
-    service = PaymentService(payment_repository=mock_repo, tenant_registry=mock_registry)
+    service = PaymentService(
+        payment_repository=mock_repo, tenant_registry=mock_registry
+    )
 
     tenant_id = str(uuid.uuid4())
     payload = {
         "event": "payment.succeeded",
+        "id": "evt_123",
         "amount": 5999.0,
         "currency": "INR",
         "metadata": {"tenant_id": tenant_id, "plan_id": "pro_inr"},
@@ -62,7 +86,31 @@ async def test_process_payment_webhook_upgrades_quota():
     assert mock_config.quota_settings.max_documents == 100
 
 
+@pytest.mark.asyncio
+async def test_duplicate_payment_event_does_not_provision_twice():
+    mock_repo = AsyncMock()
+    mock_repo.save_transaction.return_value = {"duplicate": True}
+    mock_registry = AsyncMock()
+    service = PaymentService(
+        payment_repository=mock_repo, tenant_registry=mock_registry
+    )
+
+    result = await service.process_payment_webhook(
+        "razorpay",
+        {
+            "id": "evt_duplicate",
+            "event": "payment.succeeded",
+            "metadata": {"tenant_id": str(uuid.uuid4()), "plan_id": "pro_inr"},
+        },
+    )
+
+    assert result["status"] == "ignored"
+    assert result["reason"] == "duplicate_event"
+    mock_registry.save_config.assert_not_awaited()
+
+
 # ── 3. Unit Test: Checkout Session Generator ──────────────────────────────────
+
 
 def test_create_checkout_session():
     """Verify checkout session generator returns valid checkout metadata."""
@@ -82,22 +130,30 @@ def test_create_checkout_session():
 
 # ── 4. Integration Test: Payments Router Endpoints ────────────────────────────
 
+
 @patch("src.routers.payments.payment_repo.save_transaction", new_callable=AsyncMock)
 @patch("src.routers.payments.payment_repo.list_transactions", new_callable=AsyncMock)
 def test_payment_router_endpoints(mock_list_tx, mock_save_tx):
     """Verify checkout session API, webhook API, and admin ledger API."""
     mock_save_tx.return_value = {"transaction_id": "tx_test_123"}
-    from src.adapters.api.security import verify_admin_key
+    from src.adapters.api.security import get_current_user, verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
+    tenant_id = str(uuid.uuid4())
+    app.dependency_overrides[get_current_user] = lambda: UserContext(
+        user_id="user_test",
+        tenant_id=tenant_id,
+        roles=["client"],
+        scopes=["billing:write"],
+    )
+    original_secret = settings.RAZORPAY_WEBHOOK_SECRET
+    settings.RAZORPAY_WEBHOOK_SECRET = "webhook_test_secret"
 
     try:
-        tenant_id = str(uuid.uuid4())
-
         # 1. Checkout Session Endpoint
         res_checkout = client.post(
             "/v1/payments/checkout-session",
             json={
-                "tenant_id": tenant_id,
                 "plan_id": "starter_inr",
                 "currency": "INR",
             },
@@ -106,12 +162,24 @@ def test_payment_router_endpoints(mock_list_tx, mock_save_tx):
         assert res_checkout.json()["tenant_id"] == tenant_id
 
         # 2. Webhook Endpoint Test (Dev mode)
+        webhook_payload = {
+            "id": "evt_router_123",
+            "event": "payment.succeeded",
+            "amount": 1999.0,
+            "metadata": {"tenant_id": tenant_id, "plan_id": "starter_inr"},
+        }
+        raw_payload = json.dumps(webhook_payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            settings.RAZORPAY_WEBHOOK_SECRET.encode("utf-8"),
+            raw_payload,
+            hashlib.sha256,
+        ).hexdigest()
         res_webhook = client.post(
             "/v1/payments/webhooks/razorpay",
-            json={
-                "event": "payment.succeeded",
-                "amount": 1999.0,
-                "metadata": {"tenant_id": tenant_id, "plan_id": "starter_inr"},
+            content=raw_payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-Razorpay-Signature": signature,
             },
         )
         assert res_webhook.status_code == 200
@@ -143,4 +211,5 @@ def test_payment_router_endpoints(mock_list_tx, mock_save_tx):
         assert body_ledger["total"] == 1
         assert len(body_ledger["items"]) == 1
     finally:
+        settings.RAZORPAY_WEBHOOK_SECRET = original_secret
         app.dependency_overrides.clear()

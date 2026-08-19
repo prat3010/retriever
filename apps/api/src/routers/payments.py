@@ -14,9 +14,11 @@ from fastapi import (
 )
 from pydantic import BaseModel
 
-from src.adapters.api.security import verify_admin_key
+from src.adapters.api.security import get_current_user, verify_admin_key
 from src.config import settings
 from src.container import payment_repo, payment_service
+from src.domain.abstractions.identity import UserContext
+from src.domain.billing.payment_service import PLAN_QUOTA_MAPPING
 
 logger = logging.getLogger(__name__)
 
@@ -24,25 +26,28 @@ router = APIRouter(prefix="/v1", tags=["Payments"])
 
 
 class CheckoutSessionRequest(BaseModel):
-    tenant_id: str
     plan_id: str
     currency: Literal["INR", "USD"] = "INR"
-    success_url: str = "https://prateeq.in/dashboard"
-    cancel_url: str = "https://prateeq.in/rag"
 
 
 @router.post(
     "/payments/checkout-session",
     status_code=status.HTTP_200_OK,
 )
-async def create_checkout_session(payload: CheckoutSessionRequest) -> Any:
+async def create_checkout_session(
+    payload: CheckoutSessionRequest,
+    user_context: UserContext = Depends(get_current_user),
+) -> Any:
     """Generate a hosted payment checkout session for client deposit or subscription upgrade."""
+    if payload.plan_id not in PLAN_QUOTA_MAPPING:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unknown plan."
+        )
+
     return payment_service.create_checkout_session(
-        tenant_id=payload.tenant_id,
+        tenant_id=user_context.tenant_id,
         plan_id=payload.plan_id,
         currency=payload.currency,
-        success_url=payload.success_url,
-        cancel_url=payload.cancel_url,
     )
 
 
@@ -58,11 +63,26 @@ async def handle_payment_webhook(
     x_verify: str | None = Header(None, alias="X-VERIFY"),
 ) -> Any:
     """Receive and verify cryptographically signed webhooks from Stripe, Razorpay, or PhonePe."""
+    provider = provider.lower()
+    if provider not in {"stripe", "razorpay", "phonepe"}:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unsupported payment provider.",
+        )
+
     payload_bytes = await request.body()
     signature = stripe_signature or x_razorpay_signature or x_verify
 
     # Retrieve secret configuration for provider
-    secret = getattr(settings, f"{provider.upper()}_WEBHOOK_SECRET", "dev_secret")
+    secret = getattr(settings, f"{provider.upper()}_WEBHOOK_SECRET")
+    if not secret:
+        logger.error(
+            "Payment webhook received for unconfigured provider '%s'.", provider
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook provider is not configured.",
+        )
 
     # Verify signature
     is_valid = payment_service.verify_signature(
@@ -98,5 +118,7 @@ async def get_tenant_payment_ledger(
     offset: int = Query(default=0, ge=0),
 ) -> Any:
     """Retrieve audit-proof transaction ledger for a tenant (Admin only)."""
-    items, total = await payment_repo.list_transactions(tenantId, limit=limit, offset=offset)
+    items, total = await payment_repo.list_transactions(
+        tenantId, limit=limit, offset=offset
+    )
     return {"items": items, "total": total, "limit": limit, "offset": offset}

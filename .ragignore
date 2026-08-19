@@ -1,0 +1,32 @@
+# RAG Ingestion Ignore List
+.env*
+*.env
+*.pem
+*.key
+*secret*
+STRIPE_WEBHOOK_SECRET
+RAZORPAY_WEBHOOK_SECRET
+PHONEPE_WEBHOOK_SECRET
+SECRET_KEY
+STORAGE_HMAC_KEY
+
+# Virtual environments and dependencies
+node_modules/
+.venv*/
+**/venv/
+__pycache__/
+.git/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Binary & Lock files
+poetry.lock
+*.pyc
+*.log
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf

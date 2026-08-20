@@ -34,7 +34,7 @@ SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 RETRIEVER_ROOT = API_ROOT.parent.parent
 WEBSITE_ROOT = Path("/Users/prateeksharma/Developer/Prateek_website")
 
-SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "https://osaqaemntuzrjouzobvx.supabase.co")
+SUPABASE_URL = os.environ.get("RETRIEVER_SUPABASE_URL") or os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "https://uexdpufgmuevsrfijfrf.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # ------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ class SupabaseRestClient:
                     by_filename.setdefault(fname, []).append(doc)
 
             purged_count = 0
-            for fname, doc_list in by_filename.items():
+            for doc_list in by_filename.values():
                 if len(doc_list) > 1:
                     # Sort by created_at descending, keep the latest one
                     doc_list.sort(key=lambda d: d.get("created_at", ""), reverse=True)

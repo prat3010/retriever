@@ -74,3 +74,35 @@ class RedisTenantConfigCache(ConfigCache):
             await redis_client.delete(self._get_global_key())
         except Exception:
             pass
+
+
+class RerankerCandidateCache:
+    """Redis cache for top reranked search candidate tuples."""
+
+    @staticmethod
+    def _get_key(tenant_id: str, query_hash: str) -> str:
+        return f"reranker:cache:{tenant_id}:{query_hash}"
+
+    async def get_cached_candidates(self, tenant_id: str, query_text: str) -> list[dict] | None:
+        try:
+            if redis_client is None:
+                return None
+            import hashlib
+            q_hash = hashlib.sha256(query_text.encode()).hexdigest()[:16]
+            raw = await redis_client.get(self._get_key(tenant_id, q_hash))
+            if not raw:
+                return None
+            return json.loads(raw)
+        except Exception:
+            return None
+
+    async def set_cached_candidates(self, tenant_id: str, query_text: str, candidates: list[dict], ttl: int = 1800) -> None:
+        try:
+            if redis_client is None:
+                return
+            import hashlib
+            q_hash = hashlib.sha256(query_text.encode()).hexdigest()[:16]
+            await redis_client.setex(self._get_key(tenant_id, q_hash), ttl, json.dumps(candidates))
+        except Exception:
+            pass
+

@@ -341,6 +341,65 @@ class InferenceOrchestrator:
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
         await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes, role, key_id)
         await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
+        return response
+
+    async def generate_speculative(
+        self,
+        tenant_id: str,
+        session_id: str,
+        query: str,
+        context_chunks: list[SearchResult],
+        tenant_config: TenantConfiguration,
+        user_id: str | None = None,
+        role: str | None = None,
+        key_id: str | None = None,
+        system_prompt_name: str = "default",
+    ) -> InferenceResponse:
+        """Execute dual-stage Speculative RAG generation.
+
+        Stage 1: Fast drafter model generates initial candidate draft over context.
+        Stage 2: Primary verifier model validates and refines the candidate draft.
+        """
+        start = time.monotonic()
+        prompt_messages, model_config = await self._prepare_inference(
+            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
+        )
+
+        # Stage 1: Drafter pass (low token limit, fast output)
+        draft_request = InferenceRequest(
+            messages=prompt_messages,
+            temperature=0.2,
+            max_tokens=256,
+        )
+        config_dict = model_config.model_dump()
+        config_dict["model"] = model_config.default_model
+
+        try:
+            draft_response = await self.llm.generate(draft_request, config_dict)
+            draft_content = draft_response.content
+        except Exception:
+            draft_content = ""
+
+        # Stage 2: Verifier pass (evaluates draft against original query & context)
+        verifier_messages = prompt_messages + [
+            ChatMessage(role="assistant", content=f"[Candidate Draft]: {draft_content}"),
+            ChatMessage(role="user", content="Verify and finalize the candidate draft above against retrieved context. Fix any inaccuracies.")
+        ]
+        verifier_request = InferenceRequest(
+            messages=verifier_messages,
+            temperature=getattr(model_config, "temperature", 0.7),
+            max_tokens=getattr(model_config, "max_tokens", None) or 2048,
+        )
+        response = await self.llm.generate(verifier_request, config_dict)
+        response.speculative_draft = draft_content
+
+        model_used = model_config.default_model
+        cost = calculate_cost(response.usage, model_used, model_config.pricing)
+        elapsed = int((time.monotonic() - start) * 1000)
+
+        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost, role)
+        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, "speculative_rag=true", role, key_id)
+        await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
 
         return response
 

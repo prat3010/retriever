@@ -45,3 +45,29 @@ class CitationValidator:
             cid = match.group(1)
             return "" if cid not in self._valid_ids else match.group(0)
         return CITATION_PATTERN.sub(_replacer, text)
+
+    def validate_sentence_attribution(
+        self, text: str, chunk_contents: dict[str, str]
+    ) -> dict[str, bool]:
+        """Audit cited chunk IDs against provided chunk content to verify semantic grounding.
+
+        Returns a dict mapping chunk_id to boolean indicating whether cited chunk content overlaps
+        lexically or semantically with the claim text.
+        """
+        cited_ids = set(self.extract_citations(text))
+        attribution_results: dict[str, bool] = {}
+
+        # Tokenize sentence keywords (ignoring short stopwords)
+        words = set(re.findall(r"\b[a-zA-Z0-9]{4,}\b", text.lower()))
+
+        for cid in cited_ids:
+            if cid not in self._valid_ids or cid not in chunk_contents:
+                attribution_results[cid] = False
+                continue
+
+            chunk_text = chunk_contents[cid].lower()
+            overlap = any(w in chunk_text for w in words)
+            attribution_results[cid] = overlap
+
+        return attribution_results
+

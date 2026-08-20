@@ -32,7 +32,6 @@ async def ingest_file_sync(
     import tempfile
 
     from processing_core import (
-        chunk_text,
         extract_layout_from_pdf,
         extract_text_from_file,
     )
@@ -59,21 +58,62 @@ async def ingest_file_sync(
     if not text:
         text = file_content.decode("utf-8", errors="ignore")
 
+    from src.adapters.cognitive.ast_code_chunker import AstCodeChunker
     from src.domain.compliance.pii_anonymizer import PiiAnonymizer
+    from src.domain.ingestion.chunker_factory import ChunkerFactory
+
     anonymizer = PiiAnonymizer()
     text = anonymizer.anonymize_text(text)
 
-    chunks = chunk_text(
-        text=text,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        document_id=document_id,
-        tenant_id=tenant_id,
-    )
+    ext = os.path.splitext(filename)[1].lower()
+    code_extensions = {".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".go", ".c", ".cpp", ".rs", ".pyw"}
 
-    for chunk_item in chunks:
-        chunk_item.setdefault("meta_data", {}).update(layout_meta)
+    if ext in code_extensions:
+        ast_chunker = AstCodeChunker()
+        if ext in {".py", ".pyw"}:
+            raw_chunks = ast_chunker.chunk_python_ast(text, filename=filename)
+        else:
+            raw_chunks = ast_chunker._fallback_line_chunker(text, filename=filename)
+    elif ext == ".md":
+        ast_chunker = AstCodeChunker()
+        raw_chunks = ast_chunker.chunk_markdown(text, filename=filename)
+    else:
+        hierarchical_chunker = ChunkerFactory.get_chunker("hierarchical")
+        raw_chunks = hierarchical_chunker.split_text_with_offsets(text, chunk_size, chunk_overlap)
 
+    prefix = f"[Document: {filename}]\n" if filename else ""
+    chunks: list[dict] = []
+
+    for idx, c in enumerate(raw_chunks):
+        c_id = c.get("chunk_id") or str(uuid.uuid4())
+        p_id = c.get("parent_chunk_id")
+
+        raw_content = c["content"]
+        content_with_prefix = (
+            f"{prefix}{raw_content}" if prefix and not raw_content.startswith("[Document:") else raw_content
+        )
+
+        meta = c.get("meta_data") or c.get("metadata") or {}
+        if isinstance(meta, str):
+            import json
+
+            try:
+                meta = json.loads(meta)
+            except Exception:
+                meta = {}
+        meta = dict(meta)
+        meta.update(layout_meta)
+        if p_id:
+            meta["parent_chunk_id"] = str(p_id)
+
+        chunks.append({
+            "chunk_id": str(c_id),
+            "parent_chunk_id": str(p_id) if p_id else None,
+            "content": content_with_prefix,
+            "token_count": c.get("token_count") or len(content_with_prefix.split()),
+            "chunk_index": c.get("chunk_index", idx),
+            "meta_data": meta,
+        })
 
     texts_to_embed = [c["content"] for c in chunks]
     embeddings = await embedder.embed_batch(texts_to_embed)
@@ -104,6 +144,9 @@ async def ingest_file_sync(
 
         for chunk_data in chunks:
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
+            p_id = chunk_data.get("parent_chunk_id")
+            parent_uuid = uuid.UUID(p_id) if p_id else None
+
             db_chunk = DocumentChunkDb(
                 chunk_id=chunk_id,
                 document_id=uuid.UUID(document_id),
@@ -112,6 +155,7 @@ async def ingest_file_sync(
                 content=chunk_data["content"],
                 token_count=chunk_data["token_count"],
                 chunk_index=chunk_data["chunk_index"],
+                parent_chunk_id=parent_uuid,
                 meta_data=chunk_data["meta_data"],
             )
             session.add(db_chunk)

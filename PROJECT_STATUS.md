@@ -6,9 +6,9 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Self-Referential RAG & Codebase Introspection Architecture (M55 — Complete, v0.53.0)
-   - **Last Completed Milestone**: Self-Referential RAG & Codebase Introspection Architecture (M55)
-   - **Build Status**: Passing (488 unit tests pass)
+   - **Current Milestone**: SOTA RAG Modernization — Phase 3 Autonomous Cognition & RLM (Complete, 498 tests)
+   - **Last Completed Milestone**: SOTA RAG Modernization — Phase 3 Autonomous Cognition & RLM
+   - **Build Status**: Passing (498 unit tests pass)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
@@ -33,7 +33,7 @@ Operational overview of the Retriever platform's current engineering status.
  - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
  
  ### Testing Status: **Green**
-- **Unit Test Coverage**: 36 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), SaaS tenant resource quotas (`test_tenant_quotas.py`, M26), multi-workspace collections (`test_workspace_collections.py`, M27), interactive chunking auditor (`test_chunking_auditor.py`, M28), A/B testing platform (`test_ab_testing.py`, M29), SaaS data connectors framework (`test_data_connectors.py`, M36), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
+- **Unit Test Coverage**: 37 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), SaaS tenant resource quotas (`test_tenant_quotas.py`, M26), multi-workspace collections (`test_workspace_collections.py`, M27), interactive chunking auditor (`test_chunking_auditor.py`, M28), A/B testing platform (`test_ab_testing.py`, M29), SaaS data connectors framework (`test_data_connectors.py`, M36), zero-config self-adaptive ingestion (`test_zero_config_ingestion.py`), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
 - **Admin API Tests**: 48 tests covering all 32 admin endpoints (tenants, users, API keys, config, experiments CRUD+metrics, connectors CRUD+sync, documents, prompts CRUD+preview, audit logs, reindex).
 - **Total Tests**: 485/485 passing (1 skipped).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.

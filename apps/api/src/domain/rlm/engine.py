@@ -144,3 +144,83 @@ Extracted Evidence Highlights:
             subcalls_count=2,
             execution_time_ms=round(elapsed_ms, 2),
         )
+
+    async def analyze_repl_loop(self, request: RlmAnalysisRequest, max_turns: int = 3) -> RlmAnalysisResult:
+        """Execute multi-turn REPL loop for complex analytical multi-document tasks."""
+        start_time = time.monotonic()
+        code_executions: list[dict[str, Any]] = []
+
+        search_query = SearchQuery(
+            tenant_id=request.tenant_id,
+            query=request.prompt,
+            top_k=15,
+            enable_hybrid=True,
+            enable_graph_search=True,
+        )
+        search_resp = await self.search.search(search_query)
+        chunks = search_resp.results
+
+        class ChunkWrapper:
+            def __init__(self, c: Any) -> None:
+                self.content = c.content
+                self.document_id = c.document_id
+                self.score = c.score
+                self.metadata = c.metadata
+
+        context_chunks = [ChunkWrapper(c) for c in chunks]
+
+        messages = [
+            ChatMessage(role="system", content=RLM_CODE_GEN_PROMPT),
+            ChatMessage(role="user", content=f"Task: {request.prompt}\nLoaded {len(chunks)} target document chunks."),
+        ]
+
+        turn = 0
+        last_sandbox_res = None
+        while turn < max_turns:
+            turn += 1
+            llm_resp = await self.llm.generate(
+                InferenceRequest(messages=messages, temperature=0.1, max_tokens=600)
+            )
+            raw_code = llm_resp.content.strip()
+            if "```python" in raw_code:
+                code_snippet = raw_code.split("```python")[1].split("```")[0].strip()
+            elif "```" in raw_code:
+                code_snippet = raw_code.split("```")[1].split("```")[0].strip()
+            else:
+                code_snippet = raw_code
+
+            sandbox_res = await self.sandbox.execute_script(
+                tenant_id=request.tenant_id,
+                code=code_snippet,
+                context_dict={"chunks": context_chunks},
+                timeout_seconds=15.0,
+            )
+            last_sandbox_res = sandbox_res
+            code_executions.append(
+                {
+                    "turn": turn,
+                    "code": code_snippet,
+                    "stdout": sandbox_res.output,
+                    "result": str(sandbox_res.return_value),
+                    "is_error": sandbox_res.is_error,
+                    "execution_time_ms": sandbox_res.execution_time_ms,
+                }
+            )
+
+            if not sandbox_res.is_error and sandbox_res.return_value is not None:
+                break
+
+            messages.append(ChatMessage(role="assistant", content=raw_code))
+            messages.append(ChatMessage(role="user", content=f"Execution result: {sandbox_res.output}\nError: {sandbox_res.error_message}. Refine your script."))
+
+        final_val = last_sandbox_res.return_value if last_sandbox_res else "Analysis complete"
+        elapsed_ms = (time.monotonic() - start_time) * 1000
+        return RlmAnalysisResult(
+            tenant_id=request.tenant_id,
+            prompt=request.prompt,
+            analysis_summary=f"Multi-turn REPL loop completed in {turn} turn(s). Output: {final_val}",
+            code_executions=code_executions,
+            subcalls_count=turn + 1,
+            execution_time_ms=round(elapsed_ms, 2),
+        )
+

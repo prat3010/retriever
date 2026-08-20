@@ -301,6 +301,10 @@ class HybridSearchService:
             return self._fuse_rrf(
                 vector_results, keyword_results, query.rrf_k
             )
+        if strategy == "normalized_hybrid":
+            return self._fuse_normalized_hybrid(
+                vector_results, keyword_results, query.rrf_k
+            )
         if strategy in ("vector_only", "vector_only_degraded"):
             return vector_results
         if strategy == "keyword_only_degraded":
@@ -322,13 +326,59 @@ class HybridSearchService:
 
         for rank, result in enumerate(vector_results):
             rrf_score = 1.0 / (rrf_k + rank + 1)
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + rrf_score
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + rrf_score
             if result.chunk_id not in best_result:
                 best_result[result.chunk_id] = result
 
         for rank, result in enumerate(keyword_results):
             rrf_score = 1.0 / (rrf_k + rank + 1)
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + rrf_score
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + rrf_score
+            if result.chunk_id not in best_result:
+                best_result[result.chunk_id] = result
+
+        sorted_ids = sorted(scores.keys(), key=lambda cid: scores[cid], reverse=True)
+
+        return [
+            best_result[cid].model_copy(update={"score": round(scores[cid], 6)})
+            for cid in sorted_ids
+        ]
+
+    def _fuse_normalized_hybrid(
+        self,
+        vector_results: list[SearchResult],
+        keyword_results: list[SearchResult],
+        rrf_k: int,
+    ) -> list[SearchResult]:
+        """Apply Min-Max Normalized Hybrid Fusion across vector and keyword lists."""
+        scores: dict[str, float] = {}
+        best_result: dict[str, SearchResult] = {}
+
+        def _normalize(results: list[SearchResult]) -> dict[str, float]:
+            if not results:
+                return {}
+            min_s = min(r.score for r in results)
+            max_s = max(r.score for r in results)
+            rng = max_s - min_s
+            if rng <= 1e-6:
+                return {r.chunk_id: 1.0 for r in results}
+            return {r.chunk_id: (r.score - min_s) / rng for r in results}
+
+        norm_vec = _normalize(vector_results)
+        norm_kw = _normalize(keyword_results)
+
+        for rank, result in enumerate(vector_results):
+            rrf_score = 1.0 / (rrf_k + rank + 1)
+            raw_norm = norm_vec.get(result.chunk_id, 0.5)
+            fused_score = 0.7 * rrf_score + 0.3 * (raw_norm / rrf_k)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + fused_score
+            if result.chunk_id not in best_result:
+                best_result[result.chunk_id] = result
+
+        for rank, result in enumerate(keyword_results):
+            rrf_score = 1.0 / (rrf_k + rank + 1)
+            raw_norm = norm_kw.get(result.chunk_id, 0.5)
+            fused_score = 0.7 * rrf_score + 0.3 * (raw_norm / rrf_k)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + fused_score
             if result.chunk_id not in best_result:
                 best_result[result.chunk_id] = result
 

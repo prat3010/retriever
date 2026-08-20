@@ -152,7 +152,7 @@ class SemanticChunker(BaseChunker):
 
 
 class HierarchicalChunker(BaseChunker):
-    """Parent-child dual granularity chunker."""
+    """Parent-child dual granularity chunker emitting linked parent and child chunk records."""
 
     def __init__(self, encoding_name: str = "cl100k_base") -> None:
         self.sliding = SlidingChunker(encoding_name)
@@ -160,51 +160,134 @@ class HierarchicalChunker(BaseChunker):
     def split_text_with_offsets(
         self, text: str, chunk_size: int, chunk_overlap: int
     ) -> list[dict[str, Any]]:
-        # Parent chunks (large window)
-        parent_size = max(128, chunk_size)
+        import uuid
+
+        # Parent chunks (large context window: at least 500 tokens or 2x chunk_size)
+        parent_size = max(500, chunk_size * 2)
         parent_chunks = self.sliding.split_text_with_offsets(text, parent_size, chunk_overlap)
 
         child_size = max(64, chunk_size // 2)
         all_chunks: list[dict[str, Any]] = []
-        child_index = 0
+        chunk_index = 0
 
         for p_idx, p_chunk in enumerate(parent_chunks):
+            parent_id = str(uuid.uuid4())
             p_content = p_chunk["content"]
             p_start_char = p_chunk["start_char_idx"]
 
-            # Sub-chunk parent content
+            # Store Parent Chunk
+            all_chunks.append({
+                "chunk_id": parent_id,
+                "parent_chunk_id": None,
+                "is_parent": True,
+                "content": p_content,
+                "token_count": p_chunk["token_count"],
+                "char_count": len(p_content),
+                "chunk_index": chunk_index,
+                "start_char_idx": p_start_char,
+                "end_char_idx": p_chunk["end_char_idx"],
+                "meta_data": {
+                    "strategy": "hierarchical",
+                    "role": "parent",
+                    "parent_chunk_index": p_idx,
+                },
+            })
+            chunk_index += 1
+
+            # Sub-chunk parent content into smaller child chunks
             c_sub_chunks = self.sliding.split_text_with_offsets(p_content, child_size, max(0, chunk_overlap // 2))
 
             for c_chunk in c_sub_chunks:
+                child_id = str(uuid.uuid4())
                 c_start = p_start_char + c_chunk["start_char_idx"]
                 c_end = p_start_char + c_chunk["end_char_idx"]
 
                 all_chunks.append({
+                    "chunk_id": child_id,
+                    "parent_chunk_id": parent_id,
+                    "is_parent": False,
                     "content": c_chunk["content"],
                     "token_count": c_chunk["token_count"],
                     "char_count": len(c_chunk["content"]),
-                    "chunk_index": child_index,
+                    "chunk_index": chunk_index,
                     "start_char_idx": c_start,
                     "end_char_idx": c_end,
                     "meta_data": {
                         "strategy": "hierarchical",
+                        "role": "child",
+                        "parent_chunk_id": parent_id,
                         "parent_chunk_index": p_idx,
                         "parent_char_start": p_start_char,
                         "parent_char_end": p_chunk["end_char_idx"],
                     },
                 })
-                child_index += 1
+                chunk_index += 1
 
         return all_chunks
+
+
+class ContextualChunker(BaseChunker):
+    """Decorator chunker implementing Anthropic Contextual Retrieval.
+
+    Prepends document-level contextual headers (e.g. document title, summary, or section scope)
+    to chunk content before vector embedding to prevent orphan chunk syndrome.
+    """
+
+    def __init__(self, base_chunker: BaseChunker | None = None, context_prefix: str = "") -> None:
+        self.base_chunker = base_chunker or SlidingChunker()
+        self.context_prefix = context_prefix.strip()
+        self.encoding = tiktoken.get_encoding("cl100k_base")
+
+    def split_text_with_offsets(
+        self, text: str, chunk_size: int, chunk_overlap: int
+    ) -> list[dict[str, Any]]:
+        base_chunks = self.base_chunker.split_text_with_offsets(text, chunk_size, chunk_overlap)
+        if not self.context_prefix:
+            return base_chunks
+
+        header = f"[Context: {self.context_prefix}]\n\n"
+        header_tokens = len(self.encoding.encode(header))
+        header_chars = len(header)
+
+        contextual_chunks: list[dict[str, Any]] = []
+        for chunk in base_chunks:
+            new_content = f"{header}{chunk['content']}"
+            new_meta = dict(chunk.get("meta_data", {}))
+            new_meta["context_prepended"] = True
+            new_meta["context_prefix"] = self.context_prefix
+
+            contextual_chunks.append({
+                "chunk_id": chunk.get("chunk_id"),
+                "parent_chunk_id": chunk.get("parent_chunk_id"),
+                "is_parent": chunk.get("is_parent", False),
+                "content": new_content,
+                "token_count": chunk["token_count"] + header_tokens,
+                "char_count": len(new_content),
+                "chunk_index": chunk["chunk_index"],
+                "start_char_idx": chunk["start_char_idx"],
+                "end_char_idx": chunk["end_char_idx"] + header_chars,
+                "meta_data": new_meta,
+            })
+
+        return contextual_chunks
 
 
 class ChunkerFactory:
     """Factory to instantiate chunking strategy implementation."""
 
     @staticmethod
-    def get_chunker(strategy: str = "sliding") -> BaseChunker:
+    def get_chunker(strategy: str = "sliding", context_prefix: str = "") -> BaseChunker:
+        chunker: BaseChunker
         if strategy == "semantic":
-            return SemanticChunker()
+            chunker = SemanticChunker()
         elif strategy == "hierarchical":
-            return HierarchicalChunker()
-        return SlidingChunker()
+            chunker = HierarchicalChunker()
+        elif strategy == "contextual":
+            chunker = ContextualChunker(SlidingChunker(), context_prefix=context_prefix)
+        else:
+            chunker = SlidingChunker()
+
+        if context_prefix and not isinstance(chunker, ContextualChunker):
+            return ContextualChunker(chunker, context_prefix=context_prefix)
+        return chunker
+

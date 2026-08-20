@@ -81,13 +81,30 @@ async def get_current_user(
             f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else ""
         )
 
-        if jwks_uri or issuer_url:
+        if jwks_uri or issuer_url or settings.SUPABASE_URL:
             try:
+                payload: dict | None = None
                 unverified_header = jwt.get_unverified_header(clean_token)
+                alg = unverified_header.get("alg", "RS256")
                 kid = unverified_header.get("kid")
-                if kid and jwks_uri:
+
+                # Strategy A: If HS256 or SUPABASE_JWT_SECRET / SERVICE_ROLE_KEY is provided
+                jwt_secret = settings.SUPABASE_JWT_SECRET or settings.SUPABASE_SERVICE_ROLE_KEY
+                if (alg == "HS256" or jwt_secret) and jwt_secret:
+                    try:
+                        payload = jwt.decode(
+                            clean_token,
+                            jwt_secret,
+                            algorithms=["HS256"],
+                            options={"verify_aud": False, "verify_iss": False},
+                        )
+                    except PyJWTError:
+                        payload = None
+
+                # Strategy B: If RS256 algorithm & JWKS key is available
+                if payload is None and kid and jwks_uri:
                     jwk = await _fetch_jwks_key(jwks_uri, kid)
-                    if jwk:
+                    if jwk and jwk.get("kty") == "RSA":
                         public_key = jwt.algorithms.RSAAlgorithm.from_jwk(jwk)
                         decode_kwargs: dict = {
                             "algorithms": ["RS256"],
@@ -104,88 +121,113 @@ async def get_current_user(
                             decode_kwargs["options"]["verify_iss"] = False
 
                         payload = jwt.decode(clean_token, public_key, **decode_kwargs)
-                        tenant_id = (
-                            payload.get("tenant_id")
-                            or payload.get("custom:tenant_id")
-                            or payload.get("app_metadata", {}).get("tenant_id")
-                        )
-                        user_id = payload.get("sub")
-                        email = payload.get("email")
-                        roles = payload.get("roles") or payload.get("app_metadata", {}).get("roles", ["client"])
-                        scopes = payload.get("scopes", ["document:read", "document:write", "chat:read", "chat:write"])
 
-                        if not tenant_id and (user_id or email):
-                            import uuid
-
-                            from sqlalchemy import select
-
-                            from src.adapters.database.connection import tenant_session
-                            from src.adapters.database.models import (
-                                ApiKeyDb,
-                                TenantDb,
-                                UserDb,
+                # Strategy C: Fallback to Supabase Auth API GET /auth/v1/user
+                if payload is None and settings.SUPABASE_URL:
+                    try:
+                        async with httpx.AsyncClient() as http_client:
+                            user_res = await http_client.get(
+                                f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/user",
+                                headers={
+                                    "Authorization": f"Bearer {clean_token}",
+                                    "apikey": settings.SUPABASE_SERVICE_ROLE_KEY or "",
+                                },
+                                timeout=5.0,
                             )
+                            if user_res.status_code == 200:
+                                user_data = user_res.json()
+                                payload = {
+                                    "sub": user_data.get("id"),
+                                    "email": user_data.get("email"),
+                                    "app_metadata": user_data.get("app_metadata", {}),
+                                    "user_metadata": user_data.get("user_metadata", {}),
+                                }
+                    except Exception:
+                        pass
 
-                            async with tenant_session(bypass_rls=True) as session:
-                                stmt = select(UserDb).where(
-                                    (UserDb.external_id == user_id) | (UserDb.external_id == email)
-                                )
-                                res = await session.execute(stmt)
-                                user_db = res.scalar_one_or_none()
-                                if user_db:
-                                    tenant_id = str(user_db.tenant_id)
-                                    user_id = str(user_db.user_id)
-                                else:
-                                    tenant_uuid = uuid.uuid4()
-                                    user_uuid = uuid.uuid4()
-                                    display_name = (email or "User").split("@")[0].capitalize()
-                                    external_id = user_id or email
+                if payload:
+                    tenant_id = (
+                        payload.get("tenant_id")
+                        or payload.get("custom:tenant_id")
+                        or payload.get("app_metadata", {}).get("tenant_id")
+                    )
+                    user_id = payload.get("sub")
+                    email = payload.get("email")
+                    roles = payload.get("roles") or payload.get("app_metadata", {}).get("roles", ["client"])
+                    scopes = payload.get("scopes", ["document:read", "document:write", "chat:read", "chat:write"])
 
-                                    new_tenant = TenantDb(
-                                        tenant_id=tenant_uuid,
-                                        name=f"{display_name}'s Workspace",
-                                        tier="starter",
-                                        status="active",
-                                    )
-                                    session.add(new_tenant)
+                    if not tenant_id and (user_id or email):
+                        import uuid
 
-                                    new_user = UserDb(
-                                        user_id=user_uuid,
-                                        tenant_id=tenant_uuid,
-                                        external_id=external_id,
-                                        display_name=display_name,
-                                        is_active=True,
-                                    )
-                                    session.add(new_user)
+                        from sqlalchemy import select
 
-                                    api_key = f"ret_live_{uuid.uuid4().hex}"
-                                    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-                                    new_key_db = ApiKeyDb(
-                                        key_id=uuid.uuid4(),
-                                        tenant_id=tenant_uuid,
-                                        name="Default Workspace Key",
-                                        prefix="ret_live_",
-                                        key_hash=key_hash,
-                                        role="client",
-                                        status="active",
-                                    )
-                                    session.add(new_key_db)
-                                    await session.commit()
-
-                                    tenant_id = str(tenant_uuid)
-                                    user_id = str(user_uuid)
-
-                        if not tenant_id:
-                            raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")
-
-                        user_ctx = UserContext(
-                            user_id=user_id or "unknown",
-                            tenant_id=tenant_id,
-                            roles=roles if isinstance(roles, list) else [str(roles)],
-                            scopes=scopes if isinstance(scopes, list) else [str(scopes)],
+                        from src.adapters.database.connection import tenant_session
+                        from src.adapters.database.models import (
+                            ApiKeyDb,
+                            TenantDb,
+                            UserDb,
                         )
-                        request.state.user_context = user_ctx
-                        return user_ctx
+
+                        async with tenant_session(bypass_rls=True) as session:
+                            stmt = select(UserDb).where(
+                                (UserDb.external_id == user_id) | (UserDb.external_id == email)
+                            )
+                            res = await session.execute(stmt)
+                            user_db = res.scalar_one_or_none()
+                            if user_db:
+                                tenant_id = str(user_db.tenant_id)
+                                user_id = str(user_db.user_id)
+                            else:
+                                tenant_uuid = uuid.uuid4()
+                                user_uuid = uuid.uuid4()
+                                display_name = (email or "User").split("@")[0].capitalize()
+                                external_id = user_id or email
+
+                                new_tenant = TenantDb(
+                                    tenant_id=tenant_uuid,
+                                    name=f"{display_name}'s Workspace",
+                                    tier="starter",
+                                    status="active",
+                                )
+                                session.add(new_tenant)
+
+                                new_user = UserDb(
+                                    user_id=user_uuid,
+                                    tenant_id=tenant_uuid,
+                                    external_id=external_id,
+                                    display_name=display_name,
+                                    is_active=True,
+                                )
+                                session.add(new_user)
+
+                                api_key = f"ret_live_{uuid.uuid4().hex}"
+                                key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+                                new_key_db = ApiKeyDb(
+                                    key_id=uuid.uuid4(),
+                                    tenant_id=tenant_uuid,
+                                    name="Default Workspace Key",
+                                    prefix="ret_live_",
+                                    key_hash=key_hash,
+                                    role="client",
+                                    status="active",
+                                )
+                                session.add(new_key_db)
+                                await session.commit()
+
+                                tenant_id = str(tenant_uuid)
+                                user_id = str(user_uuid)
+
+                    if not tenant_id:
+                        raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")
+
+                    user_ctx = UserContext(
+                        user_id=user_id or "unknown",
+                        tenant_id=tenant_id,
+                        roles=roles if isinstance(roles, list) else [str(roles)],
+                        scopes=scopes if isinstance(scopes, list) else [str(scopes)],
+                    )
+                    request.state.user_context = user_ctx
+                    return user_ctx
             except PyJWTError as je:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

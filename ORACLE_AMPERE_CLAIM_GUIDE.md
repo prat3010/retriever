@@ -1,6 +1,6 @@
-# Oracle Cloud Ampere 24GB Auto-Claim Setup Guide
+# Oracle Cloud Ampere 12GB Auto-Claim Setup Guide
 
-> **Purpose:** Step-by-step instructions to activate the automated 24/7 GitHub Action workflow (`.github/workflows/oracle-claim-ampere.yml`) that claims an Oracle Ampere A1.Flex (4 OCPU, 24 GB RAM) instance for $0/mo forever.
+> **Purpose:** Step-by-step instructions to activate the automated 24/7 GitHub Action workflow (`.github/workflows/oracle-claim-ampere.yml`) that claims an Oracle Ampere A1.Flex (2 OCPU, 12 GB RAM) instance for $0/mo forever.
 
 ---
 

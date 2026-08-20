@@ -195,6 +195,8 @@ class Settings(BaseSettings):
 
     # OIDC & Supabase Auth Settings
     SUPABASE_URL: str = ""
+    SUPABASE_JWT_SECRET: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
     OIDC_ISSUER_URL: str = ""
     OIDC_JWKS_URI: str = ""
     OIDC_AUDIENCE: str = ""

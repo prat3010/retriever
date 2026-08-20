@@ -48,15 +48,15 @@ jobs:
           IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
           SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         run: |
-          echo "🔍 Attempting to launch Oracle Ampere A1.Flex (4 OCPU, 24GB RAM)..."
+          echo "🔍 Attempting to launch Oracle Ampere A1.Flex (2 OCPU, 12GB RAM)..."
           
           # Execute OCI launch command
           OUTPUT=$(oci compute instance launch \
             --compartment-id "$COMPARTMENT_ID" \
             --availability-domain "$AVAILABILITY_DOMAIN" \
             --shape "VM.Standard.A1.Flex" \
-            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
-            --display-name "retriever-ampere-24gb" \
+            --shape-config '{"ocpus": 2, "memoryInGBs": 12}' \
+            --display-name "retriever-ampere-12gb" \
             --image-id "$IMAGE_ID" \
             --subnet-id "$SUBNET_ID" \
             --assign-public-ip true \

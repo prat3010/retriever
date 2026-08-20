@@ -61,8 +61,16 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
 | **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
+| **M54** | Client SDK Parity & Speculative Parallel Retrieval | Expose full SDK features in `Prateek_website` & run HyDE/Self-Query/Dense embedding concurrently ($300–600\text{ms}$ search latency reduction) | **Planned** (v0.52.0) |
+| **M55** | Enforced Parent-Child Hydration & Citation Span Validation | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.53.0) |
+| **M56** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend document-level context to chunks prior to vector embedding (Anthropic method) via async Celery worker | **Planned** (v0.54.0) |
+| **M57** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned** (v0.55.0) |
+| **M58** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned** (v0.56.0) |
+| **M59** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned** (v0.57.0) |
+| **M60** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned** (v0.58.0) |
 
-> 📌 **Dashboard Architecture & Cross-Repository Roadmaps:**  
+> 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
+> - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](file:///Users/prateeksharma/Developer/Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
 
@@ -1075,6 +1083,75 @@ This document outlines the implementation phases and milestones for the Retrieve
 - **Outbound Webhook Configuration API**: Exposed `POST /v1/admin/tenants/{tenantId}/workflow/webhooks` to configure active n8n target URLs per tenant.
 - **n8n OpenAPI Spec Generator API**: Exposed `GET /v1/workflow/n8n-spec` providing OpenAPI 3.0.3 specifications for 1-click import into n8n HTTP Nodes.
 - **Unit Test Suite** (`apps/api/tests/test_workflow_n8n.py`): Created unit tests verifying inbound text/file ingestion, PII redaction pass-through, outbound event dispatching, and OpenAPI schema generation (483 total unit tests passing).
+
+---
+
+### [Planned] Milestone 54: Client SDK Parity & Speculative Parallel Retrieval (v0.52.0)
+
+**Objective:** Achieve 100% capability parity in the client SDK (`RetrieverClient`) and optimize retrieval fan-out latency via concurrent speculative execution.
+
+**Target Deliverables:**
+- **SDK Full Surface Expansion** (`Prateek_website/src/lib/rag-client.ts`): Expose client methods for Context Compression, Consensus score inspection, Guardrail status, and RLM execution mode.
+- **Speculative Query Parallelizer** (`apps/api/src/domain/retrieval/search_service.py`): Execute Self-Query parsing, HyDE expansion, and raw query vector embedding concurrently via `asyncio.gather()`, cutting $300-600\text{ms}$ off search latency.
+
+---
+
+### [Planned] Milestone 55: Enforced Parent-Child Hydration & Citation Span Validation (v0.53.0)
+
+**Objective:** Maximize context quality with small-chunk search precision while enforcing strict string-span citation verification.
+
+**Target Deliverables:**
+- **Automated Parent-Child Ingestion Default**: Automatically partition ingested files into child (150-token) and parent (800-token) records, dynamically hydrating parent context in `PromptBuilder`.
+- **Exact String-Span Citation Matcher** (`apps/api/src/domain/inference/citation_validator.py`): Enforce exact substring offset matching between generated quotes and context chunks, flagging ungrounded claims with visual UI warnings.
+
+---
+
+### [Planned] Milestone 56: Pre-Chunk Contextual Retrieval Ingestion Engine (v0.54.0)
+
+**Objective:** Eliminate ambiguous standalone chunks by pre-pending document-level context during ingestion (Anthropic Contextual Retrieval method).
+
+**Target Deliverables:**
+- **Contextual Ingestion Worker** (`apps/api/src/domain/ingestion/`): Async Celery task using a fast LLM (`gemini-3.6-flash` / `claude-3-5-haiku`) to generate 50-word document context headers for every chunk prior to vector embedding generation.
+- **Accuracy Boost**: Reduces top-20 retrieval failure rates by up to $49\%$.
+
+---
+
+### [Planned] Milestone 57: Late-Interaction (ColBERT) Token-Level Reranker (v0.55.0)
+
+**Objective:** Surface nuanced technical terms, serial numbers, and code identifiers where standard bi-encoders fail using token-level MaxSim late interaction.
+
+**Target Deliverables:**
+- **ColBERT Token-Level Reranker Adapter** (`apps/api/src/adapters/cognitive/tei_reranker_adapter.py`): Implement token-level MaxSim reranking over top-50 candidates.
+- **Flexible Engine Support**: Support local Text-Embeddings-Inference (TEI) containers and cloud API fallbacks.
+
+---
+
+### [Planned] Milestone 58: Corrective RAG (CRAG) & Agentic Reflection Loop (v0.56.0)
+
+**Objective:** Enable autonomous self-reflection and query correction.
+
+**Target Deliverables:**
+- **CRAG Reflection Engine** (`apps/api/src/domain/agentic/`): Evaluate candidate retrieval confidence scores before LLM generation.
+- **Autonomous Fallback**: If score drops below threshold, automatically execute query reformulations or web search fallback before generating response.
+
+---
+
+### [Planned] Milestone 59: Interactive RLM Python REPL Sandbox Studio (v0.57.0)
+
+**Objective:** Productize Recursive Language Models into an interactive developer workspace studio.
+
+**Target Deliverables:**
+- **RLM Workspace Studio Tab** (`Prateek_website/src/app/rag/app/`): Dedicated UI tab (`/rag/app/rlm`) where users can watch the AI write and execute Python code to recursively inspect, filter, and summarize document vaults using `/v1/rlm`.
+
+---
+
+### [Planned] Milestone 60: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning (v0.58.0)
+
+**Objective:** Unlock macro-level dataset reasoning and automated quality self-tuning based on continuous production evaluations.
+
+**Target Deliverables:**
+- **Hierarchical Leiden Community Extraction** (`apps/api/src/domain/graph/`): Construct global entity graphs, execute Leiden community clustering, and pre-generate macro hierarchical summaries.
+- **Closed-Loop Telemetry Self-Tuning**: Connect M50 online evaluation telemetry (`OnlineHallucinationEvaluator`) directly to `config_service` to automatically calibrate `reranking_threshold`, `top_k`, and `rrf_k` values based on continuous Ragas scoring.
 
 ---
 

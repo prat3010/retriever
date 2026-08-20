@@ -27,6 +27,12 @@ class ChatMessage(BaseModel):
     images: list[dict] = Field(default_factory=list)
 
 
+class SentenceAttribution(BaseModel):
+    sentence: str
+    cited_chunk_ids: list[str] = Field(default_factory=list)
+    is_grounded: bool = True
+
+
 class InferenceRequest(BaseModel):
     messages: list[ChatMessage]
     temperature: float = 0.7

@@ -5,6 +5,7 @@ using Reciprocal Rank Fusion (RRF), and optionally refines via cross-encoder
 reranking. Depends only on domain abstractions — no infrastructure imports.
 """
 
+import asyncio
 import time
 from collections.abc import Callable
 from uuid import uuid4
@@ -60,7 +61,7 @@ class HybridSearchService:
         self.graph_repository = graph_repository
 
     async def search(self, query: SearchQuery) -> SearchResponse:
-        """Execute the full hybrid search pipeline."""
+        """Execute the full hybrid search pipeline with speculative parallel pre-retrieval."""
         start_time = time.monotonic()
 
         # -1. Classify query intent and override top_k / feature flags
@@ -74,28 +75,44 @@ class HybridSearchService:
             except Exception:
                 pass
 
-        # 0. Self-query: parse NL query into structured filters
-        if query.enable_self_query and self.self_query:
-            parsed = await self._parse_self_query(query.query)
-            query.filters = query.filters + parsed
+        # 0. Speculative pre-retrieval execution: fan-out Self-Query, HyDE, and Raw Query Embedding concurrently
+        async def _run_self_query() -> list[MetadataFilter]:
+            if query.enable_self_query and self.self_query:
+                return await self._parse_self_query(query.query)
+            return []
 
-        # 0a. Optional HyDE query rewriting — rewritten text used for embedding only
-        embed_query = query.query
-        if query.enable_query_rewriting and self.query_rewriter:
+        async def _run_query_rewriter() -> list[str]:
+            if query.enable_query_rewriting and self.query_rewriter:
+                try:
+                    return await self.query_rewriter.rewrite(query.query)
+                except Exception:
+                    return []
+            return []
+
+        async def _run_raw_embed() -> list[float]:
             try:
-                rewritten = await self.query_rewriter.rewrite(query.query)
-                if rewritten:
-                    embed_query = rewritten[0]
+                return await self.embedder.embed_text(query.query)
             except Exception:
-                pass
+                return []
 
-        # 1. Generate query embedding (from HyDE document if rewriting was active)
-        query_embedding = await self.embedder.embed_text(embed_query)
+        sq_res, hyde_res, raw_embed_res = await asyncio.gather(
+            _run_self_query(),
+            _run_query_rewriter(),
+            _run_raw_embed(),
+            return_exceptions=True,
+        )
 
-        # 2. Check semantic cache table if cache provider is set
-        if self.cache_provider is not None:
+        parsed_filters = sq_res if isinstance(sq_res, list) else []
+        rewritten_list = hyde_res if isinstance(hyde_res, list) else []
+        raw_embedding = raw_embed_res if isinstance(raw_embed_res, list) else []
+
+        if parsed_filters:
+            query.filters = query.filters + parsed_filters
+
+        # Check semantic cache table using raw query embedding
+        if self.cache_provider is not None and raw_embedding:
             try:
-                cached_results = await self.cache_provider.get_cached_search(query.tenant_id, query_embedding)
+                cached_results = await self.cache_provider.get_cached_search(query.tenant_id, raw_embedding)
                 if cached_results is not None:
                     return SearchResponse(
                         query=query.query,
@@ -109,6 +126,16 @@ class HybridSearchService:
                     )
             except Exception:
                 pass
+
+        # Determine target embedding for dense vector search (HyDE rewritten vs raw query)
+        query_embedding = raw_embedding
+        if rewritten_list:
+            embed_query = rewritten_list[0]
+            if embed_query != query.query:
+                query_embedding = await self.embedder.embed_text(embed_query)
+
+        if not query_embedding:
+            query_embedding = await self.embedder.embed_text(query.query)
 
         # 3. Fan-out: parallel dense + sparse searches
         search_k = query.top_k * (

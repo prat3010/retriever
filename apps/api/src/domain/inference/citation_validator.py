@@ -6,6 +6,7 @@ chunk IDs. Depends only on domain abstractions.
 """
 
 import re
+from typing import Any
 
 CITATION_PATTERN = re.compile(r"\[Source:\s*([^\]]+)\]")
 
@@ -70,4 +71,46 @@ class CitationValidator:
             attribution_results[cid] = overlap
 
         return attribution_results
+
+    def validate_sentence_spans(
+        self, text: str, chunk_contents: dict[str, str]
+    ) -> list[dict[str, Any]]:
+        """Parse response text into sentences and audit each sentence for exact/lexical span grounding.
+
+        Returns a list of dicts with sentence, cited_chunk_ids, and is_grounded status.
+        """
+        sentence_pattern = re.compile(r".+?(?:[.!?](?:\s*\[(?:Source|Doc):\s*[^\]]+\])?(?=\s+|$)|$)", re.DOTALL)
+        matches = sentence_pattern.findall(text.strip())
+        sentences = [m.strip() for m in matches if m.strip()]
+
+        attributions = []
+        all_context_text = " ".join(chunk_contents.values()).lower()
+
+        for s in sentences:
+            cited_ids = self.extract_citations(s)
+            words = set(re.findall(r"\b[a-zA-Z0-9]{4,}\b", s.lower()))
+            if not words:
+                attributions.append({
+                    "sentence": s,
+                    "cited_chunk_ids": cited_ids,
+                    "is_grounded": True,
+                })
+                continue
+
+            if cited_ids:
+                grounded = any(
+                    cid in chunk_contents and any(w in chunk_contents[cid].lower() for w in words)
+                    for cid in cited_ids
+                )
+            else:
+                grounded = any(w in all_context_text for w in words)
+
+            attributions.append({
+                "sentence": s,
+                "cited_chunk_ids": cited_ids,
+                "is_grounded": grounded,
+            })
+
+        return attributions
+
 

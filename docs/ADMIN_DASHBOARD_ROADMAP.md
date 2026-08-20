@@ -131,6 +131,12 @@ timeline
 - **Immutable Audit Trail Verification:** Cryptographic hash-chain verification for audit log entries.
 - **SOC 2 Evidence Package Exporter:** Export system security posture and compliance audit logs as a downloadable ZIP package.
 
+### Phase 5: 2026 World-Class RAG Controls (M54–M60 Alignment)
+- **Contextual Retrieval Ingestion Controls (M56):** UI toggles for async Contextual Pre-Chunking headers during document upload.
+- **ColBERT Late-Interaction Engine Selector (M57):** Admin selector for Token-Level MaxSim Reranker (Local TEI container vs. Cloud API).
+- **Corrective RAG (CRAG) Threshold Configurator (M58):** Confidence score slider for triggering auto-query rewriting and web search fallbacks.
+- **Closed-Loop Telemetry Cockpit (M60):** Real-time dashboard panel mapping M50 faithfulness scores directly to automated retrieval parameter auto-tuning (`top_k`, `reranking_threshold`, `rrf_k`).
+
 ---
 
 ## 5. Admin API Reference Table

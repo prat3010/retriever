@@ -103,7 +103,7 @@ class RetrievalSettings(BaseModel):
     rerank_candidate_multiplier: int = 5
     chunk_size: int = 500
     chunk_overlap: int = 100
-    citation_template: str = "[{index}]"
+    citation_template: str = "[Source: {filename}]"
     summarize_after_turns: int = 15
     web_search_threshold: float = 0.65
     web_search_provider: str = "tavily"

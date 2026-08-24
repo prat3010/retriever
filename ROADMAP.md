@@ -1,6 +1,8 @@
-# Product Roadmap
+# Product Roadmap (Retriever Backend)
 
-This document outlines the implementation phases and milestones for the Retriever platform.
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M68) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 
+> This document tracks the backend engineering milestones (M1–M53) for the Retriever AI engine.
 
 ---
 
@@ -70,9 +72,9 @@ This document outlines the implementation phases and milestones for the Retrieve
 | **M60** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned** (v0.58.0) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
-> - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/RAG_2026_PRODUCT_ROADMAP.md)**.
-> - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](file:///Users/prateeksharma/Developer/retriever/docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
-> - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](file:///Users/prateeksharma/Developer/Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
+> - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
+> - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
+> - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
 
 ---
 
@@ -1163,3 +1165,14 @@ These are tracked across all milestones and are not individual deliverables:
 | **Security** | All milestones | RLS enforcement verified on every new table. No secrets in logs. No hardcoded prompts. Architecture conformance tests block regressions. |
 | **Backward Compatibility** | M11+ | SDK versioning follows semver. API version prefix (`/v1/`) maintained. Deprecation policy documented. |
 | **Documentation** | All milestones | Every API endpoint documented. Architecture decisions recorded as ADRs. Deployment and integration guides maintained. |
+
+---
+
+## **Related Architecture & Cross-References**
+
+- [Master Cross-Platform Roadmap (SSoT)](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+- [Project Health & Test Status](PROJECT_STATUS.md)
+- [2026 RAG Engine Architecture Blueprint](docs/RAG_2026_PRODUCT_ROADMAP.md)
+- [Admin Dashboard Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)
+- [Client Dashboard & SaaS Studio Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)
+- [Technical Debt Ledger](TECH_DEBT.md)

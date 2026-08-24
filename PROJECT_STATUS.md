@@ -13,7 +13,7 @@ Operational overview of the Retriever platform's current engineering status.
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Phase 1 Autonomous AI Outreach Agent (Prateek_website)
+   - **Next Recommended Milestone**: Phase G: SOTA Productized E-Commerce Scoping & Agency Ecosystem ([`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md) M63–M68)
 
 
 
@@ -122,7 +122,7 @@ Operational overview of the Retriever platform's current engineering status.
 ## 5. M12 Production Storage — Completed
 
 ### Document Storage
-- Developed standard `S3Storage` adapter in [s3_storage.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/storage/s3_storage.py) using boto3.
+- Developed standard `S3Storage` adapter in [s3_storage.py](apps/api/src/adapters/storage/s3_storage.py) using boto3.
 - Wired dynamic storage switches (`STORAGE_PROVIDER` = `"s3"` vs `"local"`) seamlessly into `main.py`.
 - Updated Celery background worker tasks to download S3 files to local temp paths on-demand and clean up after text-extraction is complete.
 
@@ -138,13 +138,13 @@ Operational overview of the Retriever platform's current engineering status.
 ## 6. M13 Multi-Industry Configurability — Completed
 
 ### Pluggable Pipeline Components
-- Developed token-aware recursive character splitter and semantic embeddings similarity splitter in [chunker.py](file:///Users/prateeksharma/Developer/retriever/packages/processing-core/src/processing_core/chunker.py).
+- Developed token-aware recursive character splitter and semantic embeddings similarity splitter in [chunker.py](packages/processing-core/src/processing_core/chunker.py).
 - Implemented hybrid metadata extraction (regex filters + structured LLM schema extractor) on worker queues, saving data in document chunk records.
 - Implemented input guardrails (local regex PII scrubber + customizable safety templates prompt injection blocks) returning 400 Bad Request on unsafe prompts.
 - Added support for post-processed verified citations formatted to match the tenant's `citation_template` string (handles both streaming and static completions).
 
 ### Configuration Presets
-- Packaged configuration templates for `legal`, `hr`, `medical`, and `finance` inside [presets.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/domain/config/presets.py).
+- Packaged configuration templates for `legal`, `hr`, `medical`, and `finance` inside [presets.py](apps/api/src/domain/config/presets.py).
 - Created `POST /v1/admin/tenants/{tenantId}/config/apply-preset` to deep-merge configurations.
 
 ---
@@ -152,15 +152,15 @@ Operational overview of the Retriever platform's current engineering status.
 ## 7. M14 Performance & Scale — Completed
 
 ### Decoupled Semantic Query Cache
-- Implemented pure domain port `SemanticCacheProvider` in [retrieval.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/domain/abstractions/retrieval.py) and concrete database adapter `PgSemanticCacheAdapter` in [semantic_cache.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/database/semantic_cache.py) to preserve Hexagonal Architecture import constraints.
+- Implemented pure domain port `SemanticCacheProvider` in [retrieval.py](apps/api/src/domain/abstractions/retrieval.py) and concrete database adapter `PgSemanticCacheAdapter` in [semantic_cache.py](apps/api/src/adapters/database/semantic_cache.py) to preserve Hexagonal Architecture import constraints.
 - Declared the HNSW vector-indexed, RLS-active `semantic_cache` database table mapping.
 - Intercepted query embedding paths in `HybridSearchService` to returnCached results immediately on similarity threshold hits ($> 0.99$ cosine similarity).
 
 ### Batched Transactions
-- Refactored chunk database inserts in background celery tasks in [__init__.py](file:///Users/prateeksharma/Developer/retriever/workers/src/tasks/__init__.py) to use batched parameter bindings, executing multi-inserts in single bulk operations.
+- Refactored chunk database inserts in background celery tasks in [__init__.py](workers/src/tasks/__init__.py) to use batched parameter bindings, executing multi-inserts in single bulk operations.
 
 ### API Lifespan Warmup & Streaming Controls
-- Warmed up async connection pool engines eagerly during FastAPI startup lifespan blocks in [main.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/main.py).
+- Warmed up async connection pool engines eagerly during FastAPI startup lifespan blocks in [main.py](apps/api/src/main.py).
 - Intercepted `asyncio.CancelledError` inside event stream generation blocks to immediately release and release thread handles when client SSE connections disconnect.
 
 ---
@@ -168,17 +168,17 @@ Operational overview of the Retriever platform's current engineering status.
 ## 8. M15 Enterprise Readiness — Completed
 
 ### Cryptographic Append-Only Audit Logs
-- Extended `AuditLogDb` schema mapping in [models.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/database/models.py) to incorporate cryptographic headers (`entry_hash` and `previous_hash`).
+- Extended `AuditLogDb` schema mapping in [models.py](apps/api/src/adapters/database/models.py) to incorporate cryptographic headers (`entry_hash` and `previous_hash`).
 - Upgraded `SqlAuditLogRepository` to calculate SHA-256 blocks for incoming logs based on prior entry hashes, creating a tamper-evident audit history chain.
 - Added `verify_audit_chain` utility to trace and verify block chain validation.
 
 ### OIDC Token Signatures Verification
-- Implemented RSA signature verification, issuer, and audience validation in [security.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/api/security.py) using `pyjwt`.
+- Implemented RSA signature verification, issuer, and audience validation in [security.py](apps/api/src/adapters/api/security.py) using `pyjwt`.
 - Leveraged external provider OIDC JWKS public key directories with local async fetching and caching to avoid round-trip signature check bottlenecks.
 
 ### Tenant Data Retention Scheduler
 - Added `data_retention_ttl_days` schema bounds to SecuritySettings.
-- Implemented periodic Celery cleanup worker in [__init__.py](file:///Users/prateeksharma/Developer/retriever/workers/src/tasks/__init__.py) executing system-wide database cleanses on expired documents (with cascade deletes to vector fragments) and idle chat history.
+- Implemented periodic Celery cleanup worker in [__init__.py](workers/src/tasks/__init__.py) executing system-wide database cleanses on expired documents (with cascade deletes to vector fragments) and idle chat history.
 
 ### Granular Scope Validation
 - Extended `verify_scopes` middleware checks to analyze request parameters (such as path extensions or body filters), validating collection-scoped (`collection:<name>:read`) and file-typed (`document_type:<ext>:write`) rules.
@@ -604,3 +604,12 @@ Deferred architecture, test, security, migration, and product items: see `TECH_D
 | Resolve guest demo key (provision server-side or remove demo) | frontend + provisioning | ⬜ Pending (follow-up) |
 | Regression tests: forged tokens rejected, injection payloads rejected, traversal → 400 | `tests/` | ✅ Done (v0.36.0) |
 
+---
+
+## **Related Architecture & Cross-References**
+
+- [Backend Engineering Roadmap](ROADMAP.md)
+- [Unified Master Roadmap (Phase G)](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+- [RAG Engine Architecture Specification](docs/RAG_2026_PRODUCT_ROADMAP.md)
+- [Technical Debt & Deferred Items](TECH_DEBT.md)
+- [Production Deployment Reference](DEPLOYMENT.md)

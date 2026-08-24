@@ -3,9 +3,9 @@
 This document serves as the canonical handbook for implementing code on the Retriever platform. It specifies mandatory patterns, directory rules, interface boundaries, and operational constraints that must be followed during feature development.
 
 Refer to the foundational documents for contextual guidelines:
-- [The Engineering Constitution (master-vision.md)](file:///Users/prateeksharma/Developer/retriever/docs/constitution/master-vision.md)
-- [System Architecture Design Blueprint (architecture.md)](file:///Users/prateeksharma/Developer/retriever/docs/architecture.md)
-- [System Design & Implementation Blueprint (system-design.md)](file:///Users/prateeksharma/Developer/retriever/docs/implementation/system-design.md)
+- [The Engineering Constitution (master-vision.md)](../constitution/master-vision.md)
+- [System Architecture Design Blueprint (architecture.md)](../architecture.md)
+- [System Design & Implementation Blueprint (system-design.md)](../implementation/system-design.md)
 
 ---
 

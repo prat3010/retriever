@@ -9,8 +9,8 @@
 ## Architecture & Target Scope
 
 Strix executes AI security agents inside Docker containers and targets:
-1. **OpenAPI Specification**: Automatically generated from FastAPI via [`generate_openapi.py`](file:///Users/prateeksharma/Developer/retriever/apps/api/scripts/generate_openapi.py) and output to [`docs/openapi.json`](file:///Users/prateeksharma/Developer/retriever/docs/openapi.json).
-2. **Source Code**: Static analysis of Python FastAPI routes under [`apps/api/src`](file:///Users/prateeksharma/Developer/retriever/apps/api/src).
+1. **OpenAPI Specification**: Automatically generated from FastAPI via [`generate_openapi.py`](../apps/api/scripts/generate_openapi.py) and output to [`docs/openapi.json`](openapi.json).
+2. **Source Code**: Static analysis of Python FastAPI routes under [`apps/api/src`](../apps/api/src).
 3. **Local API Server**: Dynamic HTTP scanning against `http://localhost:8000`.
 
 ```

@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Index,
     Integer,
+    MetaData,
     String,
     Text,
     UniqueConstraint,
@@ -24,7 +25,7 @@ def utc_now() -> datetime:
 
 
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData(schema="retriever")
 
 
 class TenantDb(Base):

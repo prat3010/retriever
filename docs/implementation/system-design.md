@@ -3,9 +3,9 @@
 This blueprint serves as the canonical implementation reference for the Retriever platform. It bridges the gap between logical architectural guidelines and physical code, detailing modules, database tables, API schemas, background worker states, and operational profiles. 
 
 Refer to the foundational documents for contextual guidelines:
-- [The Engineering Constitution (master-vision.md)](file:///Users/prateeksharma/Developer/retriever/docs/constitution/master-vision.md)
-- [System Architecture Design Blueprint (architecture.md)](file:///Users/prateeksharma/Developer/retriever/docs/architecture.md)
-- [Feature Specification (core-platform.md)](file:///Users/prateeksharma/Developer/retriever/docs/features/core-platform.md)
+- [The Engineering Constitution (master-vision.md)](../constitution/master-vision.md)
+- [System Architecture Design Blueprint (architecture.md)](../architecture.md)
+- [Feature Specification (core-platform.md)](../features/core-platform.md)
 
 ---
 
@@ -1221,3 +1221,12 @@ PHASE 5: Operational Hardening
   * Ragas-based evaluation test suite and golden test dataset (aspirational).
 * **Dependencies:** Phase 4.
 * **Exit Criteria:** Telemetry dashboards log performance metrics, tests pass in CI, architecture boundaries are enforced.
+
+---
+
+## **Related Architecture & Cross-References**
+
+- [System Architecture Blueprint](architecture.md)
+- [Engineering Constitution](constitution/master-vision.md)
+- [Core Platform Features](features/core-platform.md)
+- [RAG Audit Report](engineering/rag-audit-report.md)

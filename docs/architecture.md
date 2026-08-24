@@ -768,7 +768,7 @@ This section documents the expected behavior, retry strategies, and recovery pro
 
 ### 14. Traceability Map (Mapping to the Engineering Constitution)
 
-To guarantee alignment, this architecture design maps directly back to the [Engineering Constitution](file:///Users/prateeksharma/Developer/retriever/docs/constitution/master-vision.md).
+To guarantee alignment, this architecture design maps directly back to the [Engineering Constitution](constitution/master-vision.md).
 
 | Architectural Pattern / Design Choice | Target Section of the Constitution | Rationale and Verification Method |
 |---|---|---|
@@ -955,3 +955,12 @@ When adding a new LLM provider key:
    ```
 4. Verify chat works: create a session, send a message, confirm SSE stream.
 5. Set up quota monitoring (not yet automated — check provider dashboard periodically).
+
+---
+
+## **Related Architecture & Cross-References**
+
+- [Engineering Constitution](constitution/master-vision.md)
+- [Physical System Design & Endpoints](implementation/system-design.md)
+- [Engineering Standards & Boundaries](engineering/engineering-playbook.md)
+- [2026 Architecture Blueprint](RAG_2026_PRODUCT_ROADMAP.md)

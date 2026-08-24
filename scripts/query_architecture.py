@@ -1,0 +1,1 @@
+/Users/prateeksharma/Developer/Prateek_website/scripts/query_architecture.py

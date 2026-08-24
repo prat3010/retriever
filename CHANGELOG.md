@@ -258,7 +258,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Modular Target-Engine Embedding**: `POST /v1/admin/tenants/{tenantId}/documents/{documentId}/process` supports `targetEngine` query parameter (`laptop` | `oracle` | `auto`), allowing administrators to route embedding jobs to their local laptop (via local Ollama at `http://localhost:11434`) or to the cloud server (Oracle VM).
 - **Real-time Status Transitions**: On-demand process endpoint updates document status in Supabase from `PENDING` → `PROCESSING` immediately for instant visual feedback, and `INDEXED` upon completion.
 - **Remote Storage HTTP Fallback**: When running locally (`STORAGE_PROVIDER=local`) and physical file bytes are missing from local disk, the backend automatically downloads the raw file over HTTP from `{REMOTE_STORAGE_API_URL}/v1/admin/tenants/{tenantId}/documents/{documentId}/file` using `ADMIN_MASTER_KEY`.
-- **Target Selection UI in Admin Dashboard**: Updated document table ([tenant-documents.tsx](file:///Users/prateeksharma/Developer/retriever/apps/web/src/components/tenant-documents.tsx)) with ⚡ **Laptop** and ☁️ **Cloud** target selection buttons on `PENDING` files, plus animated `PROCESSING` spinner.
+- **Target Selection UI in Admin Dashboard**: Updated document table ([tenant-documents.tsx](apps/web/src/components/tenant-documents.tsx)) with ⚡ **Laptop** and ☁️ **Cloud** target selection buttons on `PENDING` files, plus animated `PROCESSING` spinner.
 - **Bulk Batch Processing CLI Tool**: Added `scripts/process-pending.sh` wrapper and `apps/api/src/scripts/process_pending.py` script to batch-process all `PENDING` documents across all tenants in one command.
 
 ### Changed

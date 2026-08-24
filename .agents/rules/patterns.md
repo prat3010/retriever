@@ -32,3 +32,15 @@
 ### 7. Database Migration & Conformance Testing
 - **Rule:** Schema changes require Alembic migration scripts, verified by Pytest suites.
 - **Constraint:** Zero over-engineering — keep domain logic minimal, decoupled, and completely covered by tests.
+
+### 8. Agent Architecture Pre-Flight & Blast Radius Inspection
+- **Rule:** Before writing or modifying code in `apps/api/`, `workers/`, or `packages/`:
+  ```bash
+  python3 scripts/query_architecture.py --target <component_or_endpoint>
+  ```
+- **Constraint:** Verify all cross-repo callers (e.g. `prateeq.in/scoping`, `prateeq.in/rag/app`, `prateeq_scoping` dogfooding tenant) before modifying endpoint signatures or schemas.
+
+### 9. Episodic Memory Bank & Failure Postmortems
+- **Rule:** Before attempting any complex refactor, database migration, or debugging task, the agent **MUST** inspect `docs/LEARNINGS.md` for known framework quirks (e.g. Hexagonal domain pollution, multi-tenant leaks, local embedding constraints, alembic model detection).
+- **Constraint:** Whenever a non-trivial bug or architectural quirk is resolved, the agent **MUST** document the failure signature, root cause, anti-pattern, and enforced solution in `docs/LEARNINGS.md`.
+

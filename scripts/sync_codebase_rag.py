@@ -10,8 +10,8 @@ from pathlib import Path
 api_root = Path(__file__).resolve().parent.parent / "apps" / "api"
 sys.path.insert(0, str(api_root))
 
-from src.adapters.cognitive.ast_code_chunker import AstCodeChunker
-from src.domain.ingestion.ragignore import RagIgnoreFilter
+from src.adapters.cognitive.ast_code_chunker import AstCodeChunker  # noqa: E402
+from src.domain.ingestion.ragignore import RagIgnoreFilter  # noqa: E402
 
 PUBLIC_DOC_FILES = [
     "docs/00_README.md",

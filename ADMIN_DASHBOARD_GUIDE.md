@@ -166,3 +166,12 @@ All visual assets and page routes live in:
 All API requests are handled by React Query hooks or custom fetch utilities in:
 `apps/web/src/components/` (specifically `tenant-config.tsx`, `tenant-api-keys.tsx`, etc.).
 If you add an endpoint to `apps/api/src/main.py` under the admin route prefix, add a matching fetch method in the corresponding UI component using the `X-Admin-Master-Key` headers.
+
+---
+
+## **Related Architecture & Cross-References**
+
+- [Admin Dashboard Architecture Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)
+- [Tenant Onboarding Workflow](ONBOARDING_WORKFLOW.md)
+- [Client SaaS Studio Specification](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)
+- [Backend Engine Roadmap](ROADMAP.md)

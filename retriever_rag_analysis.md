@@ -1,6 +1,6 @@
 # Retriever × RAG Client — Comprehensive Analysis Report
 
-> **Scope:** [Retriever admin dashboard](file:///Users/prateeksharma/Developer/retriever/apps/web) (deployed at `admin.rag.prateeq.in`) and [RAG client app](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx) (deployed at `prateeq.in/rag`).
+> **Scope:** [Retriever admin dashboard](apps/web) (deployed at `admin.rag.prateeq.in`) and [RAG client app](../Prateek_website/src/components/rag/RagInterface.tsx) (deployed at `prateeq.in/rag`).
 > **Date:** 2026-07-19
 
 ---
@@ -71,7 +71,7 @@ graph LR
 | **Theme** | Dark/light mode via `next-themes`, Inter + Outfit fonts |
 | **Navigation** | Fixed sidebar with 6 items: Dashboard, Tenants, Onboard Client, Audit Log, System Data, Settings |
 | **Auth** | Master-key-based login. Key saved to `sessionStorage` + cookie for proxy redirect. |
-| **DX Quality** | Clean separation: hooks (`use-tenants`, `use-users`, `use-api-keys`, `use-config`, `use-documents`, `use-prompts`), Zustand store (`auth.ts`), typed API client ([api.ts](file:///Users/prateeksharma/Developer/retriever/apps/web/src/lib/api.ts)) |
+| **DX Quality** | Clean separation: hooks (`use-tenants`, `use-users`, `use-api-keys`, `use-config`, `use-documents`, `use-prompts`), Zustand store (`auth.ts`), typed API client ([api.ts](apps/web/src/lib/api.ts)) |
 
 **What the admin can do:**
 - View platform stats (tenant counts, statuses, tiers)
@@ -90,7 +90,7 @@ graph LR
 | **Tabs** | Config → Chat → Search → Documents |
 | **Auth** | Form-based: fill in API URL, Tenant ID, User ID, API Key, then "Save & Connect" |
 | **State** | `useState` + `localStorage` (key: `rag_config`) |
-| **API Client** | Custom [RetrieverClient](file:///Users/prateeksharma/Developer/Prateek_website/src/lib/rag-client.ts) class — direct `fetch` calls to backend |
+| **API Client** | Custom [RetrieverClient](../Prateek_website/src/lib/rag-client.ts) class — direct `fetch` calls to backend |
 
 ---
 
@@ -98,7 +98,7 @@ graph LR
 
 ### Admin Dashboard: Onboarding a New Client
 
-The onboarding wizard at [/onboard](file:///Users/prateeksharma/Developer/retriever/apps/web/src/app/(dashboard)/onboard/page.tsx) has **3 steps**:
+The onboarding wizard at [/onboard](apps/web/src/app/(dashboard)/onboard/page.tsx) has **3 steps**:
 
 ```
 Step 1: Tenant Details          Step 2: API Key              Step 3: Credentials
@@ -144,7 +144,7 @@ The Tenant ID and User ID fields come **pre-populated** with specific values. A 
 
 ### Problem 2: API Key Placeholder Mismatch
 
-The placeholder text says `sk_live_...` — this follows Stripe's key format convention. But Retriever's actual API key format is `ret_live_<random>.<secret>` (as seen in [identity_repository.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/adapters/database/identity_repository.py#L76-L80)). This mismatch:
+The placeholder text says `sk_live_...` — this follows Stripe's key format convention. But Retriever's actual API key format is `ret_live_<random>.<secret>` (as seen in [identity_repository.py](apps/api/src/adapters/database/identity_repository.py#L76-L80)). This mismatch:
 
 - Confuses users about what format to expect
 - Doesn't help users verify they're pasting the right key
@@ -152,7 +152,7 @@ The placeholder text says `sk_live_...` — this follows Stripe's key format con
 
 ### Problem 3: UUID Validation is Strict but IDs are User-Hostile
 
-The form validates both Tenant ID and User ID with a strict UUID regex ([RagInterface.tsx:23](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx#L23)). UUIDs like `a8b819bb-61bb-450b-9662-62bd06b188d3` are:
+The form validates both Tenant ID and User ID with a strict UUID regex ([RagInterface.tsx:23](../Prateek_website/src/components/rag/RagInterface.tsx#L23)). UUIDs like `a8b819bb-61bb-450b-9662-62bd06b188d3` are:
 - Hard to read, copy, and paste
 - Impossible to communicate verbally
 - Easy to mis-paste (truncation, extra whitespace)
@@ -170,35 +170,35 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 
 | # | Location | Issue | Fix |
 |---|----------|-------|-----|
-| 1 | [.env](file:///Users/prateeksharma/Developer/retriever/.env) | **Database credentials (Supabase password) committed to repo** in plaintext. `OPENAI_API_KEY` also present. | Move to `.env.local` / secrets manager. Rotate all exposed credentials immediately. |
-| 2 | [.env.local](file:///Users/prateeksharma/Developer/retriever/apps/web/.env.local#L4) | **Vercel OIDC JWT token committed** — contains project IDs, team IDs, and auth scopes. | Add to `.gitignore`, rotate token. |
-| 3 | [config.py:16](file:///Users/prateeksharma/Developer/retriever/apps/api/src/config.py#L16) | `ADMIN_MASTER_KEY` defaults to `"dev-admin-master-key-change-in-production"` — if `ADMIN_MASTER_KEY` env var is not set in production, anyone can log in with this default. | Crash on startup if not explicitly configured in production. |
-| 4 | [config.py:42](file:///Users/prateeksharma/Developer/retriever/apps/api/src/config.py#L42) | `KEY_ENCRYPTION_KEY` defaults to a hardcoded dev string. If forgotten in prod, all API key hashes use this key. | Same as above — fail-safe crash in production. |
+| 1 | [.env](.env) | **Database credentials (Supabase password) committed to repo** in plaintext. `OPENAI_API_KEY` also present. | Move to `.env.local` / secrets manager. Rotate all exposed credentials immediately. |
+| 2 | [.env.local](apps/web/.env.local#L4) | **Vercel OIDC JWT token committed** — contains project IDs, team IDs, and auth scopes. | Add to `.gitignore`, rotate token. |
+| 3 | [config.py:16](apps/api/src/config.py#L16) | `ADMIN_MASTER_KEY` defaults to `"dev-admin-master-key-change-in-production"` — if `ADMIN_MASTER_KEY` env var is not set in production, anyone can log in with this default. | Crash on startup if not explicitly configured in production. |
+| 4 | [config.py:42](apps/api/src/config.py#L42) | `KEY_ENCRYPTION_KEY` defaults to a hardcoded dev string. If forgotten in prod, all API key hashes use this key. | Same as above — fail-safe crash in production. |
 
 ### 🟡 Code Quality Issues
 
 | # | Location | Issue | Fix |
 |---|----------|-------|-----|
-| 5 | [main.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/main.py) | **2,250-line god file.** Houses all route handlers, inline business logic, and utility functions in a single file. | Split into FastAPI routers: `tenant_routes.py`, `document_routes.py`, `chat_routes.py`, `admin_routes.py`, etc. |
-| 6 | [RagInterface.tsx](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx) | Heavy use of `any` type (6 `eslint-disable` comments). `results`, `docs`, and `doc` all untyped. | Define interfaces: `SearchResult`, `DocumentMeta`, `SearchResponse`. |
-| 7 | [rag-client.ts](file:///Users/prateeksharma/Developer/Prateek_website/src/lib/rag-client.ts) | `uploadDocument` and `deleteDocument` bypass the shared `request<T>()` method and duplicate `fetch` + header logic. | Refactor to use `request<T>()` consistently, or extract a shared `buildHeaders()`. |
-| 8 | [auth.ts:7-9](file:///Users/prateeksharma/Developer/retriever/apps/web/src/store/auth.ts#L7-L9) | **Module-level side effect**: `initialKey` reads `sessionStorage` and cookies at module parse time, before React hydration. Import at top-level before `create` from zustand. | Move initialization inside a lazy initializer or `onRehydrate` callback. |
-| 9 | [login/page.tsx:12](file:///Users/prateeksharma/Developer/retriever/apps/web/src/app/login/page.tsx#L12) | `API_BASE` duplicated — also defined in [api.ts:3](file:///Users/prateeksharma/Developer/retriever/apps/web/src/lib/api.ts#L3). | Import from `api.ts` instead of redeclaring. |
-| 10 | [onboard/page.tsx:22](file:///Users/prateeksharma/Developer/retriever/apps/web/src/app/(dashboard)/onboard/page.tsx#L22) | Same `API_BASE` duplication again. | Import from `api.ts`. |
-| 11 | [RagInterface.tsx:90](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx#L90) | Default config hardcodes `tenantId: "00000000-..."` and `userId: "a8b819bb-..."`. These are production data leaks, not sensible defaults. | Start with empty strings. |
-| 12 | [sidebar.tsx](file:///Users/prateeksharma/Developer/retriever/apps/web/src/components/sidebar.tsx#L37-L40) | Logout calls `clearKey()` (which already clears the cookie in [auth.ts:28](file:///Users/prateeksharma/Developer/retriever/apps/web/src/store/auth.ts#L28)), then separately clears the cookie again. Redundant. | Remove the duplicate cookie clear from sidebar. |
-| 13 | [proxy.ts](file:///Users/prateeksharma/Developer/retriever/apps/web/src/proxy.ts) | The admin proxy only checks if `admin_key` cookie or header *exists* — it doesn't validate the key is correct. Any non-empty string bypasses the redirect. | Validate against the backend or add a signed cookie. |
-| 14 | [tenant-users.tsx](file:///Users/prateeksharma/Developer/retriever/apps/web/src/components/tenant-users.tsx) | User list doesn't show the internal `userId` — only `externalId` and `displayName`. Admins need the internal UUID to give to clients. | Add a "User ID" column or a copy-to-clipboard action. |
-| 15 | [onboard/page.tsx:216](file:///Users/prateeksharma/Developer/retriever/apps/web/src/app/(dashboard)/onboard/page.tsx#L216) | Curl example uses hardcoded `X-User-ID: user_123` which is a placeholder, not a real user. | Either create a user during onboarding and use the real ID, or remove this misleading example. |
-| 16 | [providers.ts](file:///Users/prateeksharma/Developer/retriever/apps/web/src/lib/providers.ts#L19) | Gemini default model is `gemini-1.5-flash`, which is outdated. | Update to `gemini-2.5-flash` or make it configurable. |
+| 5 | [main.py](apps/api/src/main.py) | **2,250-line god file.** Houses all route handlers, inline business logic, and utility functions in a single file. | Split into FastAPI routers: `tenant_routes.py`, `document_routes.py`, `chat_routes.py`, `admin_routes.py`, etc. |
+| 6 | [RagInterface.tsx](../Prateek_website/src/components/rag/RagInterface.tsx) | Heavy use of `any` type (6 `eslint-disable` comments). `results`, `docs`, and `doc` all untyped. | Define interfaces: `SearchResult`, `DocumentMeta`, `SearchResponse`. |
+| 7 | [rag-client.ts](../Prateek_website/src/lib/rag-client.ts) | `uploadDocument` and `deleteDocument` bypass the shared `request<T>()` method and duplicate `fetch` + header logic. | Refactor to use `request<T>()` consistently, or extract a shared `buildHeaders()`. |
+| 8 | [auth.ts:7-9](apps/web/src/store/auth.ts#L7-L9) | **Module-level side effect**: `initialKey` reads `sessionStorage` and cookies at module parse time, before React hydration. Import at top-level before `create` from zustand. | Move initialization inside a lazy initializer or `onRehydrate` callback. |
+| 9 | [login/page.tsx:12](apps/web/src/app/login/page.tsx#L12) | `API_BASE` duplicated — also defined in [api.ts:3](apps/web/src/lib/api.ts#L3). | Import from `api.ts` instead of redeclaring. |
+| 10 | [onboard/page.tsx:22](apps/web/src/app/(dashboard)/onboard/page.tsx#L22) | Same `API_BASE` duplication again. | Import from `api.ts`. |
+| 11 | [RagInterface.tsx:90](../Prateek_website/src/components/rag/RagInterface.tsx#L90) | Default config hardcodes `tenantId: "00000000-..."` and `userId: "a8b819bb-..."`. These are production data leaks, not sensible defaults. | Start with empty strings. |
+| 12 | [sidebar.tsx](apps/web/src/components/sidebar.tsx#L37-L40) | Logout calls `clearKey()` (which already clears the cookie in [auth.ts:28](apps/web/src/store/auth.ts#L28)), then separately clears the cookie again. Redundant. | Remove the duplicate cookie clear from sidebar. |
+| 13 | [proxy.ts](apps/web/src/proxy.ts) | The admin proxy only checks if `admin_key` cookie or header *exists* — it doesn't validate the key is correct. Any non-empty string bypasses the redirect. | Validate against the backend or add a signed cookie. |
+| 14 | [tenant-users.tsx](apps/web/src/components/tenant-users.tsx) | User list doesn't show the internal `userId` — only `externalId` and `displayName`. Admins need the internal UUID to give to clients. | Add a "User ID" column or a copy-to-clipboard action. |
+| 15 | [onboard/page.tsx:216](apps/web/src/app/(dashboard)/onboard/page.tsx#L216) | Curl example uses hardcoded `X-User-ID: user_123` which is a placeholder, not a real user. | Either create a user during onboarding and use the real ID, or remove this misleading example. |
+| 16 | [providers.ts](apps/web/src/lib/providers.ts#L19) | Gemini default model is `gemini-1.5-flash`, which is outdated. | Update to `gemini-2.5-flash` or make it configurable. |
 
 ### 🟢 Deferred / Minor
 
 | # | Location | Issue |
 |---|----------|-------|
-| 17 | [RagInterface.tsx:7-14](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/RagInterface.tsx#L7-L14) | Deferred features list (markdown rendering, session history, stop button, keyboard shortcuts) is reasonable. These are clearly marked and not blocking. |
-| 18 | [rag.module.css:129](file:///Users/prateeksharma/Developer/Prateek_website/src/components/rag/rag.module.css#L129) | `max-height: 400px` on chat container may feel cramped on large screens. Consider `min(60vh, 600px)`. |
-| 19 | [use-tenants.ts:29-33](file:///Users/prateeksharma/Developer/retriever/apps/web/src/hooks/use-tenants.ts#L29-L33) | `useAllTenants` fetches with `?limit=1000` — not paginated. Will break at scale. |
+| 17 | [RagInterface.tsx:7-14](../Prateek_website/src/components/rag/RagInterface.tsx#L7-L14) | Deferred features list (markdown rendering, session history, stop button, keyboard shortcuts) is reasonable. These are clearly marked and not blocking. |
+| 18 | [rag.module.css:129](../Prateek_website/src/components/rag/rag.module.css#L129) | `max-height: 400px` on chat container may feel cramped on large screens. Consider `min(60vh, 600px)`. |
+| 19 | [use-tenants.ts:29-33](apps/web/src/hooks/use-tenants.ts#L29-L33) | `useAllTenants` fetches with `?limit=1000` — not paginated. Will break at scale. |
 
 ---
 
@@ -225,11 +225,11 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 
 | Workflow | Trigger | What it does | Assessment |
 |----------|---------|--------------|------------|
-| [ci.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/ci.yml) | Push/PR to main | Ruff lint + pytest (API), Ruff lint (workers), ESLint (web) | ✅ Good — covers all 3 codebases |
-| [coverage.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/coverage.yml) | PR only | pytest + coverage report + Codecov upload | ✅ Good |
-| [Removed — docker.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/docker.yml) | Push/PR to main | Build + push API and Worker Docker images to GHCR — **removed (not actively used)** | ✅ N/A — file deleted |
-| [security.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/security.yml) | Push/PR/Weekly cron | CodeQL (Python + JS) + Trivy scans for API, Workers, Web | ✅ Excellent — weekly security scans |
-| [deploy-proxy.yml](file:///Users/prateeksharma/Developer/retriever/.github/workflows/deploy-proxy.yml) | Push to main (proxy path only) | Deploy Cloudflare Worker | ✅ Good — path-scoped |
+| [ci.yml](.github/workflows/ci.yml) | Push/PR to main | Ruff lint + pytest (API), Ruff lint (workers), ESLint (web) | ✅ Good — covers all 3 codebases |
+| [coverage.yml](.github/workflows/coverage.yml) | PR only | pytest + coverage report + Codecov upload | ✅ Good |
+| [Removed — docker.yml](.github/workflows/docker.yml) | Push/PR to main | Build + push API and Worker Docker images to GHCR — **removed (not actively used)** | ✅ N/A — file deleted |
+| [security.yml](.github/workflows/security.yml) | Push/PR/Weekly cron | CodeQL (Python + JS) + Trivy scans for API, Workers, Web | ✅ Excellent — weekly security scans |
+| [deploy-proxy.yml](.github/workflows/deploy-proxy.yml) | Push to main (proxy path only) | Deploy Cloudflare Worker | ✅ Good — path-scoped |
 
 ### DevOps Gaps
 
@@ -240,7 +240,7 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 |-----|--------|----------|
 | **Manual SSH deploys** | Every backend change requires `ssh → git pull → systemctl restart`. No CI/CD auto-deploy to Oracle. | 🟡 Medium |
 | **No auto-detection for infra services** | Redis/RabbitMQ/Celery are intentionally dormant on the 1 GB Oracle VM (correct decision). But when you upgrade to a bigger VPS, you'd need to manually configure them. An auto-detection feature should enable them when server specs allow it. | 🟡 Medium |
-| **ADMIN_MASTER_KEY is the default in prod** | [ORACLE_DEPLOYMENT_REFERENCE.md](file:///Users/prateeksharma/Developer/retriever/ORACLE_DEPLOYMENT_REFERENCE.md#L106) shows `ADMIN_MASTER_KEY=dev-admin-master-key-change-in-production` **in the production .env**. Anyone who guesses or reads the source code can log into the admin dashboard. | 🔴 Critical |
+| **ADMIN_MASTER_KEY is the default in prod** | [ORACLE_DEPLOYMENT_REFERENCE.md](ORACLE_DEPLOYMENT_REFERENCE.md#L106) shows `ADMIN_MASTER_KEY=dev-admin-master-key-change-in-production` **in the production .env**. Anyone who guesses or reads the source code can log into the admin dashboard. | 🔴 Critical |
 | **Ephemeral IP** | Oracle's public IP (`130.210.35.134`) is ephemeral — it changes if the VM is stopped and restarted. DNS (`rag.prateeq.in`) would break. | 🟡 Medium |
 | **1 GB RAM constraint** | Ollama + FastAPI share 1 GB RAM. Under load, OOM is possible (same reason Render was abandoned). | 🟡 Medium |
 | No integration tests in CI | CI only runs unit tests (`-m "not integration"`). Docker integration test infrastructure removed — reintroduce when needed. | 🟡 Medium |
@@ -248,7 +248,7 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | `.env` committed to repo | Credentials exposed in version control | 🔴 Critical |
 | No database migration CI | Alembic migrations exist but aren't run or validated in CI | 🟡 Medium |
 | **Port 8000 open to public** | Oracle security group allows `0.0.0.0/0` on port 8000, bypassing Nginx SSL. Should be closed. | 🟡 Medium |
-| Dev script ([dev-local.sh](file:///Users/prateeksharma/Developer/retriever/scripts/dev-local.sh)) is good | One-command startup: Ollama + API + Dashboard | ✅ |
+| Dev script ([dev-local.sh](scripts/dev-local.sh)) is good | One-command startup: Ollama + API + Dashboard | ✅ |
 
 ---
 
@@ -281,7 +281,7 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | 6 | **No prod monitoring** | No health check cron, no uptime alerts, no error tracking integration active (Sentry DSN is empty). |
 | 7 | **UUID verbosity** | 36-character UUIDs for tenant/user IDs are unnecessarily long for a system with few tenants. |
 | 8 | **Missing features in onboarding summary** | The "done" step shows a curl command but no user ID, no link to create users, no next-steps guidance. |
-| 9 | **Admin proxy is weak** | [proxy.ts](file:///Users/prateeksharma/Developer/retriever/apps/web/src/proxy.ts) only checks if a cookie *exists*, not if it's *valid*. |
+| 9 | **Admin proxy is weak** | [proxy.ts](apps/web/src/proxy.ts) only checks if a cookie *exists*, not if it's *valid*. |
 | 10 | **No infra auto-scaling** | Redis, RabbitMQ, and Celery are intentionally dormant on the 1 GB VM, but there's no mechanism to auto-enable them when upgrading to a better VPS. |
 
 ---
@@ -311,7 +311,7 @@ Scores are on a scale of **1-10** (10 = exceptional, industry-leading; 7 = solid
 
 ## 9. Roadmap Cross-Reference
 
-The [ROADMAP.md](file:///Users/prateeksharma/Developer/retriever/ROADMAP.md) tracks 30 milestones. M1–M25 are completed. Here are the **planned/pending** ones and how they relate to this report's findings.
+The [ROADMAP.md](ROADMAP.md) tracks 30 milestones. M1–M25 are completed. Here are the **planned/pending** ones and how they relate to this report's findings.
 
 ### M30: Production Polish — ⚠️ Marked "Completed" But Mostly Unfulfilled
 
@@ -320,7 +320,7 @@ The [ROADMAP.md](file:///Users/prateeksharma/Developer/retriever/ROADMAP.md) tra
 
 | M30 Target | Status | Evidence |
 |------------|--------|----------|
-| Real deployment topology documented | ✅ Done | [DEPLOYMENT.md](file:///Users/prateeksharma/Developer/retriever/DEPLOYMENT.md) and [ORACLE_DEPLOYMENT_REFERENCE.md](file:///Users/prateeksharma/Developer/retriever/ORACLE_DEPLOYMENT_REFERENCE.md) exist |
+| Real deployment topology documented | ✅ Done | [DEPLOYMENT.md](DEPLOYMENT.md) and [ORACLE_DEPLOYMENT_REFERENCE.md](ORACLE_DEPLOYMENT_REFERENCE.md) exist |
 | Secrets in `.env` on server | ✅ Done | `.env` on Oracle VM exists |
 | Sentry DSN configured and verified | ❌ Not done | Sentry DSN is empty in config; no evidence of Sentry integration on Oracle |
 | `/metrics` endpoint exposed with Prometheus | ❌ Not done | No Prometheus target or scrape config on Oracle VM |
@@ -390,7 +390,7 @@ The [ROADMAP.md](file:///Users/prateeksharma/Developer/retriever/ROADMAP.md) tra
 **Why (layman):** Right now, when you onboard a client, they get 3 out of 4 things they need (URL, tenant ID, API key), but not the user ID. They can't actually use the system until you manually go create a user in a different tab. That's like giving someone a hotel room key but not telling them the room number.
 
 **How:**
-- Add a step between "API Key" and "Done" in [onboard/page.tsx](file:///Users/prateeksharma/Developer/retriever/apps/web/src/app/(dashboard)/onboard/page.tsx)
+- Add a step between "API Key" and "Done" in [onboard/page.tsx](apps/web/src/app/(dashboard)/onboard/page.tsx)
 - Auto-create a default user with the tenant name as display name
 - Show the user ID in the final credentials card
 - Update the curl examples to use the real user ID
@@ -472,7 +472,7 @@ Break the 2,250-line monolith into FastAPI router modules:
 | RAM ≥ 2 GB + RabbitMQ reachable | `BROKER_ENABLED=auto` | RabbitMQ task broker |
 | RAM ≥ 4 GB + 2+ CPU cores | `WORKERS_ENABLED=auto` | Celery background workers (async doc processing, embedding batches) |
 
-**Implementation sketch** (add to [config.py](file:///Users/prateeksharma/Developer/retriever/apps/api/src/config.py)):
+**Implementation sketch** (add to [config.py](apps/api/src/config.py)):
 
 ```python
 import os
@@ -541,7 +541,7 @@ The admin dashboard proxy should validate the `admin_key` cookie against the bac
 
 #### 10. Consolidate `API_BASE` Constant
 
-The `API_BASE` string (`process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"`) is defined in 3 separate files. Import from [api.ts](file:///Users/prateeksharma/Developer/retriever/apps/web/src/lib/api.ts#L3) everywhere.
+The `API_BASE` string (`process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"`) is defined in 3 separate files. Import from [api.ts](apps/web/src/lib/api.ts#L3) everywhere.
 
 ---
 

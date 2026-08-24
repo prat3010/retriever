@@ -1,4 +1,6 @@
-# Retriever RAG Platform — 2026 Product & Architectural Roadmap (M54–M60)
+# Retriever RAG Platform — 2026 Architecture & Engine Specification
+
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the active sequential timeline (M1 to M68) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
 
 **System:** Retriever Enterprise RAG Platform  
 **Repository:** `retriever`  
@@ -166,3 +168,13 @@ ROADMAP EXECUTION HORIZONS:
 | **Reasoning & Agentic** | **M59** | RLM Python REPL Studio | **Very High** (Programmatic context) | High | Medium | Phase 3 |
 | **Knowledge Graph** | **M60** | Leiden Community Summaries | **High** (Global vault Q&A) | High | Medium | Phase 3 |
 | **Evaluation & Ops** | **M60** | Closed-Loop Self-Tuning | **Very High** (Auto-calibrating engine) | High | High | Phase 3 |
+
+---
+
+## **Related Architecture & Cross-References**
+
+- [Unified Master Roadmap (SSoT)](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+- [RAG App Studio PRD](../../Prateek_website/docs/24_RAG_App_Studio_PRD.md)
+- [Scoping Dogfooding Tenant (`prateeq_scoping`)](../../Prateek_website/docs/25_SOTA_Scoping_Engine_PRD.md)
+- [Logical Architecture Blueprint](architecture.md)
+- [Physical System Design](implementation/system-design.md)

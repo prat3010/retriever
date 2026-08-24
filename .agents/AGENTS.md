@@ -12,6 +12,11 @@
 ## Code Style & Formatting Rules
 - **Always run `ruff check --fix` on modified Python files** before making commits or finishing tasks to ensure imports and formatting conform to project CI standards.
 
-## Mandatory Documentation & Markdown Audit Rule
-- **Always Audit & Update Documentation:** Whenever ANY code change is executed (even minor bug fixes, parameter tweaks, or refactors), the agent MUST check and update all relevant project documentation (`ROADMAP.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, `docs/`, etc.) to ensure roadmap statuses, feature lists, API specifications, and architecture descriptions stay 100% synchronized with the codebase before completing the task.
+## Agent Architecture Pre-Flight & Graph Intelligence
+- **Architecture Knowledge Graph Pre-Flight:** Before creating, editing, or modifying ANY database table, API route router, domain service, or infrastructure adapter, the agent MUST run:
+  ```bash
+  python3 scripts/query_architecture.py --target <entity_or_api>
+  ```
+  to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
+- **Mandatory Documentation & Markdown Audit:** Whenever ANY code change is executed (even minor bug fixes, parameter tweaks, or refactors), the agent MUST check and update all relevant project documentation (`ROADMAP.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, `docs/`, etc.) to ensure roadmap statuses, feature lists, API specifications, and architecture descriptions stay 100% synchronized with the codebase before completing the task.
 

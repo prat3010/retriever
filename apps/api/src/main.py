@@ -85,7 +85,9 @@ app = FastAPI(
 # Initialise telemetry subsystems at import time
 init_telemetry(app)
 
-# Configure CORS
+# Configure CORS & Ingress Rate Limiting
+from src.adapters.api.rate_limiter import TenantRateLimiterMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS.split(","),
@@ -93,6 +95,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(TenantRateLimiterMiddleware, default_limit=120, window_seconds=60)
 
 # Initialize components (singletons wired in container)
 

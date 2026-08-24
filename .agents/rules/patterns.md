@@ -44,3 +44,18 @@
 - **Rule:** Before attempting any complex refactor, database migration, or debugging task, the agent **MUST** inspect `docs/LEARNINGS.md` for known framework quirks (e.g. Hexagonal domain pollution, multi-tenant leaks, local embedding constraints, alembic model detection).
 - **Constraint:** Whenever a non-trivial bug or architectural quirk is resolved, the agent **MUST** document the failure signature, root cause, anti-pattern, and enforced solution in `docs/LEARNINGS.md`.
 
+### 10. Spec-First Contract Blueprinting & Post-Milestone Graph Sync
+- **Pre-Milestone Spec-First Rule:** Before writing implementation code for a new milestone or FastAPI router:
+  1. **Draft High-Definition Architecture Nodes:** Create or update specification nodes in `docs/architecture_nodes/` defining Pydantic schemas, HTTP route signatures, non-negotiable invariants, and test plans.
+  2. **Strict Status Tagging:** Explicitly set `status: planned` in the node's YAML frontmatter so agents recognize the target contract without hallucinating that runtime code already exists.
+  3. **Low-Definition Horizon:** Keep future milestones (M+3 and beyond) in high-level roadmap markdowns (`docs/`, `ROADMAP.md`), avoiding premature line-by-line over-specification.
+- **Post-Milestone Synchronization Rule:** Immediately upon completing code implementation and verifying tests:
+  1. **Promote Node Status:** Update the frontmatter from `status: planned` → `status: production`.
+  2. **Synchronize Roadmaps & Learnings:** Update milestone checkboxes in `ROADMAP.md` / `PROJECT_STATUS.md` and document any runtime quirks/learnings in `docs/LEARNINGS.md`.
+  3. **Regenerate Canvases & Vault Index:** Execute:
+     ```bash
+     python3 ../Prateek_website/scripts/sync_graph_with_code.py
+     ```
+  4. **Zero-Drift Invariant:** Never finish a milestone task while leaving Obsidian canvases, architecture index files, or markdown PRDs desynchronized from the live codebase.
+
+

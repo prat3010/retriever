@@ -1,21 +1,30 @@
 ---
 name: docs-synchronizer
-description: Automatically scans modified Python files, updates ROADMAP.md, PROJECT_STATUS.md, CHANGELOG.md, and verifies cross-repo links.
+description: Manages the Spec-First Architecture Blueprinting, Post-Milestone Knowledge Graph Synchronization, and Roadmap update lifecycle.
 ---
 
-# Documentation Synchronizer Skill (Retriever)
+# Documentation & Architecture Synchronizer Skill (Retriever)
 
-This skill keeps retriever roadmap statuses, API specifications, and project status markdowns synchronized with live code.
+Keeps retriever roadmap statuses, API specifications, and project status markdowns synchronized with live code.
 
-## Core Sync Rules
+## Lifecycle Workflow
 
-1. **Mandatory Documentation Audit**:
-   - Whenever any code change is executed (even a minor bug fix or parameter tweak), the agent MUST audit all relevant project documentation (`ROADMAP.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, `ADMIN_DASHBOARD_GUIDE.md`, `docs/`) and update affected sections.
+### Phase 1: Pre-Milestone Contract Blueprinting (Before Code)
+1. Draft or review the target architecture node in `docs/architecture_nodes/` with:
+   - `id`, `tier: 6_retriever_cognitive`, `platform: Retriever`, `auth_level`, `blast_radius`, `file_path`
+   - `status: planned` (ensures agents recognize target contract without hallucinating that code exists)
+   - Non-negotiable safety invariants and expected test suites
+2. Query the Knowledge Graph pre-flight:
+   ```bash
+   python3 scripts/query_architecture.py --target <entity_or_api>
+   ```
 
-2. **Pre-Flight Inspection**:
-   - Run `python3 scripts/query_architecture.py --target <component>` before modifying domain or router files to inspect cross-repo callers.
+### Phase 2: Post-Milestone Graph & Roadmap Synchronization (After Code & Tests)
+1. Update node status from `status: planned` → `status: production`.
+2. Check off completed milestone items in `ROADMAP.md` / `PROJECT_STATUS.md`.
+3. Capture new architectural lessons or framework quirks in `docs/LEARNINGS.md`.
+4. Run the full synchronization toolchain:
+   ```bash
+   python3 ../Prateek_website/scripts/sync_graph_with_code.py
+   ```
 
-## Execution Command
-```bash
-python3 scripts/query_architecture.py --target all
-```

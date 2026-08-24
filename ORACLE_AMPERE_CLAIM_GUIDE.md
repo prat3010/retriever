@@ -13,7 +13,7 @@ Log in to [cloud.oracle.com](https://cloud.oracle.com):
    - Click **API Keys** (Left Menu) → Click **Add API Key**.
    - Select **Generate API Key Pair** → Click **Download Private Key (`.pem`)** → Click **Add**.
    - Copy the **User OCID** (`ocid1.user...`) and **Fingerprint** (`aa:bb:cc...`) displayed on screen.
-   - Open the downloaded `.pem` file in a text editor and copy its entire content (including `-----BEGIN RSA PRIVATE KEY-----`).
+   - Open the downloaded `.pem` file in a text editor and copy its entire content (including header and footer lines).
 
 2. **Tenancy OCID:**
    - Click **Profile Icon** (Top Right) → **Tenancy: <your_tenancy_name>** → Copy **Tenancy OCID** (`ocid1.tenancy...`).

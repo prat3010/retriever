@@ -17,24 +17,33 @@ def init_sentry(**kwargs):
     dsn = os.environ.get("SENTRY_DSN", "")
     if not dsn:
         return
-    import sentry_sdk
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        integrations = [CeleryIntegration()]
+        try:
+            from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+            integrations.append(OpenTelemetryIntegration())
+        except Exception:
+            pass
 
-    environment = os.environ.get("ENVIRONMENT", "development")
-    sentry_sdk.init(
-        dsn=dsn,
-        environment=environment,
-        traces_sample_rate=0.1 if environment == "production" else 1.0,
-        send_default_pii=False,
-        integrations=[
-            CeleryIntegration(),
-            OpenTelemetryIntegration(),
-        ],
-    )
+        environment = os.environ.get("ENVIRONMENT", "development")
+        sentry_sdk.init(
+            dsn=dsn,
+            environment=environment,
+            traces_sample_rate=0.1 if environment == "production" else 1.0,
+            send_default_pii=False,
+            integrations=integrations,
+        )
+    except Exception:
+        pass
 
-RABBITMQ_URL = os.environ.get(
-    "RABBITMQ_URL", "amqp://guest:guest@localhost:5672//"
+BROKER_URL = os.environ.get(
+    "BROKER_URL"
+) or os.environ.get(
+    "REDIS_URL"
+) or os.environ.get(
+    "RABBITMQ_URL", "redis://localhost:6379/0"
 )
 REDIS_URL = os.environ.get(
     "REDIS_URL", "redis://localhost:6379/0"
@@ -42,7 +51,7 @@ REDIS_URL = os.environ.get(
 
 celery_app = Celery(
     "retriever",
-    broker=RABBITMQ_URL,
+    broker=BROKER_URL,
     backend=REDIS_URL,
 )
 

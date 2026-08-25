@@ -26,7 +26,7 @@ class GraphExtractionService:
         re.IGNORECASE,
     )
 
-    def extract_triples(self, text: str, chunk_id: str | None = None) -> list[EntityTriple]:
+    def extract_triples(self, text: str, chunk_id: str | None = None, document_id: str | None = None) -> list[EntityTriple]:
         """Extract subject-predicate-object triples from plain text content."""
         if not text or not text.strip():
             return []
@@ -39,13 +39,18 @@ class GraphExtractionService:
             key = (sub.lower(), pred, obj.lower())
             if key not in seen and len(sub) > 1 and len(obj) > 1:
                 seen.add(key)
+                meta: dict[str, Any] = {}
+                if chunk_id:
+                    meta["chunk_id"] = chunk_id
+                if document_id:
+                    meta["document_id"] = document_id
                 triples.append(
                     EntityTriple(
                         subject=sub,
                         predicate=pred,
                         object=obj,
                         confidence=0.85,
-                        metadata={"chunk_id": chunk_id} if chunk_id else {},
+                        metadata=meta,
                     )
                 )
 

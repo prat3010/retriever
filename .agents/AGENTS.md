@@ -9,6 +9,11 @@
 - **Always use a local model for generating embeddings.** (e.g., local Ollama using `nomic-embed-text` on `http://host.docker.internal:11434/v1`).
 - **Do NOT use client-provided LLM keys** (such as Gemini, OpenAI, or Cohere) for embedding tasks to avoid hitting API rate limits and preserving quotas.
 
+## Multi-Tenant & Scoping Integration Rules
+- **Scoping Tenant Dogfooding Rule:** The Scoping engine on `prateeq.in` operates as a real standard tenant (`prateeq_scoping`). System prompts and knowledge documents are configured through standard tenant document ingestion and prompt settings without custom backend backdoor routing.
+- **Client Auto-Onboarding & 7-Day Trial:** When a new commercial client signs in via Google OAuth on the website, Retriever's tenant provisioning API provisions a 7-day trial tenant (`tn_client_<uuid>`). The baseline SOW/scope details uploaded during onboarding are marked with `is_system = true` (or `is_deletable = false`), rendering them permanent and immutable in the client's document library.
+- **Audit-First Contract Rule:** Any feature exposed for consumption by the frontend (such as `widget.js`, embed scripts, SSE streaming, document uploads, or GraphRAG traversals) must be fully tested, verified, and conforming to Hexagonal domain boundaries in `retriever` before frontend integration.
+
 ## Code Style & Formatting Rules
 - **Always run `ruff check --fix` on modified Python files** before making commits or finishing tasks to ensure imports and formatting conform to project CI standards.
 
@@ -18,5 +23,8 @@
   python3 scripts/query_architecture.py --target <entity_or_api>
   ```
   to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
-- **Mandatory Documentation & Markdown Audit:** Whenever ANY code change is executed (even minor bug fixes, parameter tweaks, or refactors), the agent MUST check and update all relevant project documentation (`ROADMAP.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, `docs/`, etc.) to ensure roadmap statuses, feature lists, API specifications, and architecture descriptions stay 100% synchronized with the codebase before completing the task.
+## Deployment and Infrastructure Topology
+- **Retriever Cognitive Engine (FastAPI Backend):** Deployed on Oracle Cloud VPS (`130.210.35.134` Ubuntu 24.04), mapped to `https://rag.prateeq.in`. Runs FastAPI, pgvector storage, and local Ollama embeddings (`nomic-embed-text`).
+- **Retriever Admin Dashboard:** Deployed at **[`https://admin.rag.prateeq.in`](https://admin.rag.prateeq.in)** (`retriever/apps/web`). Used for tenant onboarding (`/onboard`), API key issuance, document vector ingestion, and system prompt configuration.
+- **Web Application & Control Plane:** Deployed on Vercel at `https://prateeq.in`. Hosts the portfolio, `/scoping` engine, `/dashboard` client portal, and `/rag` product landing pages.
 

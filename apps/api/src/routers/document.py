@@ -233,6 +233,17 @@ async def get_document(tenantId: str, documentId: str) -> DocumentResponse:
 )
 async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     """Delete document source file, cascade chunks, and mark records deleted."""
+    d = await document_repository.get_document(tenantId, documentId)
+    if not d:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    # Guard: immutable system contract documents cannot be deleted by clients
+    if any(tag in (d.tags or []) for tag in ["is_system", "system", "locked", "contract_baseline"]):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="System baseline contract documents cannot be deleted.",
+        )
+
     storage_path = await document_repository.soft_delete(tenantId, documentId)
     if storage_path is None:
         raise HTTPException(status_code=404, detail="Document not found.")

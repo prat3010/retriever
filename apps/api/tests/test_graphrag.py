@@ -118,10 +118,12 @@ def test_infra_capabilities_graph_detection():
     """Verify InfraCapabilities detects low-RAM Oracle VM vs MacBook profile."""
     infra_oracle = InfraCapabilities()
     infra_oracle.ram_gb = 0.9
+    infra_oracle.swap_gb = 0.0
     assert infra_oracle.lean_mode is True
 
     infra_mac = InfraCapabilities()
     infra_mac.ram_gb = 16.0
+    infra_mac.swap_gb = 0.0
     assert infra_mac.lean_mode is False
 
 

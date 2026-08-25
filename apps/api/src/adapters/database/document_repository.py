@@ -1,6 +1,7 @@
 """Document metadata repository implementation."""
 
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import delete, select
 
@@ -38,9 +39,10 @@ class SqlDocumentRepository(DocumentRepository):
     ) -> list[Document]:
         async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
             stmt = select(DocumentDb).where(
-                DocumentDb.tenant_id == uuid.UUID(tenant_id),
                 DocumentDb.is_deleted == False,
             )
+            if tenant_id and tenant_id != "*":
+                stmt = stmt.where(DocumentDb.tenant_id == uuid.UUID(tenant_id))
             if collection_id:
                 stmt = stmt.where(DocumentDb.collection_id == uuid.UUID(collection_id))
             stmt = stmt.order_by(DocumentDb.created_at.desc())
@@ -68,20 +70,35 @@ class SqlDocumentRepository(DocumentRepository):
 
     async def create_document(self, tenant_id: str, doc: Document) -> None:
         async with tenant_session(tenant_id=tenant_id) as session:
-            session.add(
-                DocumentDb(
-                    document_id=uuid.UUID(doc.document_id),
-                    tenant_id=uuid.UUID(tenant_id),
-                    collection_id=uuid.UUID(doc.collection_id) if doc.collection_id else None,
-                    filename=doc.filename,
-                    file_hash=doc.file_hash,
-                    storage_path=doc.storage_path,
-                    file_size=doc.file_size,
-                    mime_type=doc.mime_type,
-                    status=doc.status,
-                    tags=doc.tags,
-                )
+            stmt = select(DocumentDb).where(
+                DocumentDb.tenant_id == uuid.UUID(tenant_id),
+                DocumentDb.document_id == uuid.UUID(doc.document_id),
             )
+            existing = (await session.execute(stmt)).scalar_one_or_none()
+            if existing:
+                existing.status = doc.status
+                existing.filename = doc.filename
+                existing.file_hash = doc.file_hash
+                existing.storage_path = doc.storage_path
+                existing.file_size = doc.file_size
+                existing.mime_type = doc.mime_type
+                existing.tags = doc.tags
+                existing.updated_at = datetime.now(UTC)
+            else:
+                session.add(
+                    DocumentDb(
+                        document_id=uuid.UUID(doc.document_id),
+                        tenant_id=uuid.UUID(tenant_id),
+                        collection_id=uuid.UUID(doc.collection_id) if doc.collection_id else None,
+                        filename=doc.filename,
+                        file_hash=doc.file_hash,
+                        storage_path=doc.storage_path,
+                        file_size=doc.file_size,
+                        mime_type=doc.mime_type,
+                        status=doc.status,
+                        tags=doc.tags,
+                    )
+                )
             await session.flush()
 
     async def soft_delete(self, tenant_id: str, document_id: str) -> str | None:

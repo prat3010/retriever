@@ -11,18 +11,24 @@ logger = logging.getLogger("api")
 class InfraCapabilities:
     """Auto-detect server specs and decide which infra services to enable.
 
-    Checks total RAM and CPU cores at startup. Set override env vars
-    (REDIS_ENABLED, BROKER_ENABLED, WORKERS_ENABLED) to 'true' or 'false'
-    to bypass auto-detection.
+    Checks total physical RAM, Swap memory, and CPU cores at startup.
+    Set override env vars (REDIS_ENABLED, BROKER_ENABLED, WORKERS_ENABLED)
+    to 'true' or 'false' to bypass auto-detection.
     """
 
     def __init__(self) -> None:
         self.ram_gb = 0.0
+        self.swap_gb = 0.0
+        self.total_memory_gb = 0.0
         self.cpu_cores = 1
         try:
             import psutil
 
-            self.ram_gb = psutil.virtual_memory().total / (1024**3)
+            vmem = psutil.virtual_memory()
+            smem = psutil.swap_memory()
+            self.ram_gb = vmem.total / (1024**3)
+            self.swap_gb = smem.total / (1024**3)
+            self.total_memory_gb = (vmem.total + smem.total) / (1024**3)
             self.cpu_cores = os.cpu_count() or 1
         except ImportError:
             logger.warning("psutil not installed; infra auto-detection disabled")
@@ -32,20 +38,39 @@ class InfraCapabilities:
         return cls()
 
     @property
+    def effective_memory_gb(self) -> float:
+        return self.ram_gb + self.swap_gb
+
+    @property
     def lean_mode(self) -> bool:
-        return self.ram_gb < 2.0
+        return self.effective_memory_gb < 2.0
 
     @property
     def redis_viable(self) -> bool:
-        return self.ram_gb >= 2.0
+        override = os.environ.get("REDIS_ENABLED", "").lower()
+        if override in ("true", "1", "yes"):
+            return True
+        if override in ("false", "0", "no"):
+            return False
+        return self.effective_memory_gb >= 2.0
 
     @property
     def broker_viable(self) -> bool:
-        return self.ram_gb >= 2.0
+        override = os.environ.get("BROKER_ENABLED", "").lower()
+        if override in ("true", "1", "yes"):
+            return True
+        if override in ("false", "0", "no"):
+            return False
+        return self.effective_memory_gb >= 2.0
 
     @property
     def workers_viable(self) -> bool:
-        return self.ram_gb >= 4.0 and self.cpu_cores >= 2
+        override = os.environ.get("WORKERS_ENABLED", "").lower()
+        if override in ("true", "1", "yes"):
+            return True
+        if override in ("false", "0", "no"):
+            return False
+        return self.effective_memory_gb >= 4.0 and self.cpu_cores >= 1
 
     def log_boot_status(self) -> None:
         mode = (
@@ -54,18 +79,22 @@ class InfraCapabilities:
             else "FULL (async workers available)"
         )
         logger.info(
-            "Server specs: %.1f GB RAM, %d CPU core(s)", self.ram_gb, self.cpu_cores
+            "Server specs: %.1f GB physical RAM + %.1f GB Swap (%.1f GB total memory pool), %d CPU core(s)",
+            self.ram_gb,
+            self.swap_gb,
+            self.effective_memory_gb,
+            self.cpu_cores,
         )
         logger.info(
-            "Redis: %s (need >=2 GB RAM)",
+            "Redis: %s (need >=2 GB memory pool)",
             "ENABLED" if self.redis_viable else "DISABLED",
         )
         logger.info(
-            "RabbitMQ: %s (need >=2 GB RAM)",
+            "RabbitMQ: %s (need >=2 GB memory pool)",
             "ENABLED" if self.broker_viable else "DISABLED",
         )
         logger.info(
-            "Celery workers: %s (need >=4 GB RAM, >=2 cores)",
+            "Celery/Background workers: %s (need >=4 GB memory pool)",
             "ENABLED" if self.workers_viable else "DISABLED",
         )
         logger.info("Running in %s mode", mode)

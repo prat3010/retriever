@@ -22,7 +22,7 @@ async def process_all_pending(target_engine: str = "laptop") -> None:
     # Fetch all pending documents
     # Using bypass_rls=True to retrieve pending documents across tenants
     pending_docs = await document_repository.list_documents(tenant_id="*", bypass_rls=True)
-    pending_docs = [d for d in pending_docs if d.status == "PENDING"]
+    pending_docs = [d for d in pending_docs if d.status in ("PENDING", "FAILED", "PROCESSING")]
 
     if not pending_docs:
         logger.info("No PENDING documents found.")

@@ -63,18 +63,25 @@
 | **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
 | **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
-| **M54** | Client SDK Parity & Speculative Parallel Retrieval | Expose full SDK features in `Prateek_website` & run HyDE/Self-Query/Dense embedding concurrently ($300–600\text{ms}$ search latency reduction) | **Planned** (v0.52.0) |
-| **M55** | Enforced Parent-Child Hydration & Citation Span Validation | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.53.0) |
-| **M56** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend document-level context to chunks prior to vector embedding (Anthropic method) via async Celery worker | **Planned** (v0.54.0) |
-| **M57** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned** (v0.55.0) |
-| **M58** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned** (v0.56.0) |
-| **M59** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned** (v0.57.0) |
-| **M60** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned** (v0.58.0) |
+| **M54** | Enforced Parent-Child Hydration & Exact Citation Grounding | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.52.0) |
+| **M55** | Embeddable Chat Widget & Public JavaScript Client | Zero-dependency standalone `widget.js` bundle & `@prat3010/retriever-client-js` streaming client | **Completed** (v0.53.0) |
+| **M63** | Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Active Next (Phase G)** |
+| **M64** | Productized Architecture Cart Drawer & GraphRAG Upsells | Slide-over cart drawer, volume bundle discounts & Python REPL CPQ pricing | **Active Next (Phase G)** |
+| **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Active Next (Phase G)** |
+| **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Active Next (Phase G)** |
+| **M67** | Dashboard Workspace Bridge, 7-Day Trial & SOW Freeze | Auto-provision 7-day trial tenant, index locked scope SOW & 50% deposit capture | **Active Next (Phase G)** |
+| **M68** | Unified Persistent Copilot & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Active Next (Phase G)** |
+| **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Planned (Phase H)** |
+| **M70** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned (Phase H)** |
+| **M71** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned (Phase H)** |
+| **M72** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned (Phase H)** |
+| **M73** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned (Phase H)** |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M73), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
 

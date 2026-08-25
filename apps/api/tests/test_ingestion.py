@@ -172,8 +172,9 @@ def test_document_list_and_get(mock_get, mock_list, mock_validate) -> None:
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
-def test_document_delete(mock_soft_delete, mock_validate) -> None:
+def test_document_delete(mock_soft_delete, mock_get, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -181,6 +182,19 @@ def test_document_delete(mock_soft_delete, mock_validate) -> None:
         tenant_id=tenant_id,
         roles=["integrator"],
         scopes=["document:delete"],
+    )
+    mock_get.return_value = Document(
+        document_id=doc_id,
+        tenant_id=tenant_id,
+        filename="doc1.txt",
+        file_hash="hash1",
+        storage_path="/path",
+        file_size=200,
+        mime_type="text/plain",
+        status="INDEXED",
+        tags=[],
+        created_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:00",
     )
     mock_soft_delete.return_value = "/path"
 
@@ -207,12 +221,14 @@ def test_document_get_not_found(mock_get, mock_validate) -> None:
 
 
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
-def test_document_delete_not_found(mock_delete, mock_validate) -> None:
+def test_document_delete_not_found(mock_delete, mock_get, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
         user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:delete"],
     )
+    mock_get.return_value = None
     mock_delete.return_value = None
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)

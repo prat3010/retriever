@@ -85,69 +85,57 @@ By 2026, standard enterprise RAG has evolved into a modular, multi-stage cogniti
 
 ---
 
-## 3. Product Roadmap (Milestones M54–M60)
+## 3. Product Roadmap & Strategic Horizons (Cross-Platform Alignment)
 
 ```
 ROADMAP EXECUTION HORIZONS:
-┌──────────────────────────────────────┐
-│ PHASE 1: MUST-HAVE BASELINE (M54-M55)│ ── SDK Parity, Speculative Parallel Search, Parent-Child Hydration
-└──────────────────┬───────────────────┘
-                   │
-┌──────────────────▼───────────────────┐
-│ PHASE 2: OPTIMIZATIONS (M56-M58)    │ ── Contextual Ingestion, ColBERT Reranking, CRAG Agentic Loops
-└──────────────────┬───────────────────┘
-                   │
-┌──────────────────▼───────────────────┐
-│ PHASE 3: STRATEGIC BETS (M59-M60)    │ ── RLM REPL Studio, GraphRAG Community Summaries, Self-Tuning RAG
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ PHASE G: COMMERCIAL SCOPING & DASHBOARD (M63-M68)│ ── Scoping V2, Embed Widget, 7-Day Trial Auto-Onboard
+└────────────────────────┬─────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────┐
+│ PHASE H1: COGNITIVE INGESTION & RERANK (M69-M70) │ ── Anthropic Contextual Ingestion, ColBERT Late-Interaction
+└────────────────────────┬─────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────┐
+│ PHASE H2: AGENTIC CRAG & KNOWLEDGE GRAPHS(M71-M73)│ ── CRAG Reflection, RLM Studio Tab, Leiden Community RAG
+└──────────────────────────────────────────────────┘
 ```
 
-### Phase 1: Must-Have Baseline Enhancements
-
-#### Milestone M54: SDK Parity & Speculative Parallel Retrieval
-*   **Objective:** Achieve 100% API capability parity in the client SDK and optimize retrieval latency.
-*   **Key Deliverables:**
-    1.  Update client SDK (`RetrieverClient`) with support for Context Compression, Consensus score inspection, Guardrail alert status, and RLM mode.
-    2.  Refactor `HybridSearchService.search()` to execute Self-Query parsing, HyDE expansion, and raw vector embedding concurrently via `asyncio.gather()`, cutting $300-600\text{ms}$ off search latency.
-
-#### Milestone M55: Enforced Parent-Child Hydration & Citation Span Validation
-*   **Objective:** Maximize context quality while ensuring strict, verifiable grounding.
-*   **Key Deliverables:**
-    1.  Enforce automatic parent (800-token) and child (150-token) chunk creation during document ingestion, dynamically hydrating parent context in `PromptBuilder`.
-    2.  Expand `CitationValidator` to perform exact string-span matching between generated quotes and retrieved context, flagging ungrounded claims with visual warnings.
+### Phase G: Commercial Scoping V2 & Dashboard Integration (Active Next)
+* **Milestone M63–M68:** Documented in detail in [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+  - Authentic dogfooding tenant (`prateeq_scoping`) configured via Retriever Admin.
+  - Scoping chatbox powered by the public 1-line `<script src="https://prateeq.in/widget.js" ...>` embed widget.
+  - Auto-onboarding 7-day trial tenant creation upon Google OAuth sign-in with permanent non-deletable scope document indexing (`is_system: true`).
 
 ---
 
-### Phase 2: High-Leverage Optimizations
+### Phase H: SOTA Cognitive RAG Algorithm R&D (Retriever Engine Upgrades)
 
-#### Milestone M56: Pre-Chunk Contextual Retrieval Ingestion Engine (Anthropic Method)
+#### Milestone M69: Pre-Chunk Contextual Retrieval Ingestion Engine (Anthropic Method)
 *   **Objective:** Eliminate ambiguous standalone chunks by pre-pending document-level context during ingestion.
 *   **Key Deliverables:**
     1.  Build an asynchronous worker step in `ingestion_service.py` using a fast LLM (`gemini-3.6-flash` / `claude-3-5-haiku`) to prepend 50-word document context headers to every chunk before vector embedding generation.
     2.  Reduces top-20 retrieval failure rates by up to $49\%$.
 
-#### Milestone M57: Late-Interaction (ColBERT) Token-Level Reranker
+#### Milestone M70: Late-Interaction (ColBERT) Token-Level Reranker
 *   **Objective:** Surface nuanced technical terms, serial numbers, and code identifiers where standard bi-encoders fail.
 *   **Key Deliverables:**
     1.  Implement `ColBertRerankerAdapter` (`tei_reranker_adapter.py`) computing token-level MaxSim operations on top-50 candidate sets.
     2.  Support local TEI containers and cloud API fallbacks.
 
-#### Milestone M58: Corrective RAG (CRAG) & Agentic Reflection Loop
+#### Milestone M71: Corrective RAG (CRAG) & Agentic Reflection Loop
 *   **Objective:** Enable autonomous self-reflection and query correction.
 *   **Key Deliverables:**
     1.  Wire `agentic.py` router into inference loop to assess candidate relevance scores.
     2.  If confidence drops below threshold, automatically trigger query reformulations or web search fallback before LLM generation.
 
----
-
-### Phase 3: Strategic Long-Term Bets
-
-#### Milestone M59: Interactive RLM Python REPL Sandbox Studio
+#### Milestone M72: Interactive RLM Python REPL Sandbox Studio
 *   **Objective:** Productize Recursive Language Models into an interactive developer workspace.
 *   **Key Deliverables:**
     1.  Productize `/v1/rlm` into a dedicated SaaS Studio tab (`/rag/app/rlm`) where users can observe the model writing and executing Python code to recursively inspect, filter, and summarize document vaults.
 
-#### Milestone M60: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning
+#### Milestone M73: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning
 *   **Objective:** Unlock macro-level dataset reasoning and automated quality self-tuning.
 *   **Key Deliverables:**
     1.  Upgrade `graph_extraction_service.py` to construct global entity graphs, run Leiden community detection, and pre-generate macro hierarchical summaries.
@@ -159,15 +147,13 @@ ROADMAP EXECUTION HORIZONS:
 
 | Stack Layer | Milestone | Feature | Primary Impact | Effort | Risk | Target Phase |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ingestion & Chunking** | **M56** | Contextual Pre-Chunking | **Very High** (49% error reduction) | Medium | Low | Phase 2 |
-| **Retrieval & Hybrid** | **M54** | Speculative Parallel Fan-Out | **High** (300–600ms latency reduction) | Medium | Low | Phase 1 |
-| **Context Assembly** | **M55** | Parent-Child Hydration | **High** (Rich context retention) | Low | Low | Phase 1 |
-| **Grounding & Citations** | **M55** | Exact Span Citation Matcher | **High** (Zero hallucinated citations) | Medium | Low | Phase 1 |
-| **Reranking & Precision** | **M57** | ColBERT Late-Interaction | **High** (Unmatched technical recall) | Medium | Medium | Phase 2 |
-| **Reasoning & Agentic** | **M58** | Corrective RAG (CRAG) | **High** (Self-correcting search) | High | Medium | Phase 2 |
-| **Reasoning & Agentic** | **M59** | RLM Python REPL Studio | **Very High** (Programmatic context) | High | Medium | Phase 3 |
-| **Knowledge Graph** | **M60** | Leiden Community Summaries | **High** (Global vault Q&A) | High | Medium | Phase 3 |
-| **Evaluation & Ops** | **M60** | Closed-Loop Self-Tuning | **Very High** (Auto-calibrating engine) | High | High | Phase 3 |
+| **Commercial & Client** | **M63–M68** | Scoping V2 & Dashboard 7-Day Trial | **Critical** (Live revenue & client conversion) | High | Low | Phase G (Active Next) |
+| **Ingestion & Chunking** | **M69** | Contextual Pre-Chunking | **Very High** (49% error reduction) | Medium | Low | Phase H |
+| **Reranking & Precision** | **M70** | ColBERT Late-Interaction | **High** (Unmatched technical recall) | Medium | Medium | Phase H |
+| **Reasoning & Agentic** | **M71** | Corrective RAG (CRAG) | **High** (Self-correcting search) | High | Medium | Phase H |
+| **Reasoning & Agentic** | **M72** | RLM Python REPL Studio | **Very High** (Programmatic context) | High | Medium | Phase H |
+| **Knowledge Graph** | **M73** | Leiden Community Summaries | **High** (Global vault Q&A) | High | Medium | Phase H |
+| **Evaluation & Ops** | **M73** | Closed-Loop Self-Tuning | **Very High** (Auto-calibrating engine) | High | High | Phase H |
 
 ---
 

@@ -8,21 +8,24 @@ The platform runs on a **near-zero-cost** stack:
 
 | Component | Provider | Cost |
 |-----------|----------|------|
-| API server | [Oracle Cloud](https://oracle.com/cloud/free) (free VM) | $0 — 1 OCPU, 1 GB RAM, 0.48 Gbps, Ubuntu 24.04, always-on (no cold start) |
+| Component | Provider | Cost |
+|-----------|----------|------|
+| API server | [Oracle Cloud](https://oracle.com/cloud/free) (free VM) | $0 — 1 OCPU, 1 GB Physical RAM + 7 GB NVMe Swap (8 GB Memory Pool), Ubuntu 24.04, always-on |
+| In-Memory Cache | Redis Server (Local VM) | $0 — Session cache, semantic caching, ZSET sliding-window rate limiting |
 | Database | [Supabase](https://supabase.com) (free tier) | $0 — 500 MB, pgvector support, Row-Level Security, connection pooler |
-| Embeddings | [Ollama](https://ollama.com) self-hosted on same VM | $0 — `nomic-embed-text` (274 MB), CPU-only, always-on, no API limits |
+| Embeddings | [Ollama](https://ollama.com) self-hosted on same VM | $0 — `nomic-embed-text` (274 MB), CPU-only, always-on, zero API rate limits |
 | LLM | BYOK (bring your own key) | $0 platform cost — tenant provides their own OpenAI/Anthropic/Gemini key |
-| Frontend CDN | [Vercel](https://vercel.com) (Hobby) | $0 — `retriever-ivory.vercel.app`, auto-deploys from GitHub |
+| Frontend CDN | [Vercel](https://vercel.com) (Hobby) | $0 — `retriever-ivory.vercel.app` & `prateeq.in`, auto-deploys from GitHub |
 | Domain + SSL | GoDaddy + Let's Encrypt | ~$15/yr for domain; SSL is free and auto-renewing |
 
 ### 0.1 Architecture
 
 ```
 Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supabase (DB, vectors, RLS)
+                                                     ↓                     ↓
+                                         Redis (Cache / RateLimit)   Ollama (nomic-embed-text)
                                                      ↓
-                                               Ollama (same VM, 127.0.0.1:11434)
-                                                     ↓
-                                               LLM Provider (OpenAI / Gemini / Anthropic)
+                                         LLM Provider (OpenAI / Gemini / Anthropic)
 ```
 
 ### 0.2 Deployment Steps
@@ -33,12 +36,25 @@ Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supab
    DATABASE_URL="postgresql+asyncpg://..." uv run python -m src.adapters.database.setup
    ```
 2. **Oracle VM** — Provision `VM.Standard.E2.1.Micro` (Ubuntu 24.04). Allow ingress on ports 22, 80, 443 in VCN security list.
-3. **On the VM**:
+3. **On the VM (Swap & Prerequisites Setup)**:
    ```bash
-   # Install deps
-   sudo apt update && sudo apt install -y nginx certbot python3-pip git
+   # Configure 7GB NVMe Swap (8GB effective memory pool)
+   sudo fallocate -l 7G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   sudo sysctl vm.swappiness=10
+   echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+   # Install deps & Redis
+   sudo apt update && sudo apt install -y nginx certbot python3-pip git redis-server
+   sudo systemctl enable --now redis-server
+
+   # Install Ollama & pull embedding model
    curl -fsSL https://ollama.com/install.sh | sh
    ollama pull nomic-embed-text
+   sudo systemctl enable --now ollama
 
    # Create app user and directory
    sudo useradd -m -s /bin/bash retriever
@@ -50,14 +66,14 @@ Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supab
    pip install uv
    uv sync
 
-   # Create .env (see §16.5 in architecture.md for required vars)
+   # Create .env
    cp .env.example .env && nano .env
    ```
 4. **systemd service** — Create `/etc/systemd/system/retriever-api.service`:
    ```ini
    [Unit]
    Description=Retriever API
-   After=network.target ollama.service
+   After=network.target ollama.service redis-server.service
 
    [Service]
    User=retriever
@@ -88,19 +104,15 @@ Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supab
 6. **SSL** — `sudo certbot --nginx -d rag.prateeq.in`
 7. **Enable and start services**:
    ```bash
-   sudo systemctl enable --now ollama retriever-api nginx
+   sudo systemctl enable --now ollama redis-server retriever-api nginx
    sudo systemctl status retriever-api  # verify running
    ```
 
-### 0.3 Caveats (Free Tier)
+### 0.3 Memory Topology & Performance
 
-- 1 GB RAM is shared between Ollama (274 MB for `nomic-embed-text`) and the API — total headroom is ~500 MB.
-- No Redis, no Celery — ingestion and chat are synchronous. Large PDFs (50+ pages) may timeout the HTTP request.
-- Single uvicorn worker — requests are processed sequentially. A slow LLM response blocks concurrent search requests.
-- Supabase free tier: 500 MB DB, 2 GB bandwidth, 50k monthly active users.
-- No automated backups — `pg_dump` cron is manual.
-- No monitoring or alerting — you must periodically check the service and LLM key quota.
-- LLM API keys from OpenAI/Gemini/Anthropic have finite free quota and will exhaust without warning.
+- **8 GB Total Virtual Memory Pool:** 1 GB Physical RAM + 7 GB NVMe Swap provides ample headroom for Ollama (`nomic-embed-text` ~274 MB), Redis (~30 MB), Uvicorn API workers, and concurrent vector queries without OOM thrashing.
+- **Low Swappiness (`vm.swappiness=10`):** Keeps fast physical RAM dedicated to low-latency HTTP request handling and active query loops, relegating idle daemon pages to SSD swap.
+- **Local Redis Layer:** Provides sub-millisecond semantic cache lookups and token-bucket rate limiting without external cloud roundtrips.
 
 This document outlines the strategy for handling two distinct operational scenarios using the single, unified Retriever codebase:
 1.  **Scenario A (Personal/Shared Instance):** A single central deployment supporting multiple applications, each isolated logically as a separate tenant.

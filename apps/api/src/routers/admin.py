@@ -452,6 +452,8 @@ async def admin_process_document(
             mime_type=doc.mime_type,
             embedder=search_service.embedder,
         )
+        doc.status = "INDEXED"
+        await document_repository.create_document(tenantId, doc)
         return {
             "documentId": documentId,
             "status": "indexed",

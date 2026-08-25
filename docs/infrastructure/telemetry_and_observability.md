@@ -1,0 +1,58 @@
+---
+id: DeepDive_Telemetry_Observability_Prometheus
+title: "Infrastructure Deep-Dive: OpenTelemetry Tracing, Prometheus Metrics & Audit Ledger"
+tier: 7_async_infrastructure
+platform: retriever
+tags:
+  - infra/telemetry
+  - prometheus
+  - opentelemetry
+  - audit-logs
+  - platform/retriever
+blast_radius: MEDIUM
+security_auth: SERVICE_ROLE
+invariants:
+  - "Every inference request MUST log token metrics, latency ms, and estimated cost in inference_logs."
+  - "Security audit logs MUST form an append-only SHA-256 hash chain."
+---
+
+# Infrastructure Deep-Dive: OpenTelemetry Tracing, Prometheus Metrics & Audit Ledger
+
+#infra #telemetry #prometheus #opentelemetry #audit #metrics #logging #retriever
+
+> **Technical architecture, Prometheus `/metrics` instrumentation, OpenTelemetry distributed tracing spans, and immutable audit logs.**
+
+---
+
+## 1. Observability Stack Architecture
+
+```mermaid
+flowchart LR
+    API[FastAPI Gateway] --> OTel[OpenTelemetry SDK]
+    OTel --> Jaeger[(Jaeger Distributed Tracing)]
+    
+    API --> Prom[Prometheus Python Client]
+    Prom --> Metrics[/metrics Endpoint]
+    Metrics --> Grafana[(Grafana Dashboards)]
+    
+    API --> Audit[Chained SHA-256 Audit Logger]
+    Audit --> AuditDB[(PostgreSQL audit_logs)]
+```
+
+---
+
+## 2. Key Prometheus Metric Descriptors
+
+| Metric Name | Type | Description |
+|:---|:---|:---|
+| `retriever_http_requests_total` | Counter | Total HTTP requests partitioned by status code, route, and tenant |
+| `retriever_inference_latency_seconds` | Histogram | Grounded RAG token generation latency distribution (P50, P95, P99) |
+| `retriever_embedding_duration_seconds` | Histogram | Duration of local nomic-embed vector embedding computation |
+| `retriever_tokens_consumed_total` | Counter | Cumulative prompt and completion tokens billed per tenant |
+| `retriever_semantic_cache_hits_total`| Counter | Number of requests served from Redis L2 semantic cache |
+
+---
+
+## 🔗 Related Architecture & Cross-References
+- [Health & Probes API Specification](../api/health.md)
+- [Caching & Performance Deep-Dive](caching_and_performance.md)

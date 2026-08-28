@@ -2,6 +2,12 @@
   "name": "retriever-web",
   "version": "0.1.0",
   "private": true,
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "unrs-resolver": true,
+    "workerd": true
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,7 +37,7 @@
     "@types/react-dom": "^18.2.19",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "eslint": "^9.39.5",
+    "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "postcss": "^8.5.19",
     "prettier": "^3.2.5",

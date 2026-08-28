@@ -1,6 +1,12 @@
 {
   "name": "retriever",
   "private": true,
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "unrs-resolver": true,
+    "workerd": true
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

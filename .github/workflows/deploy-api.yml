@@ -32,7 +32,7 @@ jobs:
             . .venv/bin/activate
             pip install -r requirements.txt 2>&1
             sudo systemctl daemon-reload
-            sudo systemctl restart retriever-api
+            sudo systemctl restart retriever-api retriever-worker
             for i in $(seq 1 12); do
               if curl -sSf http://localhost:8000/health/liveness > /dev/null 2>&1; then
                 echo "Smoke test: liveness OK"

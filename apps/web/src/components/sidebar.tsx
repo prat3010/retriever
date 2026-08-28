@@ -43,27 +43,29 @@ export function Sidebar() {
     <aside className="flex h-full w-64 flex-col border-r bg-card">
       <div className="flex h-14 items-center border-b px-6">
         <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold">
-          <Building2 className="h-5 w-5" />
-          Retriever
+          <Building2 className="h-5 w-5" aria-hidden="true" />
+          <span>Retriever</span>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav aria-label="Main Navigation" className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                pathname === item.href
+                isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground",
               )}
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
@@ -74,16 +76,18 @@ export function Sidebar() {
           variant="ghost"
           className="w-full justify-start text-muted-foreground"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
-          {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+          {theme === "dark" ? <Sun className="mr-2 h-4 w-4" aria-hidden="true" /> : <Moon className="mr-2 h-4 w-4" aria-hidden="true" />}
           {theme === "dark" ? "Light Mode" : "Dark Mode"}
         </Button>
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground"
           onClick={handleLogout}
+          aria-label="Logout of admin session"
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
           Logout
         </Button>
       </div>

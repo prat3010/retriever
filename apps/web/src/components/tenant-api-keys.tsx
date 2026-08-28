@@ -140,7 +140,7 @@ export function ApiKeysTab({ tenantId }: Props) {
                       value={keyRole}
                       onValueChange={(v) => setKeyRole(v as "admin" | "client")}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="keyRole">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -173,7 +173,7 @@ export function ApiKeysTab({ tenantId }: Props) {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" aria-busy="true">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
@@ -226,7 +226,7 @@ export function ApiKeysTab({ tenantId }: Props) {
                       onOpenChange={(open) => { setRevokeOpen(open); setRevokeId(key.keyId); }}
                     >
                       <DialogTrigger asChild>
-                        <Button variant="destructive" size="sm">Revoke</Button>
+                        <Button variant="destructive" size="sm" aria-label={`Revoke API key ${key.name}`}>Revoke</Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>

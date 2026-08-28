@@ -52,7 +52,7 @@ export default function TenantDetailPage() {
       <Topbar title={tenant.name} description={`Tenant ID: ${tenant.tenantId}`} />
       <div className="p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+          <TabsList aria-label="Tenant workspace sections" className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>

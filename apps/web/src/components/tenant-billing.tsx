@@ -62,9 +62,9 @@ export function TenantBillingTab({ tenantId }: TenantBillingTabProps) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>Plan Tier</Label>
+              <Label htmlFor="billing-plan-tier">Plan Tier</Label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger>
+                <SelectTrigger id="billing-plan-tier">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -76,9 +76,9 @@ export function TenantBillingTab({ tenantId }: TenantBillingTabProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Gateway Provider</Label>
+              <Label htmlFor="billing-gateway">Gateway Provider</Label>
               <Select value={provider} onValueChange={setProvider}>
-                <SelectTrigger>
+                <SelectTrigger id="billing-gateway">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -89,17 +89,18 @@ export function TenantBillingTab({ tenantId }: TenantBillingTabProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Amount</Label>
+              <Label htmlFor="billing-amount">Amount</Label>
               <Input
+                id="billing-amount"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
               />
             </div>
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label htmlFor="billing-currency">Currency</Label>
               <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
+                <SelectTrigger id="billing-currency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,14 +111,14 @@ export function TenantBillingTab({ tenantId }: TenantBillingTabProps) {
             </div>
           </div>
 
-          <Button onClick={handleCreateCheckout} disabled={checkoutMutation.isPending}>
+          <Button onClick={handleCreateCheckout} disabled={checkoutMutation.isPending} aria-label="Generate checkout link">
             {checkoutMutation.isPending ? "Generating..." : "Generate Checkout Link"}
           </Button>
 
           {generatedUrl && (
             <div className="p-3 bg-muted rounded font-mono text-xs flex items-center justify-between">
               <span className="truncate mr-2">{generatedUrl}</span>
-              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(generatedUrl)}>
+              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(generatedUrl)} aria-label="Copy generated checkout link">
                 Copy Link
               </Button>
             </div>

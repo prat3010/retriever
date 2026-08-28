@@ -36,7 +36,7 @@ export default function DashboardPage() {
     <div>
       <Topbar title="Dashboard" description="Platform overview" />
       <div className="p-6 space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" aria-busy={isLoading}>
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
@@ -45,7 +45,7 @@ export default function DashboardPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </CardTitle>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (

@@ -55,14 +55,21 @@ export default function LoginPage() {
               <Input
                 id="key"
                 type="password"
+                autoComplete="current-password"
                 placeholder="Enter master key"
                 value={key}
+                required
+                aria-required="true"
                 onChange={(e) => { setKey(e.target.value); setError(""); }}
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p role="alert" aria-live="assertive" className="text-sm text-destructive font-medium">
+                {error}
+              </p>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
               {loading ? "Verifying..." : "Sign in"}
             </Button>
           </form>

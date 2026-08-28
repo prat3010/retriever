@@ -96,8 +96,8 @@ export default function SettingsPage() {
   return (
     <div>
       <Topbar title="Settings" description="Global platform configuration">
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        <Button onClick={handleSave} disabled={saving} aria-label="Save global configuration changes">
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="mr-2 h-4 w-4" aria-hidden="true" />}
           Save Changes
         </Button>
       </Topbar>
@@ -109,9 +109,9 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Provider</Label>
+              <Label htmlFor="ai-provider-select">Provider</Label>
               <Select value={detectedProvider?.value ?? "__custom__"} onValueChange={setProvider}>
-                <SelectTrigger>
+                <SelectTrigger id="ai-provider-select">
                   <SelectValue placeholder="Select a provider..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,17 +122,17 @@ export default function SettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Default Model</Label>
-              <Input value={config?.ai_provider.default_model ?? ""} onChange={(e) => update("ai_provider.default_model", e.target.value)} />
+              <Label htmlFor="ai-default-model">Default Model</Label>
+              <Input id="ai-default-model" value={config?.ai_provider.default_model ?? ""} onChange={(e) => update("ai_provider.default_model", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>API Key</Label>
-              <Input type="password" value={config?.ai_provider.api_key ?? ""} onChange={(e) => update("ai_provider.api_key", e.target.value)} placeholder="Leave blank to keep existing" />
+              <Label htmlFor="ai-api-key">API Key</Label>
+              <Input id="ai-api-key" type="password" value={config?.ai_provider.api_key ?? ""} onChange={(e) => update("ai_provider.api_key", e.target.value)} placeholder="Leave blank to keep existing" />
             </div>
             {showCustomUrl && (
               <div className="space-y-2">
-                <Label>Base URL</Label>
-                <Input value={config?.ai_provider.base_url ?? ""} onChange={(e) => update("ai_provider.base_url", e.target.value)} placeholder="https://api.openai.com/v1" />
+                <Label htmlFor="ai-base-url">Base URL</Label>
+                <Input id="ai-base-url" value={config?.ai_provider.base_url ?? ""} onChange={(e) => update("ai_provider.base_url", e.target.value)} placeholder="https://api.openai.com/v1" />
               </div>
             )}
             {!showCustomUrl && config?.ai_provider.base_url && (
@@ -152,21 +152,21 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Provider</Label>
-                <Input value={config?.embedding_provider.provider_name ?? ""} onChange={(e) => update("embedding_provider.provider_name", e.target.value)} />
+                <Label htmlFor="emb-provider-name">Provider</Label>
+                <Input id="emb-provider-name" value={config?.embedding_provider.provider_name ?? ""} onChange={(e) => update("embedding_provider.provider_name", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Model</Label>
-                <Input value={config?.embedding_provider.model_name ?? ""} onChange={(e) => update("embedding_provider.model_name", e.target.value)} />
+                <Label htmlFor="emb-model-name">Model</Label>
+                <Input id="emb-model-name" value={config?.embedding_provider.model_name ?? ""} onChange={(e) => update("embedding_provider.model_name", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Dimension</Label>
-                <Input type="number" value={config?.embedding_provider.dimension ?? 768} onChange={(e) => update("embedding_provider.dimension", parseInt(e.target.value) || 768)} />
+                <Label htmlFor="emb-dimension">Dimension</Label>
+                <Input id="emb-dimension" type="number" value={config?.embedding_provider.dimension ?? 768} onChange={(e) => update("embedding_provider.dimension", parseInt(e.target.value) || 768)} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>API Key</Label>
-              <Input type="password" value={config?.embedding_provider.api_key ?? ""} onChange={(e) => update("embedding_provider.api_key", e.target.value)} placeholder="Leave blank to keep existing" />
+              <Label htmlFor="emb-api-key">API Key</Label>
+              <Input id="emb-api-key" type="password" value={config?.embedding_provider.api_key ?? ""} onChange={(e) => update("embedding_provider.api_key", e.target.value)} placeholder="Leave blank to keep existing" />
             </div>
           </CardContent>
         </Card>
@@ -178,16 +178,16 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Top K</Label>
-              <Input type="number" value={config?.retrieval_settings.top_k ?? 10} onChange={(e) => update("retrieval_settings.top_k", parseInt(e.target.value) || 10)} />
+              <Label htmlFor="retrieval-top-k">Top K</Label>
+              <Input id="retrieval-top-k" type="number" value={config?.retrieval_settings.top_k ?? 10} onChange={(e) => update("retrieval_settings.top_k", parseInt(e.target.value) || 10)} />
             </div>
             <div className="space-y-2">
-              <Label>RRF K</Label>
-              <Input type="number" value={config?.retrieval_settings.rrf_k ?? 60} onChange={(e) => update("retrieval_settings.rrf_k", parseInt(e.target.value) || 60)} />
+              <Label htmlFor="retrieval-rrf-k">RRF K</Label>
+              <Input id="retrieval-rrf-k" type="number" value={config?.retrieval_settings.rrf_k ?? 60} onChange={(e) => update("retrieval_settings.rrf_k", parseInt(e.target.value) || 60)} />
             </div>
             <div className="space-y-2">
-              <Label>Rerank Threshold</Label>
-              <Input type="number" step="0.1" value={config?.retrieval_settings.reranking_threshold ?? 0.7} onChange={(e) => update("retrieval_settings.reranking_threshold", parseFloat(e.target.value) || 0.7)} />
+              <Label htmlFor="retrieval-threshold">Rerank Threshold</Label>
+              <Input id="retrieval-threshold" type="number" step="0.1" value={config?.retrieval_settings.reranking_threshold ?? 0.7} onChange={(e) => update("retrieval_settings.reranking_threshold", parseFloat(e.target.value) || 0.7)} />
             </div>
           </CardContent>
         </Card>
@@ -199,12 +199,12 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Requests per minute</Label>
-              <Input type="number" value={config?.rate_limits.requests_per_minute ?? 60} onChange={(e) => update("rate_limits.requests_per_minute", parseInt(e.target.value) || 60)} />
+              <Label htmlFor="rate-req-per-min">Requests per minute</Label>
+              <Input id="rate-req-per-min" type="number" value={config?.rate_limits.requests_per_minute ?? 60} onChange={(e) => update("rate_limits.requests_per_minute", parseInt(e.target.value) || 60)} />
             </div>
             <div className="space-y-2">
-              <Label>Tokens per minute</Label>
-              <Input type="number" value={config?.rate_limits.tokens_per_minute ?? 100000} onChange={(e) => update("rate_limits.tokens_per_minute", parseInt(e.target.value) || 100000)} />
+              <Label htmlFor="rate-tok-per-min">Tokens per minute</Label>
+              <Input id="rate-tok-per-min" type="number" value={config?.rate_limits.tokens_per_minute ?? 100000} onChange={(e) => update("rate_limits.tokens_per_minute", parseInt(e.target.value) || 100000)} />
             </div>
           </CardContent>
         </Card>

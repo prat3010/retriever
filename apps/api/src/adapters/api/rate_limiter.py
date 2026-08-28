@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from typing import ClassVar
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
@@ -11,6 +12,7 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
     Sliding window in-memory rate limiter per tenant_id / client IP.
     Protects multi-tenant inference, vector search, and ingestion against noisy neighbor starvation.
     """
+    _instances: ClassVar[list["TenantRateLimiterMiddleware"]] = []
 
     def __init__(self, app, default_limit: int = 120, window_seconds: int = 60):
         super().__init__(app)
@@ -18,6 +20,12 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
         self.window_seconds = window_seconds
         # In-memory sliding log: key -> list of timestamps
         self._requests: dict[str, list[float]] = defaultdict(list)
+        TenantRateLimiterMiddleware._instances.append(self)
+
+    @classmethod
+    def reset_all(cls) -> None:
+        for inst in cls._instances:
+            inst._requests.clear()
 
     def _get_key(self, request: Request) -> str:
         # Check tenant_id from header or state

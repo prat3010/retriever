@@ -86,23 +86,37 @@ export default function OnboardPage() {
       <Topbar title="Onboard Client" description="Create a new tenant and generate credentials" />
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Steps indicator */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className={step === "tenant" ? "font-semibold text-primary" : "text-muted-foreground"}>
-            1. Tenant
-          </span>
-          <span className="text-muted-foreground">→</span>
-          <span className={step === "key" ? "font-semibold text-primary" : "text-muted-foreground"}>
-            2. API Key
-          </span>
-          <span className="text-muted-foreground">→</span>
-          <span className={step === "user" ? "font-semibold text-primary" : "text-muted-foreground"}>
-            3. User
-          </span>
-          <span className="text-muted-foreground">→</span>
-          <span className={step === "done" ? "font-semibold text-primary" : "text-muted-foreground"}>
-            4. Credentials
-          </span>
-        </div>
+        <nav aria-label="Onboarding Progress" className="mb-2">
+          <ol className="flex items-center gap-2 text-sm">
+            <li
+              aria-current={step === "tenant" ? "step" : undefined}
+              className={step === "tenant" ? "font-semibold text-primary" : "text-muted-foreground"}
+            >
+              1. Tenant
+            </li>
+            <li aria-hidden="true" className="text-muted-foreground">→</li>
+            <li
+              aria-current={step === "key" ? "step" : undefined}
+              className={step === "key" ? "font-semibold text-primary" : "text-muted-foreground"}
+            >
+              2. API Key
+            </li>
+            <li aria-hidden="true" className="text-muted-foreground">→</li>
+            <li
+              aria-current={step === "user" ? "step" : undefined}
+              className={step === "user" ? "font-semibold text-primary" : "text-muted-foreground"}
+            >
+              3. User
+            </li>
+            <li aria-hidden="true" className="text-muted-foreground">→</li>
+            <li
+              aria-current={step === "done" ? "step" : undefined}
+              className={step === "done" ? "font-semibold text-primary" : "text-muted-foreground"}
+            >
+              4. Credentials
+            </li>
+          </ol>
+        </nav>
 
         {step === "tenant" && (
           <Card>
@@ -126,7 +140,7 @@ export default function OnboardPage() {
                   value={tenantForm.tier}
                   onValueChange={(v) => setTenantForm({ ...tenantForm, tier: v })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="tier"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="standard">Standard</SelectItem>
                     <SelectItem value="premium">Premium</SelectItem>
@@ -140,7 +154,7 @@ export default function OnboardPage() {
                   value={tenantForm.isolation_level}
                   onValueChange={(v) => setTenantForm({ ...tenantForm, isolation_level: v })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="isolation"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="logical">Logical</SelectItem>
                     <SelectItem value="schema">Schema</SelectItem>
@@ -180,7 +194,7 @@ export default function OnboardPage() {
                   value={keyForm.role}
                   onValueChange={(v) => setKeyForm({ ...keyForm, role: v as "admin" | "client" })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="role"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="client">Client</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
@@ -189,10 +203,10 @@ export default function OnboardPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep("tenant")}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" /> Back
                 </Button>
                 <Button className="flex-1" onClick={handleCreateKey} disabled={createApiKey.isPending}>
-                  {createApiKey.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {createApiKey.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                   Generate Key
                 </Button>
               </div>
@@ -227,10 +241,10 @@ export default function OnboardPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep("key")}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" /> Back
                 </Button>
                 <Button className="flex-1" onClick={handleCreateUser} disabled={createUser.isPending}>
-                  {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                   Create User
                 </Button>
               </div>
@@ -242,7 +256,7 @@ export default function OnboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-green-500" aria-hidden="true" />
                 <CardTitle>Client Onboarded</CardTitle>
               </div>
               <CardDescription>Share these credentials with your client</CardDescription>
@@ -266,8 +280,8 @@ export default function OnboardPage() {
                     <span className="text-muted-foreground">API Key: </span>
                     <span className="font-semibold break-all">{createdApiKey}</span>
                   </div>
-                  <Button size="sm" variant="outline" className="shrink-0" onClick={copyKey}>
-                    <Copy className="mr-1 h-3 w-3" />
+                  <Button size="sm" variant="outline" className="shrink-0" onClick={copyKey} aria-label="Copy API Key to clipboard">
+                    <Copy className="mr-1 h-3 w-3" aria-hidden="true" />
                     {copiedKey ? "Copied" : "Copy Key"}
                   </Button>
                 </div>
@@ -275,18 +289,19 @@ export default function OnboardPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Quick-start: curl</Label>
+                  <Label id="quickstart-curl-label">Quick-start: curl</Label>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
+                    aria-label="Copy quick-start curl commands"
                     onClick={() => {
                       const curlText = `curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}"\n\ncurl ${API_BASE}/v1/tenants/${createdTenantId}/search \\\n  -X POST \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "hello world", "limit": 5}'`;
                       navigator.clipboard.writeText(curlText);
                       toast.success("Curl commands copied");
                     }}
                   >
-                    <Copy className="mr-1 h-3 w-3" />
+                    <Copy className="mr-1 h-3 w-3" aria-hidden="true" />
                     Copy Commands
                   </Button>
                 </div>

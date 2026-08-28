@@ -241,6 +241,25 @@ class VectorRecordDb(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 
+class VectorRecord1024Db(Base):
+    __tablename__ = "vector_records_1024"
+
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    collection_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    embedding = Column(Vector(1024), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
 class VectorRecord1536Db(Base):
     __tablename__ = "vector_records_1536"
 
@@ -281,6 +300,8 @@ class VectorRecord3072Db(Base):
 
 def get_vector_table_name(dimension: int) -> str:
     """Return matching vector partition table name based on embedding dimension."""
+    if dimension == 1024:
+        return "vector_records_1024"
     if dimension == 1536:
         return "vector_records_1536"
     if dimension == 3072:

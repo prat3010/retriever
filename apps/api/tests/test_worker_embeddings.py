@@ -233,3 +233,45 @@ async def test_generate_embeddings_failure_sets_failed(
     ]
     assert len(failed_events) == 1
     assert failed_events[0][0][0]["payload"]["failurePhase"] == "EMBEDDING"
+
+
+@pytest.mark.asyncio
+@patch("workers.src.tasks._publish_event", autospec=True)
+@patch("workers.src.tasks.create_async_engine", autospec=True)
+@patch("workers.src.tasks.embed_with_retry", new_callable=AsyncMock)
+async def test_generate_embeddings_multi_dimension_routing(
+    mock_embed_with_retry, mock_create_engine, mock_publish_event
+) -> None:
+    from workers.src.tasks import _run_generate_embeddings
+
+    tenant_id = str(uuid.uuid4())
+    doc_id = str(uuid.uuid4())
+    chunk_id = str(uuid.uuid4())
+
+    mock_conn = AsyncMock()
+    mock_engine = MagicMock()
+    mock_engine.dispose = AsyncMock()
+    mock_create_engine.return_value = mock_engine
+
+    mock_ctx = MagicMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_ctx.__aexit__ = AsyncMock(return_value=None)
+    mock_engine.connect.return_value = mock_ctx
+    mock_engine.begin.return_value = mock_ctx
+
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = None
+    mock_result.fetchall.return_value = [(chunk_id, "contract clause")]
+    mock_conn.execute = AsyncMock(return_value=mock_result)
+
+    # 1536 dimension vector (OpenAI text-embedding-3-small)
+    mock_embed_with_retry.return_value = [[0.05] * 1536]
+
+    with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+        await _run_generate_embeddings(doc_id, tenant_id)
+
+    upsert_calls_1536 = [
+        call for call in mock_conn.execute.call_args_list
+        if hasattr(call[0][0], "text") and "INSERT INTO vector_records_1536" in call[0][0].text
+    ]
+    assert len(upsert_calls_1536) == 1

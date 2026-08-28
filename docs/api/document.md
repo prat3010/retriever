@@ -61,7 +61,7 @@ sequenceDiagram
 
 ### 2.1 Upload Document
 
-Uploads a single or multiple documents (`.pdf`, `.docx`, `.txt`, `.md`, `.json`, `.csv`, `.py`) with custom metadata and chunking strategy.
+Uploads a single or multiple documents (`.pdf`, `.docx`, `.xlsx`, `.pptx`, `.txt`, `.md`, `.json`, `.csv`, `.py`, `.ts`, `.go`, `.rs`) with custom metadata and automatic zero-config chunking strategy.
 
 - **HTTP Method:** `POST`
 - **Path:** `/v1/tenants/{tenantId}/documents`

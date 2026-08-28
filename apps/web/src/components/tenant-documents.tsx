@@ -168,7 +168,10 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
     <div className="space-y-6">
       {/* Premium Drag and Drop Upload Area */}
       <div
-        className={`relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer ${
+        role="button"
+        tabIndex={0}
+        aria-label="Upload documents. Click, press Enter or Space, or drag and drop files here."
+        className={`relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
           isDragActive
             ? "border-primary bg-primary/5 scale-[0.99]"
             : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10"
@@ -178,10 +181,17 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
         onDragLeave={handleDrag}
         onDrop={handleDrop}
         onClick={triggerFileSelect}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            triggerFileSelect();
+          }
+        }}
       >
         <input
           ref={fileInputRef}
           type="file"
+          aria-label="Upload documents file selector"
           className="hidden"
           multiple
           onChange={handleFileInputChange}
@@ -190,13 +200,13 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
 
         {isUploading ? (
           <>
-            <Loader2 className="h-10 w-10 mb-3 text-primary animate-spin" />
+            <Loader2 className="h-10 w-10 mb-3 text-primary animate-spin" aria-hidden="true" />
             <p className="text-sm font-medium">Processing uploads...</p>
             <p className="text-xs text-muted-foreground mt-1">Files are being securely parsed and sent to the indexing workers.</p>
           </>
         ) : (
           <>
-            <UploadCloud className="h-10 w-10 mb-3 text-muted-foreground transition-colors group-hover:text-primary" />
+            <UploadCloud className="h-10 w-10 mb-3 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
             <p className="text-sm font-medium">
               <span className="text-primary underline">Click to upload</span> or drag and drop
             </p>
@@ -209,7 +219,7 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
       <div className="border rounded-md overflow-hidden bg-card">
         {!docs || docs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <FileText className="h-12 w-12 mb-4" />
+            <FileText className="h-12 w-12 mb-4" aria-hidden="true" />
             <p className="text-sm">No documents uploaded yet</p>
           </div>
         ) : (
@@ -251,12 +261,13 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                               handleProcess(doc.documentId, doc.filename, "laptop");
                             }}
                             disabled={processingDocs.has(doc.documentId)}
+                            aria-label={`Embed ${doc.filename} on local laptop`}
                             title="Embed on Laptop (Local Ollama)"
                           >
                             {processingDocs.has(doc.documentId) ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                             ) : (
-                              <Laptop className="h-3.5 w-3.5" />
+                              <Laptop className="h-3.5 w-3.5" aria-hidden="true" />
                             )}
                             <span>Laptop</span>
                           </Button>
@@ -269,21 +280,22 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                               handleProcess(doc.documentId, doc.filename, "oracle");
                             }}
                             disabled={processingDocs.has(doc.documentId)}
+                            aria-label={`Embed ${doc.filename} on cloud Oracle VM`}
                             title="Embed on Oracle VM (Cloud Server)"
                           >
-                            <Cloud className="h-3.5 w-3.5" />
+                            <Cloud className="h-3.5 w-3.5" aria-hidden="true" />
                             <span>Cloud</span>
                           </Button>
                         </div>
                       )}
                       {doc.status === "PROCESSING" && (
                         <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" aria-hidden="true" />
                           <span>Embedding...</span>
                         </div>
                       )}
                       {doc.status === "INDEXED" && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-green-500" aria-label="Document indexed successfully" role="img" />
                       )}
                       {doc.status === "FAILED" && (
                         <span className="text-xs text-destructive">Failed</span>
@@ -296,8 +308,9 @@ export function TenantDocumentsTab({ tenantId }: { tenantId: string }) {
                           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => e.stopPropagation()}
                           disabled={deleteMutation.isPending}
+                          aria-label={`Delete document ${doc.filename}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent onClick={(e) => e.stopPropagation()}>

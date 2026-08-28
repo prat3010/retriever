@@ -165,7 +165,11 @@ def _describe_with_vision(path: str, mime_type: str, config: dict, tenant_id: st
     api_key = _get_decrypted_key(config, "ai_provider", "OPENAI_API_KEY", tenant_id)
     if not api_key:
         return ""
-    client = openai.OpenAI(api_key=api_key)
+    base_url = config.get("ai_provider", {}).get("base_url") or os.environ.get("OPENAI_BASE_URL")
+    client_opts = {"api_key": api_key}
+    if base_url:
+        client_opts["base_url"] = base_url
+    client = openai.OpenAI(**client_opts)
 
     image_data: bytes | None = None
     if mime_type.startswith("image/"):
@@ -527,6 +531,41 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     insert_params,
                 )
 
+                # Knowledge Graph Triples extraction pass
+                try:
+                    from src.domain.graph.graph_extraction_service import GraphExtractor
+                    extractor = GraphExtractor()
+                    all_triples = []
+                    for chunk in chunks_to_insert:
+                        triples = extractor.extract_triples(
+                            chunk["content"], chunk_id=chunk["chunk_id"], document_id=document_id
+                        )
+                        for t in triples:
+                            all_triples.append({
+                                "tenant_id": tenant_id,
+                                "document_id": document_id,
+                                "chunk_id": chunk["chunk_id"],
+                                "subject": t.subject,
+                                "predicate": t.predicate,
+                                "object": t.object,
+                                "confidence": t.confidence,
+                                "meta_data": json.dumps(t.metadata),
+                            })
+                    if all_triples:
+                        await conn.execute(
+                            sa.text(
+                                """
+                                INSERT INTO graph_triples
+                                (tenant_id, document_id, chunk_id, subject, predicate, object, confidence, meta_data, created_at)
+                                VALUES (:tenant_id::uuid, :document_id::uuid, :chunk_id::uuid, :subject, :predicate, :object, :confidence, CAST(:meta_data AS jsonb), NOW())
+                                ON CONFLICT DO NOTHING
+                                """
+                            ),
+                            all_triples,
+                        )
+                except Exception:
+                    pass
+
             await conn.execute(
                 sa.text(
                     "UPDATE documents SET status = 'INDEXING', updated_at = NOW() "
@@ -648,10 +687,19 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             for chunk_id, embedding in all_embeddings:
                 embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
+                dim = len(embedding)
+                if dim == 1024:
+                    target_table = "vector_records_1024"
+                elif dim == 1536:
+                    target_table = "vector_records_1536"
+                elif dim == 3072:
+                    target_table = "vector_records_3072"
+                else:
+                    target_table = "vector_records"
                 await conn.execute(
                     sa.text(
-                        """
-                        INSERT INTO vector_records (chunk_id, tenant_id, embedding, created_at)
+                        f"""
+                        INSERT INTO {target_table} (chunk_id, tenant_id, embedding, created_at)
                         VALUES (:chunk_id, :tenant_id, :embedding::vector, NOW())
                         ON CONFLICT (chunk_id) DO UPDATE SET embedding = :embedding::vector
                         """

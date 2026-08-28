@@ -8,6 +8,7 @@ from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import (
     DocumentChunkDb,
     DocumentDb,
+    VectorRecord1024Db,
     VectorRecord1536Db,
     VectorRecord3072Db,
     VectorRecordDb,
@@ -164,7 +165,9 @@ async def ingest_file_sync(
         for chunk_data, embedding in zip(chunks, embeddings, strict=True):
             chunk_id = uuid.UUID(chunk_data["chunk_id"])
             dim = len(embedding)
-            if dim == 1536:
+            if dim == 1024:
+                vector_cls = VectorRecord1024Db
+            elif dim == 1536:
                 vector_cls = VectorRecord1536Db
             elif dim == 3072:
                 vector_cls = VectorRecord3072Db

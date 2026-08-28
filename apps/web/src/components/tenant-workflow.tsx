@@ -32,15 +32,16 @@ export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>n8n Target Webhook URL</Label>
+            <Label htmlFor="n8n-webhook-url">n8n Target Webhook URL</Label>
             <Input
+              id="n8n-webhook-url"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
               placeholder="https://n8n.your-domain.com/webhook/..."
             />
           </div>
 
-          <Button onClick={handleSaveWebhook} disabled={configureMutation.isPending}>
+          <Button onClick={handleSaveWebhook} disabled={configureMutation.isPending} aria-label="Save and ping n8n webhook">
             {configureMutation.isPending ? "Testing & Saving..." : "Save & Ping n8n Webhook"}
           </Button>
 
@@ -69,6 +70,7 @@ export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
             size="sm"
             variant="outline"
             onClick={() => navigator.clipboard.writeText(JSON.stringify(n8nSpec, null, 2))}
+            aria-label="Copy n8n OpenAPI 3.0 Specification JSON"
           >
             Copy Spec JSON
           </Button>

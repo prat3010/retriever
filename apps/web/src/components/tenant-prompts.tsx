@@ -81,8 +81,8 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
       <div className="flex justify-end">
         <Dialog open={!!editDialog && !preview} onOpenChange={(open) => { if (!open) setEditDialog(null); }}>
           <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setEditDialog({ name: "", content: "", is_system_prompt: true })}>
-              <Plus className="mr-2 h-4 w-4" /> New Prompt
+            <Button size="sm" onClick={() => setEditDialog({ name: "", content: "", is_system_prompt: true })} aria-label="Create new prompt template">
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> New Prompt
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -93,19 +93,19 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
             {editDialog && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={editDialog.name} onChange={(e) => setEditDialog({ ...editDialog, name: e.target.value })} placeholder="default" />
+                  <Label htmlFor="prompt-name">Name</Label>
+                  <Input id="prompt-name" value={editDialog.name} onChange={(e) => setEditDialog({ ...editDialog, name: e.target.value })} placeholder="default" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Content</Label>
-                  <Textarea className="font-mono text-xs h-48" value={editDialog.content} onChange={(e) => setEditDialog({ ...editDialog, content: e.target.value })} placeholder="You are a helpful assistant..." />
+                  <Label htmlFor="prompt-content">Content</Label>
+                  <Textarea id="prompt-content" className="font-mono text-xs h-48" value={editDialog.content} onChange={(e) => setEditDialog({ ...editDialog, content: e.target.value })} placeholder="You are a helpful assistant..." />
                 </div>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
               <Button onClick={handleSave} disabled={!editDialog?.name.trim() || createPrompt.isPending || updatePrompt.isPending}>
-                {(createPrompt.isPending || updatePrompt.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(createPrompt.isPending || updatePrompt.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 Save
               </Button>
             </DialogFooter>
@@ -126,14 +126,14 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
                 <Badge variant={p.isSystemPrompt ? "default" : "secondary"}>{p.isSystemPrompt ? "system" : "user"}</Badge>
               </div>
               <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" onClick={() => handlePreview(p.name)}>
-                  <Eye className="h-4 w-4" />
+                <Button size="icon" variant="ghost" onClick={() => handlePreview(p.name)} aria-label={`Preview prompt template ${p.name}`}>
+                  <Eye className="h-4 w-4" aria-hidden="true" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setEditDialog({ name: p.name, content: p.content, is_system_prompt: p.isSystemPrompt })}>
-                  <Pencil className="h-4 w-4" />
+                <Button size="icon" variant="ghost" onClick={() => setEditDialog({ name: p.name, content: p.content, is_system_prompt: p.isSystemPrompt })} aria-label={`Edit prompt template ${p.name}`}>
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => handleDelete(p.name)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button size="icon" variant="ghost" onClick={() => handleDelete(p.name)} aria-label={`Delete prompt template ${p.name}`}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

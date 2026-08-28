@@ -115,14 +115,13 @@ export function UsersTab({ tenantId }: Props) {
               <TableHead>Display Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="w-12" />
-              <TableHead className="w-12" />
+              <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -133,11 +132,13 @@ export function UsersTab({ tenantId }: Props) {
                   <span className="flex items-center gap-1">
                     {user.userId.slice(0, 12)}…
                     <button
-                      className="inline-flex items-center justify-center rounded p-0.5 opacity-40 hover:opacity-100 transition-opacity"
+                      type="button"
+                      className="inline-flex items-center justify-center rounded p-0.5 opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus:ring-1 focus:ring-ring"
                       onClick={() => { navigator.clipboard.writeText(user.userId); toast.success("User ID copied"); }}
+                      aria-label={`Copy user ID ${user.userId}`}
                       title="Copy User ID"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3 w-3" aria-hidden="true" />
                     </button>
                   </span>
                 </TableCell>
@@ -155,11 +156,13 @@ export function UsersTab({ tenantId }: Props) {
                 </TableCell>
                 <TableCell>
                   <button
-                    className="inline-flex items-center justify-center rounded p-1 opacity-40 hover:opacity-100 hover:text-red-500 transition-opacity"
+                    type="button"
+                    className="inline-flex items-center justify-center rounded p-1 opacity-40 hover:opacity-100 hover:text-red-500 transition-opacity focus:outline-none focus:ring-1 focus:ring-destructive"
                     onClick={() => setDeleteTarget(user)}
+                    aria-label={`Delete user ${user.externalId}`}
                     title="Delete user"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </TableCell>
               </TableRow>

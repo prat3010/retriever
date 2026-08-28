@@ -10,3 +10,22 @@ if _repo_root not in sys.path:
 _processing_core = os.path.join(_repo_root, "packages", "processing-core", "src")
 if _processing_core not in sys.path:
     sys.path.insert(0, _processing_core)
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit_state():
+    try:
+        from src.adapters.api.rate_limiter import TenantRateLimiterMiddleware
+
+        TenantRateLimiterMiddleware.reset_all()
+    except Exception:
+        pass
+    yield
+    try:
+        from src.adapters.api.rate_limiter import TenantRateLimiterMiddleware
+
+        TenantRateLimiterMiddleware.reset_all()
+    except Exception:
+        pass

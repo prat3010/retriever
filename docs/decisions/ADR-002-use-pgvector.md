@@ -22,11 +22,12 @@ Utilize the **pgvector** extension inside PostgreSQL as the primary vector searc
 
 ## Consequences
 * **Transactional Consistency:** Relational metadata updates and vector inserts occur in a single ACID transaction block. If chunking fails, vector records are rolled back automatically.
-* **Simplified Hybrid Retrieval:** Vectors are stored as a column (`vector` type) on the `vector_records` table, allowing hybrid queries (vector similarity search + BM25 keyword matching) to be executed in a single query path with metadata filters.
-* **RLS Integration:** Row-Level Security policies automatically apply to vector queries via the `tenant_id` context.
-* **Index Configuration:** Requires configuring HNSW (Hierarchical Navigable Small World) indexes on PostgreSQL columns to ensure low-latency retrieval.
+* **Multi-Dimension Partitioning (`vector_records_1024`, `vector_records_1536`, `vector_records_3072`):** Rather than locking the platform to a single embedding dimension, Retriever uses dimension-partitioned vector tables (`vector_records` for 768d, `vector_records_1024` for BGE-M3 / Snowflake, `vector_records_1536` for OpenAI small, `vector_records_3072` for OpenAI large). Each table has its own dedicated HNSW cosine index and RLS policy, enabling concurrent multi-model support on a single PostgreSQL instance.
+* **Simplified Hybrid Retrieval:** Vectors are stored as a column (`vector` type) on the corresponding partitioned table, allowing hybrid queries (vector similarity search + BM25 keyword matching) to be executed in a single query path with metadata filters.
+* **RLS Integration:** Row-Level Security policies automatically apply to vector queries via the `tenant_id` context across all partitioned vector tables.
+* **Index Configuration:** Requires configuring HNSW (Hierarchical Navigable Small World) indexes (`m = 16, ef_construction = 200`) on PostgreSQL columns to ensure low-latency retrieval.
 * **Memory Limits:** The PostgreSQL host must allocate sufficient RAM to cache HNSW indexes to prevent slow disk reads.
 
 ## Future Review Criteria
-* Re-evaluate pgvector performance if vector dimensions change (e.g., migrating from 1536-dimensional to 3072-dimensional embeddings).
-* Monitor index build latency. If HNSW index rebuilding delays ingestion, consider routing enterprise tenants with large data scales to isolated Qdrant clusters.
+* Re-evaluate pgvector performance under extreme scale (>10M vectors per dimension table).
+* Monitor index build latency. If HNSW index rebuilding delays ingestion, consider routing enterprise tenants with massive datasets to isolated Qdrant clusters.

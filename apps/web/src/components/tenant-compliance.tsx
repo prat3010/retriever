@@ -41,20 +41,21 @@ export function TenantComplianceTab({ tenantId }: TenantComplianceTabProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Sample Input Text</Label>
+            <Label htmlFor="pii-sample-text">Sample Input Text</Label>
             <Textarea
+              id="pii-sample-text"
               value={testText}
               onChange={(e) => setTestText(e.target.value)}
               rows={3}
               placeholder="Enter text containing sensitive PII..."
             />
           </div>
-          <Button onClick={handleTestAnonymizer} disabled={anonymizeMutation.isPending}>
+          <Button onClick={handleTestAnonymizer} disabled={anonymizeMutation.isPending} aria-label="Run PII Anonymizer Test">
             {anonymizeMutation.isPending ? "Testing..." : "Test PII Anonymizer"}
           </Button>
 
           {anonymizeMutation.data && (
-            <div className="p-4 bg-muted rounded-lg space-y-2 font-mono text-sm">
+            <div role="region" aria-label="PII redaction output" className="p-4 bg-muted rounded-lg space-y-2 font-mono text-sm">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-xs text-muted-foreground uppercase">Anonymized Output</span>
                 <Badge variant="secondary">{anonymizeMutation.data.pii_detected_count} PII Tokens Masked</Badge>

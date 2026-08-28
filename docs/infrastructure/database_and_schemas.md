@@ -45,25 +45,50 @@ erDiagram
 
 ---
 
-## 2. pgvector HNSW Index Configuration
+## 2. Multi-Dimension pgvector HNSW Table Schema
+
+Retriever provides dimension-isolated tables so tenants can utilize different embedding models concurrently without dimensional collision:
 
 ```sql
--- Partitioned Vector Embeddings Table
-CREATE TABLE IF NOT EXISTS pgvector_embeddings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-    chunk_id UUID NOT NULL REFERENCES document_chunks(id) ON DELETE CASCADE,
-    dimensions INT NOT NULL DEFAULT 768,
+-- 1. Standard 768-Dimension (Nomic, Snowflake Arctic M, Google text-embedding-004)
+CREATE TABLE IF NOT EXISTS vector_records (
+    chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    collection_id UUID,
     embedding vector(768) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_vector_records_embedding ON vector_records USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
 
--- High-Performance HNSW Cosine Distance Index
-CREATE INDEX IF NOT EXISTS idx_pgvector_hnsw_cosine 
-ON pgvector_embeddings 
-USING hnsw (embedding vector_cosine_ops) 
-WITH (m = 16, ef_construction = 64);
+-- 2. Heavyweight 1024-Dimension (BGE-M3, Snowflake Arctic Large, Mixedbread AI)
+CREATE TABLE IF NOT EXISTS vector_records_1024 (
+    chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    collection_id UUID,
+    embedding vector(1024) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_vector_records_1024_embedding ON vector_records_1024 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
+
+-- 3. Commercial 1536-Dimension (OpenAI text-embedding-3-small)
+CREATE TABLE IF NOT EXISTS vector_records_1536 (
+    chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    collection_id UUID,
+    embedding vector(1536) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_vector_records_1536_embedding ON vector_records_1536 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
+
+-- 4. High-Precision 3072-Dimension (OpenAI text-embedding-3-large)
+CREATE TABLE IF NOT EXISTS vector_records_3072 (
+    chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    collection_id UUID,
+    embedding vector(3072) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_vector_records_3072_embedding ON vector_records_3072 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
 ```
 
 ---

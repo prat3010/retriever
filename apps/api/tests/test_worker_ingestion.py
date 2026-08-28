@@ -174,3 +174,39 @@ async def test_worker_processing_task_extract_tables(
         if hasattr(call[0][0], "text") and "INSERT INTO document_chunks" in call[0][0].text
     ]
     assert len(insert_calls) >= 1
+
+
+@pytest.mark.asyncio
+@patch("workers.src.tasks._publish_event", autospec=True)
+@patch("workers.src.tasks.create_async_engine", autospec=True)
+@patch("workers.src.tasks.extract_text_from_file", return_value="FastAPI supports PostgreSQL and Redis")
+async def test_worker_processing_task_extracts_graph_triples(
+    mock_extract_text, mock_create_engine, mock_publish_event
+) -> None:
+    from workers.src.tasks import process_document_async
+
+    tenant_id = str(uuid.uuid4())
+    doc_id = str(uuid.uuid4())
+
+    mock_conn = AsyncMock()
+    mock_engine = MagicMock()
+    mock_engine.dispose = AsyncMock()
+    mock_create_engine.return_value = mock_engine
+
+    mock_ctx = MagicMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_ctx.__aexit__ = AsyncMock(return_value=None)
+    mock_engine.begin.return_value = mock_ctx
+
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = [json.dumps({})]
+    mock_result.fetchall.return_value = []
+    mock_conn.execute = AsyncMock(return_value=mock_result)
+
+    await process_document_async(doc_id, tenant_id, "/fake/path/test.txt", "text/plain")
+
+    triple_insert_calls = [
+        call for call in mock_conn.execute.call_args_list
+        if hasattr(call[0][0], "text") and "INSERT INTO graph_triples" in call[0][0].text
+    ]
+    assert len(triple_insert_calls) == 1

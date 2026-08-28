@@ -106,15 +106,16 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Terminal className="h-4 w-4" /> RAG Sandbox
+            <Terminal className="h-4 w-4" aria-hidden="true" /> RAG Sandbox
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {!sessionId && (
             <div className="space-y-3">
               <div>
-                <Label>Tenant API Key</Label>
+                <Label htmlFor="sandbox-api-key">Tenant API Key</Label>
                 <Input
+                  id="sandbox-api-key"
                   placeholder="sk_..."
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
@@ -122,10 +123,10 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
               </div>
 
               <div>
-                <Label>User Context (Select or Enter User ID)</Label>
+                <Label htmlFor="sandbox-user-select">User Context (Select or Enter User ID)</Label>
                 {users && users.length > 0 ? (
                   <Select value={effectiveUserId} onValueChange={(val) => setUserId(val)}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger id="sandbox-user-select" className="mt-1">
                       <SelectValue placeholder="Select a tenant user..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -138,6 +139,7 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
                   </Select>
                 ) : (
                   <Input
+                    id="sandbox-user-select"
                     className="mt-1"
                     placeholder="User UUID (e.g., 00000000-0000-0000-0000-000000000001)"
                     value={userId}
@@ -150,7 +152,7 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
               </div>
 
               <Button onClick={startSession} disabled={creatingSession}>
-                {creatingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {creatingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}
                 {creatingSession ? "Starting..." : "Start Session"}
               </Button>
             </div>
@@ -160,10 +162,17 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
             <>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Session: {sessionId.slice(0, 8)}...</span>
-                <Button variant="outline" size="sm" onClick={() => { setSessionId(null); setMessages([]); }}>New Session</Button>
+                <Button variant="outline" size="sm" onClick={() => { setSessionId(null); setMessages([]); }} aria-label="Start new chat session">
+                  New Session
+                </Button>
               </div>
 
-              <div className="rounded-lg border bg-muted/30 p-4 max-h-64 overflow-y-auto space-y-2">
+              <div
+                role="log"
+                aria-live="polite"
+                aria-label="Conversation messages"
+                className="rounded-lg border bg-muted/30 p-4 max-h-64 overflow-y-auto space-y-2"
+              >
                 {messages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${
@@ -178,14 +187,16 @@ export function TenantSandboxTab({ tenantId }: { tenantId: string }) {
 
               <div className="flex gap-2">
                 <Input
+                  id="sandbox-chat-input"
+                  aria-label="Type a message"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   placeholder="Type a message..."
                   disabled={loading}
                 />
-                <Button onClick={sendMessage} disabled={loading || !input.trim()}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                <Button onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send message">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
                 </Button>
               </div>
             </>

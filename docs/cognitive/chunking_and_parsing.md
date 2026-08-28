@@ -25,20 +25,21 @@ invariants:
 
 ## 1. Chunking Strategy Taxonomy
 
-Retriever provides 6 specialized chunking engines tailored to different document modalities:
+Retriever provides specialized zero-config extractors and chunking engines tailored to different document modalities:
 
 ```mermaid
 graph TD
     File[Uploaded File Stream] --> Detect{File Modality Detector}
     
-    Detect -->|PDF / Scanned Paper| Docling[Docling Layout OCR & Table Extractor]
-    Detect -->|Prose / Articles| Recursive[Recursive Character Token Chunker]
-    Detect -->|Complex Reports| ParentChild[Hierarchical Parent-Child Chunker]
-    Detect -->|Dense Books| Semantic[Semantic Cosine Similarity Boundary Chunker]
+    Detect -->|PDF / Scanned Paper| Docling[Docling Layout OCR & Vision Fallback]
+    Detect -->|Word .docx / PPTX| Office[XML Structure & Slide Run Extractor]
+    Detect -->|Spreadsheets .xlsx / CSV| Tabular[Markdown Grid & Table Serializer]
+    Detect -->|Prose / Articles / MD| Recursive[Contextual Header & Token Chunker]
+    Detect -->|Complex Reports / Docs| ParentChild[Hierarchical Parent-Child Dual Granularity]
+    Detect -->|Dense Books / Contracts| Semantic[Semantic Cosine Similarity Boundary Chunker]
     Detect -->|Codebase / Scripts| AST[Tree-Sitter Code AST Chunker]
-    Detect -->|CSV / Tabular| Tabular[Row-wise Semantic JSON Serializer]
     
-    Docling & Recursive & ParentChild & Semantic & AST & Tabular --> Embed[pgvector HNSW Store]
+    Docling & Office & Tabular & Recursive & ParentChild & Semantic & AST --> Embed[pgvector HNSW Store]
 ```
 
 ---

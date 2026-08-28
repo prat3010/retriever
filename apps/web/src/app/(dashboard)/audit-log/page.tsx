@@ -52,8 +52,10 @@ export default function AuditLogPage() {
       <div className="p-6 space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
+              id="audit-search"
+              aria-label="Filter by tenant ID"
               className="pl-10"
               placeholder="Filter by tenant ID..."
               value={search}
@@ -61,7 +63,7 @@ export default function AuditLogPage() {
             />
           </div>
           <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger id="action-filter" aria-label="Filter by action type" className="w-44">
               <SelectValue placeholder="All actions" />
             </SelectTrigger>
             <SelectContent>
@@ -72,7 +74,7 @@ export default function AuditLogPage() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-3" aria-busy="true">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
@@ -115,12 +117,12 @@ export default function AuditLogPage() {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{data?.total ?? 0} entries</span>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                    <ChevronLeft className="h-4 w-4" />
+                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} aria-label="Previous page">
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </Button>
                   <span>Page {page + 1} of {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-                    <ChevronRight className="h-4 w-4" />
+                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} aria-label="Next page">
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>

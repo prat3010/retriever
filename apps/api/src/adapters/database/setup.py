@@ -16,7 +16,7 @@ async def _enable_rls_on_tables(conn) -> None:
     tables = [
         "tenant_configs", "api_keys", "audit_logs",
         "documents", "document_chunks", "vector_records",
-        "vector_records_1536", "vector_records_3072",
+        "vector_records_1024", "vector_records_1536", "vector_records_3072",
         "prompt_templates", "chat_sessions", "chat_messages",
         "inference_logs", "users", "semantic_cache",
         "chat_message_feedback",
@@ -81,6 +81,11 @@ async def _create_hnsw_indices(conn) -> None:
     await conn.execute(text("""
         CREATE INDEX IF NOT EXISTS idx_vector_records_embedding
         ON vector_records USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 200);
+    """))
+    await conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_vector_records_1024_embedding
+        ON vector_records_1024 USING hnsw (embedding vector_cosine_ops)
         WITH (m = 16, ef_construction = 200);
     """))
     await conn.execute(text("""

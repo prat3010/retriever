@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import { Topbar } from "@/components/topbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -157,7 +159,7 @@ export default function SystemDataPage() {
         ) : (
           <>
             {/* Stats Dashboard Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy={isLoading}>
               {statCards.map((card) => {
                 const Icon = card.icon;
                 return (
@@ -167,7 +169,7 @@ export default function SystemDataPage() {
                         <CardTitle className="text-base font-semibold">{card.title}</CardTitle>
                         <CardDescription className="text-xs">{card.description}</CardDescription>
                       </div>
-                      <Icon className={`h-5 w-5 ${card.color}`} />
+                      <Icon className={`h-5 w-5 ${card.color}`} aria-hidden="true" />
                     </CardHeader>
                     <CardContent className="pt-4 border-t mt-2">
                       <div className="grid grid-cols-2 gap-4">
@@ -188,7 +190,7 @@ export default function SystemDataPage() {
             <Card className="border-destructive/30 bg-destructive/5 overflow-hidden">
               <CardHeader className="border-b border-destructive/10 bg-destructive/10 pb-4">
                 <div className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
+                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                   <CardTitle className="text-base font-semibold">Danger Zone: Platform Fresh Start</CardTitle>
                 </div>
                 <CardDescription className="text-destructive/80 text-xs">
@@ -203,12 +205,13 @@ export default function SystemDataPage() {
 
                 {showConfirmInput && (
                   <div className="space-y-2 max-w-sm">
-                    <label className="text-xs font-semibold text-muted-foreground block">
+                    <Label htmlFor="reset-confirm-input" className="text-xs font-semibold text-muted-foreground block">
                       Type <span className="font-bold text-destructive">RESET</span> below to confirm:
-                    </label>
-                    <input
+                    </Label>
+                    <Input
+                      id="reset-confirm-input"
                       type="text"
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className="h-9"
                       placeholder="RESET"
                       value={resetConfirmText}
                       onChange={(e) => setResetConfirmText(e.target.value)}
@@ -221,15 +224,16 @@ export default function SystemDataPage() {
                     variant="destructive"
                     onClick={handleResetClick}
                     disabled={resetMutation.isPending}
+                    aria-label={showConfirmInput ? "Confirm database wipe and reset" : "Initiate platform reset"}
                   >
                     {resetMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                         Wiping Database...
                       </>
                     ) : (
                       <>
-                        <RotateCcw className="mr-2 h-4 w-4" />
+                        <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
                         {showConfirmInput ? "Confirm Wipe & Reset" : "Reset Platform Data"}
                       </>
                     )}

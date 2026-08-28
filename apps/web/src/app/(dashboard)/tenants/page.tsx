@@ -57,8 +57,10 @@ export default function TenantsPage() {
       <Topbar title="Tenants" description="Manage all tenants on the platform" />
       <div className="p-6 space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            id="tenant-search"
+            aria-label="Search tenants"
             className="pl-10"
             placeholder="Search tenants..."
             value={search}
@@ -67,7 +69,7 @@ export default function TenantsPage() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-3" aria-busy="true">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
@@ -153,12 +155,12 @@ export default function TenantsPage() {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{data?.total ?? 0} total</span>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                    <ChevronLeft className="h-4 w-4" />
+                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} aria-label="Previous page">
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </Button>
                   <span>Page {page + 1} of {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-                    <ChevronRight className="h-4 w-4" />
+                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} aria-label="Next page">
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>

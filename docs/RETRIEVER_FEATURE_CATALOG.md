@@ -35,7 +35,7 @@ Each capability is categorized into its primary operational domain and mapped ag
 ### 📄 Domain B: Ingestion, OCR & Document Processing
 | Milestone | Feature / Capability | Technical Description | Backend API / Module | Documentation | Admin UI | Client App |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **M13, M18** | **Multi-Format Ingestion** | Async and sync parsing for PDF, Docx, Markdown, TXT, and JSON files into document chunks. | [`/v1/document.py`](api/document.md) | [`chunking_and_parsing.md`](cognitive/chunking_and_parsing.md) | ✅ Grid | ✅ Library |
+| **M13, M18** | **Multi-Format Ingestion** | Async and sync parsing for PDF, DOCX, XLSX, PPTX, Markdown, TXT, CSV, Code AST, and JSON files into document chunks. | [`/v1/document.py`](api/document.md) | [`chunking_and_parsing.md`](cognitive/chunking_and_parsing.md) | ✅ Grid | ✅ Library |
 | **M14** | **Dual Target Embedding Engine** | Dual execution target: local laptop Ollama (`http://localhost:11434`) vs Cloud VPS CPU/GPU workers. | `/documents/{id}/process` | [`async_workers_and_queues.md`](infrastructure/async_workers_and_queues.md) | ✅ Switch | ⚡ Cloud |
 | **M15–M17** | **Document Lifecycle** | Document hashing, duplicate detection, metadata tracking, and soft-deletion cascades. | `DocumentRepository` | [`document.md`](api/document.md) | ✅ Docs Tab | ✅ Library |
 | **M42** | **Layout-Aware Vision OCR** | Docling / Unstructured layout-aware OCR for scanned PDFs and complex multi-column table extraction. | `extract_layout_from_pdf` | [`chunking_and_parsing.md`](cognitive/chunking_and_parsing.md) | ✅ OCR toggle | ✅ Status |
@@ -46,7 +46,7 @@ Each capability is categorized into its primary operational domain and mapped ag
 | Milestone | Feature / Capability | Technical Description | Backend API / Module | Documentation | Admin UI | Client App |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **M5, M6** | **Hybrid Search & RRF** | Reciprocal Rank Fusion (RRF) combining pgvector HNSW dense search with BM25/SPLADE sparse keyword search. | [`/v1/search.py`](api/search.md) | [`hybrid_search_and_fusion.md`](cognitive/hybrid_search_and_fusion.md) | ✅ Config Tab | ✅ Inspector |
-| **M9, M43** | **Multi-Embedding Schemas** | Dynamic vector table partitioning for 768, 1536, and 3072 dimension embedding models. | `vector_records_...` | [`database_and_schemas.md`](infrastructure/database_and_schemas.md) | ✅ Settings | ⚡ Auto |
+| **M9, M43** | **Multi-Embedding Schemas** | Dynamic vector table partitioning for 768, 1024 (BGE-M3/Snowflake), 1536, and 3072 dimension embedding models. | `vector_records_...` | [`database_and_schemas.md`](infrastructure/database_and_schemas.md) | ✅ Settings | ⚡ Auto |
 | **M19, M45** | **Cross-Encoder Reranking** | GPU worker microservice offloading Cross-Encoder inference for high-precision result reranking. | `/v1/search` (`reranker_model`) | [`hybrid_search_and_fusion.md`](cognitive/hybrid_search_and_fusion.md) | ✅ Threshold | ✅ Inspector |
 | **M44** | **Query Intelligence & CRAG** | Intent routing, HyDE hypothetical embeddings, Self-Querying metadata AST, and Tavily/Brave search. | `QueryIntentAdapter` | [`query_intelligence.md`](cognitive/query_intelligence.md) | ✅ Web Toggle | ✅ Badges |
 

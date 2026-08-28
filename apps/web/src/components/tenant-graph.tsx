@@ -227,14 +227,16 @@ export function TenantGraphTab({ tenantId }: { tenantId: string }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Search className="h-4 w-4 text-primary" />
+            <Search className="h-4 w-4 text-primary" aria-hidden="true" />
             Multi-Hop Entity Inspector
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleEntitySearch} className="flex gap-2 flex-wrap">
             <Input
+              id="graph-search-entity"
               type="text"
+              aria-label="Search entity in knowledge graph"
               placeholder="Search entity (e.g. Alice, Payment Gateway)..."
               value={searchEntity}
               onChange={(e) => setSearchEntity(e.target.value)}
@@ -244,7 +246,7 @@ export function TenantGraphTab({ tenantId }: { tenantId: string }) {
               value={String(maxHops)}
               onValueChange={(v) => setMaxHops(Number(v))}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger id="graph-max-hops" aria-label="Maximum traversal hops depth" className="w-[150px]">
                 <SelectValue placeholder="Max hops" />
               </SelectTrigger>
               <SelectContent>
@@ -255,10 +257,10 @@ export function TenantGraphTab({ tenantId }: { tenantId: string }) {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit" disabled={graphQuery.isPending || !searchEntity.trim()}>
+            <Button type="submit" disabled={graphQuery.isPending || !searchEntity.trim()} aria-label="Traverse knowledge graph">
               {graphQuery.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                   Searching...
                 </>
               ) : (
@@ -296,9 +298,10 @@ export function TenantGraphTab({ tenantId }: { tenantId: string }) {
                           size="icon"
                           className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => setDeletingTriple(triple)}
+                          aria-label={`Delete triple ${triple.subject} ${triple.predicate} ${triple.object}`}
                           title="Delete triple"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
                       )}
                     </div>

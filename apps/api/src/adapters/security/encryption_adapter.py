@@ -5,6 +5,7 @@ Provides tenant-scoped symmetric field encryption for sensitive enterprise data 
 
 import base64
 import hashlib
+import os
 
 from cryptography.fernet import Fernet
 
@@ -19,8 +20,14 @@ from src.domain.security_compression.abstractions import (
 class Aes256FieldEncryptor:
     """Tenant-scoped AES-256 field encryptor using cryptographic key derivation."""
 
-    def __init__(self, master_key: str = "retriever_master_secret_key_2026") -> None:
-        self.master_key = master_key
+    def __init__(self, master_key: str | None = None) -> None:
+        resolved_key = master_key or os.environ.get("KEY_ENCRYPTION_KEY")
+        if not resolved_key:
+            raise ValueError(
+                "KEY_ENCRYPTION_KEY is required for Aes256FieldEncryptor. "
+                "Set KEY_ENCRYPTION_KEY in your environment or configuration."
+            )
+        self.master_key = resolved_key
 
     def _derive_tenant_fernet(self, tenant_id: str) -> Fernet:
         """Derive a deterministic 32-byte url-safe base64 key for a given tenant."""

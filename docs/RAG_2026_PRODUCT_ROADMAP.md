@@ -143,6 +143,40 @@ ROADMAP EXECUTION HORIZONS:
 
 ---
 
+### Phase I: Enterprise Cognitive Evaluation & Deep Observability Hardening (M74 – M78)
+
+#### Milestone M74: Semantic NLI & SLM-as-a-Judge Online Hallucination Engine
+*   **Objective:** Replace naive keyword overlap checks with semantic Natural Language Inference (NLI) and async Small Language Model judges to eliminate false-positive faithfulness scores.
+*   **Key Deliverables:**
+    1.  DeBERTa NLI Cross-Encoder (`nli_evaluator.py`) evaluating claim-premise entailment probabilities.
+    2.  Async Celery task `tasks.evaluate_inference_nli` running a local Ollama judge (`qwen2.5:3b` / `llama3.2:3b`) with structured reasoning and span localization.
+
+#### Milestone M75: Full-Stack OpenTelemetry Auto-Instrumentation & Distributed Trace Graph
+*   **Objective:** Provide end-to-end distributed tracing across database queries, vector similarity operations, outbound LLM APIs, and async Celery workers.
+*   **Key Deliverables:**
+    1.  Auto-instrument SQLAlchemy, HTTPX, and Celery worker queues.
+    2.  Propagate W3C standard `traceparent` headers across Next.js proxy $\rightarrow$ FastAPI Gateway $\rightarrow$ Celery workers.
+
+#### Milestone M76: Real-Time Telemetry Live Aggregations & SLA Webhook Alerting Engine
+*   **Objective:** Transition telemetry endpoints from static fallbacks to live multi-tenant database aggregations with automated incident webhooks.
+*   **Key Deliverables:**
+    1.  Live database aggregations for tenant tokens, cache savings, and quality metrics.
+    2.  Multi-channel webhook alerting dispatcher (Slack, Discord, Resend email) on Hallucination Index $> 30\%$ or token quota $\ge 90\%$.
+
+#### Milestone M77: Synthetic Golden Dataset Generation & Automated CI/CD Regression Gate
+*   **Objective:** Automate continuous RAG evaluation by synthesizing benchmark datasets and enforcing PR blocking gates in CI/CD.
+*   **Key Deliverables:**
+    1.  Synthetic Test Generator (`synthetic_dataset_generator.py`) extracting Q&A benchmark pairs from tenant documents.
+    2.  GitHub Action workflow enforcing strict Ragas + DeepEval quality thresholds before canary releases.
+
+#### Milestone M78: Visual Claim-by-Claim Grounding Diff & Synchronizer Observability Cockpit
+*   **Objective:** Deliver granular visual insight into model faithfulness and integrate backend observability into the local Synchronizer desktop control center.
+*   **Key Deliverables:**
+    1.  Visual sentence-by-sentence grounding inspector in Retriever Admin and SaaS Studio.
+    2.  Local Streamlit Synchronizer analytics tab overhaul with live Retriever telemetry and active alert feeds.
+
+---
+
 ## 4. Multi-Layer Stack Delivery Matrix
 
 | Stack Layer | Milestone | Feature | Primary Impact | Effort | Risk | Target Phase |
@@ -154,6 +188,11 @@ ROADMAP EXECUTION HORIZONS:
 | **Reasoning & Agentic** | **M72** | RLM Python REPL Studio | **Very High** (Programmatic context) | High | Medium | Phase H |
 | **Knowledge Graph** | **M73** | Leiden Community Summaries | **High** (Global vault Q&A) | High | Medium | Phase H |
 | **Evaluation & Ops** | **M73** | Closed-Loop Self-Tuning | **Very High** (Auto-calibrating engine) | High | High | Phase H |
+| **Evaluation & Quality**| **M74** | Semantic NLI & SLM Judge | **Critical** (Eliminates false faithfulness) | Medium | Low | Phase I |
+| **Observability & Infra**| **M75** | Full-Stack OTel Auto-Instrumentation | **Very High** (End-to-end DB/LLM tracing) | Low | Low | Phase I |
+| **Observability & Alerts**| **M76**| Real-Time Webhook Alerting | **High** (Instant SLA breach notification) | Low | Low | Phase I |
+| **Evaluation & CI/CD** | **M77** | Synthetic Dataset & CI Gate | **Very High** (Zero-regression release gate) | Medium | Low | Phase I |
+| **Observability & UI** | **M78** | Visual Grounding & Sync Cockpit | **High** (Granular UI trust & local ops) | Medium | Low | Phase I |
 
 ---
 

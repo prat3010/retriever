@@ -204,7 +204,7 @@ class Settings(BaseSettings):
     SPARSE_SEARCH_PROVIDER: str = "bm25"
 
     # CORS
-    CORS_ORIGINS: str = "*"
+    CORS_ORIGINS: str = "https://prateeq.in,https://admin.rag.prateeq.in,http://localhost:3000,http://127.0.0.1:3000,*"
 
     # Observability & Telemetry
     OTLP_ENDPOINT: str = ""

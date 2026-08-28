@@ -63,7 +63,26 @@ Measures signal-to-noise ratio in retrieved context passages:
 
 ---
 
+## 3. Semantic NLI & SLM-as-a-Judge Evaluation Pipeline (Milestone 74)
+
+To prevent false positives from naive keyword matching, online faithfulness is evaluated via a dual-tier semantic engine:
+
+1. **Tier 1 (Fast Cross-Encoder):** Lightweight HuggingFace DeBERTa cross-encoder (`cross-encoder/nli-deberta-v3-small`) classifying claim-premise pairs into calibrated probabilities (`entailment`, `neutral`, `contradiction`).
+2. **Tier 2 (Async SLM Judge via Celery):** Async Celery task `tasks.evaluate_inference_nli` evaluating premises, hypotheses (claims), and producing structured JSON reasoning with cited text span coordinates.
+
+---
+
+## 4. Synthetic Golden Dataset Auto-Generation (Milestone 77)
+
+1. **Document Proposition Extraction:** Ingestion worker breaks tenant documents into atomic factual propositions.
+2. **Adversarial & Standard Q&A Synthesis:** Generates 50+ benchmark questions, target ground-truth answers, and relevant chunk ID sets per dataset.
+3. **CI/CD Quality Gate:** Automated PR blocking check enforcing minimum thresholds ($\ge 0.90$ Faithfulness, $\ge 0.85$ Answer Relevancy).
+
+---
+
 ## 🔗 Related Architecture & Cross-References
 - [Master Admin Gateway Specification](../api/admin.md)
 - [Multi-Agent Consensus & Reflection](consensus_and_reflection.md)
 - [Async Workers & Queues](../infrastructure/async_workers_and_queues.md)
+- [Unified Master Roadmap (Phase I)](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+

@@ -103,12 +103,14 @@ pip install -r requirements.txt
 
 # Create .env
 cat > .env << 'EOF'
-DATABASE_URL=postgresql+asyncpg://postgres.uexdpufgmuevsrfijfrf:aCqmGy63tkFPGQnt@aws-1-us-west-2.pooler.supabase.com:5432/postgres?prepared_statement_cache_size=0
+DATABASE_URL=postgresql+asyncpg://postgres.<YOUR_PROJECT_REF>:<YOUR_DB_PASSWORD>@aws-1-us-west-2.pooler.supabase.com:5432/postgres?prepared_statement_cache_size=0
 EMBEDDING_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-ADMIN_MASTER_KEY=dev-admin-master-key-change-in-production
-OPENAI_API_KEY=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
+ADMIN_MASTER_KEY=<SECURE_RANDOM_256BIT_HEX_KEY>
+OPENAI_API_KEY=<YOUR_OPENROUTER_OR_OPENAI_KEY>
 OPENAI_BASE_URL=https://openrouter.ai/api/v1
+KEY_ENCRYPTION_KEY=<SECURE_32_BYTE_BASE64_KEY>
+SECRET_KEY=<SECURE_JWT_SECRET_KEY>
 EOF
 ```
 

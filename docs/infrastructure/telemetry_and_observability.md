@@ -53,6 +53,28 @@ flowchart LR
 
 ---
 
+## 3. Full-Stack Auto-Instrumentation (Milestone 75)
+
+- **SQLAlchemy & pgvector:** `SQLAlchemyInstrumentor().instrument(engine=engine)` records query latencies, vector similarity indexing time, and transaction lock durations.
+- **Outbound HTTPX Clients:** `HTTPXClientInstrumentor().instrument()` traces external LLM provider calls (Ollama, Gemini, Groq, Tavily, Resend).
+- **Celery Worker Queues:** `CeleryInstrumentor().instrument()` propagates trace spans across asynchronous ingestion and evaluation tasks.
+- **W3C TraceContext:** Propagates `traceparent` headers between Next.js Edge proxy and FastAPI.
+
+---
+
+## 4. Multi-Channel Webhook Alerting Engine (Milestone 76)
+
+- **Engine:** `alert_service.py` monitors real-time metric streams and dispatches push notifications to Slack, Discord, custom webhooks, or Resend email.
+- **Triggers:**
+  1. Rolling 1-hour Hallucination Index $> 30\%$.
+  2. Monthly tenant token quota $\ge 90\%$ and $100\%$.
+  3. P99 latency spikes $> 5.0\text{s}$.
+  4. Multi-tenant RLS isolation breach attempts.
+
+---
+
 ## 🔗 Related Architecture & Cross-References
 - [Health & Probes API Specification](../api/health.md)
 - [Caching & Performance Deep-Dive](caching_and_performance.md)
+- [Unified Master Roadmap (Phase I)](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+

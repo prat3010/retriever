@@ -6,9 +6,12 @@ reranking. Depends only on domain abstractions — no infrastructure imports.
 """
 
 import asyncio
+import logging
 import time
 from collections.abc import Callable
 from uuid import uuid4
+
+logger = logging.getLogger(__name__)
 
 from src.domain.abstractions.graph import BaseGraphRepository
 from src.domain.abstractions.retrieval import (
@@ -72,8 +75,8 @@ class HybridSearchService:
                 query.enable_hybrid = intent.enable_hybrid
                 query.enable_reranking = intent.enable_reranking
                 query.enable_web_search = intent.enable_web_search
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(f"Query intent classification failed for query '{query.query[:50]}': {exc}")
 
         # 0. Speculative pre-retrieval execution: fan-out Self-Query, HyDE, and Raw Query Embedding concurrently
         async def _run_self_query() -> list[MetadataFilter]:
@@ -85,14 +88,16 @@ class HybridSearchService:
             if query.enable_query_rewriting and self.query_rewriter:
                 try:
                     return await self.query_rewriter.rewrite(query.query)
-                except Exception:
+                except Exception as exc:
+                    logger.warning(f"Query rewriting failed for query '{query.query[:50]}': {exc}")
                     return []
             return []
 
         async def _run_raw_embed() -> list[float]:
             try:
                 return await self.embedder.embed_text(query.query)
-            except Exception:
+            except Exception as exc:
+                logger.warning(f"Raw query embedding failed for query '{query.query[:50]}': {exc}")
                 return []
 
         sq_res, hyde_res, raw_embed_res = await asyncio.gather(
@@ -124,8 +129,8 @@ class HybridSearchService:
                             duration_ms=0.0
                         )
                     )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(f"Semantic cache lookup failed for tenant '{query.tenant_id}': {exc}")
 
         # Determine target embedding for dense vector search (HyDE rewritten vs raw query)
         query_embedding = raw_embedding
@@ -206,8 +211,8 @@ class HybridSearchService:
                     query_embedding=query_embedding,
                     results=response.results
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(f"Failed to write results to semantic cache for tenant '{query.tenant_id}': {exc}")
 
         return response
 
@@ -231,7 +236,8 @@ class HybridSearchService:
                 ))
             results.sort(key=lambda r: r.score, reverse=True)
             return results[: query.top_k]
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"Web search fallback failed for query '{query.query[:50]}': {exc}")
             return results
 
     def _resolve_web_search_provider(self, query: SearchQuery) -> WebSearchProvider | None:
@@ -254,7 +260,8 @@ class HybridSearchService:
     async def _parse_self_query(self, query: str) -> list[MetadataFilter]:
         try:
             return await self.self_query.parse_query(query)
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"Self-query parsing failed for query '{query[:50]}': {exc}")
             return []
 
     async def _fan_out_search(
@@ -278,8 +285,8 @@ class HybridSearchService:
                 user_id=query.user_id,
                 user_role=query.user_role,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(f"Vector search leg failed for tenant '{query.tenant_id}': {exc}")
 
         if query.enable_hybrid:
             try:
@@ -293,8 +300,8 @@ class HybridSearchService:
                     user_id=query.user_id,
                     user_role=query.user_role,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(f"Keyword search leg failed for tenant '{query.tenant_id}': {exc}")
 
 
         return vector_results, keyword_results
@@ -431,7 +438,8 @@ class HybridSearchService:
                 threshold=query.reranking_threshold,
             )
             return reranked, strategy + "_reranked"
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"Reranking leg failed for query '{query.query[:50]}': {exc}")
             return candidates, strategy
 
     async def _apply_graph_search_pass(
@@ -452,8 +460,8 @@ class HybridSearchService:
                 )
                 if g_res and g_res.triples:
                     graph_triples.extend(g_res.triples)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(f"Graph triple search failed for term '{term}' on tenant '{query.tenant_id}': {exc}")
 
         if not graph_triples:
             return results

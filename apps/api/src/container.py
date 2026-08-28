@@ -283,7 +283,7 @@ class Container:
 
         # --- Security & Compression ---
         self._cache["context_compressor"] = IntelligentContextCompressor()
-        self._cache["field_encryptor"] = Aes256FieldEncryptor()
+        self._cache["field_encryptor"] = Aes256FieldEncryptor(master_key=settings.KEY_ENCRYPTION_KEY)
 
         from src.adapters.database.compliance_repository import SqlComplianceRepository
         from src.domain.compliance.pii_anonymizer import PiiAnonymizer

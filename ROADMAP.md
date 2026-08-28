@@ -65,23 +65,29 @@
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
 | **M54** | Enforced Parent-Child Hydration & Exact Citation Grounding | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.52.0) |
 | **M55** | Embeddable Chat Widget & Public JavaScript Client | Zero-dependency standalone `widget.js` bundle & `@prat3010/retriever-client-js` streaming client | **Completed** (v0.53.0) |
-| **M63** | Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Active Next (Phase G)** |
-| **M64** | Productized Architecture Cart Drawer & GraphRAG Upsells | Slide-over cart drawer, volume bundle discounts & Python REPL CPQ pricing | **Active Next (Phase G)** |
+| **M62.5**| Operational Hardening & Cross-Repo Security Baseline | Secrets rotation, git purge, CORS restriction, exception handler fix, bare except logging, CI gates & dual-DB API protocol | **Active Immediate** |
+| **M63** | Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Completed** (Phase G) |
+| **M64** | Productized Architecture Cart Drawer & GraphRAG Upsells | Slide-over cart drawer, volume bundle discounts & Python REPL CPQ pricing | **Completed** (Phase G) |
 | **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Active Next (Phase G)** |
 | **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Active Next (Phase G)** |
-| **M67** | Dashboard Workspace Bridge, 7-Day Trial & SOW Freeze | Auto-provision 7-day trial tenant, index locked scope SOW & 50% deposit capture | **Active Next (Phase G)** |
-| **M68** | Unified Persistent Copilot & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Active Next (Phase G)** |
+| **M67** | Dashboard Decomposition, Workspace Bridge, 7-Day Trial & SOW Freeze | Auto-provision 7-day trial tenant via Admin API, index locked scope SOW & 50% deposit capture | **Active Next (Phase G)** |
+| **M68** | Unified Persistent Copilot (Retriever RAG Stream) & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Active Next (Phase G)** |
 | **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Planned (Phase H)** |
 | **M70** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned (Phase H)** |
 | **M71** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned (Phase H)** |
 | **M72** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned (Phase H)** |
 | **M73** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned (Phase H)** |
+| **M74** | Semantic NLI & SLM Online Hallucination Engine | Replace keyword matching with DeBERTa Cross-Encoder / Ollama SLM judge in Celery worker | **Planned (Phase I)** |
+| **M75** | Full-Stack OpenTelemetry Auto-Instrumentation | Auto-instrument SQLAlchemy, HTTPX, Celery and propagate W3C traceparent headers | **Planned (Phase I)** |
+| **M76** | Real-Time Telemetry & SLA Webhook Alerting Engine | Live SQL/Redis telemetry queries and proactive Slack/Discord/Webhook alert dispatcher | **Planned (Phase I)** |
+| **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Planned (Phase I)** |
+| **M78** | Visual Grounding Diff & Synchronizer Observability | Claim-by-claim visual grounding highlighter and local Synchronizer observability cockpit | **Planned (Phase I)** |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M73), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M78), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
 
@@ -1161,6 +1167,59 @@
 **Target Deliverables:**
 - **Hierarchical Leiden Community Extraction** (`apps/api/src/domain/graph/`): Construct global entity graphs, execute Leiden community clustering, and pre-generate macro hierarchical summaries.
 - **Closed-Loop Telemetry Self-Tuning**: Connect M50 online evaluation telemetry (`OnlineHallucinationEvaluator`) directly to `config_service` to automatically calibrate `reranking_threshold`, `top_k`, and `rrf_k` values based on continuous Ragas scoring.
+
+---
+
+### [Planned] Milestone 74: Semantic NLI & SLM-as-a-Judge Online Hallucination Engine (v0.59.0)
+
+**Objective:** Replace naive keyword overlap checks with semantic Natural Language Inference (NLI) and async Small Language Model judges to eliminate false-positive faithfulness scores.
+
+**Target Deliverables:**
+- **DeBERTa NLI Cross-Encoder Adapter** (`apps/api/src/adapters/cognitive/nli_evaluator.py`): Classify claim-premise pairs using `cross-encoder/nli-deberta-v3-small` with calibrated entailment probabilities.
+- **Async SLM Evaluation Task** (`workers/src/tasks/evaluation_tasks.py`): Celery task evaluating full generated responses against context using local Ollama (`qwen2.5:3b` / `llama3.2:3b`) with structured reasoning and span localization.
+- **Calibrated Hallucination Alerting**: Update `OnlineHallucinationEvaluator` to compute real-time Hallucination Index from NLI contradiction scores.
+
+---
+
+### [Planned] Milestone 75: Full-Stack OpenTelemetry Auto-Instrumentation & Distributed Trace Graph (v0.60.0)
+
+**Objective:** Provide end-to-end distributed tracing across database queries, vector similarity operations, outbound LLM APIs, and async Celery workers.
+
+**Target Deliverables:**
+- **SQLAlchemy Auto-Instrumentation** (`apps/api/src/adapters/telemetry/setup.py`): Instrument SQLAlchemy engine to trace SQL execution, pgvector similarity lookup durations, and transaction locks.
+- **HTTPX Client Instrumentation**: Trace latency of outbound calls to Ollama, Gemini, Groq, Tavily, and Resend.
+- **Celery Worker Tracing**: Instrument Celery background workers to trace ingestion pipelines, OCR parsing, and async evaluation tasks.
+- **W3C TraceContext Propagation**: Propagate `traceparent` headers across Next.js proxy $\rightarrow$ FastAPI Gateway $\rightarrow$ Celery workers.
+
+---
+
+### [Planned] Milestone 76: Real-Time Telemetry Live Aggregations & SLA Webhook Alerting Engine (v0.61.0)
+
+**Objective:** Transition telemetry endpoints from static fallbacks to live multi-tenant database aggregations with automated incident webhooks.
+
+**Target Deliverables:**
+- **Live Database Aggregations** (`apps/api/src/routers/admin.py`, `Prateek_website/src/app/api/rag/telemetry/route.ts`): Stream live query metrics from `inference_logs` and `online_evaluations`.
+- **Multi-Channel Alert Dispatcher** (`apps/api/src/domain/telemetry/alert_service.py`): Push alerts to Slack, Discord, custom webhooks, or Resend email upon Hallucination Index $> 30\%$, token quota $\ge 90\%$, or P99 latency spikes.
+
+---
+
+### [Planned] Milestone 77: Synthetic Golden Dataset Generation & Automated CI/CD Regression Gate (v0.62.0)
+
+**Objective:** Automate continuous RAG evaluation by synthesizing benchmark datasets and enforcing PR blocking gates in CI/CD.
+
+**Target Deliverables:**
+- **Synthetic Test-Case Generator** (`apps/api/src/domain/evaluation/synthetic_dataset_generator.py`): Ingest tenant documents and auto-generate 50+ Q&A evaluation pairs with ground-truth chunk links.
+- **Automated CI/CD Regression Workflow** (`.github/workflows/eval_regression.yml`, `scripts/run_eval_regression.py`): Enforce minimum quality thresholds (Faithfulness $\ge 0.90$, Answer Relevancy $\ge 0.85$, Hallucination $\le 0.10$) before merging releases.
+
+---
+
+### [Planned] Milestone 78: Visual Claim-by-Claim Grounding Diff & Synchronizer Observability Cockpit (v0.63.0)
+
+**Objective:** Deliver granular visual insight into model faithfulness and integrate backend observability into the local Synchronizer desktop control center.
+
+**Target Deliverables:**
+- **Visual Claim Grounding Inspector** (`apps/web/src/components/tenant-hallucinations.tsx`, `Prateek_website/src/components/rag/ChatPanel.tsx`): Color-coded sentence grounding (green = verified, red = ungrounded) with interactive popovers linking to cited source chunks.
+- **Synchronizer Analytics Tab Overhaul** (`Prateek_website/scripts/sync_tabs/analytics.py`): Embed live Retriever token usage, cost breakdowns, and active hallucination alert feeds into the desktop Streamlit synchronizer.
 
 ---
 

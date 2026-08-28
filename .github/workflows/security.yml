@@ -20,14 +20,12 @@ jobs:
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
-        continue-on-error: true
         with:
           languages: python, javascript-typescript
           build-mode: none
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
-        continue-on-error: true
 
   trivy-api:
     runs-on: ubuntu-latest

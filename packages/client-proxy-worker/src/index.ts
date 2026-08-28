@@ -13,7 +13,7 @@ export default {
   ): Promise<Response> {
     // 1. Handle CORS preflight requests
     if (request.method === "OPTIONS") {
-      return handleCorsPreflight();
+      return handleCorsPreflight(request);
     }
 
     try {
@@ -23,25 +23,25 @@ export default {
       // 2. Parse and authenticate client JWT
       const authHeader = request.headers.get("Authorization");
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return errorResponse("Unauthorized: Missing or malformed Bearer Token", 401);
+        return errorResponse("Unauthorized: Missing or malformed Bearer Token", 401, request);
       }
 
       const token = authHeader.substring(7);
       const payload = parseJwtPayload(token);
 
       if (!payload) {
-        return errorResponse("Unauthorized: Invalid JWT token structure", 401);
+        return errorResponse("Unauthorized: Invalid JWT token structure", 401, request);
       }
 
       // Check token expiration (if exp claim exists)
       if (payload.exp && Date.now() >= payload.exp * 1000) {
-        return errorResponse("Unauthorized: Token has expired", 401);
+        return errorResponse("Unauthorized: Token has expired", 401, request);
       }
 
       // Extract User ID from the token (standard 'sub' claim)
       const userId = payload.sub;
       if (!userId) {
-        return errorResponse("Unauthorized: JWT token is missing 'sub' claim", 401);
+        return errorResponse("Unauthorized: JWT token is missing 'sub' claim", 401, request);
       }
 
       // 3. Match and Route API calls
@@ -58,7 +58,7 @@ export default {
       // Alternatively, you can embed the tenantId in the JWT if routing dynamically.
       const tenantId = payload.tenant_id;
       if (!tenantId) {
-        return errorResponse("Bad Request: JWT token is missing 'tenant_id' claim", 400);
+        return errorResponse("Bad Request: JWT token is missing 'tenant_id' claim", 400, request);
       }
 
       if (path === "/chat/sessions") {
@@ -71,7 +71,7 @@ export default {
       } else if (path === "/documents") {
         targetPath = `/v1/tenants/${tenantId}/documents`;
       } else {
-        return errorResponse("Not Found: Endpoint not supported by proxy gateway", 404);
+        return errorResponse("Not Found: Endpoint not supported by proxy gateway", 404, request);
       }
 
       const targetUrl = `${env.RETRIEVER_API_URL}${targetPath}`;
@@ -100,7 +100,7 @@ export default {
 
       // 6. Return response to client with proper CORS headers attached
       const responseHeaders = new Headers(apiResponse.headers);
-      setCorsHeaders(responseHeaders);
+      setCorsHeaders(responseHeaders, request);
 
       return new Response(apiResponse.body, {
         status: apiResponse.status,
@@ -109,7 +109,7 @@ export default {
       });
 
     } catch (err: any) {
-      return errorResponse(`Internal Server Error: ${err.message}`, 500);
+      return errorResponse(`Internal Server Error: ${err.message}`, 500, request);
     }
   },
 };
@@ -138,9 +138,17 @@ function parseJwtPayload(token: string): any {
   }
 }
 
-function handleCorsPreflight(): Response {
+const ALLOWED_ORIGINS = [
+  "https://prateeq.in",
+  "https://www.prateeq.in",
+  "https://admin.rag.prateeq.in",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+function handleCorsPreflight(request?: Request): Response {
   const headers = new Headers();
-  setCorsHeaders(headers);
+  setCorsHeaders(headers, request);
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
   headers.set("Access-Control-Max-Age", "86400"); // 24 hours caching
@@ -151,16 +159,22 @@ function handleCorsPreflight(): Response {
   });
 }
 
-function setCorsHeaders(headers: Headers): void {
-  headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Credentials", "true");
+function setCorsHeaders(headers: Headers, request?: Request): void {
+  const origin = request?.headers.get("Origin");
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Credentials", "true");
+  } else {
+    headers.set("Access-Control-Allow-Origin", origin || "*");
+    // Do not set allow-credentials: true when origin is wildcard
+  }
 }
 
-function errorResponse(message: string, status: number): Response {
+function errorResponse(message: string, status: number, request?: Request): Response {
   const headers = new Headers({
     "Content-Type": "application/json",
   });
-  setCorsHeaders(headers);
+  setCorsHeaders(headers, request);
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers,

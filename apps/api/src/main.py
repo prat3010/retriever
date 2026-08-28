@@ -1,11 +1,9 @@
 import logging
 import os  # noqa: F401 — re-exported for test patching (src.main.os.path.exists)
-import sys
-import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -100,10 +98,12 @@ app.add_middleware(TenantRateLimiterMiddleware, default_limit=120, window_second
 # Initialize components (singletons wired in container)
 
 
+logger = logging.getLogger(__name__)
+
+
 @app.exception_handler(Exception)
 async def handle_unhandled(request, exc):
-    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    print(f"Unhandled exception: {exc}\n{tb}", file=sys.stderr)
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}", exc_info=exc)
     # Never leak stack traces or internals to API clients.
     return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
@@ -112,18 +112,21 @@ async def handle_unhandled(request, exc):
 async def handle_invalid_filter(request, exc):
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
+
 @app.exception_handler(TenantIsolationViolationError)
 async def handle_isolation_violation(request, exc):
-    raise HTTPException(
+    logger.warning(f"Tenant isolation violation on {request.method} {request.url.path}: {exc}")
+    return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail=str(exc),
+        content={"detail": str(exc), "error_code": "TENANT_ISOLATION_VIOLATION"},
     )
+
 
 @app.exception_handler(AuthenticationError)
 async def handle_auth_error(request, exc):
-    raise HTTPException(
+    return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=str(exc),
+        content={"detail": str(exc), "error_code": "AUTHENTICATION_REQUIRED"},
     )
 
 @app.exception_handler(QuotaExceededError)

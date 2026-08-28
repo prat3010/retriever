@@ -1,15 +1,18 @@
 import json
+import logging
 
 from src.config import settings
 from src.domain.abstractions.config import ConfigCache, TenantConfiguration
+
+logger = logging.getLogger(__name__)
 
 redis_client = None
 
 try:
     import redis.asyncio as redis
     redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
-except Exception:
-    pass
+except Exception as exc:
+    logger.debug(f"Redis cache initialization skipped/failed: {exc}")
 
 
 class RedisTenantConfigCache(ConfigCache):

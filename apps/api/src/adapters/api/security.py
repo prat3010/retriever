@@ -1,8 +1,8 @@
 import hashlib
-import json
+import logging
 import re
 import secrets
-import sys
+import time
 
 import httpx
 import jwt
@@ -18,34 +18,40 @@ from src.domain.abstractions.exceptions import (
 )
 from src.domain.abstractions.identity import UserContext
 
+logger = logging.getLogger(__name__)
+
 _UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
 
 # Header key selector
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 identity_provider = SqlIdentityProvider()
 
-# In-memory JWKS cache
-_jwks_cache = {}
+# In-memory JWKS cache with TTL
+_jwks_cache: dict[str, tuple[float, dict]] = {}
+_JWKS_CACHE_TTL_SECONDS = 3600.0
 
 
 async def _fetch_jwks_key(jwks_uri: str, kid: str) -> dict | None:
+    now = time.time()
     if jwks_uri in _jwks_cache:
-        if kid in _jwks_cache[jwks_uri]:
-            return _jwks_cache[jwks_uri][kid]
-            
+        cached_time, key_map = _jwks_cache[jwks_uri]
+        if now - cached_time < _JWKS_CACHE_TTL_SECONDS and kid in key_map:
+            return key_map[kid]
+
     try:
         async with httpx.AsyncClient() as client:
             res = await client.get(jwks_uri, timeout=5.0)
             if res.status_code == 200:
                 jwks = res.json()
                 keys = jwks.get("keys", [])
-                _jwks_cache[jwks_uri] = {}
+                key_map = {}
                 for key in keys:
                     if "kid" in key:
-                        _jwks_cache[jwks_uri][key["kid"]] = key
-                return _jwks_cache[jwks_uri].get(kid)
-    except Exception:
-        pass
+                        key_map[key["kid"]] = key
+                _jwks_cache[jwks_uri] = (now, key_map)
+                return key_map.get(kid)
+    except Exception as exc:
+        logger.warning(f"Failed to fetch JWKS key from {jwks_uri}: {exc}")
     return None
 
 
@@ -282,7 +288,6 @@ async def verify_tenant_isolation(
         return
 
     if user_context.tenant_id != tenantId:
-        # LOG CRITICAL SECURITY BREACH (Structured JSON out to stderr)
         log_payload = {
             "level": "FATAL",
             "incident": "CRITICAL_SECURITY_BREACH",
@@ -290,7 +295,7 @@ async def verify_tenant_isolation(
             "target_tenant": tenantId,
             "message": "Tenant mismatch detected! Initiating Key Revocation Kill-Switch.",
         }
-        print(json.dumps(log_payload), file=sys.stderr)
+        logger.critical("Critical security breach detected: tenant mismatch", extra={"security_incident": log_payload})
 
         # Invalidate key immediately if token is available
         if token:

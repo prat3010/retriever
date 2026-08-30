@@ -1,8 +1,8 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M68) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M78) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
 > 
-> This document tracks the backend engineering milestones (M1–M53) for the Retriever AI engine.
+> This document tracks the backend and unified cross-platform engineering milestones (M1–M78) for the Retriever AI engine and control plane.
 
 ---
 
@@ -65,14 +65,14 @@
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
 | **M54** | Enforced Parent-Child Hydration & Exact Citation Grounding | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.52.0) |
 | **M55** | Embeddable Chat Widget & Public JavaScript Client | Zero-dependency standalone `widget.js` bundle & `@prat3010/retriever-client-js` streaming client | **Completed** (v0.53.0) |
-| **M62.5**| Operational Hardening & Cross-Repo Security Baseline | Secrets rotation, git purge, CORS restriction, exception handler fix, bare except logging, CI gates & dual-DB API protocol | **Active Immediate** |
+| **M58.5**| Retriever Grounded Outbound (`prateeq_outreach`) | Dedicated tenant for Synchronizer pitch generation, portfolio vector indexing & evidence inspector | **Planned (Phase E)** |
+| **M62.5**| Operational Hardening & Cross-Repo Security Baseline | Secrets rotation, git purge, CORS restriction, exception handler fix, bare except logging, CI gates & dual-DB API protocol | **Completed** |
 | **M63** | Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Completed** (Phase G) |
 | **M64** | Productized Architecture Cart Drawer & GraphRAG Upsells | Slide-over cart drawer, volume bundle discounts & Python REPL CPQ pricing | **Completed** (Phase G) |
-| **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Active Next (Phase G)** |
-| **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Active Next (Phase G)** |
-| **M67** | Dashboard Decomposition, Workspace Bridge, 7-Day Trial & SOW Freeze | Auto-provision 7-day trial tenant via Admin API, index locked scope SOW & 50% deposit capture | **Active Next (Phase G)** |
-| **M68** | Unified Persistent Copilot (Retriever RAG Stream) & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Active Next (Phase G)** |
-| **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Planned (Phase H)** |
+| **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Completed** (Phase G) |
+| **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Completed** (Phase G) |
+| **M68** | Unified Persistent Copilot (Retriever RAG Stream) & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Completed** (Phase G) |
+| **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Active Next (Phase H)** |
 | **M70** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned (Phase H)** |
 | **M71** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned (Phase H)** |
 | **M72** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned (Phase H)** |
@@ -82,12 +82,19 @@
 | **M76** | Real-Time Telemetry & SLA Webhook Alerting Engine | Live SQL/Redis telemetry queries and proactive Slack/Discord/Webhook alert dispatcher | **Planned (Phase I)** |
 | **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Planned (Phase I)** |
 | **M78** | Visual Grounding Diff & Synchronizer Observability | Claim-by-claim visual grounding highlighter and local Synchronizer observability cockpit | **Planned (Phase I)** |
+| **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Scikit-Learn TF-IDF vectorizer + PyTorch MultipleNegativesRankingLoss LoRA fine-tuning | **Planned (Phase J)** |
+| **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Planned (Phase J)** |
+| **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Planned (Phase J)** |
+| **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Planned (Phase J)** |
+| **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Planned (Phase J)** |
+| **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Planned (Phase J)** |
+| **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Planned (Phase J)** |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M78), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M85), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
 
@@ -1101,17 +1108,7 @@
 
 ---
 
-### [Planned] Milestone 54: Client SDK Parity & Speculative Parallel Retrieval (v0.52.0)
-
-**Objective:** Achieve 100% capability parity in the client SDK (`RetrieverClient`) and optimize retrieval fan-out latency via concurrent speculative execution.
-
-**Target Deliverables:**
-- **SDK Full Surface Expansion** (`Prateek_website/src/lib/rag-client.ts`): Expose client methods for Context Compression, Consensus score inspection, Guardrail status, and RLM execution mode.
-- **Speculative Query Parallelizer** (`apps/api/src/domain/retrieval/search_service.py`): Execute Self-Query parsing, HyDE expansion, and raw query vector embedding concurrently via `asyncio.gather()`, cutting $300-600\text{ms}$ off search latency.
-
----
-
-### [Planned] Milestone 55: Enforced Parent-Child Hydration & Citation Span Validation (v0.53.0)
+### [Completed] Milestone 54: Enforced Parent-Child Hydration & Exact Citation Grounding (v0.52.0)
 
 **Objective:** Maximize context quality with small-chunk search precision while enforcing strict string-span citation verification.
 
@@ -1121,46 +1118,118 @@
 
 ---
 
-### [Planned] Milestone 56: Pre-Chunk Contextual Retrieval Ingestion Engine (v0.54.0)
+### [Completed] Milestone 55: Embeddable Chat Widget & Public JavaScript Client (v0.53.0)
+
+**Objective:** Deliver zero-dependency embeddable chat widget script and full-featured client SDK.
+
+**Target Deliverables:**
+- **Standalone Embed Widget** (`widget.js`): Zero-dependency embeddable script for client websites with 1-line script tag integration.
+- **Client SDK Expansion** (`@prat3010/retriever-client-js` & `Prateek_website/src/lib/rag-client.ts`): Expose client methods for streaming RAG sessions, document downloads, feedback, and telemetry inspection.
+
+---
+
+### [Completed] Milestone 63: Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`)
+
+**Objective:** Onboard authentic dogfooding tenant with engineering rate cards and embed widget chatbox for live scoping.
+
+**Target Deliverables:**
+- **Authentic Scoping Tenant**: Dedicated `prateeq_scoping` tenant on Retriever with catalog documents and system prompt.
+- **Scoping AI Prompt & RFP Dropzone**: Multimodal natural language intent bar (`AiScopingPromptBar.tsx`) and PDF RFP dropzone (`RfpUploaderModal.tsx`).
+
+---
+
+### [Completed] Milestone 64: Productized Architecture Cart Drawer & GraphRAG Upsells
+
+**Objective:** Build slide-over cart drawer with volume bundle discounts and GraphRAG technology upsell recommendations.
+
+**Target Deliverables:**
+- **Slide-Over Cart Drawer** (`ArchitectureCartDrawer.tsx`): Interactive line-item cart with 5-second undo toast.
+- **Volume Bundle Meter & GraphRAG Upsells**: 5–10% automatic bundle tier discounts and compatibility-based add-on recommendations.
+
+---
+
+### [Completed] Milestone 65: Live Visual Architecture Topology Map & Cascade Solver
+
+**Objective:** Interactive SVG/Canvas node visualizer and dynamic GraphRAG DAG dependency cascade solver modal.
+
+**Target Deliverables:**
+- **Topology Visualizer** (`ArchitectureTopologyMap.tsx`): Multi-tier node flow visualizer (Client $\rightarrow$ Edge $\rightarrow$ Services $\rightarrow$ Data $\rightarrow$ Integrations).
+- **Dependency Cascade Modal** (`DependencyCascadeModal.tsx`): Active dependency disconnect warning and resolution dialog.
+
+---
+
+### [Completed] Milestone 66: Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout
+
+**Objective:** CTO/developer CLI scoping commands and dynamic ASCII QR code mobile checkout.
+
+**Target Deliverables:**
+- **Terminal Scoping CLI** (`terminalScoping.ts`): Commands for `scope new`, `scope analyze`, `cart checkout`.
+- **ASCII & Image QR Code Generator** (`/api/terminal/qrcode`): Mobile QR code generation for instant deposit checkout.
+
+---
+
+### [Completed] Milestone 67: Dashboard Decomposition, Workspace Bridge, 7-Day Trial & SOW Freeze
+
+**Objective:** Supabase Auth PKCE handoff, dedicated 7-day trial tenant auto-provisioning, embedded CPQ customizer, and SHA-256 SOW freezing.
+
+**Target Deliverables:**
+- **7-Day Trial Auto-Provisioning**: Dedicated `tn_client_<uuid>` tenant on Retriever with immutable baseline SOW document (`is_system: true`).
+- **Embedded Dashboard CPQ & Escrow**: Full CPQ customizer in `/dashboard`, 50% deposit capture, and Phase 2 Change Orders.
+
+---
+
+### [Completed] Milestone 68: Unified Persistent Copilot (Retriever RAG Stream) & Sprint Feeds
+
+**Objective:** Connect dashboard copilot to private Retriever tenant chat session and stream live git commits and staging previews.
+
+**Target Deliverables:**
+- **Persistent RAG Project Copilot** (`ClientProjectCopilot.tsx`): Real-time chat session grounded in client RFP and sprint milestones.
+- **Git CI/CD Feeds & Staging Previews**: 1-click GitHub repo scaffolding and live commit feed in `/dashboard`.
+- **Multi-Format Proposal Suite 2.0**: 1-Page Executive Pitch vs 3-Page Master Statement of Work PDF.
+- **Post-Launch SLA Cockpit**: 5-minute uptime health pings and automated monthly SLA compliance report PDF.
+
+---
+
+### [Completed] Milestone 69: Pre-Chunk Contextual Retrieval Ingestion Engine (v0.54.0)
 
 **Objective:** Eliminate ambiguous standalone chunks by pre-pending document-level context during ingestion (Anthropic Contextual Retrieval method).
 
 **Target Deliverables:**
-- **Contextual Ingestion Worker** (`apps/api/src/domain/ingestion/`): Async Celery task using a fast LLM (`gemini-3.6-flash` / `claude-3-5-haiku`) to generate 50-word document context headers for every chunk prior to vector embedding generation.
+- **Contextual Ingestion Worker** (`apps/api/src/adapters/cognitive/contextual_header_adapter.py`, `workers/src/tasks/__init__.py`): Async Celery task using a fast LLM (`gemini-1.5-flash` / `claude-3-5-haiku`) to generate 50–80 word document context headers for every chunk prior to vector embedding generation.
 - **Accuracy Boost**: Reduces top-20 retrieval failure rates by up to $49\%$.
 
 ---
 
-### [Planned] Milestone 57: Late-Interaction (ColBERT) Token-Level Reranker (v0.55.0)
+### [Completed] Milestone 70: Late-Interaction (ColBERT) Token-Level Reranker (v0.55.0)
 
 **Objective:** Surface nuanced technical terms, serial numbers, and code identifiers where standard bi-encoders fail using token-level MaxSim late interaction.
 
 **Target Deliverables:**
-- **ColBERT Token-Level Reranker Adapter** (`apps/api/src/adapters/cognitive/tei_reranker_adapter.py`): Implement token-level MaxSim reranking over top-50 candidates.
-- **Flexible Engine Support**: Support local Text-Embeddings-Inference (TEI) containers and cloud API fallbacks.
+- **ColBERT Token-Level Reranker Adapter** (`apps/api/src/domain/retrieval/colbert_engine.py`, `apps/api/src/adapters/cognitive/local_reranker_adapter.py`, `apps/api/src/adapters/cognitive/tei_reranker_adapter.py`): Implement token-level MaxSim reranking over top-50 candidates.
+- **Flexible Engine Support**: Support local Text-Embeddings-Inference (TEI) containers and sub-15ms local fallback.
 
 ---
 
-### [Planned] Milestone 58: Corrective RAG (CRAG) & Agentic Reflection Loop (v0.56.0)
+### [Completed] Milestone 71: Corrective RAG (CRAG) & Agentic Reflection Loop (v0.56.0)
 
 **Objective:** Enable autonomous self-reflection and query correction.
 
 **Target Deliverables:**
-- **CRAG Reflection Engine** (`apps/api/src/domain/agentic/`): Evaluate candidate retrieval confidence scores before LLM generation.
+- **CRAG Reflection Engine** (`apps/api/src/domain/retrieval/corrective_retrieval_service.py`, `document_refiner.py`, `corrective_retrieval_adapter.py`): Evaluate candidate retrieval confidence scores before LLM generation.
 - **Autonomous Fallback**: If score drops below threshold, automatically execute query reformulations or web search fallback before generating response.
 
 ---
 
-### [Planned] Milestone 59: Interactive RLM Python REPL Sandbox Studio (v0.57.0)
+### [Completed] Milestone 72: Interactive RLM Python REPL Sandbox Studio (v0.57.0)
 
 **Objective:** Productize Recursive Language Models into an interactive developer workspace studio.
 
 **Target Deliverables:**
-- **RLM Workspace Studio Tab** (`Prateek_website/src/app/rag/app/`): Dedicated UI tab (`/rag/app/rlm`) where users can watch the AI write and execute Python code to recursively inspect, filter, and summarize document vaults using `/v1/rlm`.
+- **RLM Workspace Studio Tab** (`Prateek_website/src/app/rag/app/`, `RlmStudioPanel.tsx`): Dedicated UI tab (`/rag/app/rlm`) where users can watch the AI write and execute Python code to recursively inspect, filter, and summarize document vaults using `/v1/rlm`.
 
 ---
 
-### [Planned] Milestone 60: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning (v0.58.0)
+### [Active Next] Milestone 73: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning (v0.58.0)
 
 **Objective:** Unlock macro-level dataset reasoning and automated quality self-tuning based on continuous production evaluations.
 
@@ -1222,6 +1291,129 @@
 - **Synchronizer Analytics Tab Overhaul** (`Prateek_website/scripts/sync_tabs/analytics.py`): Embed live Retriever token usage, cost breakdowns, and active hallucination alert feeds into the desktop Streamlit synchronizer.
 
 ---
+
+### [Planned] Milestone 79: Sparse-Dense Hybrid Engine & Contrastive LoRA Domain Adapters (v0.64.0)
+
+**Objective:** Combine Scikit-Learn custom sparse text vectorization with PyTorch contrastive domain adapter fine-tuning for specialized legal, technical, and engineering terminology.
+
+**Target Deliverables:**
+- **Custom Sublinear TF-IDF / BM25 Vectorizer** (`packages/processing-core/`, `apps/api/src/adapters/vector/`): Scikit-Learn based sparse vectorizer preserving code symbols, camelCase/snake_case tokens, and custom stopwords for sub-millisecond sparse lookup alongside pgvector dense embeddings.
+- **PyTorch Contrastive LoRA Domain Adapter** (`workers/src/tasks/adapter_worker.py`): Multi-layer projection adapter trained with PyTorch `MultipleNegativesRankingLoss` on client SOWs and technical architectures to maximize domain cluster separation.
+
+---
+
+### [Planned] Milestone 80: PyTorch Late-Interaction ColBERT Token-Level MaxSim Engine (v0.65.0)
+
+**Objective:** Implement hardware-accelerated ColBERT multi-vector token reranking to capture exact technical terms, acronyms, and code identifiers without external API dependencies.
+
+**Target Deliverables:**
+- **Token-Level Multi-Vector Embedding** (`apps/api/src/adapters/reranker/colbert_adapter.py`): PyTorch ColBERT model outputting token matrices $Q \in \mathbb{R}^{|Q| \times D}$ and $D \in \mathbb{R}^{|D| \times D}$.
+- **Hardware-Accelerated MaxSim Operator**: `torch.einsum` / tensor dot-product operator running on Apple Silicon Metal Performance Shaders (`torch.device("mps")`) and Oracle VPS CUDA workers for <10ms stage-2 candidate reranking.
+
+---
+
+### [Planned] Milestone 81: Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN Dynamic Topic Modeling (v0.66.0)
+
+**Objective:** Automate semantic topic discovery and hierarchical community node generation across tenant document libraries.
+
+**Target Deliverables:**
+- **HDBSCAN & KMeans Chunk Clustering** (`apps/api/src/domain/clustering/topic_cluster_service.py`): Density-based unsupervised clustering on 768-dim embeddings to automatically segment documents into topic clusters without hardcoded cluster counts.
+- **GraphRAG Community Node Genesis**: Automatically generate high-level topic summary nodes and link individual chunks to parent topics in the Neo4j/pgvector GraphRAG index.
+
+---
+
+### [Planned] Milestone 82: Scikit-Learn 2D/3D Embedding Space Projection Pipeline for SaaS Studio (v0.67.0)
+
+**Objective:** Power an interactive 3D vector space visualizer in the SaaS Studio (`/rag/app`) using server-side dimensionality reduction.
+
+**Target Deliverables:**
+- **PCA + UMAP Projection Service** (`apps/api/src/routers/embeddings.py`): Endpoint `POST /v1/tenants/{id}/embeddings/project` reducing 768D embeddings to 3D coordinates $(x, y, z)$ with cluster centroid metadata.
+- **Interactive 3D WebGL Vector Cloud** (`Prateek_website/src/components/rag/VectorVisualizer.tsx`): Three.js / Canvas interactive point cloud displaying document clusters and real-time query vector intersection.
+
+---
+
+### [Planned] Milestone 83: Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard (v0.68.0)
+
+**Objective:** Deploy an unsupervised machine learning anomaly detection sentinel to safeguard tenant API keys and prevent scraping.
+
+**Target Deliverables:**
+- **Isolation Forest Anomaly Sentinel** (`workers/src/tasks/anomaly_sentinel.py`): Asynchronous Scikit-Learn `IsolationForest` scoring inference log features (request velocity, prompt entropy, latency variance, IP churn).
+- **Automated Quarantine & Webhook Alerts**: Automatically downgrade anomalous traffic to restricted queues and dispatch high-priority security webhooks to Discord/Slack.
+
+---
+
+### [Planned] Milestone 84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model (v0.69.0)
+
+**Objective:** Predict realistic engineering sprint hours and delivery windows with statistical confidence intervals in the Scoping Lab and Client Workspace.
+
+**Target Deliverables:**
+- **Multi-Output Gradient Boosting Regressor** (`Prateek_website/src/lib/pricing.ts`, `/api/scoping/estimate-timeline`): Model trained on historical CPQ scoping configurations predicting sprint hours ($P_{50} / P_{90}$), calendar delivery ranges, and complexity index.
+- **Dynamic Scoping Timeline Indicator**: Live interactive sprint confidence bar embedded in the Cart Drawer (`/scoping`) and Client Workspace (`/dashboard`).
+
+---
+
+### [Planned] Milestone 85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier (v0.70.0)
+
+**Objective:** Segment anonymous visitors into dynamic personas and score cold outreach prospects by conversion probability.
+
+**Target Deliverables:**
+- **Zero-Cookie Visitor Clustering** (`Prateek_website/src/proxy.ts`, `scripts/sync_tabs/analytics.py`): Scikit-Learn `KMeans` clustering on GDPR-compliant telemetry to identify Enterprise Clients, SaaS Buyers, Recruiters, and Dev Peers, tailoring dynamic UI CTAs.
+- **Supervised Lead Scoring Classifier** (`Prateek_website/src/app/admin/`, `scripts/sync_tabs/clients.py`): Logistic Regression / Random Forest model predicting reply and conversion probability for automated outreach campaigns.
+
+---
+
+### [Planned] Milestone 86: Edge AI Token Shield, DDoS Defense & Upstash Redis Rate Limiting (v0.71.0)
+
+**Objective:** Protect public inference endpoints from API token drain and provide resilient auto-reconnect streaming for mobile clients.
+
+**Target Deliverables:**
+- **Edge Token-Bucket Rate Limiter**: Upstash Redis sliding window limiter across `/api/scoping/parse-intent`, `/api/scoping/parse-rfp`, and `/api/client/copilot`.
+- **Resilient SSE Reconnection Protocol**: `Last-Event-ID` auto-reconnect stream buffer eliminating severed responses during Wi-Fi/5G switches.
+
+---
+
+### [Planned] Milestone 87: Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery (v0.72.0)
+
+**Objective:** Ensure enterprise disaster recovery with encrypted daily cloud backups and point-in-time recovery.
+
+**Target Deliverables:**
+- **Automated pg_dump Cloud Snapshot**: Daily AES-256 GCM encrypted database dumps uploaded to Cloudflare R2 / AWS S3 via background timer.
+- **WAL Archival & PITR Script**: Point-in-Time Recovery script for single-command database restoration to any exact minute.
+
+---
+
+### [Planned] Milestone 88: Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe (v0.73.0)
+
+**Objective:** Provide SOC 2 and GDPR compliance with automated PII redaction and cryptographic deletion certificates.
+
+**Target Deliverables:**
+- **Microsoft Presidio PII Anonymizer**: Automatic pre-chunk entity scrubbing (names, SSNs, credit cards, medical IDs) during document ingestion.
+- **Single-Click GDPR Hard-Purge**: Multi-table cascade deletion accompanied by an immutable, cryptographically signed Compliance Deletion Certificate PDF.
+
+---
+
+### [Planned] Milestone 89: Geo-Distributed Multi-Region Edge Vector Read-Replicas (v0.74.0)
+
+**Objective:** Reduce cross-continental vector search latency from ~180ms down to sub-30ms.
+
+**Target Deliverables:**
+- **Edge Read-Replicas**: Deploy global read-replica endpoints on Fly.io / Cloudflare edge workers for vector search and cached completions.
+- **Geo-IP Routing**: Automatically route US/EU traffic to localized edge replicas.
+
+---
+
+### [Planned] Milestone 90: Universal Ecosystem Plugins (Slack Bot, Chrome Extension & 2-Way GDrive Sync) (v0.75.0)
+
+**Objective:** Embed Retriever directly into everyday workflows across Slack, browsers, and cloud storage.
+
+**Target Deliverables:**
+- **Native Slack Workspace Bot**: `/ask-retriever <query>` with grounded citations and feedback buttons.
+- **1-Click Chrome Ingestion Extension**: One-click ingestion of active web pages, PDFs, and articles into client tenants.
+- **2-Way Live Sync Connectors**: Google Drive & Notion webhooks with differential vector re-indexing on file edits.
+
+---
+
+## 7. Cross-Cutting Engineering Invariants
 
 These are tracked across all milestones and are not individual deliverables:
 

@@ -65,3 +65,9 @@ python_files = ["test_*.py"]
 pythonpath = [
     "../..",
 ]
+filterwarnings = [
+    "error::RuntimeWarning",
+    "ignore:.*starlette.*:DeprecationWarning",
+    "ignore:.*StarletteDeprecationWarning.*",
+    "ignore:.*Using `httpx` with `starlette.testclient` is deprecated.*:Warning",
+]

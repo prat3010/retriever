@@ -28,6 +28,7 @@ def test_get_pricing_config_returns_defaults() -> None:
 def test_update_pricing_config_admin(mock_tenant_session) -> None:
     """Verify PUT /v1/admin/config/pricing updates pricing configuration when authorized as admin."""
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result

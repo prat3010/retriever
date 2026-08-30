@@ -15,7 +15,10 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def clean_temp_files() -> None:
+    import workers.src.tasks
+    workers.src.tasks._engine = None
     yield
+    workers.src.tasks._engine = None
     import os
     import shutil
     for f in ("./storage", "./sample_test.txt"):

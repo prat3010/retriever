@@ -8,18 +8,21 @@ Process lifecycle:
 
 import asyncio
 import json
+import logging
 import os
 import re
 import uuid as _uuid
 from datetime import datetime, timezone
 
+from celery import Task
 import pika
+from processing_core import chunk_recursive, chunk_semantic, chunk_text, embed_with_retry, extract_text_from_file
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from celery import Task
 
-from processing_core import extract_text_from_file, chunk_text, chunk_recursive, chunk_semantic, embed_with_retry
 from workers.src.celery_app import celery_app
+
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever"
@@ -483,16 +486,66 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
         if extracted_tables:
             extracted_metadata["extracted_tables"] = extracted_tables
 
-        # ponytail: contextual document prefix (Anthropic Contextual Retrieval technique)
-        if chunk_cfg.get("enable_contextual_prefix", True) and text_content.strip():
+        # Milestone 69: Pre-Chunk Contextual Retrieval Ingestion Engine (Anthropic Method)
+        enable_contextual = chunk_cfg.get("enable_contextual_retrieval", chunk_cfg.get("enable_contextual_prefix", True))
+        if enable_contextual and text_content.strip() and chunks_to_insert:
             doc_type = extracted_metadata.get("default_doc_type") or extracted_metadata.get("doc_type") or "Document"
             topics = extracted_metadata.get("default_topics") or extracted_metadata.get("topics") or []
-            topic_str = f" regarding {', '.join(topics[:3])}" if isinstance(topics, list) and topics else ""
             filename = os.path.basename(storage_path)
-            context_header = f"[Context: {filename} ({doc_type}{topic_str})]\n"
-            for chunk in chunks_to_insert:
-                if not chunk["content"].startswith("[Context:"):
-                    chunk["content"] = context_header + chunk["content"]
+
+            ai_cfg = config_val.get("ai_provider", {})
+            ai_model = chunk_cfg.get("contextual_model") or ai_cfg.get("default_model", "gemini-1.5-flash")
+            ai_api_key = _get_decrypted_key(config_val, "ai_provider", "OPENAI_API_KEY", tenant_id)
+            ai_base_url = ai_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
+
+            doc_meta_payload = {
+                "filename": filename,
+                "doc_type": doc_type,
+                "topics": topics,
+                "api_key": ai_api_key,
+                "base_url": ai_base_url,
+                "model": ai_model,
+            }
+
+            try:
+                from src.adapters.cognitive.contextual_header_adapter import ContextualHeaderGeneratorAdapter
+                contextual_adapter = ContextualHeaderGeneratorAdapter(
+                    api_key=ai_api_key,
+                    base_url=ai_base_url,
+                    default_model=ai_model,
+                    max_concurrent=chunk_cfg.get("contextual_concurrency", 5),
+                )
+                chunk_texts = [c["content"] for c in chunks_to_insert]
+                headers = await contextual_adapter.generate_context_headers(
+                    document_text=text_content,
+                    chunks=chunk_texts,
+                    tenant_id=tenant_id,
+                    doc_metadata=doc_meta_payload,
+                )
+
+                for chunk, header in zip(chunks_to_insert, headers):
+                    raw_content = chunk["content"]
+                    chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    chunk_meta["raw_content"] = raw_content
+                    chunk_meta["context_header"] = header
+                    chunk_meta["is_contextualized"] = True
+                    chunk["meta_data"] = json.dumps(chunk_meta)
+                    if not raw_content.startswith("[Context:"):
+                        chunk["content"] = f"{header}\n{raw_content}"
+            except Exception as exc:
+                logger.warning("Contextual header generation error in worker for tenant %s: %s", tenant_id, exc)
+                # Fallback to metadata header
+                topic_str = f" regarding {', '.join(topics[:3])}" if isinstance(topics, list) and topics else ""
+                fallback_header = f"[Context: {filename} ({doc_type}{topic_str})]\n"
+                for chunk in chunks_to_insert:
+                    raw_content = chunk["content"]
+                    chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    chunk_meta["raw_content"] = raw_content
+                    chunk_meta["context_header"] = fallback_header.strip()
+                    chunk_meta["is_contextualized"] = True
+                    chunk["meta_data"] = json.dumps(chunk_meta)
+                    if not raw_content.startswith("[Context:"):
+                        chunk["content"] = fallback_header + raw_content
 
         chunk_ids = [c["chunk_id"] for c in chunks_to_insert]
 

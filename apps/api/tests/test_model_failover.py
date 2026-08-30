@@ -1,6 +1,6 @@
 """Tests for M19: Smart Model Failover."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -252,8 +252,11 @@ async def test_openai_adapter_wraps_retryable_error() -> None:
     req = _make_request()
     config = {"model": "gpt-4"}
 
-    mock_client = AsyncMock()
-    mock_client.chat.completions.create.side_effect = openai.APITimeoutError("connection reset")
+    async def _raise_openai_timeout(*args, **kwargs):
+        raise openai.APITimeoutError("connection reset")
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = _raise_openai_timeout
 
     with patch.object(adapter, "_client_for_key", return_value=mock_client):
         with pytest.raises(ProviderUnavailableError):
@@ -262,17 +265,19 @@ async def test_openai_adapter_wraps_retryable_error() -> None:
 
 @pytest.mark.asyncio
 async def test_openai_adapter_lets_auth_error_propagate() -> None:
+    from openai import AuthenticationError
+
     from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 
     adapter = OpenAILLMAdapter(api_key="sk-test")
     req = _make_request()
     config = {"model": "gpt-4"}
 
-    mock_client = AsyncMock()
-    from openai import AuthenticationError
-    mock_client.chat.completions.create.side_effect = AuthenticationError(
-        "invalid key", response=AsyncMock(), body=None
-    )
+    async def _raise_auth_error(*args, **kwargs):
+        raise AuthenticationError("invalid key", response=MagicMock(), body=None)
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = _raise_auth_error
 
     with patch.object(adapter, "_client_for_key", return_value=mock_client):
         with pytest.raises(AuthenticationError):
@@ -290,10 +295,13 @@ async def test_anthropic_adapter_wraps_retryable_error() -> None:
     req = _make_request()
     config = {"model": "claude-3-haiku"}
 
-    mock_client = AsyncMock()
-    mock_client.messages.create.side_effect = anthropic.APITimeoutError(
-        request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-    )
+    async def _raise_timeout(**kwargs):
+        raise anthropic.APITimeoutError(
+            request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+        )
+
+    mock_client = MagicMock()
+    mock_client.messages.create = _raise_timeout
 
     with patch.object(adapter, "_client_for_key", return_value=mock_client):
         with pytest.raises(ProviderUnavailableError):

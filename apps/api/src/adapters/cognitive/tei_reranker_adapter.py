@@ -78,6 +78,10 @@ class TeiRerankerAdapter(RerankerProvider):
             return reranked[:top_n] if reranked else candidates[:top_n]
         except Exception as err:
             logger.warning(
-                f"TEI Reranker endpoint call failed ({err}). Falling back to candidate order."
+                f"TEI Reranker endpoint call failed ({err}). Falling back to local ColBERT MaxSim."
             )
-            return candidates[:top_n]
+            try:
+                from src.domain.retrieval.colbert_engine import score_colbert_maxsim
+                return score_colbert_maxsim(query, candidates, top_n=top_n, threshold=threshold)
+            except Exception:
+                return candidates[:top_n]

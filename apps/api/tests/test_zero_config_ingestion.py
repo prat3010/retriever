@@ -25,6 +25,7 @@ async def test_zero_config_python_ast_ingestion() -> None:
     mock_result.scalar_one_or_none.return_value = mock_doc
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
     with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
@@ -64,6 +65,7 @@ async def test_zero_config_markdown_ingestion() -> None:
     mock_result.scalar_one_or_none.return_value = mock_doc
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
     with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
@@ -101,6 +103,7 @@ async def test_zero_config_hierarchical_document_ingestion() -> None:
     mock_result.scalar_one_or_none.return_value = mock_doc
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
     with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
@@ -194,6 +197,7 @@ async def test_zero_config_docx_ingestion() -> None:
     mock_result.scalar_one_or_none.return_value = mock_doc
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
     with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
@@ -232,6 +236,7 @@ async def test_zero_config_xlsx_ingestion() -> None:
     mock_result.scalar_one_or_none.return_value = mock_doc
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
     with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:

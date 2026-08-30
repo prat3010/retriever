@@ -21,4 +21,6 @@ async def analyze_rlm_workflow(
 ) -> RlmAnalysisResult:
     """Trigger recursive analytical RLM synthesis across tenant document trees."""
     request.tenant_id = tenantId
+    if request.max_depth > 1:
+        return await container.rlm_engine.analyze_repl_loop(request, max_turns=request.max_depth)
     return await container.rlm_engine.analyze(request)

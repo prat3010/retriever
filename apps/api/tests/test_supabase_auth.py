@@ -59,6 +59,7 @@ def test_supabase_auth_auto_provisions_unseen_user(
     }
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     result = MagicMock()
     result.scalar_one_or_none.return_value = None  # User does not exist yet
     mock_session.execute.return_value = result

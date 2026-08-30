@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: SOTA RAG Modernization — Phase 3 Autonomous Cognition & RLM (Complete, 498 tests)
-   - **Last Completed Milestone**: SOTA RAG Modernization — Phase 3 Autonomous Cognition & RLM
-   - **Build Status**: Passing (498 unit tests pass)
+   - **Current Milestone**: Phase H — SOTA Cognitive RAG Algorithm R&D (Milestones 69, 70, 71 & 72 Complete)
+   - **Last Completed Milestone**: Milestone 72 — Interactive RLM Python REPL Sandbox Studio
+   - **Build Status**: Passing (533 unit tests pass, 0 failures, 0 warnings)
    - **Admin Dashboard Build**: Passing (12 routes, all compile)
    - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
    - **Reference Client Build**: Passing
    - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Phase G: SOTA Productized E-Commerce Scoping & Agency Ecosystem ([`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md) M63–M68)
+   - **Next Recommended Milestone**: Milestone 73: GraphRAG Leiden Community Detection & Dynamic Summarization (v0.58.0)
 
 
 

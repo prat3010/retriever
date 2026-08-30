@@ -12,6 +12,7 @@ class ReplExecutionResult(BaseModel):
     output: str = Field(default="", description="Captured stdout / console log output")
     return_value: Any = Field(default=None, description="Returned result value or evaluation expression")
     is_error: bool = Field(default=False, description="True if script execution raised an exception")
+    error_message: str | None = Field(default=None, description="Optional error message on script failure")
     execution_time_ms: float = Field(default=0.0, description="Execution duration in milliseconds")
 
 

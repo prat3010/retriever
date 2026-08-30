@@ -324,6 +324,25 @@ class Container:
         n8n_dispatcher = N8nWebhookDispatcher()
         self._cache["n8n_dispatcher"] = n8n_dispatcher
 
+        # --- Milestone 69: Contextual Header Generator ---
+        from src.adapters.cognitive.contextual_header_adapter import (
+            ContextualHeaderGeneratorAdapter,
+        )
+
+        contextual_header_generator = ContextualHeaderGeneratorAdapter(
+            api_key=settings.OPENAI_API_KEY if hasattr(settings, "OPENAI_API_KEY") else "",
+            base_url=settings.OPENAI_BASE_URL if hasattr(settings, "OPENAI_BASE_URL") else "",
+        )
+        self._cache["contextual_header_generator"] = contextual_header_generator
+
+        # --- Milestone 70: ColBERT MaxSim Late-Interaction Reranker ---
+        from src.adapters.cognitive.local_reranker_adapter import (
+            ColBertMaxSimRerankerAdapter,
+        )
+
+        colbert_reranker = ColBertMaxSimRerankerAdapter()
+        self._cache["colbert_reranker"] = colbert_reranker
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -383,5 +402,7 @@ retention_worker = container.retention_worker
 payment_repo = container.payment_repo
 payment_service = container.payment_service
 n8n_dispatcher = container.n8n_dispatcher
+contextual_header_generator = container.contextual_header_generator
+colbert_reranker = container.colbert_reranker
 
 

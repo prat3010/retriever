@@ -86,7 +86,8 @@ class RlmExecutionEngine:
             ),
         ]
         llm_code_resp = await self.llm.generate(
-            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=600)
+            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=600),
+            {},
         )
         raw_code = llm_code_resp.content.strip()
 
@@ -132,7 +133,8 @@ Extracted Evidence Highlights:
             ChatMessage(role="user", content=synthesis_prompt),
         ]
         synth_resp = await self.llm.generate(
-            InferenceRequest(messages=synth_messages, temperature=0.2, max_tokens=1000)
+            InferenceRequest(messages=synth_messages, temperature=0.2, max_tokens=1000),
+            {},
         )
 
         elapsed_ms = (time.monotonic() - start_time) * 1000
@@ -179,7 +181,8 @@ Extracted Evidence Highlights:
         while turn < max_turns:
             turn += 1
             llm_resp = await self.llm.generate(
-                InferenceRequest(messages=messages, temperature=0.1, max_tokens=600)
+                InferenceRequest(messages=messages, temperature=0.1, max_tokens=600),
+                {},
             )
             raw_code = llm_resp.content.strip()
             if "```python" in raw_code:
@@ -210,8 +213,9 @@ Extracted Evidence Highlights:
             if not sandbox_res.is_error and sandbox_res.return_value is not None:
                 break
 
+            err_detail = getattr(sandbox_res, "error_message", None) or sandbox_res.output or "Execution error"
             messages.append(ChatMessage(role="assistant", content=raw_code))
-            messages.append(ChatMessage(role="user", content=f"Execution result: {sandbox_res.output}\nError: {sandbox_res.error_message}. Refine your script."))
+            messages.append(ChatMessage(role="user", content=f"Execution result: {sandbox_res.output}\nError: {err_detail}. Refine your script."))
 
         final_val = last_sandbox_res.return_value if last_sandbox_res else "Analysis complete"
         elapsed_ms = (time.monotonic() - start_time) * 1000

@@ -133,45 +133,41 @@ async def send_chat_message(
         tenant_config.ai_provider.provider_name = x_llm_provider
 
     search_query = _build_search_query(tenantId, tenant_config, payload, user_id=user_id, user_role=caller_role)
-    search_response = await search_service.search(search_query)
+    if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
+        context_chunks, crag_decision = await corrective_service.prepare_crag_context(
+            tenant_id=tenantId,
+            query=payload.query,
+            search_query=search_query,
+            tenant_config=tenant_config,
+        )
+    else:
+        search_response = await search_service.search(search_query)
+        context_chunks = search_response.results
 
     citation_template = tenant_config.retrieval_settings.citation_template
 
     if not payload.stream:
-        if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
-            response = await corrective_service.generate_with_correction(
-                tenant_id=tenantId,
-                session_id=sessionId,
-                query=payload.query,
-                search_query=search_query,
-                tenant_config=tenant_config,
-                user_id=user_id,
-                role=caller_role,
-                key_id=caller_key_id,
-                system_prompt_name=payload.system_prompt_name,
-            )
-        else:
-            response = await inference_orchestrator.generate(
-                tenant_id=tenantId,
-                session_id=sessionId,
-                query=payload.query,
-                context_chunks=search_response.results,
-                tenant_config=tenant_config,
-                user_id=user_id,
-                role=caller_role,
-                key_id=caller_key_id,
-                system_prompt_name=payload.system_prompt_name,
-                experiment_id=experiment_id,
-                experiment_variant=experiment_variant,
-            )
-        formatted_content = _format_citations(response.content, search_response.results, citation_template)
+        response = await inference_orchestrator.generate(
+            tenant_id=tenantId,
+            session_id=sessionId,
+            query=payload.query,
+            context_chunks=context_chunks,
+            tenant_config=tenant_config,
+            user_id=user_id,
+            role=caller_role,
+            key_id=caller_key_id,
+            system_prompt_name=payload.system_prompt_name,
+            experiment_id=experiment_id,
+            experiment_variant=experiment_variant,
+        )
+        formatted_content = _format_citations(response.content, context_chunks, citation_template)
         formatted_content = await _apply_output_guardrails(formatted_content, tenant_config)
         background_tasks.add_task(
             online_evaluator.evaluate_inference,
             tenant_id=tenantId,
             query=payload.query,
             answer=response.content,
-            contexts=[r.content for r in search_response.results if r.content],
+            contexts=[r.content for r in context_chunks if r.content],
             config=tenant_config,
             session_id=sessionId,
         )
@@ -189,7 +185,7 @@ async def send_chat_message(
                 tenant_id=tenantId,
                 session_id=sessionId,
                 query=payload.query,
-                context_chunks=search_response.results,
+                context_chunks=context_chunks,
                 tenant_config=tenant_config,
                 user_id=user_id,
                 role=caller_role,

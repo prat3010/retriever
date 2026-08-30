@@ -157,10 +157,13 @@ class QueryRewriterProvider(ABC):
 
 
 class CorrectiveRetrievalDecision(BaseModel):
+    status: Literal["CORRECT", "AMBIGUOUS", "INCORRECT"] = "CORRECT"
     needs_re_retrieval: bool = False
+    needs_web_search: bool = False
     confidence_score: float = 0.0
     reason: str = ""
     reformulated_query: str | None = None
+    refined_chunks: list[SearchResult] = Field(default_factory=list)
 
 
 class CorrectiveRetrievalProvider(ABC):
@@ -171,6 +174,16 @@ class CorrectiveRetrievalProvider(ABC):
         query: str,
         response: str,
         context_chunks: list[SearchResult],
+    ) -> CorrectiveRetrievalDecision:
+        pass
+
+    @abstractmethod
+    async def evaluate_candidates(
+        self,
+        query: str,
+        candidates: list[SearchResult],
+        upper_threshold: float = 0.75,
+        lower_threshold: float = 0.40,
     ) -> CorrectiveRetrievalDecision:
         pass
 

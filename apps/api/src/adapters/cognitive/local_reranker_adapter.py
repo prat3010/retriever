@@ -66,8 +66,15 @@ class LocalRerankerAdapter(RerankerProvider):
 class ColBertMaxSimRerankerAdapter(RerankerProvider):
     """Token-level late interaction MaxSim reranker adapter for fast sub-15ms candidate re-scoring."""
 
-    def __init__(self, model_name: str = "colbert-ir/colbertv2.0") -> None:
+    def __init__(
+        self,
+        model_name: str = "colbert-ir/colbertv2.0",
+        initial_weight: float = 0.4,
+        maxsim_weight: float = 0.6,
+    ) -> None:
         self.model_name = model_name
+        self.initial_weight = initial_weight
+        self.maxsim_weight = maxsim_weight
 
     async def rerank(
         self,
@@ -76,26 +83,22 @@ class ColBertMaxSimRerankerAdapter(RerankerProvider):
         top_n: int,
         threshold: float,
     ) -> list[SearchResult]:
+        """Re-score candidates via ColBERT token-level MaxSim late interaction."""
         if not candidates or not query.strip():
             return candidates[:top_n]
 
-        query_terms = set(query.lower().split())
+        try:
+            from src.domain.retrieval.colbert_engine import score_colbert_maxsim
 
-        def _max_sim_score(content: str) -> float:
-            content_lower = content.lower()
-            if not query_terms:
-                return 0.5
-            matched = sum(1 for term in query_terms if term in content_lower)
-            return matched / len(query_terms)
-
-        scored: list[tuple[SearchResult, float]] = []
-        for candidate in candidates:
-            m_score = _max_sim_score(candidate.content)
-            fused_score = round(0.5 * candidate.score + 0.5 * m_score, 6)
-            if fused_score >= threshold:
-                scored.append((candidate.model_copy(update={"score": fused_score}), fused_score))
-
-        scored.sort(key=lambda x: x[1], reverse=True)
-        results = [s[0] for s in scored[:top_n]]
-        return results if results else candidates[:top_n]
+            return await asyncio.to_thread(
+                score_colbert_maxsim,
+                query=query,
+                candidates=candidates,
+                top_n=top_n,
+                threshold=threshold,
+                initial_weight=self.initial_weight,
+                maxsim_weight=self.maxsim_weight,
+            )
+        except Exception:
+            return candidates[:top_n]
 

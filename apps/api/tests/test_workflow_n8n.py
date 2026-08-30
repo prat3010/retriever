@@ -2,7 +2,7 @@
 
 import base64
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,9 +22,9 @@ async def test_n8n_webhook_dispatcher_success():
     tenant_id = str(uuid.uuid4())
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.raise_for_status.return_value = None
+        mock_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_response
 
         res = await dispatcher.dispatch_event(

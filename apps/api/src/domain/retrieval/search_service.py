@@ -142,6 +142,15 @@ class HybridSearchService:
         if not query_embedding:
             query_embedding = await self.embedder.embed_text(query.query)
 
+        # 2b. Optional LoRA residual domain calibration
+        if query.enable_lora_adapter and query_embedding:
+            try:
+                from src.domain.embeddings.lora_adapter import LoraEmbeddingAdapter
+                adapter = LoraEmbeddingAdapter(dim=len(query_embedding))
+                query_embedding = adapter.adapt_vector(query_embedding)
+            except Exception as exc:
+                logger.warning(f"LoRA domain adaptation skipped: {exc}")
+
         # 3. Fan-out: parallel dense + sparse searches
         search_k = query.top_k * (
             query.rerank_candidate_multiplier if query.enable_reranking else 1
@@ -316,7 +325,7 @@ class HybridSearchService:
         if not query.enable_hybrid:
             return "vector_only"
         if vector_results and keyword_results:
-            return "hybrid_rrf"
+            return "hybrid_convex" if hasattr(query, "hybrid_alpha") and 0.0 <= query.hybrid_alpha <= 1.0 else "hybrid_rrf"
         if vector_results:
             return "vector_only_degraded"
         if keyword_results:
@@ -331,6 +340,10 @@ class HybridSearchService:
         keyword_results: list[SearchResult],
     ) -> list[SearchResult]:
         """Merge result sets using the appropriate fusion strategy."""
+        if strategy == "hybrid_convex":
+            return self._fuse_convex_hybrid(
+                vector_results, keyword_results, getattr(query, "hybrid_alpha", 0.7)
+            )
         if strategy == "hybrid_rrf":
             return self._fuse_rrf(
                 vector_results, keyword_results, query.rrf_k
@@ -344,6 +357,49 @@ class HybridSearchService:
         if strategy == "keyword_only_degraded":
             return keyword_results
         return []
+
+    def _fuse_convex_hybrid(
+        self,
+        vector_results: list[SearchResult],
+        keyword_results: list[SearchResult],
+        alpha: float = 0.7,
+    ) -> list[SearchResult]:
+        """Apply Calibrated Convex Linear Combination: alpha * DenseNorm + (1-alpha) * SparseNorm."""
+        alpha_clamped = max(0.0, min(1.0, float(alpha)))
+        scores: dict[str, float] = {}
+        best_result: dict[str, SearchResult] = {}
+
+        def _normalize(results: list[SearchResult]) -> dict[str, float]:
+            if not results:
+                return {}
+            min_s = min(r.score for r in results)
+            max_s = max(r.score for r in results)
+            rng = max_s - min_s
+            if rng <= 1e-6:
+                return {r.chunk_id: 1.0 for r in results}
+            return {r.chunk_id: (r.score - min_s) / rng for r in results}
+
+        norm_vec = _normalize(vector_results)
+        norm_kw = _normalize(keyword_results)
+
+        for result in vector_results:
+            d_norm = norm_vec.get(result.chunk_id, 0.0)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + alpha_clamped * d_norm
+            if result.chunk_id not in best_result:
+                best_result[result.chunk_id] = result
+
+        for result in keyword_results:
+            s_norm = norm_kw.get(result.chunk_id, 0.0)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + (1.0 - alpha_clamped) * s_norm
+            if result.chunk_id not in best_result:
+                best_result[result.chunk_id] = result
+
+        sorted_ids = sorted(scores.keys(), key=lambda cid: scores[cid], reverse=True)
+
+        return [
+            best_result[cid].model_copy(update={"score": round(scores[cid], 6)})
+            for cid in sorted_ids
+        ]
 
     def _fuse_rrf(
         self,

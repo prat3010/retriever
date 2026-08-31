@@ -183,19 +183,19 @@ ROADMAP EXECUTION HORIZONS:
     2.  GitHub Action workflow (`eval_regression.yml`) and CLI runner (`scripts/run_eval_regression.py`) enforcing strict Ragas + DeepEval quality thresholds before canary releases.
 *   **Status:** **Completed** (Phase I)
 
-#### Milestone M78: Visual Claim-by-Claim Grounding Diff & Retriever Admin Observability Cockpit (ACTIVE NEXT)
+#### Milestone M78: Visual Claim-by-Claim Grounding Diff & Retriever Admin Observability Cockpit (Completed)
 *   **Objective:** Deliver granular visual insight into model faithfulness and integrate deep cognitive observability natively inside the Retriever Admin Dashboard (`https://admin.rag.prateeq.in` / `retriever/apps/web`).
 *   **Key Deliverables:**
     1.  Visual Claim Grounding Diff (`grounding-diff.tsx` / `tenant-hallucinations.tsx` in `retriever/apps/web`): Highlights generated responses sentence-by-sentence (green = verified in source, red = ungrounded/hallucinated, yellow = partial/neutral), with interactive side-by-side popovers showing the exact source chunk citation.
     2.  Retriever Admin Observability Cockpit (`tenant-metrics.tsx` & `tenant-telemetry.tsx`): Real-time charts for Hallucination Trends, Token Burn Rate, P99 Latency SLAs, and Active Alert Incident feeds.
-    3.  Lightweight Client Quota Status in Synchronizer (`sync_tabs/clients.py`): High-level commercial plan & token consumption badge without low-level vector diff bloat.
-
+    3.  Portfolio RAG Studio Claim Inspector (`src/components/rag/ChatPanel.tsx`): Real-time on-demand claim diff analysis and sentence highlighting.
+*   **Status:** **Completed** (Phase I)
 
 ---
 
-### Phase J: Machine Learning & Predictive Intelligence Framework (M79 – M85)
+### Phase J: Machine Learning & Predictive Intelligence Framework (M79 – M85) — **ACTIVE NEXT**
 
-#### Milestone M79: Sparse-Dense Hybrid Engine & Contrastive LoRA Domain Adapters
+#### Milestone M79: Sparse-Dense Hybrid Engine & Contrastive LoRA Domain Adapters (ACTIVE NEXT)
 *   **Objective:** Combine Scikit-Learn sparse vectorization with PyTorch contrastive domain adapter fine-tuning.
 *   **Key Deliverables:**
     1.  Custom sublinear TF-IDF / BM25 vectorizer in `processing-core` preserving technical symbols, camelCase tokens, and custom stopwords for sub-millisecond sparse lookup.

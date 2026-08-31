@@ -1,12 +1,15 @@
 "use client";
 
 import { useConfig, useUpdateConfig, type TenantConfig } from "@/hooks/use-config";
+import { useLoraAdapters, useTrainLoraAdapter, useActivateLoraAdapter } from "@/hooks/use-lora";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useEffect, useState, useMemo } from "react";
 import { PROVIDERS, providerByBaseUrl } from "@/lib/providers";
@@ -18,9 +21,16 @@ interface Props {
 export function ConfigTab({ tenantId }: Props) {
   const { data: config, isLoading } = useConfig(tenantId);
   const updateConfig = useUpdateConfig(tenantId);
+  const { data: loraAdapters } = useLoraAdapters(tenantId);
+  const trainLora = useTrainLoraAdapter(tenantId);
+  const activateLora = useActivateLoraAdapter(tenantId);
 
   const [form, setForm] = useState<TenantConfig | null>(null);
   const [customBaseUrl, setCustomBaseUrl] = useState(false);
+  const [isTrainOpen, setIsTrainOpen] = useState(false);
+  const [adapterName, setAdapterName] = useState("SOW & Software Architecture Adapter");
+  const [domainTag, setDomainTag] = useState("software_architecture");
+  const [loraRank, setLoraRank] = useState(8);
 
   const detectedProvider = useMemo(() => {
     if (!form) return undefined;
@@ -202,6 +212,152 @@ export function ConfigTab({ tenantId }: Props) {
               value={form.retrieval_settings.chunk_overlap ?? 100}
               onChange={(e) => handleChange("retrieval_settings.chunk_overlap", e.target.value)}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* M79: Hybrid Search & LoRA Domain Embedding Calibration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Sparse-Dense Hybrid & LoRA Calibration</CardTitle>
+              <CardDescription className="text-xs">
+                Tune the convex linear ratio (α) between dense semantic vectors and sublinear BM25 keyword tokens, and calibrate domain LoRA residual adapters.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs">
+              α = {(form.retrieval_settings.hybrid_alpha ?? 0.7).toFixed(2)}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <Label htmlFor="hybridAlpha">Hybrid Search Balance Ratio (α)</Label>
+              <span className="text-muted-foreground font-mono text-[11px]">
+                {((form.retrieval_settings.hybrid_alpha ?? 0.7) * 100).toFixed(0)}% Dense (Semantic) / {((1 - (form.retrieval_settings.hybrid_alpha ?? 0.7)) * 100).toFixed(0)}% Sparse (BM25)
+              </span>
+            </div>
+            <input
+              id="hybridAlpha"
+              type="range"
+              min="0.0"
+              max="1.0"
+              step="0.05"
+              className="w-full accent-primary cursor-pointer"
+              value={form.retrieval_settings.hybrid_alpha ?? 0.7}
+              onChange={(e) => handleChange("retrieval_settings.hybrid_alpha", parseFloat(e.target.value))}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+              <span>0.0 (Pure Keyword/Code)</span>
+              <span>0.5 (Balanced)</span>
+              <span>1.0 (Pure Dense Vector)</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex justify-between items-center">
+              <div>
+                <Label>Active LoRA Domain Adapter</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Residual projection layer calibrating local embeddings to technical SOW and architecture terms.
+                </p>
+              </div>
+              <Dialog open={isTrainOpen} onOpenChange={setIsTrainOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    ⚡ Train New Adapter
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Train Contrastive LoRA Domain Adapter</DialogTitle>
+                    <DialogDescription className="text-xs">
+                      Runs MultipleNegativesRankingLoss on domain contrastive pairs to calibrate local vector representations.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="adName" className="text-xs">Adapter Name</Label>
+                      <Input
+                        id="adName"
+                        value={adapterName}
+                        onChange={(e) => setAdapterName(e.target.value)}
+                        placeholder="e.g. SOW Architecture Adapter"
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="adDomain" className="text-xs">Domain Tag</Label>
+                      <Input
+                        id="adDomain"
+                        value={domainTag}
+                        onChange={(e) => setDomainTag(e.target.value)}
+                        placeholder="e.g. software_architecture"
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="adRank" className="text-xs">LoRA Rank (r)</Label>
+                      <Select value={String(loraRank)} onValueChange={(v) => setLoraRank(Number(v))}>
+                        <SelectTrigger id="adRank" className="text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="4">r = 4 (Ultra Lightweight)</SelectItem>
+                          <SelectItem value="8">r = 8 (Recommended)</SelectItem>
+                          <SelectItem value="16">r = 16 (High Capacity)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      className="w-full text-xs mt-2"
+                      disabled={trainLora.isPending}
+                      onClick={() => {
+                        trainLora.mutate(
+                          { name: adapterName, domain_tag: domainTag, rank: loraRank, epochs: 15, learning_rate: 0.001 },
+                          {
+                            onSuccess: (res) => {
+                              toast.success(`Adapter '${res.name}' trained with loss ${res.loss_score}`);
+                              setIsTrainOpen(false);
+                            },
+                            onError: (err) => toast.error(`Training failed: ${err.message}`),
+                          }
+                        );
+                      }}
+                    >
+                      {trainLora.isPending ? "Training LoRA Layer..." : "Start Calibration Run"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Select
+              value={form.retrieval_settings.active_lora_adapter || "none"}
+              onValueChange={(val) => {
+                const updated = val === "none" ? null : val;
+                handleChange("retrieval_settings.active_lora_adapter", updated ?? "");
+                if (updated) {
+                  activateLora.mutate(updated, {
+                    onSuccess: () => toast.success("Active LoRA adapter set"),
+                  });
+                }
+              }}
+            >
+              <SelectTrigger className="text-xs">
+                <SelectValue placeholder="Select active adapter (or Base nomic-embed-text)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Base Local Model (Zero-Residual Identity)</SelectItem>
+                {(loraAdapters || []).map((ad) => (
+                  <SelectItem key={ad.adapter_id} value={ad.adapter_id}>
+                    {ad.name} (r={ad.rank}, {ad.domain_tag})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

@@ -15,6 +15,8 @@ export interface TenantConfig {
     reranking_threshold: number;
     chunk_size: number;
     chunk_overlap: number;
+    hybrid_alpha?: number;
+    active_lora_adapter?: string | null;
   };
   feature_flags: Record<string, boolean>;
   security_settings: {

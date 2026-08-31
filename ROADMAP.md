@@ -81,11 +81,9 @@
 | **M75** | Full-Stack OpenTelemetry Auto-Instrumentation | Auto-instrument SQLAlchemy, HTTPX, Celery and propagate W3C traceparent headers | **Completed** (Phase I) |
 | **M76** | Real-Time Telemetry & SLA Webhook Alerting Engine | Live SQL/Redis telemetry queries and proactive Slack/Discord/Webhook alert dispatcher | **Completed** (Phase I) |
 | **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Completed** (Phase I) |
-| **M78** | Visual Grounding Diff & Retriever Admin Observability | Claim-by-claim visual grounding highlighter and dedicated Retriever Admin observability cockpit | **Active Next (Phase I)** |
-
-
-| **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Scikit-Learn TF-IDF vectorizer + PyTorch MultipleNegativesRankingLoss LoRA fine-tuning | **Planned (Phase J)** |
-| **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Planned (Phase J)** |
+| **M78** | Visual Grounding Diff & Retriever Admin Observability | Claim-by-claim visual grounding highlighter and dedicated Retriever Admin observability cockpit | **Completed** (Phase I) |
+| **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Sublinear BM25 vectorizer + Contrastive LoRA residual embedding calibration | **Completed** (Phase J) |
+| **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Active Next (Phase J)** |
 | **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Planned (Phase J)** |
 | **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Planned (Phase J)** |
 | **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Planned (Phase J)** |

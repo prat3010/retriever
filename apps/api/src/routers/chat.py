@@ -317,3 +317,64 @@ async def submit_message_feedback(
     await feedback_repo.submit_feedback(feedback)
 
     return {"status": "success", "message": "Feedback submitted successfully."}
+
+
+from pydantic import BaseModel, Field
+
+
+class GroundingDiffRequest(BaseModel):
+    answer: str
+    contexts: list[str] = Field(default_factory=list)
+
+
+@router.post(
+    "/v1/tenants/{tenantId}/evaluations/grounding-diff",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def tenant_compute_grounding_diff(
+    tenantId: str,
+    payload: GroundingDiffRequest,
+) -> Any:
+    """Compute claim-by-claim grounding diff and NLI confidence scores against context chunks."""
+    from sqlalchemy import text
+
+    from src.adapters.database.connection import tenant_session
+    from src.domain.evaluation.nli_evaluator import NliEvaluator
+
+    contexts = list(payload.contexts) if payload.contexts else []
+    if not contexts:
+        try:
+            async with tenant_session(tenant_id=tenantId) as session:
+                res = await session.execute(
+                    text("SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 15"),
+                    {"tenant_id": tenantId},
+                )
+                contexts = [row[0] for row in res.fetchall() if row[0]]
+        except Exception:
+            contexts = []
+
+    nli = NliEvaluator()
+    claims = nli.extract_claims(payload.answer)
+    res = nli.evaluate_claims(claims, contexts)
+    return {
+        "tenant_id": tenantId,
+        "total_claims": res.total_claims,
+        "entailed_claims": res.entailed_claims,
+        "contradicted_claims": res.contradicted_claims,
+        "neutral_claims": res.neutral_claims,
+        "faithfulness_score": res.faithfulness_score,
+        "hallucination_index": res.hallucination_index,
+        "claims": [
+            {
+                "claim": c.claim,
+                "premise": c.premise,
+                "status": c.status,
+                "entailment_prob": c.entailment_prob,
+                "contradiction_prob": c.contradiction_prob,
+                "neutral_prob": c.neutral_prob,
+            }
+            for c in res.classifications
+        ],
+    }
+

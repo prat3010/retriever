@@ -64,9 +64,33 @@ class TenantConfigDb(Base):
     chunk_overlap = Column(Integer, nullable=False, default=100)
     system_prompt_template = Column(Text, nullable=False, default="")
     llm_api_key_encrypted = Column(Text, nullable=True)
+    hybrid_alpha = Column(Float, nullable=False, default=0.7)
+    active_lora_adapter = Column(String(255), nullable=True)
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="config")
+
+
+class TenantLoraAdapterDb(Base):
+    __tablename__ = "tenant_lora_adapters"
+
+    adapter_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = Column(String(255), nullable=False)
+    domain_tag = Column(String(100), nullable=False, default="general")
+    rank = Column(Integer, nullable=False, default=8)
+    loss_score = Column(Float, nullable=True)
+    weights_json = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_tenant_lora_adapters_tenant_tag", "tenant_id", "domain_tag"),
+    )
 
 
 class ApiKeyDb(Base):
@@ -617,6 +641,7 @@ class OnlineEvaluationDb(Base):
     context_precision = Column(Float, nullable=False, default=1.0)
     hallucination_index = Column(Float, nullable=False, default=0.0)
     is_alert = Column(Boolean, nullable=False, default=False)
+    claims = Column(JSONB, nullable=True, default=list)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 

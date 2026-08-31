@@ -148,11 +148,26 @@ class OnlineHallucinationEvaluator:
             return {"status": "disabled", "is_alert": False}
 
         claims = extract_claims(answer)
-        faithfulness = calculate_faithfulness(claims, contexts)
+        from src.domain.evaluation.nli_evaluator import NliEvaluator
+        nli = NliEvaluator()
+        nli_res = nli.evaluate_claims(claims, contexts)
+        faithfulness = nli_res.faithfulness_score
         precision = calculate_context_precision(contexts, claims)
-        hallucination_index = round(1.0 - faithfulness, 4)
+        hallucination_index = nli_res.hallucination_index
         threshold = getattr(eval_settings, "hallucination_threshold", 0.3) if eval_settings else 0.3
         is_alert = hallucination_index > threshold
+
+        claim_items = [
+            {
+                "claim": c.claim,
+                "premise": c.premise,
+                "status": c.status,
+                "entailment_prob": c.entailment_prob,
+                "contradiction_prob": c.contradiction_prob,
+                "neutral_prob": c.neutral_prob,
+            }
+            for c in nli_res.classifications
+        ]
 
         payload = {
             "status": "evaluated",
@@ -161,6 +176,7 @@ class OnlineHallucinationEvaluator:
             "hallucination_index": hallucination_index,
             "is_alert": is_alert,
             "claims_count": len(claims),
+            "claims": claim_items,
         }
 
         # Closed-loop self-tuning trigger if alert fired and config service is available
@@ -186,7 +202,14 @@ class OnlineHallucinationEvaluator:
 
         if self.repository and hasattr(self.repository, "save_evaluation"):
             try:
-                await self.repository.save_evaluation(tenant_id, session_id, payload)
+                save_data = {
+                    **payload,
+                    "tenant_id": tenant_id,
+                    "session_id": session_id,
+                    "query": query,
+                    "answer": answer,
+                }
+                await self.repository.save_evaluation(save_data)
             except Exception:
                 pass
 

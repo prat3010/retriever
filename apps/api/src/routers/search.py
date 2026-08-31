@@ -64,6 +64,8 @@ async def search_documents(
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,
         enable_query_intent=tenant_config.feature_flags.enable_query_intent,
+        hybrid_alpha=payload.hybrid_alpha if payload.hybrid_alpha is not None else getattr(tenant_config, "hybrid_alpha", 0.7),
+        enable_lora_adapter=payload.enable_lora_adapter if payload.enable_lora_adapter is not None else bool(getattr(tenant_config, "active_lora_adapter", None)),
     )
 
     response = await search_service.search(query)

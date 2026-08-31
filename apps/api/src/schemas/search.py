@@ -9,6 +9,8 @@ class SearchRequest(BaseModel):
     collection_id: str | None = Field(None, alias="collectionId")
     filters: list[MetadataFilter] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+    hybrid_alpha: float | None = Field(default=0.7, alias="hybridAlpha", ge=0.0, le=1.0)
+    enable_lora_adapter: bool | None = Field(default=False, alias="enableLoraAdapter")
 
 
 class SearchResultItem(BaseModel):

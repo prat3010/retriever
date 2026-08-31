@@ -40,6 +40,10 @@ class SearchQuery(BaseModel):
     web_search_api_key: str | None = None
     web_search_threshold: float = 0.65
     web_search_max_results: int = 5
+    hybrid_alpha: float = 0.7
+    enable_sparse_engine: bool = True
+    enable_lora_adapter: bool = False
+    lora_adapter_id: str | None = None
 
 
 class SearchResult(BaseModel):

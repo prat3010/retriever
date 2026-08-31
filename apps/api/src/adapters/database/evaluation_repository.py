@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
@@ -239,19 +240,33 @@ class SqlEvalRunRepository(EvalRunRepository):
 
 
 class SqlOnlineEvaluationRepository:
-    async def save_evaluation(self, eval_data: dict) -> dict:
+    async def save_evaluation(
+        self,
+        tenant_id_or_data: Any,
+        session_id: str | None = None,
+        eval_payload: dict | None = None,
+    ) -> dict:
+        if isinstance(tenant_id_or_data, dict):
+            eval_data = tenant_id_or_data
+        else:
+            eval_data = dict(eval_payload or {})
+            eval_data["tenant_id"] = str(tenant_id_or_data)
+            if session_id:
+                eval_data["session_id"] = session_id
+
         async with tenant_session(tenant_id=eval_data["tenant_id"]) as session:
             db = OnlineEvaluationDb(
                 eval_id=uuid4(),
                 tenant_id=UUID(eval_data["tenant_id"]),
                 session_id=eval_data.get("session_id"),
                 message_id=eval_data.get("message_id"),
-                query=eval_data["query"],
-                answer=eval_data["answer"],
+                query=eval_data.get("query", ""),
+                answer=eval_data.get("answer", ""),
                 faithfulness=float(eval_data.get("faithfulness", 1.0)),
                 context_precision=float(eval_data.get("context_precision", 1.0)),
                 hallucination_index=float(eval_data.get("hallucination_index", 0.0)),
                 is_alert=bool(eval_data.get("is_alert", False)),
+                claims=eval_data.get("claims", []),
             )
             session.add(db)
             await session.commit()
@@ -266,6 +281,7 @@ class SqlOnlineEvaluationRepository:
                 "context_precision": db.context_precision,
                 "hallucination_index": db.hallucination_index,
                 "is_alert": db.is_alert,
+                "claims": db.claims or [],
                 "created_at": str(db.created_at),
             }
 
@@ -334,9 +350,37 @@ class SqlOnlineEvaluationRepository:
                     "context_precision": float(r.context_precision),
                     "hallucination_index": float(r.hallucination_index),
                     "is_alert": bool(r.is_alert),
+                    "claims": getattr(r, "claims", []) or [],
                     "created_at": str(r.created_at),
                 }
                 for r in rows_res.fetchall()
             ]
             return logs, total
+
+    async def get_online_log(self, tenant_id: str, eval_id: str) -> dict | None:
+        async with tenant_session(tenant_id=tenant_id) as session:
+            res = await session.execute(
+                text("""
+                    SELECT * FROM online_evaluations
+                    WHERE tenant_id = :tenant_id AND eval_id = :eval_id
+                """),
+                {"tenant_id": UUID(tenant_id), "eval_id": UUID(eval_id)},
+            )
+            r = res.fetchone()
+            if not r:
+                return None
+            return {
+                "eval_id": str(r.eval_id),
+                "tenant_id": str(r.tenant_id),
+                "session_id": r.session_id,
+                "message_id": r.message_id,
+                "query": r.query,
+                "answer": r.answer,
+                "faithfulness": float(r.faithfulness),
+                "context_precision": float(r.context_precision),
+                "hallucination_index": float(r.hallucination_index),
+                "is_alert": bool(r.is_alert),
+                "claims": getattr(r, "claims", []) or [],
+                "created_at": str(r.created_at),
+            }
 

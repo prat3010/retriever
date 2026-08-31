@@ -15,6 +15,7 @@ import { TenantPromptsTab } from "@/components/tenant-prompts";
 import { TenantSandboxTab } from "@/components/tenant-sandbox";
 import { TenantGraphTab } from "@/components/tenant-graph";
 import { TenantHallucinationsTab } from "@/components/tenant-hallucinations";
+import { TenantTelemetryTab } from "@/components/tenant-telemetry";
 import { TenantComplianceTab } from "@/components/tenant-compliance";
 import { TenantBillingTab } from "@/components/tenant-billing";
 import { TenantWorkflowTab } from "@/components/tenant-workflow";
@@ -61,6 +62,7 @@ export default function TenantDetailPage() {
             <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
             <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
             <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="observability">🛰️ Observability</TabsTrigger>
             <TabsTrigger value="hallucinations">📈 Hallucinations</TabsTrigger>
             <TabsTrigger value="compliance">🛡️ Compliance</TabsTrigger>
             <TabsTrigger value="billing">💳 Billing</TabsTrigger>
@@ -93,6 +95,9 @@ export default function TenantDetailPage() {
           </TabsContent>
           <TabsContent value="config">
             <ConfigTab tenantId={tenantId} />
+          </TabsContent>
+          <TabsContent value="observability">
+            <TenantTelemetryTab tenantId={tenantId} />
           </TabsContent>
           <TabsContent value="hallucinations">
             <TenantHallucinationsTab tenantId={tenantId} />

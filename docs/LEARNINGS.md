@@ -69,11 +69,32 @@ This document serves as the **Episodic Long-Term Memory** for AI agents and deve
 
 ---
 
-## 5. Agent Workflow Checklist
+## 5. Zero-Toy Authentic Algorithm Implementations & Pure Python Fallbacks
+
+### Quirk: Dependency Drift in Lean / Edge Environments
+- **Context / Framework**: Data Science & Machine Learning Adapters (e.g. `scikit-learn`, `HDBSCAN`, `c-TF-IDF`)
+- **Symptom**: `ModuleNotFoundError: No module named 'sklearn'` on resource-constrained containers or edge runtimes.
+- **Anti-Pattern**: Writing mock data placeholders or static strings simulating ML algorithms.
+- **Enforced Solution**: Always implement the authentic mathematical algorithm in pure Python / NumPy as a zero-dependency fallback (e.g., NumPy expectation-maximization cosine KMeans and mathematical TF-IDF term weighting) while leveraging `scikit-learn` when available. Never compromise mathematical integrity with fake mocks.
+
+---
+
+## 6. Zero-Downtime Deployments & Automated Rollbacks
+
+### Quirk: In-Place `git reset --hard` Deployment Failures
+- **Context / Framework**: Oracle VPS / Systemd Services
+- **Symptom**: Service downtime during `pip install` or broken runtime state if an Alembic migration or package compilation fails.
+- **Anti-Pattern**: Running `git reset --hard origin/main && pip install -r requirements.txt && systemctl restart` directly on the active service root.
+- **Enforced Solution**: Deploy into timestamped release directories (`/opt/retriever/releases/<timestamp>`), run pre-migration database snapshots, execute migrations, switch the `/opt/retriever/current` symlink atomically, and automatically roll back to the previous release if health probes (`/health/readiness`) fail within 60 seconds.
+
+---
+
+## 7. Agent Workflow Checklist
 
 Before completing any task:
 1. **Pre-Flight**: Run `python3 scripts/query_architecture.py --target <entity_or_api>` to inspect blast radius.
 2. **Episodic Check**: Verify this `docs/LEARNINGS.md` file for known quirks.
 3. **Lint & Format**: Run `ruff check --fix .`.
-4. **Test Verification**: Run `pytest tests/unit` to ensure zero regressions.
-5. **Roadmap & Status**: Update `PROJECT_STATUS.md` and `ROADMAP.md` before finishing.
+4. **Test Verification**: Run test suites (`pytest apps/api/tests/ -v`) to ensure zero regressions.
+5. **Roadmap & Status**: Update `PROJECT_STATUS.md`, `ROADMAP.md`, `TECH_DEBT.md`, and relevant `docs/` before finishing.
+

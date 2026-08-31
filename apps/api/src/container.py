@@ -37,6 +37,7 @@ from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.cognitive.tei_reranker_adapter import TeiRerankerAdapter
+from src.adapters.cognitive.topic_clustering_adapter import TopicClusteringAdapter
 from src.adapters.database.admin_repository import SqlAdminRepository
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
@@ -343,6 +344,9 @@ class Container:
         colbert_reranker = ColBertMaxSimRerankerAdapter()
         self._cache["colbert_reranker"] = colbert_reranker
 
+        # --- Milestone 81: HDBSCAN Topic Clustering & Knowledge Gap Detection ---
+        self._cache["topic_clusterer"] = TopicClusteringAdapter()
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -404,5 +408,6 @@ payment_service = container.payment_service
 n8n_dispatcher = container.n8n_dispatcher
 contextual_header_generator = container.contextual_header_generator
 colbert_reranker = container.colbert_reranker
+topic_clusterer = container.topic_clusterer
 
 

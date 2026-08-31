@@ -485,7 +485,28 @@ class HybridSearchService:
         candidates: list[SearchResult],
         strategy: str,
     ) -> tuple[list[SearchResult], str]:
-        """Apply cross-encoder reranking with graceful fallback."""
+        """Apply reranking (ColBERT MaxSim, Cohere, or local Cross-Encoder) with graceful fallback."""
+        reranker_engine = getattr(query, "reranker_engine", "cohere")
+        enable_colbert = getattr(query, "enable_colbert_rerank", False)
+
+        if enable_colbert or reranker_engine == "colbert":
+            try:
+                from src.domain.retrieval.colbert_engine import score_colbert_maxsim
+
+                reranked = score_colbert_maxsim(
+                    query=query.query,
+                    candidates=candidates,
+                    top_n=query.top_k,
+                    threshold=query.reranking_threshold,
+                )
+                return reranked, strategy + "_colbert_maxsim"
+            except Exception as exc:
+                logger.warning(f"ColBERT MaxSim reranking failed for query '{query.query[:50]}': {exc}")
+                return candidates, strategy
+
+        if reranker_engine == "none":
+            return candidates, strategy
+
         try:
             reranked = await self.reranker.rerank(
                 query=query.query,

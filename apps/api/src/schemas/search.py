@@ -11,6 +11,8 @@ class SearchRequest(BaseModel):
     tags: list[str] = Field(default_factory=list)
     hybrid_alpha: float | None = Field(default=0.7, alias="hybridAlpha", ge=0.0, le=1.0)
     enable_lora_adapter: bool | None = Field(default=False, alias="enableLoraAdapter")
+    reranker_engine: str | None = Field(default=None, alias="rerankerEngine")
+    enable_colbert_rerank: bool | None = Field(default=False, alias="enableColbertRerank")
 
 
 class SearchResultItem(BaseModel):

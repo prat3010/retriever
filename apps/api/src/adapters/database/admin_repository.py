@@ -1,6 +1,9 @@
+import logging
 import os
 import shutil
 import uuid
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import func, select
 
@@ -140,8 +143,8 @@ class SqlAdminRepository(AdminRepository):
                     if os.path.exists(tenant_dir):
                         try:
                             shutil.rmtree(tenant_dir)
-                        except Exception:
-                            pass
+                        except Exception as err:
+                            logger.warning("Failed to remove tenant storage directory", extra={"tenant_dir": tenant_dir, "error": str(err)})
                 await session.delete(t)
 
             if include_system_tenant:
@@ -152,8 +155,8 @@ class SqlAdminRepository(AdminRepository):
                     if os.path.exists(tenant_dir):
                         try:
                             shutil.rmtree(tenant_dir)
-                        except Exception:
-                            pass
+                        except Exception as err:
+                            logger.warning("Failed to remove system tenant storage directory", extra={"tenant_dir": tenant_dir, "error": str(err)})
 
                 tables = [
                     (

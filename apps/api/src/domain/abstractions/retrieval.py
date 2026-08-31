@@ -44,6 +44,8 @@ class SearchQuery(BaseModel):
     enable_sparse_engine: bool = True
     enable_lora_adapter: bool = False
     lora_adapter_id: str | None = None
+    reranker_engine: str = "cohere"
+    enable_colbert_rerank: bool = False
 
 
 class SearchResult(BaseModel):

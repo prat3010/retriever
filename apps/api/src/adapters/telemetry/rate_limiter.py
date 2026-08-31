@@ -3,10 +3,13 @@
 Implements a sliding-window counter algorithm for per-tenant rate limiting.
 """
 
+import logging
 import time
 from typing import Any
 
 from src.domain.abstractions.telemetry import RateLimiter, RateLimitResult
+
+logger = logging.getLogger(__name__)
 
 _SLIDING_WINDOW_SCRIPT = """
 local key = KEYS[1]
@@ -102,7 +105,8 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
                 suffix,
             )
             return _parse_rate_limit_result(res, self._max_requests)
-        except Exception:
+        except Exception as err:
+            logger.warning(f"Redis rate limiter failed on key {key}, failing open: {err}")
             # Fail open on Redis errors — allow the request
             return RateLimitResult(
                 allowed=True,

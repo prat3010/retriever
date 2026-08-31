@@ -137,3 +137,25 @@ async def test_tei_reranker_adapter_fallback_to_colbert() -> None:
         reranked = await adapter.rerank("calcQuote", cands, top_n=2, threshold=0.0)
         assert len(reranked) == 2
         assert reranked[0].chunk_id == "c2"
+
+
+def test_batch_colbert_maxsim_engine() -> None:
+    """Verify BatchColbertMaxSimEngine computes batch tensor MaxSim scores across multiple documents."""
+    from src.domain.retrieval.colbert_engine import BatchColbertMaxSimEngine
+
+    engine = BatchColbertMaxSimEngine(dim=128)
+    q_tokens = ["postgres", "rls", "security"]
+    doc_batches = [
+        ["unrelated", "cooking", "recipe"],
+        ["postgres", "database", "rls", "row", "level", "security"],
+        ["general", "software", "development"],
+    ]
+
+    scores = engine.batch_maxsim(q_tokens, doc_batches)
+    assert len(scores) == 3
+    # Doc 2 has exact matches for all 3 query tokens -> 1.0
+    assert scores[1] == 1.0
+    # Doc 1 and Doc 3 have lower scores
+    assert scores[1] > scores[0]
+    assert scores[1] > scores[2]
+

@@ -14,6 +14,11 @@ from src.container import (
     tenant_registry,
 )
 from src.domain.abstractions.config import TenantConfiguration
+from src.domain.clustering.abstractions import (
+    KnowledgeGapReport,
+    TopicClusteringRequest,
+    TopicClusteringResponse,
+)
 from src.schemas.admin import (
     ApiKeyCreatedResponse,
     CreateApiKeyRequest,
@@ -157,3 +162,68 @@ async def generate_api_key(
         status=metadata.status,
         expiresAt=metadata.expires_at,
     )
+
+
+@router.post(
+    "/tenants/{tenantId}/clusters/topics",
+    status_code=status.HTTP_200_OK,
+    response_model=TopicClusteringResponse,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def get_tenant_topic_clusters(
+    tenantId: str,
+    payload: TopicClusteringRequest | None = None,
+) -> TopicClusteringResponse:
+    """Execute unsupervised HDBSCAN clustering and return dynamic semantic topic models."""
+    from src.container import document_repository, topic_clusterer
+
+    req = payload or TopicClusteringRequest()
+    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+
+    chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
+    chunk_texts = [c.content for c, _ in chunks_with_embeddings]
+    embeddings = [emb for _, emb in chunks_with_embeddings if emb]
+
+    return topic_clusterer.cluster_chunks(
+        tenant_id=tenantId,
+        chunk_ids=chunk_ids,
+        chunk_texts=chunk_texts,
+        embeddings=embeddings,
+        request=req,
+    )
+
+
+@router.get(
+    "/tenants/{tenantId}/clusters/knowledge-gaps",
+    status_code=status.HTTP_200_OK,
+    response_model=KnowledgeGapReport,
+    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+)
+async def get_tenant_knowledge_gaps(
+    tenantId: str,
+) -> KnowledgeGapReport:
+    """Detect orphaned chunks, sparse clusters, and synthesize vault coverage diagnostics."""
+    from src.container import document_repository, topic_clusterer
+
+    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+
+    chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
+    chunk_texts = [c.content for c, _ in chunks_with_embeddings]
+    embeddings = [emb for _, emb in chunks_with_embeddings if emb]
+
+    clustering_res = topic_clusterer.cluster_chunks(
+        tenant_id=tenantId,
+        chunk_ids=chunk_ids,
+        chunk_texts=chunk_texts,
+        embeddings=embeddings,
+        request=TopicClusteringRequest(min_cluster_size=2),
+    )
+
+    chunk_text_dict = dict(zip(chunk_ids, chunk_texts, strict=False))
+    return topic_clusterer.analyze_knowledge_gaps(
+        tenant_id=tenantId,
+        clustering_result=clustering_res,
+        chunk_texts=chunk_text_dict,
+    )
+
+

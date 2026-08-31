@@ -32,7 +32,8 @@ class RedisTenantConfigCache(ConfigCache):
             if not cached_data:
                 return None
             return TenantConfiguration(**json.loads(cached_data))
-        except Exception:
+        except Exception as err:
+            logger.debug(f"Redis get_cached_config miss/error for tenant {tenant_id}: {err}")
             return None
 
     async def set_cached_config(self, tenant_id: str, config: TenantConfiguration) -> None:
@@ -40,8 +41,8 @@ class RedisTenantConfigCache(ConfigCache):
             if redis_client is None:
                 return
             await redis_client.setex(self._get_key(tenant_id), 3600, json.dumps(config.model_dump()))
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning(f"Redis set_cached_config failed for tenant {tenant_id}: {err}")
 
     async def get_cached_global_config(self) -> TenantConfiguration | None:
         try:
@@ -51,7 +52,8 @@ class RedisTenantConfigCache(ConfigCache):
             if not cached_data:
                 return None
             return TenantConfiguration(**json.loads(cached_data))
-        except Exception:
+        except Exception as err:
+            logger.debug(f"Redis get_cached_global_config miss/error: {err}")
             return None
 
     async def set_cached_global_config(self, config: TenantConfiguration) -> None:
@@ -59,24 +61,24 @@ class RedisTenantConfigCache(ConfigCache):
             if redis_client is None:
                 return
             await redis_client.setex(self._get_global_key(), 3600, json.dumps(config.model_dump()))
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning(f"Redis set_cached_global_config failed: {err}")
 
     async def invalidate_config(self, tenant_id: str) -> None:
         try:
             if redis_client is None:
                 return
             await redis_client.delete(self._get_key(tenant_id))
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning(f"Redis invalidate_config failed for tenant {tenant_id}: {err}")
 
     async def invalidate_global_config(self) -> None:
         try:
             if redis_client is None:
                 return
             await redis_client.delete(self._get_global_key())
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning(f"Redis invalidate_global_config failed: {err}")
 
 
 class RerankerCandidateCache:
@@ -96,7 +98,8 @@ class RerankerCandidateCache:
             if not raw:
                 return None
             return json.loads(raw)
-        except Exception:
+        except Exception as err:
+            logger.debug(f"Redis get_cached_candidates miss/error for tenant {tenant_id}: {err}")
             return None
 
     async def set_cached_candidates(self, tenant_id: str, query_text: str, candidates: list[dict], ttl: int = 1800) -> None:
@@ -106,6 +109,6 @@ class RerankerCandidateCache:
             import hashlib
             q_hash = hashlib.sha256(query_text.encode()).hexdigest()[:16]
             await redis_client.setex(self._get_key(tenant_id, q_hash), ttl, json.dumps(candidates))
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning(f"Redis set_cached_candidates failed for tenant {tenant_id}: {err}")
 

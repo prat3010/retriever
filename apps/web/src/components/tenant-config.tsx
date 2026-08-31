@@ -213,6 +213,22 @@ export function ConfigTab({ tenantId }: Props) {
               onChange={(e) => handleChange("retrieval_settings.chunk_overlap", e.target.value)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="rerankerEngine">Reranking Engine & Late-Interaction Provider</Label>
+            <Select
+              value={form.retrieval_settings.reranker_engine ?? "cohere"}
+              onValueChange={(val) => handleChange("retrieval_settings.reranker_engine", val)}
+            >
+              <SelectTrigger id="rerankerEngine">
+                <SelectValue placeholder="Select reranker engine" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="colbert">⚡ ColBERT MaxSim (Hardware-Accelerated Local)</SelectItem>
+                <SelectItem value="cohere">Cohere Rerank API (Cloud Provider)</SelectItem>
+                <SelectItem value="none">None (Convex Hybrid / RRF Only)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

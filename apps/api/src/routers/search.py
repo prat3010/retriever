@@ -39,6 +39,25 @@ async def search_documents(
                     tenant_config = apply_overrides(tenant_config, variant)
                     break
 
+    raw_alpha = getattr(tenant_config, "hybrid_alpha", 0.7)
+    resolved_alpha = float(raw_alpha) if isinstance(raw_alpha, int | float) else 0.7
+    if payload.hybrid_alpha is not None:
+        resolved_alpha = payload.hybrid_alpha
+
+    raw_lora = getattr(tenant_config, "active_lora_adapter", None)
+    resolved_lora = bool(raw_lora) if isinstance(raw_lora, str | bool) else False
+    if payload.enable_lora_adapter is not None:
+        resolved_lora = payload.enable_lora_adapter
+
+    raw_engine = getattr(tenant_config, "reranker_engine", "cohere")
+    resolved_engine = str(raw_engine) if isinstance(raw_engine, str) else "cohere"
+    if payload.reranker_engine is not None:
+        resolved_engine = payload.reranker_engine
+
+    resolved_colbert = (resolved_engine == "colbert")
+    if payload.enable_colbert_rerank is not None:
+        resolved_colbert = payload.enable_colbert_rerank
+
     query = SearchQuery(
         query=payload.query,
         tenant_id=tenantId,
@@ -64,8 +83,10 @@ async def search_documents(
         web_search_max_results=tenant_config.retrieval_settings.web_search_max_results,
         enable_self_query=tenant_config.feature_flags.enable_self_query,
         enable_query_intent=tenant_config.feature_flags.enable_query_intent,
-        hybrid_alpha=payload.hybrid_alpha if payload.hybrid_alpha is not None else getattr(tenant_config, "hybrid_alpha", 0.7),
-        enable_lora_adapter=payload.enable_lora_adapter if payload.enable_lora_adapter is not None else bool(getattr(tenant_config, "active_lora_adapter", None)),
+        hybrid_alpha=resolved_alpha,
+        enable_lora_adapter=resolved_lora,
+        reranker_engine=resolved_engine,
+        enable_colbert_rerank=resolved_colbert,
     )
 
     response = await search_service.search(query)

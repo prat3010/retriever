@@ -28,17 +28,6 @@ jobs:
             cd /opt/retriever
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git fetch origin main
-            git reset --hard origin/main
-            . .venv/bin/activate
-            pip install -r requirements.txt 2>&1
-            sudo systemctl daemon-reload
-            sudo systemctl restart retriever-api retriever-worker
-            for i in $(seq 1 12); do
-              if curl -sSf http://localhost:8000/health/liveness > /dev/null 2>&1; then
-                echo "Smoke test: liveness OK"
-                curl -sSf http://localhost:8000/health/readiness > /dev/null 2>&1 && echo "Smoke test: readiness OK"
-                break
-              fi
-              sleep 5
-            done
-            echo "Deploy complete"
+            git checkout origin/main -B main
+            chmod +x scripts/deploy_release.sh scripts/rollback.sh scripts/backup-db.sh
+            ./scripts/deploy_release.sh

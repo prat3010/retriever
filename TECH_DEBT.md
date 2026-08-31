@@ -7,6 +7,14 @@ they start blocking you — not before.
 
 | Item | Commit |
 |------|--------|
+| Implemented unsupervised `HDBSCAN` + `KMeans` chunk clustering, `c-TF-IDF` topic modeling, and `GET /v1/tenants/{tenantId}/clusters/knowledge-gaps` coverage diagnostics | M81 (v0.66.0) |
+| Built zero-downtime release deployment pipeline (`scripts/deploy_release.sh`), atomic symlinks (`/opt/retriever/current`), and instant 1-second automated rollback on health failure (`scripts/rollback.sh`) | M85.7 (DevOps) |
+| Implemented multi-tenant Locust concurrent load testing suite (`tests/load/locustfile.py`) and automated latency percentile report generator (`scripts/run_load_benchmark.py`) | M85.10 (Benchmarks) |
+| Replaced silent `except Exception: pass` blocks in adapters (`admin_repository.py`, `config_cache.py`, `corrective_retrieval_adapter.py`, `rate_limiter.py`, `python_sandbox_adapter.py`) with structured logging | M85.6 |
+| Upgraded Llama Guard 3 adapter with standard prompt tokens, category parsing (S1–S13), and structured security logs | M85.1 |
+| Implemented LongLLMLingua entropy/perplexity context compressor adapter with zero-dependency fallback | M85.2 |
+| Enforced strict CI security scan gates by removing `continue-on-error: true` in `security.yml` | M85.8 |
+| Sanitized helper scripts to eliminate hardcoded fallback admin keys | M85.5 |
 | GraphRAG & Dual Knowledge Graph Indexing (`BaseGraphRepository`, `PgGraphRepository`, `Neo4jGraphRepository`, `GraphExtractor`, `/v1/admin/tenants/{tenantId}/graph/capabilities`) created | M37 |
 | SaaS Data Connectors Framework (`BaseConnector`, `WebCrawlerConnector`, `MockCloudDriveConnector`, `/v1/admin/tenants/{tenantId}/connectors`) created | M36 |
 | A/B Testing Platform (`/v1/admin/tenants/{tenantId}/experiments`) experiment CRUD, status lifecycle, search/chat variant assignment, & metrics aggregation created | M29 |

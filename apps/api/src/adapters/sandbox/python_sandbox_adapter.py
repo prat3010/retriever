@@ -104,10 +104,10 @@ class RestrictedPythonSandboxAdapter(ReplSandboxProvider):
         try:
             parsed_ast = ast.parse(code, mode="exec")
             RestrictedASTValidator().visit(parsed_ast)
-        except Exception:
+        except Exception as err:
             return ReplExecutionResult(
-                output="",
-                return_value=None,
+                output=f"Safety validation error: {err}",
+                return_value=f"SecurityError: {err}",
                 is_error=True,
                 execution_time_ms=round((time.monotonic() - start_time) * 1000, 2),
             )

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
 from src.domain.abstractions.retrieval import (
@@ -6,6 +7,8 @@ from src.domain.abstractions.retrieval import (
     CorrectiveRetrievalProvider,
     SearchResult,
 )
+
+logger = logging.getLogger(__name__)
 
 JUDGE_PROMPT = """You evaluate RAG quality. Given:
 QUERY: {query}
@@ -77,7 +80,8 @@ class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
                 reason=data.get("reason", ""),
                 reformulated_query=data.get("reformulated_query") or None,
             )
-        except Exception:
+        except Exception as err:
+            logger.warning(f"CRAG LLM evaluate_response failed, falling back: {err}")
             return CorrectiveRetrievalDecision(
                 status="CORRECT",
                 needs_re_retrieval=False,
@@ -147,7 +151,8 @@ class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
                 reason=data.get("reason", f"CRAG evaluated as {status_val}"),
                 reformulated_query=data.get("reformulated_query") or None,
             )
-        except Exception:
+        except Exception as err:
+            logger.warning(f"CRAG LLM evaluate_candidates failed, falling back to heuristic scoring: {err}")
             # Heuristic fallback based on candidate scores
             avg_score = sum(c.score for c in candidates) / len(candidates)
             if avg_score >= upper_threshold:

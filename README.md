@@ -75,6 +75,7 @@ Retriever is designed as an enterprise-grade, highly modular Retrieval-Augmented
 | [`docs/cognitive/query_intelligence.md`](docs/cognitive/query_intelligence.md) | Query Intent Classification, HyDE Rewriting, Self-Querying & CRAG Fallbacks |
 | [`docs/cognitive/chunking_and_parsing.md`](docs/cognitive/chunking_and_parsing.md) | Docling Vision OCR, Recursive Character Splitter & AST Code Chunking |
 | [`docs/cognitive/graphrag.md`](docs/cognitive/graphrag.md) | Dual-engine GraphRAG (PostgreSQL Triples & Neo4j Cypher) |
+| [`docs/cognitive/topic_clustering.md`](docs/cognitive/topic_clustering.md) | Unsupervised `HDBSCAN` + `KMeans` chunk clustering, c-TF-IDF topic labeling & knowledge gap audits |
 | [`docs/cognitive/agentic_workflows_and_repl.md`](docs/cognitive/agentic_workflows_and_repl.md) | Autonomous ReAct loops & sandboxed Python REPL execution |
 | [`docs/cognitive/consensus_and_reflection.md`](docs/cognitive/consensus_and_reflection.md) | Generator-Critic verification loops for high-stakes enterprise grounding |
 | [`docs/cognitive/context_compression.md`](docs/cognitive/context_compression.md) | LongLLMLingua perplexity-based prompt token compression |
@@ -89,6 +90,7 @@ Retriever is designed as an enterprise-grade, highly modular Retrieval-Augmented
 | [`docs/infrastructure/async_workers_and_queues.md`](docs/infrastructure/async_workers_and_queues.md) | Celery worker architecture, RabbitMQ queues & Beat periodic schedules |
 | [`docs/infrastructure/storage_and_encryption.md`](docs/infrastructure/storage_and_encryption.md) | S3/R2 object storage, presigned URLs & Zero-Trust Envelope Encryption |
 | [`docs/infrastructure/telemetry_and_observability.md`](docs/infrastructure/telemetry_and_observability.md) | OpenTelemetry tracing, Prometheus `/metrics` & SHA-256 chained audit logs |
+| [`docs/infrastructure/deployments_and_rollbacks.md`](docs/infrastructure/deployments_and_rollbacks.md) | Atomic release versioning (`/opt/retriever/releases`), symlinking & 1s automated rollback |
 
 ### 📦 4. Integrations & Client SDKs (`docs/integrations/`)
 | Guide | Description |
@@ -120,13 +122,17 @@ uvicorn apps.api.src.main:app --reload --port 8000
 
 ---
 
-## 🧪 Automated Testing Baselines
+## 🧪 Automated Testing & Benchmark Baselines
 
 ```bash
-# Run complete test suite (500+ unit tests)
+# 1. Run complete unit test suite (580+ unit tests)
 pytest apps/api/tests/ -v
 
-# Run linting & Hexagonal import boundaries verification
+# 2. Run linting & Hexagonal import boundaries verification
 ruff check .
 pytest apps/api/tests/test_architecture.py
+
+# 3. Execute Headless Multi-Tenant Load Benchmark
+python3 scripts/run_load_benchmark.py --host http://localhost:8000 --users 50 --duration 15s
 ```
+

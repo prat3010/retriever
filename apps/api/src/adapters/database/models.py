@@ -66,6 +66,7 @@ class TenantConfigDb(Base):
     llm_api_key_encrypted = Column(Text, nullable=True)
     hybrid_alpha = Column(Float, nullable=False, default=0.7)
     active_lora_adapter = Column(String(255), nullable=True)
+    reranker_engine = Column(String(50), nullable=False, default="cohere")
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="config")

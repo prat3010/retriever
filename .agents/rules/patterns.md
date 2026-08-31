@@ -58,4 +58,13 @@
      ```
   4. **Zero-Drift Invariant:** Never finish a milestone task while leaving Obsidian canvases, architecture index files, or markdown PRDs desynchronized from the live codebase.
 
+### 11. Production-First & Zero-Toy Utility Invariant Rule (No Mocks, No Gimmicks)
+- **Rule:** All backend algorithms, adapters, cognitive workflows, and administrative endpoints MUST be genuine, production-grade implementations with verified enterprise utility.
+- **Strict Invariants:**
+  1. **Zero Algorithmic Shortcuts or Fakes:** Do NOT implement naive regex heuristics and mislabel them as SOTA ML algorithms (e.g. calling simple regex "LongLLMLingua" or keyword matching "Llama Guard 3"). If an algorithm is specified, implement the authentic model/math or provide a transparent, explicitly labeled fallback.
+  2. **Zero Mock Data Returns:** All endpoints must query real database models, execute genuine vector operations, and emit verified telemetry. Never return static synthetic mock data in production routers.
+  3. **Pragmatic Production Value:** Prioritize core platform reliability (safe blue/green releases, atomic symlinks, rollback gates, concurrent load testing benchmarks, and unsupervised GraphRAG clustering) over cosmetic features.
+  4. **Strict Conformance:** Every endpoint and adapter must be verified by automated Pytest suites with genuine database and memory integration.
+
+
 

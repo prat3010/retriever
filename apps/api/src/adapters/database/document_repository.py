@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, select
 
 from src.adapters.database.connection import tenant_session
-from src.adapters.database.models import DocumentChunkDb, DocumentDb
+from src.adapters.database.models import DocumentChunkDb, DocumentDb, VectorRecordDb
 from src.adapters.database.pagination import decode_cursor, encode_cursor
 from src.domain.abstractions.ingestion import (
     Document,
@@ -200,3 +200,23 @@ class SqlDocumentRepository(DocumentRepository):
                 next_cursor = encode_cursor(last_item.created_at, last_item.document_id)
 
             return items, next_cursor, has_more
+
+    async def get_tenant_chunks_with_embeddings(
+        self, tenant_id: str, limit: int = 2000
+    ) -> list[tuple[DocumentChunk, list[float]]]:
+        """Fetch all chunks and their vector embeddings for a tenant."""
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = (
+                select(DocumentChunkDb, VectorRecordDb.embedding)
+                .join(VectorRecordDb, DocumentChunkDb.chunk_id == VectorRecordDb.chunk_id)
+                .where(DocumentChunkDb.tenant_id == uuid.UUID(tenant_id))
+                .limit(limit)
+            )
+            rows = (await session.execute(stmt)).all()
+            results = []
+            for chunk_row, embedding in rows:
+                chunk = self._chunk_to_domain(chunk_row)
+                emb_list = list(embedding) if embedding is not None else []
+                results.append((chunk, emb_list))
+            return results
+

@@ -83,12 +83,14 @@
 | **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Completed** (Phase I) |
 | **M78** | Visual Grounding Diff & Retriever Admin Observability | Claim-by-claim visual grounding highlighter and dedicated Retriever Admin observability cockpit | **Completed** (Phase I) |
 | **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Sublinear BM25 vectorizer + Contrastive LoRA residual embedding calibration | **Completed** (Phase J) |
-| **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Active Next (Phase J)** |
-| **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Planned (Phase J)** |
+| **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Completed** (Phase J) |
+| **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Completed** (Phase J / v0.66.0) |
 | **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Planned (Phase J)** |
 | **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Planned (Phase J)** |
 | **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Planned (Phase J)** |
 | **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Planned (Phase J)** |
+| **M85.7**| Safe Deployment Pipeline (Blue/Green with Rollback & Health Gates) | Release directory versioning (`/opt/retriever/releases`), atomic symlinks, and automatic rollback on health failure | **Completed** (DevOps) |
+| **M85.10**| Multi-Tenant Locust Load Testing & Benchmark Reporting | Multi-tenant Locust concurrent load testing suite and automated latency & throughput report generator | **Completed** (Benchmarks) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.

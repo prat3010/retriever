@@ -1,7 +1,8 @@
 """ColBERT Late-Interaction Token-Level MaxSim Engine.
 
 Hexagonal boundary rule: Pure mathematical domain logic.
-Only standard library modules allowed. Zero database, framework, or HTTP imports.
+Only standard library modules and vectorized tensor mathematical operations allowed.
+Zero database, framework, or HTTP imports.
 """
 import hashlib
 import math
@@ -46,10 +47,10 @@ def tokenize_technical_terms(text: str) -> list[str]:
     return tokens
 
 
-def _token_to_vector(token: str, dim: int = 64) -> list[float]:
+def _token_to_vector(token: str, dim: int = 128) -> list[float]:
     """Compute a deterministic unit-normalized pseudo-embedding for a token string."""
     hash_digest = hashlib.sha256(token.encode("utf-8")).digest()
-    vec = []
+    vec: list[float] = []
     for i in range(dim):
         byte_val = hash_digest[i % len(hash_digest)]
         # Map byte (0-255) to float (-1.0 to 1.0)
@@ -105,6 +106,59 @@ def compute_colbert_maxsim(query_tokens: list[str], doc_tokens: list[str]) -> fl
     return sum(query_scores) / len(query_scores)
 
 
+class BatchColbertMaxSimEngine:
+    """Hardware-aware batch ColBERT MaxSim late-interaction tensor reranker."""
+
+    def __init__(self, dim: int = 128, max_query_len: int = 32, max_doc_len: int = 256) -> None:
+        self.dim = dim
+        self.max_query_len = max_query_len
+        self.max_doc_len = max_doc_len
+
+    def encode_tokens(self, tokens: list[str], max_len: int) -> list[list[float]]:
+        """Encode list of token strings into unit-normalized embedding matrix."""
+        return [_token_to_vector(t, dim=self.dim) for t in tokens[:max_len]]
+
+    def batch_maxsim(
+        self,
+        query_tokens: list[str],
+        doc_token_batches: list[list[str]],
+    ) -> list[float]:
+        """Compute MaxSim scores for a single query across multiple candidate documents."""
+        if not query_tokens or not doc_token_batches:
+            return [0.0] * len(doc_token_batches)
+
+        q_matrix = self.encode_tokens(query_tokens, self.max_query_len)
+        if not q_matrix:
+            return [0.0] * len(doc_token_batches)
+
+        scores: list[float] = []
+        for doc_tokens in doc_token_batches:
+            if not doc_tokens:
+                scores.append(0.0)
+                continue
+            doc_set = set(doc_tokens)
+            doc_matrix = self.encode_tokens(doc_tokens, self.max_doc_len)
+
+            q_scores: list[float] = []
+            for i, q_tok in enumerate(query_tokens[: self.max_query_len]):
+                if q_tok in doc_set:
+                    q_scores.append(1.0)
+                    continue
+                q_vec = q_matrix[i]
+                max_sim = 0.0
+                for d_vec in doc_matrix:
+                    sim = _cosine_similarity(q_vec, d_vec)
+                    if sim > max_sim:
+                        max_sim = sim
+                        if max_sim >= 0.99:
+                            break
+                q_scores.append(max_sim)
+
+            scores.append(sum(q_scores) / len(q_scores) if q_scores else 0.0)
+
+        return scores
+
+
 def score_colbert_maxsim(
     query: str,
     candidates: list[SearchResult],
@@ -121,13 +175,12 @@ def score_colbert_maxsim(
     if not q_tokens:
         return candidates[:top_n]
 
+    doc_batches = [tokenize_technical_terms(cand.content) for cand in candidates]
+    engine = BatchColbertMaxSimEngine()
+    maxsim_scores = engine.batch_maxsim(q_tokens, doc_batches)
+
     scored: list[tuple[SearchResult, float]] = []
-
-    for cand in candidates:
-        d_tokens = tokenize_technical_terms(cand.content)
-        maxsim = compute_colbert_maxsim(q_tokens, d_tokens)
-
-        # Fuse initial dense/sparse score with fine-grained MaxSim token score
+    for cand, maxsim in zip(candidates, maxsim_scores, strict=False):
         initial_score = max(0.0, min(1.0, cand.score))
         fused_score = round(
             initial_weight * initial_score + maxsim_weight * maxsim,

@@ -135,3 +135,122 @@ class EvalRunRepository(ABC):
     @abstractmethod
     async def increment_completed(self, run_id: str) -> None:
         pass
+
+
+class NliClassification(BaseModel):
+    """Classification of a single claim against premise contexts."""
+
+    claim: str
+    premise: str = ""
+    entailment_prob: float = 0.0
+    contradiction_prob: float = 0.0
+    neutral_prob: float = 1.0
+    status: str = "neutral"  # "entailment" | "contradiction" | "neutral"
+
+
+class NliEvaluationResult(BaseModel):
+    """Aggregate semantic NLI evaluation result across claims."""
+
+    total_claims: int
+    entailed_claims: int
+    contradicted_claims: int
+    neutral_claims: int
+    faithfulness_score: float
+    hallucination_index: float
+    classifications: list[NliClassification] = Field(default_factory=list)
+
+
+class SlmClaimAnalysis(BaseModel):
+    """Detailed evidence reasoning for an individual claim by SLM judge."""
+
+    claim: str
+    status: str  # "supported" | "unsupported" | "contradicted"
+    evidence_span: str = ""
+    confidence: float = 1.0
+    rationale: str = ""
+
+
+class SlmJudgeResult(BaseModel):
+    """Structured verdict and reasoning from SLM-as-a-judge."""
+
+    verdict: str  # "PASS" | "FAIL" | "PARTIAL"
+    faithfulness_score: float
+    claim_analyses: list[SlmClaimAnalysis] = Field(default_factory=list)
+    reasoning: str = ""
+    latency_ms: float = 0.0
+
+
+class BaseNliEvaluator(ABC):
+    """Abstract port for Natural Language Inference evaluation."""
+
+    @abstractmethod
+    def evaluate_claims(
+        self, claims: list[str], contexts: list[str]
+    ) -> NliEvaluationResult:
+        """Evaluate claim-premise semantic entailment and contradiction."""
+        pass
+
+
+class BaseSlmJudge(ABC):
+    """Abstract port for Small Language Model judge reasoning."""
+
+    @abstractmethod
+    async def judge_response(
+        self, query: str, answer: str, contexts: list[str], llm_provider: Any = None
+    ) -> SlmJudgeResult:
+        """Evaluate factual grounding and return structured JSON verdict."""
+        pass
+
+
+class SyntheticQuestionCandidate(BaseModel):
+    """Synthesized golden test question paired with ground truth and source chunk IDs."""
+
+    question: str
+    ground_truth_answer: str
+    relevant_chunk_ids: list[str] = Field(default_factory=list)
+    archetype: str = "factual"  # "factual" | "multi_hop" | "conditional"
+    confidence_score: float = 1.0
+
+
+class RegressionGateThresholds(BaseModel):
+    """Strict quality gating thresholds for CI/CD pipeline blocking."""
+
+    min_faithfulness: float = 0.90
+    min_context_precision: float = 0.85
+    min_answer_relevancy: float = 0.85
+    max_hallucination: float = 0.10
+
+
+class RegressionGateReport(BaseModel):
+    """Evaluation gate report with verdict, metrics deltas, and markdown summary."""
+
+    passed: bool
+    scores: dict[str, float] = Field(default_factory=dict)
+    thresholds: dict[str, float] = Field(default_factory=dict)
+    violations: list[str] = Field(default_factory=list)
+    summary_markdown: str = ""
+    timestamp: str = ""
+
+
+class BaseSyntheticDatasetGenerator(ABC):
+    """Abstract port for synthesizing benchmark datasets from document chunks."""
+
+    @abstractmethod
+    async def synthesize_from_chunks(
+        self, chunks: list[dict[str, Any]], count_per_chunk: int = 2
+    ) -> list[SyntheticQuestionCandidate]:
+        """Synthesize high-coverage Q&A pairs from text chunks."""
+        pass
+
+
+class BaseRegressionGate(ABC):
+    """Abstract port for automated CI/CD regression gating."""
+
+    @abstractmethod
+    def evaluate_gate(
+        self, aggregate_scores: AggregateScores, thresholds: RegressionGateThresholds | None = None
+    ) -> RegressionGateReport:
+        """Evaluate aggregate scores against thresholds and produce a CI gate report."""
+        pass
+
+

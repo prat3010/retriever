@@ -146,42 +146,50 @@ ROADMAP EXECUTION HORIZONS:
 #### Milestone M73: GraphRAG Leiden Community Detection & Closed-Loop Self-Tuning
 *   **Objective:** Unlock macro-level dataset reasoning and automated quality self-tuning.
 *   **Key Deliverables:**
-    1.  Upgrade `graph_extraction_service.py` to construct global entity graphs, run Leiden community detection, and pre-generate macro hierarchical summaries.
-    2.  Connect M50 online evaluation telemetry (`OnlineHallucinationEvaluator`) directly to `config_service` to automatically calibrate `reranking_threshold`, `top_k`, and `rrf_k` values based on continuous Ragas scoring.
+    1.  Implement `LeidenCommunityDetector` and `CommunitySummarizer` to construct global entity graphs, run modularity-optimized Leiden community detection, and pre-generate macro hierarchical summaries.
+    2.  Connect online evaluation telemetry (`OnlineHallucinationEvaluator`) directly to `ConfigurationService` and `SelfTuningEngine` to automatically calibrate `reranking_threshold`, `top_k`, and `rrf_k` values based on continuous scoring.
+*   **Status:** **Completed** (Phase H Completed)
 
 ---
 
-### Phase I: Enterprise Cognitive Evaluation & Deep Observability Hardening (M74 – M78)
+### Phase I: Enterprise Cognitive Evaluation & Deep Observability Hardening (M74 – M78) — **ACTIVE NEXT**
+
 
 #### Milestone M74: Semantic NLI & SLM-as-a-Judge Online Hallucination Engine
 *   **Objective:** Replace naive keyword overlap checks with semantic Natural Language Inference (NLI) and async Small Language Model judges to eliminate false-positive faithfulness scores.
 *   **Key Deliverables:**
-    1.  DeBERTa NLI Cross-Encoder (`nli_evaluator.py`) evaluating claim-premise entailment probabilities.
-    2.  Async Celery task `tasks.evaluate_inference_nli` running a local Ollama judge (`qwen2.5:3b` / `llama3.2:3b`) with structured reasoning and span localization.
+    1.  Semantic NLI Cross-Encoder (`nli_evaluator.py`) evaluating directional claim-premise entailment and polarity contradictions.
+    2.  Structured SLM Judge Engine (`slm_judge.py`) & Celery task `tasks.evaluate_inference_nli` running claim breakdown and evidence span localization.
+*   **Status:** **Completed** (Phase I)
 
 #### Milestone M75: Full-Stack OpenTelemetry Auto-Instrumentation & Distributed Trace Graph
 *   **Objective:** Provide end-to-end distributed tracing across database queries, vector similarity operations, outbound LLM APIs, and async Celery workers.
 *   **Key Deliverables:**
-    1.  Auto-instrument SQLAlchemy, HTTPX, and Celery worker queues.
-    2.  Propagate W3C standard `traceparent` headers across Next.js proxy $\rightarrow$ FastAPI Gateway $\rightarrow$ Celery workers.
+    1.  Auto-instrumentation registry (`auto_instrumentation.py`) for SQLAlchemy pgvector queries, HTTPX outbound LLM requests, and Celery task lifecycles.
+    2.  Propagate W3C standard `traceparent` headers across Next.js proxy $\rightarrow$ FastAPI Gateway $\rightarrow$ Celery workers with `X-Trace-Id` response reflection.
+*   **Status:** **Completed** (Phase I)
 
 #### Milestone M76: Real-Time Telemetry Live Aggregations & SLA Webhook Alerting Engine
 *   **Objective:** Transition telemetry endpoints from static fallbacks to live multi-tenant database aggregations with automated incident webhooks.
 *   **Key Deliverables:**
-    1.  Live database aggregations for tenant tokens, cache savings, and quality metrics.
-    2.  Multi-channel webhook alerting dispatcher (Slack, Discord, Resend email) on Hallucination Index $> 30\%$ or token quota $\ge 90\%$.
+    1.  Live database aggregations (`SqlTelemetryRepository` & `LiveTelemetryService`) for tenant tokens, cache savings, satisfaction rates, and SLA latencies.
+    2.  Multi-channel webhook alerting dispatcher (`alert_service.py` for Slack, Discord, custom HTTP JSON webhooks) with debouncing on Hallucination Index $> 30\%$, token quota $\ge 90\%$, or latency spikes.
+*   **Status:** **Completed** (Phase I)
 
 #### Milestone M77: Synthetic Golden Dataset Generation & Automated CI/CD Regression Gate
 *   **Objective:** Automate continuous RAG evaluation by synthesizing benchmark datasets and enforcing PR blocking gates in CI/CD.
 *   **Key Deliverables:**
-    1.  Synthetic Test Generator (`synthetic_dataset_generator.py`) extracting Q&A benchmark pairs from tenant documents.
-    2.  GitHub Action workflow enforcing strict Ragas + DeepEval quality thresholds before canary releases.
+    1.  Synthetic Test Generator (`synthetic_generator.py`) extracting Q&A benchmark pairs from tenant documents.
+    2.  GitHub Action workflow (`eval_regression.yml`) and CLI runner (`scripts/run_eval_regression.py`) enforcing strict Ragas + DeepEval quality thresholds before canary releases.
+*   **Status:** **Completed** (Phase I)
 
-#### Milestone M78: Visual Claim-by-Claim Grounding Diff & Synchronizer Observability Cockpit
-*   **Objective:** Deliver granular visual insight into model faithfulness and integrate backend observability into the local Synchronizer desktop control center.
+#### Milestone M78: Visual Claim-by-Claim Grounding Diff & Retriever Admin Observability Cockpit (ACTIVE NEXT)
+*   **Objective:** Deliver granular visual insight into model faithfulness and integrate deep cognitive observability natively inside the Retriever Admin Dashboard (`https://admin.rag.prateeq.in` / `retriever/apps/web`).
 *   **Key Deliverables:**
-    1.  Visual sentence-by-sentence grounding inspector in Retriever Admin and SaaS Studio.
-    2.  Local Streamlit Synchronizer analytics tab overhaul with live Retriever telemetry and active alert feeds.
+    1.  Visual Claim Grounding Diff (`grounding-diff.tsx` / `tenant-hallucinations.tsx` in `retriever/apps/web`): Highlights generated responses sentence-by-sentence (green = verified in source, red = ungrounded/hallucinated, yellow = partial/neutral), with interactive side-by-side popovers showing the exact source chunk citation.
+    2.  Retriever Admin Observability Cockpit (`tenant-metrics.tsx` & `tenant-telemetry.tsx`): Real-time charts for Hallucination Trends, Token Burn Rate, P99 Latency SLAs, and Active Alert Incident feeds.
+    3.  Lightweight Client Quota Status in Synchronizer (`sync_tabs/clients.py`): High-level commercial plan & token consumption badge without low-level vector diff bloat.
+
 
 ---
 

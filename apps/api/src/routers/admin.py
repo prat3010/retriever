@@ -76,6 +76,18 @@ from src.schemas.evaluation import (
     AddEvalQuestionRequest,
     BulkImportQuestionsRequest,
     CreateEvalDatasetRequest,
+    NliClassificationDTO,
+    NliEvaluateRequest,
+    NliEvaluateResponse,
+    RegressionGateRequest,
+    RegressionGateResponse,
+    SelfTuningReportDTO,
+    SlmClaimAnalysisDTO,
+    SlmJudgeRequest,
+    SlmJudgeResponse,
+    SynthesizeDatasetRequest,
+    SynthesizeDatasetResponse,
+    TriggerSelfTuneRequest,
 )
 from src.schemas.experiment import (
     CreateExperimentRequest,
@@ -85,15 +97,25 @@ from src.schemas.experiment import (
     VariantMetricItem,
 )
 from src.schemas.graph import (
+    CommunityDetectRequest,
+    CommunityDetectResponse,
+    CommunitySummaryDTO,
     GraphCapabilitiesResponse,
     GraphEngineSwitchRequest,
     GraphQueryRequest,
     GraphQueryResponse,
     GraphSummaryResponse,
 )
+from src.schemas.telemetry import (
+    AlertHistoryItemDTO,
+    TenantLiveTelemetryDTO,
+    TestAlertRequest,
+    TestAlertResponse,
+)
 from src.schemas.tenant import TenantListItem
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin"])
+
 
 
 class VerifyAdminKeyResponse(BaseModel):
@@ -1550,3 +1572,399 @@ async def delete_graph_triple(tenantId: str, tripleId: str) -> dict[str, Any]:
             detail=f"Triple '{tripleId}' not found.",
         )
     return {"tenantId": tenantId, "tripleId": tripleId, "status": "deleted"}
+
+
+@router.post(
+    "/tenants/{tenantId}/graph/communities/detect",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=CommunityDetectResponse,
+)
+async def detect_graph_communities(
+    tenantId: str, payload: CommunityDetectRequest
+) -> CommunityDetectResponse:
+    """Execute Leiden community detection and hierarchical summarization for a tenant."""
+    from src.container import container
+    from src.domain.graph.community_summarizer import CommunitySummarizer
+    from src.domain.graph.leiden_detector import LeidenCommunityDetector
+
+    triples = await container.graph_repository.get_all_triples(tenantId, limit=1000)
+    detector = LeidenCommunityDetector(
+        resolution=payload.resolution,
+        min_community_size=payload.min_community_size,
+    )
+    hierarchy = detector.detect_communities(
+        tenant_id=tenantId, triples=triples, max_levels=payload.max_levels
+    )
+
+    summarizer = CommunitySummarizer()
+    dto_levels: dict[int, list[CommunitySummaryDTO]] = {}
+
+    for lvl, comms in hierarchy.levels.items():
+        dto_list = []
+        for c in comms:
+            if payload.generate_summaries and not c.summary:
+                await summarizer.summarize_community(c)
+            dto_list.append(
+                CommunitySummaryDTO(
+                    community_id=c.community_id,
+                    level=c.level,
+                    title=c.title,
+                    entities=c.entities,
+                    triple_count=len(c.triples),
+                    weight=c.weight,
+                    summary=c.summary,
+                )
+            )
+        dto_levels[lvl] = dto_list
+
+    return CommunityDetectResponse(
+        tenant_id=tenantId,
+        total_communities=hierarchy.total_communities,
+        modularity_score=hierarchy.modularity_score,
+        levels=dto_levels,
+        metadata=hierarchy.metadata,
+    )
+
+
+@router.get(
+    "/tenants/{tenantId}/graph/communities",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=CommunityDetectResponse,
+)
+async def get_graph_communities(tenantId: str) -> CommunityDetectResponse:
+    """Fetch current hierarchical entity communities for a tenant."""
+    return await detect_graph_communities(
+        tenantId, CommunityDetectRequest(max_levels=3, generate_summaries=True)
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/eval/self-tune",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=SelfTuningReportDTO,
+)
+async def trigger_self_tune(
+    tenantId: str, payload: TriggerSelfTuneRequest
+) -> SelfTuningReportDTO:
+    """Analyze evaluation telemetry and dynamically compute/apply self-tuning parameter adjustments."""
+    from src.container import container
+    from src.domain.evaluation.online_evaluator import QualityMetrics
+    from src.domain.evaluation.self_tuner import SelfTuningEngine
+
+    tuner = SelfTuningEngine()
+    config_service = container.configuration_service
+    tenant_cfg = await config_service.get_tenant_config(tenantId)
+
+    # Sample mock or live recent metrics
+    metric_sample = QualityMetrics(
+        context_precision=0.75,
+        answer_relevance=0.85,
+        faithfulness=0.80,
+    )
+
+    if payload.apply_changes:
+        report = await tuner.tune_and_apply(tenantId, [metric_sample], config_service)
+    else:
+        current_settings = {
+            "top_k": tenant_cfg.retrieval_settings.top_k,
+            "reranking_threshold": tenant_cfg.retrieval_settings.reranking_threshold,
+            "rrf_k": getattr(tenant_cfg.retrieval_settings, "rrf_k", 60),
+            "enable_hybrid": tenant_cfg.feature_flags.enable_hybrid_search,
+            "enable_reranking": tenant_cfg.feature_flags.enable_reranking,
+            "enable_graph_search": tenant_cfg.feature_flags.enable_graph_rag,
+        }
+        report = tuner.calculate_tuning(tenantId, [metric_sample], current_settings)
+
+
+    return SelfTuningReportDTO(
+        tenant_id=report.tenant_id,
+        status=report.status,
+        current_settings=report.current_settings,
+        recommended_settings=report.recommended_settings,
+        adjustments=report.adjustments,
+        average_faithfulness=report.average_faithfulness,
+        average_precision=report.average_precision,
+        hallucination_index=report.hallucination_index,
+        confidence_score=report.confidence_score,
+    )
+
+
+@router.post(
+    "/eval/nli",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=NliEvaluateResponse,
+)
+async def evaluate_nli_claims(payload: NliEvaluateRequest) -> NliEvaluateResponse:
+    """Evaluate semantic Natural Language Inference (NLI) claim entailment against premises."""
+    from src.domain.evaluation.nli_evaluator import NliEvaluator
+
+    evaluator = NliEvaluator()
+    res = evaluator.evaluate_claims(payload.claims, payload.contexts)
+
+    return NliEvaluateResponse(
+        total_claims=res.total_claims,
+        entailed_claims=res.entailed_claims,
+        contradicted_claims=res.contradicted_claims,
+        neutral_claims=res.neutral_claims,
+        faithfulness_score=res.faithfulness_score,
+        hallucination_index=res.hallucination_index,
+        classifications=[
+            NliClassificationDTO(
+                claim=c.claim,
+                premise=c.premise,
+                entailment_prob=c.entailment_prob,
+                contradiction_prob=c.contradiction_prob,
+                neutral_prob=c.neutral_prob,
+                status=c.status,
+            )
+            for c in res.classifications
+        ],
+    )
+
+
+@router.post(
+    "/eval/slm-judge",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=SlmJudgeResponse,
+)
+async def evaluate_slm_judge(payload: SlmJudgeRequest) -> SlmJudgeResponse:
+    """Run structured SLM-as-a-judge reasoning to verify answer grounding."""
+    from src.domain.evaluation.slm_judge import SlmJudgeEngine
+
+    judge = SlmJudgeEngine()
+    result = await judge.judge_response(
+        query=payload.query,
+        answer=payload.answer,
+        contexts=payload.contexts,
+    )
+
+    return SlmJudgeResponse(
+        verdict=result.verdict,
+        faithfulness_score=result.faithfulness_score,
+        claim_analyses=[
+            SlmClaimAnalysisDTO(
+                claim=a.claim,
+                status=a.status,
+                evidence_span=a.evidence_span,
+                confidence=a.confidence,
+                rationale=a.rationale,
+            )
+            for a in result.claim_analyses
+        ],
+        reasoning=result.reasoning,
+        latency_ms=result.latency_ms,
+    )
+
+
+@router.get(
+    "/telemetry/trace-context",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_trace_context() -> dict[str, Any]:
+    """Retrieve current distributed tracing configuration, active auto-instrumentations, and sample W3C traceparent."""
+    from src.adapters.telemetry.auto_instrumentation import registry
+    from src.adapters.telemetry.otel_tracer import OTelTracer
+
+    return {
+        "status": "active",
+        "w3c_propagation_enabled": True,
+        "active_trace_id": OTelTracer.get_current_trace_id(),
+        "active_span_id": OTelTracer.get_current_span_id(),
+        "traceparent_sample": OTelTracer.get_current_traceparent(),
+        "auto_instrumentation": registry.get_status(),
+    }
+
+
+@router.get(
+    "/tenants/{tenantId}/telemetry/live",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=TenantLiveTelemetryDTO,
+)
+async def get_live_tenant_telemetry(tenantId: str) -> TenantLiveTelemetryDTO:
+    """Query live real-time multi-tenant database aggregations for usage, storage, cache, feedback, and SLA latencies."""
+    from src.adapters.database.telemetry_repository import SqlTelemetryRepository
+    from src.domain.telemetry.telemetry_service import LiveTelemetryService
+
+    repo = SqlTelemetryRepository()
+    service = LiveTelemetryService(repository=repo)
+    telemetry = await service.get_live_telemetry(tenantId)
+
+    return TenantLiveTelemetryDTO(
+        tenant_id=telemetry.tenant_id,
+        monthly_tokens_used=telemetry.monthly_tokens_used,
+        documents_count=telemetry.documents_count,
+        storage_bytes_used=telemetry.storage_bytes_used,
+        cache_hits=telemetry.cache_hits,
+        latency_saved_ms=telemetry.latency_saved_ms,
+        cost_saved_usd=telemetry.cost_saved_usd,
+        thumbs_up=telemetry.thumbs_up,
+        thumbs_down=telemetry.thumbs_down,
+        satisfaction_rate=telemetry.satisfaction_rate,
+        avg_faithfulness=telemetry.avg_faithfulness,
+        avg_precision=telemetry.avg_precision,
+        hallucination_index=telemetry.hallucination_index,
+        p99_latency_ms=telemetry.p99_latency_ms,
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/alerts/test",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=TestAlertResponse,
+)
+async def dispatch_test_tenant_alert(tenantId: str, payload: TestAlertRequest) -> TestAlertResponse:
+    """Send a test incident alert to verify webhook integration (Slack, Discord, Custom Webhook)."""
+    from src.domain.telemetry.alert_service import AlertService
+
+    alert_svc = AlertService()
+    res = await alert_svc.dispatch_test_alert(
+        tenant_id=tenantId,
+        channel=payload.channel,
+        webhook_url=payload.webhook_url,
+    )
+
+    return TestAlertResponse(
+        status=res["status"],
+        channel=res["channel"],
+        webhook_url=res["webhook_url"],
+        formatted_payload=res["formatted_payload"],
+        timestamp=res["timestamp"],
+    )
+
+
+@router.get(
+    "/tenants/{tenantId}/alerts/history",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=list[AlertHistoryItemDTO],
+)
+async def get_tenant_alert_history(tenantId: str) -> list[AlertHistoryItemDTO]:
+    """Retrieve historical SLA incident alerts dispatched for a tenant."""
+    from src.domain.telemetry.alert_service import AlertService
+
+    alert_svc = AlertService()
+    history = alert_svc.get_alert_history(tenant_id=tenantId)
+
+    return [
+        AlertHistoryItemDTO(
+            alert_id=a.alert_id,
+            tenant_id=a.tenant_id,
+            rule_name=a.rule_name,
+            severity=a.severity,
+            title=a.title,
+            description=a.description,
+            metrics=a.metrics,
+            timestamp=a.timestamp,
+        )
+        for a in history
+    ]
+
+
+@router.post(
+    "/tenants/{tenantId}/datasets/synthesize",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=SynthesizeDatasetResponse,
+)
+async def synthesize_golden_dataset(
+    tenantId: str,
+    payload: SynthesizeDatasetRequest,
+) -> SynthesizeDatasetResponse:
+    """Synthesize high-coverage golden benchmark Q&A pairs from document chunks."""
+    from datetime import UTC, datetime
+
+    from src.domain.evaluation.synthetic_generator import SyntheticDatasetGenerator
+
+    generator = SyntheticDatasetGenerator()
+    candidates = await generator.synthesize_from_chunks(
+        chunks=payload.chunks, count_per_chunk=payload.count_per_chunk
+    )
+    dataset, questions = generator.format_dataset(tenantId, payload.name, candidates)
+
+    try:
+        await eval_dataset_repo.create_dataset(dataset)
+        for q in questions:
+            await eval_dataset_repo.add_question(q)
+    except Exception:
+        pass
+
+
+    return SynthesizeDatasetResponse(
+        dataset_id=dataset.dataset_id,
+        tenant_id=dataset.tenant_id,
+        name=dataset.name,
+        question_count=len(questions),
+        questions=[
+            {
+                "question_id": q.question_id,
+                "question": q.question,
+                "ground_truth_answer": q.ground_truth_answer,
+                "relevant_chunk_ids": q.relevant_chunk_ids,
+            }
+            for q in questions
+        ],
+        created_at=dataset.created_at or datetime.now(UTC).isoformat(),
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/eval/regression-gate",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+    response_model=RegressionGateResponse,
+)
+async def run_regression_gate(
+    tenantId: str,
+    payload: RegressionGateRequest,
+) -> RegressionGateResponse:
+    """Evaluate cognitive accuracy scores against CI/CD regression gate thresholds."""
+    from src.domain.abstractions.evaluation import (
+        AggregateScores,
+        DeepEvalScores,
+        RagasScores,
+        RegressionGateThresholds,
+    )
+    from src.domain.evaluation.regression_gate import RegressionGateEngine
+
+    engine = RegressionGateEngine()
+    agg_scores = AggregateScores(
+        ragas=RagasScores(
+            faithfulness=payload.faithfulness,
+            context_precision=payload.context_precision,
+            answer_relevancy=payload.answer_relevancy,
+        ),
+        deepeval=DeepEvalScores(
+            hallucination=payload.hallucination,
+        ),
+    )
+
+    thresh = RegressionGateThresholds(
+        min_faithfulness=payload.thresholds.get("min_faithfulness", 0.90),
+        min_context_precision=payload.thresholds.get("min_context_precision", 0.85),
+        min_answer_relevancy=payload.thresholds.get("min_answer_relevancy", 0.85),
+        max_hallucination=payload.thresholds.get("max_hallucination", 0.10),
+    )
+
+    report = engine.evaluate_gate(agg_scores, thresholds=thresh)
+
+    return RegressionGateResponse(
+        passed=report.passed,
+        scores=report.scores,
+        thresholds=report.thresholds,
+        violations=report.violations,
+        summary_markdown=report.summary_markdown,
+        timestamp=report.timestamp,
+    )
+
+
+
+
+

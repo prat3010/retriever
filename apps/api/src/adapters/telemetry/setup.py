@@ -61,13 +61,17 @@ def init_telemetry(app: FastAPI) -> None:
     # 2. Tracing (initialise eagerly to capture startup spans)
     get_tracer()
 
-    # 3. Metrics
+    # 3. Auto-Instrumentation (SQLAlchemy, HTTPX, Celery)
+    from src.adapters.telemetry.auto_instrumentation import registry
+    registry.instrument_all()
+
+    # 4. Metrics
     get_metrics()
 
-    # 4. Middleware
+    # 5. Middleware
     setup_middleware(app)
 
-    # 5. Metrics endpoint (scraped by Prometheus)
+    # 6. Metrics endpoint (scraped by Prometheus)
     @app.get("/metrics", include_in_schema=False)
     async def metrics_endpoint() -> PlainTextResponse:
         from src.adapters.telemetry.prometheus_metrics import PrometheusMetricsRegistry
@@ -77,3 +81,4 @@ def init_telemetry(app: FastAPI) -> None:
         )
 
     logger.info("telemetry_initialised", environment=settings.ENVIRONMENT)
+

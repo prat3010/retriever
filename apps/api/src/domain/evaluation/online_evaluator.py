@@ -100,9 +100,12 @@ class OnlineEvaluator:
 class OnlineHallucinationEvaluator:
     """Online hallucination and precision evaluator for container dependency injection."""
 
-    def __init__(self, repository: Any = None) -> None:
+    def __init__(self, repository: Any = None, config_service: Any = None) -> None:
         self.repository = repository
+        self.config_service = config_service
         self.evaluator = OnlineEvaluator()
+        from src.domain.evaluation.self_tuner import SelfTuningEngine
+        self.self_tuner = SelfTuningEngine()
 
     def evaluate_response(
         self,
@@ -160,6 +163,27 @@ class OnlineHallucinationEvaluator:
             "claims_count": len(claims),
         }
 
+        # Closed-loop self-tuning trigger if alert fired and config service is available
+        if is_alert and self.config_service is not None:
+            try:
+                metric = QualityMetrics(
+                    context_precision=precision,
+                    answer_relevance=0.9 if len(answer) > 30 else 0.5,
+                    faithfulness=faithfulness,
+                )
+                tune_report = await self.self_tuner.tune_and_apply(
+                    tenant_id=tenant_id,
+                    recent_metrics=[metric],
+                    config_service=self.config_service,
+                )
+                payload["self_tuning"] = {
+                    "status": tune_report.status,
+                    "adjustments": tune_report.adjustments,
+                    "recommended": tune_report.recommended_settings,
+                }
+            except Exception:
+                pass
+
         if self.repository and hasattr(self.repository, "save_evaluation"):
             try:
                 await self.repository.save_evaluation(tenant_id, session_id, payload)
@@ -170,12 +194,10 @@ class OnlineHallucinationEvaluator:
 
 
 def extract_claims(text: str) -> list[str]:
-    """Extract individual sentence claims from response text."""
-    if not text:
-        return []
-    import re
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    return [s.strip() for s in sentences if len(s.strip()) > 5]
+    """Extract individual sentence claims from response text using NliEvaluator."""
+    from src.domain.evaluation.nli_evaluator import NliEvaluator
+    evaluator = NliEvaluator()
+    return evaluator.extract_claims(text)
 
 
 def calculate_context_precision(query_or_retrieved: Any, contexts: list[str]) -> float:
@@ -194,15 +216,16 @@ def calculate_context_precision(query_or_retrieved: Any, contexts: list[str]) ->
 
 
 def calculate_faithfulness(claims: list[str], context_chunks: list[str]) -> float:
-    """Calculate ratio of verified claims grounded in context chunks."""
+    """Calculate semantic faithfulness using Natural Language Inference (NLI)."""
     if not claims:
         return 1.0
     if not context_chunks:
         return 0.0
-    context_text = " ".join(context_chunks).lower()
-    supported = sum(
-        1 for claim in claims if any(word in context_text for word in claim.lower().split() if len(word) > 3)
-    )
-    return round(supported / len(claims), 4)
+
+    from src.domain.evaluation.nli_evaluator import NliEvaluator
+    nli = NliEvaluator()
+    res = nli.evaluate_claims(claims, context_chunks)
+    return res.faithfulness_score
+
 
 

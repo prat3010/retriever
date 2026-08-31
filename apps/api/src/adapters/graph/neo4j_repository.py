@@ -211,8 +211,44 @@ class Neo4jGraphRepository(BaseGraphRepository):
             logger.error(f"Neo4j delete_triple failed ({err}). Delegating to fallback.")
             return await self.fallback_repo.delete_triple(tenant_id, triple_id)
 
+    async def get_all_triples(self, tenant_id: str, limit: int = 1000) -> list[EntityTriple]:
+        """Fetch all entity relationship triples for a tenant."""
+        driver = await self._get_driver()
+        if not driver:
+            return await self.fallback_repo.get_all_triples(tenant_id, limit)
+
+        try:
+            cypher = """
+            MATCH (s:Entity {tenant_id: $tenant_id})-[r:RELATED {tenant_id: $tenant_id}]->(o:Entity {tenant_id: $tenant_id})
+            RETURN s.name AS subject, r.predicate AS predicate, o.name AS object,
+                   r.triple_id AS triple_id, r.chunk_id AS chunk_id, r.document_id AS document_id,
+                   r.confidence AS confidence
+            LIMIT $limit
+            """
+            triples: list[EntityTriple] = []
+            async with driver.session() as session:
+                result = await session.run(cypher, tenant_id=tenant_id, limit=limit)
+                records = await result.data()
+                for rec in records:
+                    triples.append(
+                        EntityTriple(
+                            triple_id=rec.get("triple_id"),
+                            subject=rec["subject"],
+                            predicate=rec["predicate"],
+                            object=rec["object"],
+                            chunk_id=rec.get("chunk_id"),
+                            document_id=rec.get("document_id"),
+                            confidence=float(rec.get("confidence", 1.0)),
+                        )
+                    )
+            return triples
+        except Exception as err:
+            logger.error(f"Neo4j get_all_triples failed ({err}). Delegating to fallback.")
+            return await self.fallback_repo.get_all_triples(tenant_id, limit)
+
     async def close(self):
         """Close Neo4j driver connection."""
         if self._driver:
             await self._driver.close()
             self._driver = None
+

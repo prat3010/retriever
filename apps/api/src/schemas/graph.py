@@ -1,5 +1,7 @@
 """DTO Schemas for Knowledge Graph Admin Endpoints."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from src.domain.abstractions.graph import EntityTriple
@@ -45,3 +47,35 @@ class GraphQueryResponse(BaseModel):
     max_hops: int
     triples: list[EntityTriple]
     connected_entities: list[str]
+
+
+class CommunityDetectRequest(BaseModel):
+    """Request model to trigger Leiden community detection for a tenant."""
+
+    max_levels: int = Field(default=3, ge=1, le=5, description="Maximum hierarchy levels")
+    resolution: float = Field(default=1.0, ge=0.1, le=5.0, description="Leiden modularity resolution")
+    min_community_size: int = Field(default=1, ge=1, description="Minimum entities per community")
+    generate_summaries: bool = Field(default=True, description="Whether to synthesize executive summaries")
+
+
+class CommunitySummaryDTO(BaseModel):
+    """DTO representing a single detected community cluster."""
+
+    community_id: str
+    level: int
+    title: str
+    entities: list[str]
+    triple_count: int
+    weight: float
+    summary: str
+
+
+class CommunityDetectResponse(BaseModel):
+    """Response model returning detected hierarchical communities."""
+
+    tenant_id: str
+    total_communities: int
+    modularity_score: float
+    levels: dict[int, list[CommunitySummaryDTO]]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+

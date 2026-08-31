@@ -72,16 +72,18 @@
 | **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Completed** (Phase G) |
 | **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Completed** (Phase G) |
 | **M68** | Unified Persistent Copilot (Retriever RAG Stream) & Sprint Feeds | Connect dashboard copilot to private tenant session & live commit feed | **Completed** (Phase G) |
-| **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Active Next (Phase H)** |
-| **M70** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Planned (Phase H)** |
-| **M71** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Planned (Phase H)** |
-| **M72** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Planned (Phase H)** |
-| **M73** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Planned (Phase H)** |
-| **M74** | Semantic NLI & SLM Online Hallucination Engine | Replace keyword matching with DeBERTa Cross-Encoder / Ollama SLM judge in Celery worker | **Planned (Phase I)** |
-| **M75** | Full-Stack OpenTelemetry Auto-Instrumentation | Auto-instrument SQLAlchemy, HTTPX, Celery and propagate W3C traceparent headers | **Planned (Phase I)** |
-| **M76** | Real-Time Telemetry & SLA Webhook Alerting Engine | Live SQL/Redis telemetry queries and proactive Slack/Discord/Webhook alert dispatcher | **Planned (Phase I)** |
-| **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Planned (Phase I)** |
-| **M78** | Visual Grounding Diff & Synchronizer Observability | Claim-by-claim visual grounding highlighter and local Synchronizer observability cockpit | **Planned (Phase I)** |
+| **M69** | Pre-Chunk Contextual Retrieval Ingestion Engine | Prepend 50-word document context headers to chunks prior to vector embedding (Anthropic method) | **Completed** (Phase H) |
+| **M70** | Late-Interaction (ColBERT) Token-Level Reranker | Implement token-level late interaction reranking adapter for high-precision code & technical term search | **Completed** (Phase H) |
+| **M71** | Corrective RAG (CRAG) & Agentic Reflection Loop | Autonomous reflection loop evaluating retrieval confidence and triggering web search fallback | **Completed** (Phase H) |
+| **M72** | Interactive RLM Python REPL Sandbox Studio | Productize `/v1/rlm` into a dedicated Client SaaS Studio workspace for programmatic document vault traversal | **Completed** (Phase H) |
+| **M73** | GraphRAG Leiden Community Detection & Self-Tuning RAG | Hierarchical community entity summaries & automated pipeline tuning based on M50 evaluation telemetry | **Completed** (Phase H) |
+| **M74** | Semantic NLI & SLM Online Hallucination Engine | Replace keyword matching with DeBERTa Cross-Encoder / Ollama SLM judge in Celery worker | **Completed** (Phase I) |
+| **M75** | Full-Stack OpenTelemetry Auto-Instrumentation | Auto-instrument SQLAlchemy, HTTPX, Celery and propagate W3C traceparent headers | **Completed** (Phase I) |
+| **M76** | Real-Time Telemetry & SLA Webhook Alerting Engine | Live SQL/Redis telemetry queries and proactive Slack/Discord/Webhook alert dispatcher | **Completed** (Phase I) |
+| **M77** | Synthetic Golden Dataset Generation & CI/CD Gate | Auto-generate benchmark Q&A pairs from documents and enforce GitHub Actions regression gate | **Completed** (Phase I) |
+| **M78** | Visual Grounding Diff & Retriever Admin Observability | Claim-by-claim visual grounding highlighter and dedicated Retriever Admin observability cockpit | **Active Next (Phase I)** |
+
+
 | **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Scikit-Learn TF-IDF vectorizer + PyTorch MultipleNegativesRankingLoss LoRA fine-tuning | **Planned (Phase J)** |
 | **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Planned (Phase J)** |
 | **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Planned (Phase J)** |

@@ -161,3 +161,27 @@ class PgGraphRepository(BaseGraphRepository):
             res = await session.execute(stmt)
             await session.commit()
             return (res.rowcount or 0) > 0
+
+    async def get_all_triples(self, tenant_id: str, limit: int = 1000) -> list[EntityTriple]:
+        """Fetch all entity relationship triples for a tenant."""
+        async with tenant_session(tenant_id=tenant_id) as session:
+            stmt = (
+                select(GraphTripleDb)
+                .where(GraphTripleDb.tenant_id == uuid.UUID(tenant_id))
+                .limit(limit)
+            )
+            res = await session.execute(stmt)
+            rows = res.scalars().all()
+            return [
+                EntityTriple(
+                    triple_id=str(r.triple_id),
+                    subject=r.subject,
+                    predicate=r.predicate,
+                    object=r.object,
+                    chunk_id=str(r.chunk_id) if r.chunk_id else None,
+                    confidence=float(r.confidence) if r.confidence is not None else 1.0,
+                    metadata=dict(r.meta_data) if r.meta_data else {},
+                )
+                for r in rows
+            ]
+

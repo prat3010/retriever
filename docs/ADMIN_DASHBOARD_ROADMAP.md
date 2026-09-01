@@ -75,21 +75,28 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 ### 4. 🏢 `/tenants` — Platform Tenant Directory
 * Live searchable table of all customer workspaces with status indicators (`active`, `suspended`, `pending`).
 
-### 5. 🔍 `/tenants/[id]` — 12-Tab Tenant Control Cockpit
+### 5. 🔍 `/tenants/[id]` — 16-Tab Tenant Control Cockpit
 * **Tab 1: Overview:** Workspace UUID, tier, creation date, and **Instant Kill-Switch** buttons (**Suspend Workspace** / **Re-activate**). Suspending instantly blocks all API requests for that tenant.
 * **Tab 2: Documents:** Raw file grid with processing status (`PENDING`, `INDEXED`, `FAILED`), file upload, delete, and **Dual Target Engine Embedding**:
   * **⚡ Laptop Button:** Runs parsing & vector embedding on your local laptop via Ollama (`http://localhost:11434`), fetching file bytes from Oracle VM to preserve low VPS RAM.
   * **☁️ Cloud Button:** Runs embedding directly on the Oracle Cloud VPS.
-* **Tab 3: Users:** List, register, edit roles (`admin`, `developer`, `client`), or deactivate tenant user profiles.
-* **Tab 4: API Keys:** Issue new token pairs, inspect key prefixes (`ret_live_...`), and instantly revoke key hashes.
-* **Tab 5: System Prompts:** Custom system prompt editor (e.g., *"You are an expert contract lawyer..."*), variable substitution, and preview mode without incurring LLM cost.
-* **Tab 6: Sandbox:** Interactive administrative RAG chat window to test tenant vector indexes in real-time.
-* **Tab 7: Knowledge Graph (GraphRAG):** Hardware capabilities banner (`oracle_vm_lean` vs `macbook`), storage engine toggle (PostgreSQL SQL vs Neo4j Cypher), multi-hop entity graph inspector (1–5 hops), and triple deletion.
-* **Tab 8: Configuration:** Provider selector (12 AI Providers), `top_k`, reranking thresholds, OCR toggles, Safety Guardrails (Llama Guard 3 policy toggle & block log), Multi-Agent Consensus rounds, RLM REPL sandbox limits, and Context Compression sliders.
-* **Tab 9: Hallucinations & Quality (M50):** Real-time Faithfulness & Context Relevance analytics cockpit, unfaithful response log table with diff inspector, and min-faithfulness threshold slider.
-* **Tab 10: Compliance & Sovereignty (M51):** PII anonymization rule toggles, One-Click GDPR Hard Purge trigger button, Data Retention SLA scheduler, and PII audit log.
-* **Tab 11: Billing & Payment Ledger (M52):** Commercial transaction ledger table (Stripe/Razorpay/PhonePe), active quota allocation meters, and manual deposit Checkout Link Generator.
-* **Tab 12: n8n & Workflow Automation (M53):** Outbound n8n Webhook URL configuration, Test Webhook Ping trigger, copyable n8n OpenAPI spec JSON, and inbound webhook log viewer.
+* **Tab 3: 🌌 Vector Space (High-Dimensional Manifold Visualizer):** PCA / t-SNE / UMAP 2D/3D manifold coordinate projections, topic clusters, Silhouette coefficient quality score ($S$), PCA variance retained indicators, and **Dynamic Query Vector Projection** to simulate where test search queries embed in vector space.
+* **Tab 4: 🧬 LoRA Adapters (Fine-Tuning Hub):** Dedicated Low-Rank Adaptation cockpit with contrastive pair training, rank selection ($r \in \{4, 8, 16\}$), epochs, loss tracking, and 1-click active serving deployment.
+* **Tab 5: 🧠 Cognitive Labs (RLM & Multi-Agent Consensus):**
+  * **🐍 RLM Python REPL:** Recursive document decomposition, context minimization, and sandboxed Python AST REPL execution traces with stdout and return values.
+  * **🤝 Multi-Agent Consensus Calibration:** Generator vs Critic/Auditor reflection loop with fact-checking iterations and unsupported claims breakdown.
+* **Tab 6: Knowledge Graph (GraphRAG):** Hardware capabilities banner (`oracle_vm_lean` vs `macbook`), storage engine toggle (PostgreSQL SQL vs Neo4j Cypher), multi-hop entity graph inspector (1–5 hops), and triple deletion.
+* **Tab 7: Sandbox:** Interactive administrative RAG chat window to test tenant vector indexes in real-time.
+* **Tab 8: Users:** List, register, edit roles (`admin`, `developer`, `client`), or deactivate tenant user profiles.
+* **Tab 9: API Keys:** Issue new token pairs, inspect key prefixes (`ret_live_...`), and instantly revoke key hashes.
+* **Tab 10: System Prompts:** Custom system prompt editor (e.g., *"You are an expert contract lawyer..."*), variable substitution, and preview mode without incurring LLM cost.
+* **Tab 11: Configuration:** Provider selector (12 AI Providers), `top_k`, reranking thresholds, semantic cache threshold slider ($\tau \in [0.70, 0.99]$), OCR toggles, and Safety Guardrails.
+* **Tab 12: 🛰️ Observability & Telemetry:** Real-time token consumption, latency saved, and 1-click **"Purge Semantic Cache"** button.
+* **Tab 13: 📈 Hallucinations & Quality:** Real-time Faithfulness & Context Relevance analytics cockpit, unfaithful response log table with diff inspector, and min-faithfulness threshold slider.
+* **Tab 14: 🛡️ Compliance & Sovereignty:** PII anonymization rule toggles, One-Click GDPR Hard Purge trigger button, Data Retention SLA scheduler, and PII audit log.
+* **Tab 15: 💳 Billing & Payment Ledger:** Commercial transaction ledger table (Stripe/Razorpay/PhonePe), active quota allocation meters, and manual deposit Checkout Link Generator.
+* **Tab 16: ⚡ n8n & Workflow Automation:** Outbound n8n Webhook URL configuration, Test Webhook Ping trigger, copyable n8n OpenAPI spec JSON, and inbound webhook log viewer.
+
 
 ### 6. 🛠️ `/settings` — Global Default Configuration Editor
 * Set platform-wide defaults for LLM models, embedding dimensions (768, 1536, 3072), default vector distance metrics (Cosine/Euclidean), and default security policies.

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class CriticEvaluation(BaseModel):
@@ -17,7 +17,7 @@ class CriticEvaluation(BaseModel):
 class ConsensusRequest(BaseModel):
     """Input payload to trigger a Multi-Agent Consensus reflection workflow."""
 
-    tenant_id: str = Field(..., description="Target multi-tenant workspace ID")
+    tenant_id: str = Field(default="", description="Target multi-tenant workspace ID")
     prompt: str = Field(..., description="High-stakes user query or prompt")
     generator_provider_name: str | None = Field(
         default=None, description="Optional target LLM provider name for Generator role"
@@ -28,6 +28,18 @@ class ConsensusRequest(BaseModel):
     max_reflection_rounds: int = Field(
         default=2, ge=1, le=5, description="Maximum critique and revision passes allowed"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_request(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "prompt" not in data and "query" in data:
+                data["prompt"] = data["query"]
+            if "generator_provider_name" not in data and "generator_provider" in data:
+                data["generator_provider_name"] = data["generator_provider"]
+            if "critic_provider_name" not in data and "critic_provider" in data:
+                data["critic_provider_name"] = data["critic_provider"]
+        return data
 
 
 class ConsensusResult(BaseModel):
@@ -41,3 +53,28 @@ class ConsensusResult(BaseModel):
     approved_on_round: int
     reflection_history: list[dict[str, Any]] = Field(default_factory=list)
     execution_time_ms: float
+    answer: str | None = None
+    generator_model: str | None = None
+    critic_model: str | None = None
+    iterations: int | None = None
+    consensus_score: float | None = None
+
+    @model_validator(mode="after")
+    def populate_aliases(self) -> "ConsensusResult":
+        if self.answer is None:
+            self.answer = self.final_response
+        if self.generator_model is None:
+            self.generator_model = self.generator_used
+        if self.critic_model is None:
+            self.critic_model = self.critic_used
+        if self.iterations is None:
+            self.iterations = self.approved_on_round
+        if self.consensus_score is None:
+            if self.reflection_history:
+                last = self.reflection_history[-1]
+                if isinstance(last, dict) and "critique_score" in last:
+                    self.consensus_score = float(last["critique_score"])
+            if self.consensus_score is None:
+                self.consensus_score = 1.0
+        return self
+

@@ -347,6 +347,13 @@ class Container:
         # --- Milestone 81: HDBSCAN Topic Clustering & Knowledge Gap Detection ---
         self._cache["topic_clusterer"] = TopicClusteringAdapter()
 
+        # --- Milestone 82: 2D/3D Embedding Space Projection ---
+        from src.adapters.cognitive.embedding_projection_adapter import (
+            EmbeddingProjectionAdapter,
+        )
+
+        self._cache["embedding_projector"] = EmbeddingProjectionAdapter()
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -409,5 +416,6 @@ n8n_dispatcher = container.n8n_dispatcher
 contextual_header_generator = container.contextual_header_generator
 colbert_reranker = container.colbert_reranker
 topic_clusterer = container.topic_clusterer
+embedding_projector = container.embedding_projector
 
 

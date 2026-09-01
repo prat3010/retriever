@@ -22,15 +22,11 @@ export function ConfigTab({ tenantId }: Props) {
   const { data: config, isLoading } = useConfig(tenantId);
   const updateConfig = useUpdateConfig(tenantId);
   const { data: loraAdapters } = useLoraAdapters(tenantId);
-  const trainLora = useTrainLoraAdapter(tenantId);
   const activateLora = useActivateLoraAdapter(tenantId);
 
   const [form, setForm] = useState<TenantConfig | null>(null);
   const [customBaseUrl, setCustomBaseUrl] = useState(false);
-  const [isTrainOpen, setIsTrainOpen] = useState(false);
-  const [adapterName, setAdapterName] = useState("SOW & Software Architecture Adapter");
-  const [domainTag, setDomainTag] = useState("software_architecture");
-  const [loraRank, setLoraRank] = useState(8);
+
 
   const detectedProvider = useMemo(() => {
     if (!form) return undefined;
@@ -274,80 +270,38 @@ export function ConfigTab({ tenantId }: Props) {
 
           <div className="space-y-2 pt-2 border-t">
             <div className="flex justify-between items-center">
+              <Label>Semantic Cache Threshold (τ)</Label>
+              <Badge variant="secondary" className="font-mono text-xs">
+                τ = {form.retrieval_settings.semantic_cache_threshold ?? 0.88}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Minimum cosine similarity between previous query vectors and current request to trigger instant cache hits.
+            </p>
+            <input
+              type="range"
+              min="0.70"
+              max="0.99"
+              step="0.01"
+              className="w-full accent-primary cursor-pointer"
+              value={form.retrieval_settings.semantic_cache_threshold ?? 0.88}
+              onChange={(e) => handleChange("retrieval_settings.semantic_cache_threshold", parseFloat(e.target.value))}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+              <span>0.70 (Aggressive Cache Hits)</span>
+              <span>0.88 (Recommended)</span>
+              <span>0.99 (Near Exact Query Only)</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex justify-between items-center">
               <div>
                 <Label>Active LoRA Domain Adapter</Label>
                 <p className="text-[11px] text-muted-foreground">
-                  Residual projection layer calibrating local embeddings to technical SOW and architecture terms.
+                  Active projection matrix (manage & train in the dedicated LoRA Adapters tab).
                 </p>
               </div>
-              <Dialog open={isTrainOpen} onOpenChange={setIsTrainOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    ⚡ Train New Adapter
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="text-base">Train Contrastive LoRA Domain Adapter</DialogTitle>
-                    <DialogDescription className="text-xs">
-                      Runs MultipleNegativesRankingLoss on domain contrastive pairs to calibrate local vector representations.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 pt-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="adName" className="text-xs">Adapter Name</Label>
-                      <Input
-                        id="adName"
-                        value={adapterName}
-                        onChange={(e) => setAdapterName(e.target.value)}
-                        placeholder="e.g. SOW Architecture Adapter"
-                        className="text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="adDomain" className="text-xs">Domain Tag</Label>
-                      <Input
-                        id="adDomain"
-                        value={domainTag}
-                        onChange={(e) => setDomainTag(e.target.value)}
-                        placeholder="e.g. software_architecture"
-                        className="text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="adRank" className="text-xs">LoRA Rank (r)</Label>
-                      <Select value={String(loraRank)} onValueChange={(v) => setLoraRank(Number(v))}>
-                        <SelectTrigger id="adRank" className="text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="4">r = 4 (Ultra Lightweight)</SelectItem>
-                          <SelectItem value="8">r = 8 (Recommended)</SelectItem>
-                          <SelectItem value="16">r = 16 (High Capacity)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button
-                      className="w-full text-xs mt-2"
-                      disabled={trainLora.isPending}
-                      onClick={() => {
-                        trainLora.mutate(
-                          { name: adapterName, domain_tag: domainTag, rank: loraRank, epochs: 15, learning_rate: 0.001 },
-                          {
-                            onSuccess: (res) => {
-                              toast.success(`Adapter '${res.name}' trained with loss ${res.loss_score}`);
-                              setIsTrainOpen(false);
-                            },
-                            onError: (err) => toast.error(`Training failed: ${err.message}`),
-                          }
-                        );
-                      }}
-                    >
-                      {trainLora.isPending ? "Training LoRA Layer..." : "Start Calibration Run"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
 
             <Select
@@ -377,6 +331,7 @@ export function ConfigTab({ tenantId }: Props) {
           </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>

@@ -14,6 +14,9 @@ import { TenantDocumentsTab } from "@/components/tenant-documents";
 import { TenantPromptsTab } from "@/components/tenant-prompts";
 import { TenantSandboxTab } from "@/components/tenant-sandbox";
 import { TenantGraphTab } from "@/components/tenant-graph";
+import { TenantVectorSpaceTab } from "@/components/tenant-vector-space";
+import { TenantLoraTab } from "@/components/tenant-lora";
+import { TenantCognitiveLabTab } from "@/components/tenant-cognitive-lab";
 import { TenantHallucinationsTab } from "@/components/tenant-hallucinations";
 import { TenantTelemetryTab } from "@/components/tenant-telemetry";
 import { TenantComplianceTab } from "@/components/tenant-compliance";
@@ -56,11 +59,14 @@ export default function TenantDetailPage() {
           <TabsList aria-label="Tenant workspace sections" className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="vector-space">🌌 Vector Space</TabsTrigger>
+            <TabsTrigger value="lora">🧬 LoRA Adapters</TabsTrigger>
+            <TabsTrigger value="cognitive">🧠 Cognitive Labs</TabsTrigger>
+            <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
+            <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
-            <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
-            <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
             <TabsTrigger value="config">Config</TabsTrigger>
             <TabsTrigger value="observability">🛰️ Observability</TabsTrigger>
             <TabsTrigger value="hallucinations">📈 Hallucinations</TabsTrigger>
@@ -73,6 +79,30 @@ export default function TenantDetailPage() {
             <OverviewTab tenant={tenant} tenantId={tenantId} />
           </TabsContent>
 
+          <TabsContent value="documents">
+            <TenantDocumentsTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="vector-space">
+            <TenantVectorSpaceTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="lora">
+            <TenantLoraTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="cognitive">
+            <TenantCognitiveLabTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="graph">
+            <TenantGraphTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="sandbox">
+            <TenantSandboxTab tenantId={tenantId} />
+          </TabsContent>
+
           <TabsContent value="users">
             <UsersTab tenantId={tenantId} />
           </TabsContent>
@@ -81,33 +111,30 @@ export default function TenantDetailPage() {
             <ApiKeysTab tenantId={tenantId} />
           </TabsContent>
 
-          <TabsContent value="documents">
-            <TenantDocumentsTab tenantId={tenantId} />
-          </TabsContent>
           <TabsContent value="prompts">
             <TenantPromptsTab tenantId={tenantId} />
           </TabsContent>
-          <TabsContent value="sandbox">
-            <TenantSandboxTab tenantId={tenantId} />
-          </TabsContent>
-          <TabsContent value="graph">
-            <TenantGraphTab tenantId={tenantId} />
-          </TabsContent>
+
           <TabsContent value="config">
             <ConfigTab tenantId={tenantId} />
           </TabsContent>
+
           <TabsContent value="observability">
             <TenantTelemetryTab tenantId={tenantId} />
           </TabsContent>
+
           <TabsContent value="hallucinations">
             <TenantHallucinationsTab tenantId={tenantId} />
           </TabsContent>
+
           <TabsContent value="compliance">
             <TenantComplianceTab tenantId={tenantId} />
           </TabsContent>
+
           <TabsContent value="billing">
             <TenantBillingTab tenantId={tenantId} />
           </TabsContent>
+
           <TabsContent value="workflow">
             <TenantWorkflowTab tenantId={tenantId} />
           </TabsContent>
@@ -116,3 +143,4 @@ export default function TenantDetailPage() {
     </div>
   );
 }
+

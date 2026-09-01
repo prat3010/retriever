@@ -147,6 +147,13 @@ class SemanticCacheProvider(ABC):
     ) -> None:
         pass
 
+    async def purge_tenant_cache(self, tenant_id: str) -> int:
+        return 0
+
+    async def get_tenant_cache_stats(self, tenant_id: str) -> dict[str, Any]:
+        return {"total_vectors": 0}
+
+
 
 class SelfQueryProvider(ABC):
 

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, status
 
-from src.adapters.api.security import verify_admin_key
+from src.adapters.api.security import verify_tenant_or_admin
 from src.container import container
 from src.domain.rlm.abstractions import RlmAnalysisRequest, RlmAnalysisResult
 
@@ -12,9 +12,10 @@ router = APIRouter(prefix="/v1", tags=["RLM Analytical Engine"])
 @router.post(
     "/tenants/{tenantId}/rlm/analyze",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_admin_key)],
+    dependencies=[Depends(verify_tenant_or_admin)],
     response_model=RlmAnalysisResult,
 )
+
 async def analyze_rlm_workflow(
     tenantId: str,
     request: RlmAnalysisRequest,

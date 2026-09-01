@@ -1,10 +1,13 @@
+from typing import Any
+
 import openai
-from fastapi import APIRouter, Depends, Security, status
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from src.adapters.api.security import (
     verify_admin_key,
     verify_scopes,
     verify_tenant_isolation,
+    verify_tenant_or_admin,
 )
 from src.config import settings
 from src.container import (
@@ -19,15 +22,25 @@ from src.domain.clustering.abstractions import (
     TopicClusteringRequest,
     TopicClusteringResponse,
 )
+from src.domain.projection.abstractions import (
+    EmbeddingProjectionRequest,
+    EmbeddingProjectionResponse,
+)
 from src.schemas.admin import (
     ApiKeyCreatedResponse,
     CreateApiKeyRequest,
     ValidateKeyRequest,
     ValidateKeyResponse,
 )
+from src.schemas.graph import (
+    GraphQueryRequest,
+    GraphQueryResponse,
+    GraphSummaryResponse,
+)
 from src.schemas.tenant import CreateTenantRequest, TenantListItem
 
 router = APIRouter(prefix="/v1", tags=["Tenants"])
+
 
 
 @router.post(
@@ -225,5 +238,180 @@ async def get_tenant_knowledge_gaps(
         clustering_result=clustering_res,
         chunk_texts=chunk_text_dict,
     )
+
+
+@router.post(
+    "/tenants/{tenantId}/embeddings/project",
+    status_code=status.HTTP_200_OK,
+    response_model=EmbeddingProjectionResponse,
+    dependencies=[Depends(verify_tenant_or_admin)],
+
+)
+async def project_tenant_embeddings(
+    tenantId: str,
+    payload: EmbeddingProjectionRequest | None = None,
+) -> EmbeddingProjectionResponse:
+    """Project high-dimensional embeddings into 2D/3D Cartesian coordinates with topic clusters."""
+    from src.container import document_repository, embedding_projector, topic_clusterer
+
+    req = payload or EmbeddingProjectionRequest()
+    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+
+    chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
+    chunk_texts = [c.content for c, _ in chunks_with_embeddings]
+    document_ids = [c.document_id for c, _ in chunks_with_embeddings]
+    document_titles = [
+        c.metadata.get("file_name", c.metadata.get("title", "Document"))
+        for c, _ in chunks_with_embeddings
+    ]
+    embeddings = [emb for _, emb in chunks_with_embeddings if emb]
+
+    # Pre-cluster to assign topic clusters and labels
+    cluster_ids = None
+    cluster_labels = None
+    if len(chunk_ids) > 0 and len(embeddings) > 0:
+        cluster_res = topic_clusterer.cluster_chunks(
+            tenant_id=tenantId,
+            chunk_ids=chunk_ids,
+            chunk_texts=chunk_texts,
+            embeddings=embeddings,
+            request=TopicClusteringRequest(min_cluster_size=2),
+        )
+        chunk_to_topic = {}
+        for topic in cluster_res.topics:
+            for cid in topic.chunk_ids:
+                chunk_to_topic[cid] = topic.topic_id
+        cluster_ids = [chunk_to_topic.get(cid, -1) for cid in chunk_ids]
+        cluster_labels = {topic.topic_id: topic.label for topic in cluster_res.topics}
+
+    return embedding_projector.project_embeddings(
+        tenant_id=tenantId,
+        chunk_ids=chunk_ids,
+        chunk_texts=chunk_texts,
+        document_ids=document_ids,
+        document_titles=document_titles,
+        embeddings=embeddings,
+        cluster_ids=cluster_ids,
+        cluster_labels=cluster_labels,
+        request=req,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tenant-Scoped Knowledge Graph Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/tenants/{tenantId}/graph",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+    response_model=GraphSummaryResponse,
+)
+async def get_tenant_knowledge_graph_summary(tenantId: str) -> GraphSummaryResponse:
+    """Fetch Knowledge Graph metrics and active storage engine for the tenant."""
+    from src.container import container
+
+    summary = await container.graph_repository.get_graph_summary(tenantId)
+    return GraphSummaryResponse(
+        tenant_id=tenantId,
+        total_triples=summary.get("total_triples", 0),
+        unique_entities=summary.get("unique_entities", 0),
+        storage_engine=summary.get("storage_engine", "postgres"),
+        neo4j_status=summary.get("neo4j_status"),
+    )
+
+
+@router.post(
+    "/tenants/{tenantId}/graph/query",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+    response_model=GraphQueryResponse,
+)
+async def query_tenant_knowledge_graph(tenantId: str, payload: GraphQueryRequest) -> GraphQueryResponse:
+    """Execute recursive multi-hop entity traversal on tenant's knowledge graph."""
+    from src.container import container
+
+    res = await container.graph_repository.search_triples(
+        tenant_id=tenantId,
+        entity=payload.entity,
+        max_hops=payload.max_hops,
+    )
+    return GraphQueryResponse(
+        root_entity=res.root_entity,
+        max_hops=res.max_hops,
+        triples=res.triples,
+        connected_entities=res.connected_entities,
+    )
+
+
+@router.delete(
+    "/tenants/{tenantId}/graph/triples/{tripleId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+)
+async def delete_tenant_knowledge_graph_triple(tenantId: str, tripleId: str) -> dict[str, str]:
+    """Delete an individual triple from tenant's knowledge graph."""
+    from src.container import container
+
+    success = await container.graph_repository.delete_triple(
+        tenant_id=tenantId,
+        triple_id=tripleId,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Triple not found or could not be deleted.",
+        )
+    return {"status": "success", "message": f"Triple {tripleId} deleted."}
+
+
+# ---------------------------------------------------------------------------
+# Tenant-Scoped Semantic Cache Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/tenants/{tenantId}/cache/purge",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+)
+async def purge_tenant_semantic_cache(tenantId: str) -> dict[str, Any]:
+    """Purge all cached search embeddings for the tenant workspace."""
+    from src.container import semantic_cache
+
+    deleted_count = await semantic_cache.purge_tenant_cache(tenantId)
+    return {"status": "success", "purged": True, "deleted_count": deleted_count}
+
+
+@router.get(
+    "/tenants/{tenantId}/cache/stats",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+)
+async def get_tenant_semantic_cache_stats(tenantId: str) -> dict[str, Any]:
+    """Fetch active semantic vector cache statistics for the tenant workspace."""
+    from src.container import semantic_cache
+
+    stats = await semantic_cache.get_tenant_cache_stats(tenantId)
+    return {"status": "success", **stats}
+
+
+# ---------------------------------------------------------------------------
+# Tenant-Scoped Online Evaluation Telemetry
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/tenants/{tenantId}/evaluations/summary",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_or_admin)],
+)
+async def get_tenant_online_evaluation_summary(tenantId: str) -> Any:
+    """Fetch aggregated live evaluation metrics (faithfulness, precision, hallucination index)."""
+    from src.container import online_eval_repo
+
+    return await online_eval_repo.get_online_summary(tenantId)
+
 
 

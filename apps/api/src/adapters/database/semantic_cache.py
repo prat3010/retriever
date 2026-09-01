@@ -80,3 +80,25 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
                     "search_results": results_serializable
                 }
             )
+
+    async def purge_tenant_cache(self, tenant_id: str) -> int:
+        """Permanently delete all cached query embeddings for the specified tenant."""
+        async with engine.begin() as conn:
+            await conn.execute(text("SET LOCAL app.bypass_rls = 'true'"))
+            res = await conn.execute(
+                text("DELETE FROM semantic_cache WHERE tenant_id = :tenant_id"),
+                {"tenant_id": tenant_id},
+            )
+            return res.rowcount or 0
+
+    async def get_tenant_cache_stats(self, tenant_id: str) -> dict[str, int]:
+        """Fetch total active cached vector count for the specified tenant."""
+        async with engine.begin() as conn:
+            await conn.execute(text("SET LOCAL app.bypass_rls = 'true'"))
+            res = await conn.execute(
+                text("SELECT count(*) FROM semantic_cache WHERE tenant_id = :tenant_id AND expires_at > NOW()"),
+                {"tenant_id": tenant_id},
+            )
+            count = res.scalar() or 0
+            return {"total_vectors": int(count)}
+

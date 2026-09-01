@@ -29,15 +29,40 @@ interface EndpointDef {
 }
 
 const ENDPOINTS: Record<string, EndpointDef> = {
+  search: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/search",
+    bodyPlaceholder: JSON.stringify({ query: "architecture specification", limit: 5 }, null, 2),
+  },
+  chat: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/chat",
+    bodyPlaceholder: JSON.stringify({ message: "What are the deliverables defined in the project scope?" }, null, 2),
+  },
+  rlm: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/rlm/analyze",
+    bodyPlaceholder: JSON.stringify({ prompt: "Analyze and synthesize scope risks across all SOW documents", max_depth: 3 }, null, 2),
+  },
+  consensus: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/consensus/generate",
+    bodyPlaceholder: JSON.stringify({ prompt: "Verify SLA data retention boundaries", generator_provider_name: "gemini", critic_provider_name: "openai" }, null, 2),
+  },
+  graphQuery: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/graph/query",
+    bodyPlaceholder: JSON.stringify({ entity: "Retriever", max_hops: 2 }, null, 2),
+  },
+  projectEmbeddings: {
+    method: "POST",
+    path: "/v1/tenants/{tenantId}/embeddings/project",
+    bodyPlaceholder: JSON.stringify({ method: "pca", dimensions: 2, normalize: true }, null, 2),
+  },
   listDocuments: {
     method: "GET",
     path: "/v1/tenants/{tenantId}/documents",
     bodyPlaceholder: "",
-  },
-  search: {
-    method: "POST",
-    path: "/v1/tenants/{tenantId}/search",
-    bodyPlaceholder: JSON.stringify({ query: "hello world", limit: 5 }, null, 2),
   },
   getConfig: {
     method: "GET",
@@ -72,22 +97,22 @@ export default function PlaygroundPage() {
   const ep = ENDPOINTS[selected];
 
   async function handleSend() {
-    if (!apiKey.trim()) { toast.error("Enter an API key"); return; }
-    if (!userId.trim()) { toast.error("Enter a User ID"); return; }
-
     setLoading(true);
     setResponse("");
 
     const path = ep.path.replace("{tenantId}", tenantId);
     const url = `${API_BASE}${path}`;
 
+    const effectiveKey = apiKey.trim() || adminKey || "";
+
     try {
       const res = await fetch(url, {
         method: ep.method,
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": apiKey.trim(),
-          "X-User-ID": userId.trim(),
+          ...(effectiveKey ? { Authorization: `Bearer ${effectiveKey}` } : {}),
+          ...(apiKey.trim() ? { "X-API-Key": apiKey.trim() } : {}),
+          "X-User-ID": userId.trim() || "admin_user",
           ...(adminKey ? { "X-Admin-Master-Key": adminKey } : {}),
         },
         ...(ep.method !== "GET" && ep.method !== "DELETE" && body.trim()
@@ -104,6 +129,7 @@ export default function PlaygroundPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <div>

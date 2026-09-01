@@ -382,3 +382,24 @@ async def verify_admin_key(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid administrative master key credential.",
         )
+
+
+async def verify_tenant_or_admin(
+    tenantId: str,
+    request: Request,
+    token: str | None = Security(api_key_header),
+    x_admin_master_key: str | None = Header(None, alias="X-Admin-Master-Key"),
+) -> None:
+    """Allow either valid admin master key OR verified tenant bearer token with tenant isolation."""
+    if x_admin_master_key and secrets.compare_digest(x_admin_master_key, settings.ADMIN_MASTER_KEY):
+        return
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication credentials (bearer token or admin key).",
+        )
+
+    user_ctx = await get_current_user(request, token)
+    await verify_tenant_isolation(tenantId, user_ctx, token)
+

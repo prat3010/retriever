@@ -1,8 +1,8 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M78) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M96) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
 > 
-> This document tracks the backend and unified cross-platform engineering milestones (M1–M78) for the Retriever AI engine and control plane.
+> This document tracks the backend and unified cross-platform engineering milestones (M1–M96) for the Retriever AI engine and control plane.
 
 ---
 
@@ -85,18 +85,33 @@
 | **M79** | Sparse-Dense Hybrid Search & Contrastive LoRA Adapters | Domain-aware Sublinear BM25 vectorizer + Contrastive LoRA residual embedding calibration | **Completed** (Phase J) |
 | **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Completed** (Phase J) |
 | **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Completed** (Phase J / v0.66.0) |
-| **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Planned (Phase J)** |
-| **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Planned (Phase J)** |
+| **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Completed** (Phase J / v0.67.0) |
+| **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **ACTIVE NEXT (Phase J)** |
 | **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Planned (Phase J)** |
 | **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Planned (Phase J)** |
-| **M85.7**| Safe Deployment Pipeline (Blue/Green with Rollback & Health Gates) | Release directory versioning (`/opt/retriever/releases`), atomic symlinks, and automatic rollback on health failure | **Completed** (DevOps) |
-| **M85.10**| Multi-Tenant Locust Load Testing & Benchmark Reporting | Multi-tenant Locust concurrent load testing suite and automated latency & throughput report generator | **Completed** (Benchmarks) |
+| **M85.1–M85.4**| Forensic Audit Remediation (Blueprint-to-Reality Parity) | LlamaGuard 3 structured safety, LongLLMLingua entropy scoring, Dashboard live wire | **Completed** (Phase J.5) |
+| **M85.5–M85.6**| Security Hardening & Production Logging | Secret rotation, KEK validation, structured exception handling across 50+ files | **Completed** (Phase J.6) |
+| **M85.7**| Safe Deployment Pipeline (Blue/Green with Rollback & Health Gates) | Release directory versioning (`/opt/retriever/releases`), atomic symlinks, and automatic rollback on health failure | **Completed** (Phase J.6 / DevOps) |
+| **M85.8**| CI/CD Security Gate Enforcement & Full Test Coverage | Fail-blocking CodeQL & Trivy vulnerability scans with all continue-on-error flags removed | **Completed** (Phase J.6 / Security CI) |
+| **M85.9**| Dashboard God Component Decomposition & Zod Validation | Decomposed dashboard into 10 modular widgets with runtime Zod request validation | **Completed** (Phase J.6 / Frontend) |
+| **M85.10**| Multi-Tenant Locust Load Testing & Benchmark Reporting | Multi-tenant Locust concurrent load testing suite and automated latency & throughput report generator | **Completed** (Phase J.6 / Benchmarks) |
+| **M86** | Edge AI Token Shield, DDoS Defense & Upstash Rate Limiting | Sliding-window token limiter & resilient SSE connection recovery protocol | **Planned (Phase K)** |
+| **M87** | Automated Cloud Database Snapshots & PITR Recovery Engine | Encrypted daily pg_dump to Cloudflare R2 / S3 with Point-in-Time Recovery | **Planned (Phase K)** |
+| **M88** | Enterprise Compliance Vault: Presidio PII & GDPR Wipe | Microsoft Presidio PII entity redaction & cryptographic deletion certificate PDF | **Planned (Phase K)** |
+| **M89** | Geo-Distributed Multi-Region Edge Vector Read-Replicas | Sub-30ms global edge read replicas with Geo-IP traffic routing | **Planned (Phase K)** |
+| **M90** | Universal Ecosystem Plugins (Slack Bot, Chrome Ext, GDrive) | Native Slack workspace bot, 1-click Chrome ingestion & 2-way Google Drive sync | **Planned (Phase K)** |
+| **M91** | LangGraph Cyclic Agentic Orchestration & HITL Engine | Stateful cyclic computation graphs, PostgresSaver checkpoints & human approval nodes | **Planned (Phase L)** |
+| **M92** | DSPy Declarative Prompt Compilation & Teleprompter | Metric-driven automated prompt & few-shot optimization pipeline | **Planned (Phase L)** |
+| **M93** | Enterprise LLM Gateway & Multi-Model Smart Router | LiteLLM unified gateway, automatic failover cascades & virtual tenant quotas | **Planned (Phase L)** |
+| **M94** | NVIDIA NeMo Guardrails & Conversational Safety Rails | Colang conversational safety rails, factual topic grounding & scope enforcement | **Planned (Phase L)** |
+| **M95** | Durable Asynchronous Execution & AI Workflow Engine | Inngest / Trigger.dev event-driven durable multi-step AI workflow orchestration | **Planned (Phase L)** |
+| **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Planned (Phase L)** |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M85), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M96), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
 
@@ -1412,6 +1427,73 @@
 - **Native Slack Workspace Bot**: `/ask-retriever <query>` with grounded citations and feedback buttons.
 - **1-Click Chrome Ingestion Extension**: One-click ingestion of active web pages, PDFs, and articles into client tenants.
 - **2-Way Live Sync Connectors**: Google Drive & Notion webhooks with differential vector re-indexing on file edits.
+
+---
+
+### [Planned] Milestone 91: LangGraph Cyclic Agentic Orchestration & Human-in-the-Loop (HITL) State Engine (v0.76.0)
+
+**Objective:** Upgrade linear agent routing to stateful cyclic computation graphs with persistent checkpoints and human approval nodes.
+
+**Target Deliverables:**
+- **Stateful Cyclic Agent Graphs (`langgraph`)**: Replace linear chain execution with graph-based cyclic reasoning loops and dynamic branching.
+- **Persistent State Checkpoints (`PostgresSaver`)**: PostgreSQL & Redis state savers enabling multi-agent threads to pause, resume, and branch across client sessions.
+- **Human-in-the-Loop (HITL) Gateways**: Execution pauses before triggering high-impact external actions, emitting structured approval events to the frontend.
+- **Time-Travel Debugging Endpoint**: `GET /v1/agentic/threads/{threadId}/history` with state rollback inspection.
+
+---
+
+### [Planned] Milestone 92: DSPy Declarative Prompt Compilation & Algorithmic Self-Optimization Pipeline (v0.77.0)
+
+**Objective:** Replace brittle prompt engineering with declarative DSPy signatures and automated metric-driven teleprompters.
+
+**Target Deliverables:**
+- **Declarative DSPy Signatures & Modules**: Implement `dspy.ChainOfThought`, `dspy.ReAct`, and `dspy.ProgramOfThought` modules.
+- **Automated Prompt Teleprompter**: Background optimization pipeline (`BootstrapFewShotWithRandomSearch` / `MIPROv2`) compiling few-shot prompts against Ragas/DeepEval metrics.
+- **Self-Optimizing System Prompt Endpoint**: `POST /v1/tenants/{tenantId}/prompts/compile` for 1-click tenant prompt compilation.
+
+---
+
+### [Planned] Milestone 93: Enterprise LLM Gateway & Multi-Model Smart Router (LiteLLM Architecture) (v0.78.0)
+
+**Objective:** Provide unified multi-provider proxying with dynamic fallback cascades and virtual tenant quota management.
+
+**Target Deliverables:**
+- **Unified Gateway Layer (`litellm`)**: Multi-provider proxy supporting OpenAI, Anthropic, Gemini, Groq, Mistral, and local Ollama/vLLM endpoints.
+- **Dynamic Fallback Cascades**: Automatic model failover (Primary $\rightarrow$ Secondary $\rightarrow$ Local SLM) on 429 rate limits or provider downtime.
+- **Virtual Tenant API Budgets**: Strict token budget ceilings, automated cooldown on rate limits, and per-model cost attribution analytics.
+
+---
+
+### [Planned] Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails (v0.79.0)
+
+**Objective:** Enforce conversational safety, factual grounding, and topical scope limits via programmable Colang rails.
+
+**Target Deliverables:**
+- **NVIDIA NeMo Guardrails Integration**: Colang `.co` flow definitions controlling dialogue direction and preventing jailbreaks / prompt injection.
+- **Multi-Turn Scope Anchoring**: Conversational constraints ensuring LLM outputs stay strictly within tenant-defined business domain.
+- **Sub-200ms Fast-Path Input Rails**: Asynchronous input verification running concurrently with vector embedding generation.
+
+---
+
+### [Planned] Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine (Inngest) (v0.80.0)
+
+**Objective:** Ensure step-level resilient durable execution for long-running multi-step AI ingestion and evaluation jobs.
+
+**Target Deliverables:**
+- **Event-Driven Durable Execution Engine**: Replace brittle HTTP handlers with step-level idempotent durable functions (`inngest`).
+- **Resilient Multi-Step Jobs**: Automatic exponential backoff, concurrency throttling, and state serialization for vault chunking and synthetic benchmarks.
+- **Live Status Telemetry Webhooks**: Real-time progress updates streamed to Next.js Client Dashboard.
+
+---
+
+### [Planned] Milestone 96: Serverless GPU Serving & Custom vLLM / LoRA Deployment Pipeline (Modal / BentoML) (v0.81.0)
+
+**Objective:** Enable zero-downtime serverless GPU auto-scaling and dynamic LoRA adapter swapping on dedicated tenant models.
+
+**Target Deliverables:**
+- **Serverless GPU Deployment Recipes**: Modal / BentoML / Together AI deployment recipes for dedicated tenant fine-tuned models.
+- **Dynamic LoRA Swapping**: Sub-3s container warm-boot with runtime LoRA adapter switching on a shared base model.
+- **Auto-Scaling Down to Zero**: Dynamic compute scale-down to 0 instances during idle traffic, reducing cloud GPU overhead by 70%+.
 
 ---
 

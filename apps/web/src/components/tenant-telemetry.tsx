@@ -1,16 +1,42 @@
 "use client";
 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLiveTelemetry } from "@/hooks/use-telemetry";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { Trash2, Loader2, Zap } from "lucide-react";
+
 
 interface TenantTelemetryTabProps {
   tenantId: string;
 }
 
 export function TenantTelemetryTab({ tenantId }: TenantTelemetryTabProps) {
+  const queryClient = useQueryClient();
   const { data: telemetry, isLoading } = useLiveTelemetry(tenantId);
+
+  const { data: cacheStats, refetch: refetchCacheStats } = useQuery({
+    queryKey: ["tenant-cache-stats", tenantId],
+    queryFn: () => api.get<{ status: string; total_vectors: number }>(`/v1/tenants/${tenantId}/cache/stats`),
+    enabled: !!tenantId,
+  });
+
+  const purgeCacheMutation = useMutation({
+    mutationFn: () => api.post<{ status: string; purged: boolean; deleted_count?: number }>(`/v1/tenants/${tenantId}/cache/purge`),
+    onSuccess: (res) => {
+      toast.success(res.deleted_count ? `Purged ${res.deleted_count} semantic cache vectors.` : "Semantic cache successfully purged.");
+      refetchCacheStats();
+      queryClient.invalidateQueries({ queryKey: ["live-telemetry", tenantId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to purge semantic cache.");
+    },
+  });
+
 
   if (isLoading) {
     return (
@@ -164,11 +190,39 @@ export function TenantTelemetryTab({ tenantId }: TenantTelemetryTabProps) {
                 </span>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground pt-1">
-              Semantic Cache automatically intercepts identical vector clusters and serves responses at &lt; 5ms latency.
+            <div className="flex items-center justify-between pt-2 border-t text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Cached Vector Entities:</span>
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {cacheStats?.total_vectors ?? 0} vectors
+                </Badge>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="text-xs h-7 px-2.5"
+                disabled={purgeCacheMutation.isPending}
+                onClick={() => purgeCacheMutation.mutate()}
+              >
+                {purgeCacheMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Purging...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Purge Cache
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Semantic Cache intercepts vector similarities ($&ge; \tau$) to serve responses under 5ms without token expense.
             </div>
           </CardContent>
         </Card>
+
 
         {/* Token Quotas & Knowledge Index */}
         <Card>

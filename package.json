@@ -13,9 +13,10 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=retriever-web",
-    "build": "npm run build --workspace=retriever-web",
+    "build": "npm run build --workspace=retriever-web && (rm -rf .next && cp -R apps/web/.next .next 2>/dev/null || true)",
     "start": "npm run start --workspace=retriever-web"
   },
+
   "devDependencies": {
     "@dietrichgebert/ponytail": "^4.8.4"
   }

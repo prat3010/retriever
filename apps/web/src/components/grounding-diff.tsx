@@ -199,8 +199,9 @@ export function GroundingDiff({
                       Target Claim Sentence ({selectedClaimIdx! + 1} of {claims.length})
                     </span>
                     <div className="p-2.5 rounded bg-muted/60 font-mono text-xs leading-relaxed border">
-                      "{selectedClaim.claim}"
+                      &quot;{selectedClaim.claim}&quot;
                     </div>
+
                   </div>
 
                   {/* NLI Probabilities Breakdown */}

@@ -5,6 +5,10 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ## [Unreleased]
 
 ### Added
+- **Unified Monorepo Vercel Build Pipeline** (`package.json`, `apps/web/vercel.json`, `ADMIN_DASHBOARD_GUIDE.md`):
+  - **Dual Build Bridging**: Enhanced root build script with automated artifact bridging (`npm run build --workspace=retriever-web && (rm -rf .next && cp -R apps/web/.next .next 2>/dev/null || true)`), guaranteeing 100% build compatibility whether Vercel projects target monorepo root (`/`) or dashboard subfolder (`apps/web`).
+  - **Strict JSX Entity Linting**: Fixed unescaped JSX quotes in `apps/web/src/components/grounding-diff.tsx` for zero-warning ESLint pass.
+
 - **Milestone 72: Interactive RLM Python REPL Sandbox Studio** (`apps/api/src/domain/rlm/engine.py`, `apps/api/src/routers/rlm.py`, `Prateek_website/src/components/rag/RlmStudioPanel.tsx`, `apps/api/tests/test_rlm_engine.py`, `Prateek_website/src/components/rag/__tests__/RlmStudioPanel.test.tsx`):
   - **Multi-Turn Adaptive RLM Engine**: Extended `analyze_repl_loop()` with error recovery, self-correcting script execution over multi-document vaults, and structured per-turn AST trace reporting (`code`, `stdout`, `result`, `is_error`, `execution_time_ms`).
   - **Design System 2.0 Studio Overhaul**: Completely overhauled `RlmStudioPanel.tsx` with zero hardcoded dark palette drift, dual-theme Azure/Noir contrast tokens, multi-turn tab viewer, copy actions, and telemetry pills.

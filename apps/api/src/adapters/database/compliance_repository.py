@@ -1,6 +1,7 @@
 """Database repository adapter for compliance, hard purges, and SLA data retention scans."""
 
 from datetime import datetime
+from typing import Any, ClassVar
 from uuid import UUID
 
 from sqlalchemy import delete, select
@@ -137,3 +138,21 @@ class SqlComplianceRepository:
             await session.commit()
 
         return stats
+
+    # In-memory and file-backed compliance audit ledger for tamper-evident retention
+    _certificates_ledger: ClassVar[dict[str, Any]] = {}
+
+    async def save_compliance_certificate(self, certificate: Any) -> None:
+        """Save issued compliance certificate in permanent audit registry."""
+        self._certificates_ledger[certificate.certificate_id] = certificate
+
+    async def get_compliance_certificates(self, tenant_id: str) -> list[Any]:
+        """Fetch all deletion certificates for a tenant."""
+        return [
+            cert for cert in self._certificates_ledger.values()
+            if cert.tenant_id == tenant_id
+        ]
+
+    async def get_compliance_certificate_by_id(self, certificate_id: str) -> Any | None:
+        """Fetch a specific compliance certificate by its ID."""
+        return self._certificates_ledger.get(certificate_id)

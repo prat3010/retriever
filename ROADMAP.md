@@ -1428,13 +1428,17 @@
 
 ---
 
-### [Planned] Milestone 88: Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe (v0.73.0)
+### [Completed] Milestone 88: Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe (v0.73.0)
 
-**Objective:** Provide SOC 2 and GDPR compliance with automated PII redaction and cryptographic deletion certificates.
+**Objective:** Provide SOC 2, HIPAA, and GDPR compliance with automated PII redaction and cryptographic deletion certificates.
 
-**Target Deliverables:**
-- **Microsoft Presidio PII Anonymizer**: Automatic pre-chunk entity scrubbing (names, SSNs, credit cards, medical IDs) during document ingestion.
-- **Single-Click GDPR Hard-Purge**: Multi-table cascade deletion accompanied by an immutable, cryptographically signed Compliance Deletion Certificate PDF.
+**Delivered:**
+- **Context-Aware Enterprise PII Redactor (`apps/api/src/domain/compliance/pii_anonymizer.py`)**: Multi-domain entity recognition with Luhn algorithm checksum validation for credit cards, IBAN, SSNs, Aadhaar, PAN, Passports, Secrets/API Keys (`AKIA...`, `sk-...`, `ghp_...`), HIPAA Medical Record Numbers, IPv4/IPv6, and emails.
+- **Advanced Masking Strategies**: Direct category tag redaction (`[REDACTED_TYPE]`), synthetic masking (`***-**-1234`), and deterministic **Cryptographic Pseudonymization** (`[PSEUDONYM:sha256[:8]]`) for consistent anonymized multi-doc search.
+- **Cryptographic Compliance Deletion Certificate Authority (`src/domain/compliance/certificate_service.py`)**: Issues tamper-evident, HMAC-SHA256 signed GDPR Article 17 Erasure Certificates proving permanent data destruction across PostgreSQL, vector indexes, Redis cache, and object storage.
+- **Auditor Verification REST API**: `GET /v1/compliance/verify/{certificateId}` enabling third-party auditors to cryptographically verify signature authenticity against the canonical payload.
+- **Admin Dashboard Compliance Cockpit (`apps/web/src/components/tenant-compliance.tsx`)**: Real-time category domain toggles, live interactive sanitizer sandbox, and an Auditor Erasure Certificate ledger with 1-click JSON download and live verification.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_compliance_vault.py` covering Luhn validation, API key scrubbing, cryptographic HMAC signing, tamper detection, and Hexagonal boundaries.
 
 ---
 

@@ -298,22 +298,29 @@ class Container:
         self._cache["field_encryptor"] = Aes256FieldEncryptor(master_key=settings.KEY_ENCRYPTION_KEY)
 
         from src.adapters.database.compliance_repository import SqlComplianceRepository
+        from src.domain.compliance.certificate_service import (
+            ComplianceCertificateService,
+        )
         from src.domain.compliance.pii_anonymizer import PiiAnonymizer
         from src.domain.compliance.purge_service import HardPurgeService
         from src.domain.compliance.retention_worker import RetentionWorker
 
         compliance_repo = SqlComplianceRepository()
+        certificate_service = ComplianceCertificateService(signing_key=settings.SECRET_KEY)
         pii_anonymizer = PiiAnonymizer()
         hard_purge_service = HardPurgeService(
             compliance_repo=compliance_repo,
             graph_repository=self._cache["graph_repository"],
             storage_provider=self._cache["local_storage"],
+            certificate_service=certificate_service,
         )
         retention_worker = RetentionWorker(
             purge_service=hard_purge_service,
             compliance_repo=compliance_repo,
         )
 
+        self._cache["compliance_repo"] = compliance_repo
+        self._cache["compliance_certificate_service"] = certificate_service
         self._cache["pii_anonymizer"] = pii_anonymizer
         self._cache["hard_purge_service"] = hard_purge_service
         self._cache["retention_worker"] = retention_worker
@@ -480,6 +487,7 @@ effort_estimation_service = container.effort_estimation_service
 persona_intelligence_service = container.persona_intelligence_service
 battery_service = container.battery_service
 backup_service = container.backup_service
+compliance_certificate_service = container.compliance_certificate_service
 
 
 

@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-- **Current Milestone**: Phase K — **Milestone 87 (Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery Engine) — Completed (v0.72.0)**
-- **Last Completed Milestone**: Milestone 87 (Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery Engine), Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Milestone 85 (Universal Multi-Tenant KMeans Visitor Persona Clusterer & Supervised Lead Conversion Propensity Scorer), Milestone 84 (Quantile Gradient Boosting Regressor for CPQ Scoping & Timeline Bounds), Milestone 83 (Isolation Forest Telemetry Anomaly Sentinel & Credential Abuse Guard)
-- **Build Status**: Passing (99 test files, 639 passed, 1 skipped, 0 failures, 0 warnings)
-- **Admin Dashboard Build**: Passing (10 routes including `/batteries` and Disaster Recovery in `/system-data`, all compile cleanly)
+- **Current Milestone**: Phase K — **Milestone 88 (Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe) — Completed (v0.73.0)**
+- **Last Completed Milestone**: Milestone 88 (Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe), Milestone 87 (Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery Engine), Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Milestone 85 (Universal Multi-Tenant KMeans Visitor Persona Clusterer & Supervised Lead Conversion Propensity Scorer), Milestone 84 (Quantile Gradient Boosting Regressor for CPQ Scoping & Timeline Bounds)
+- **Build Status**: Passing (100 test files, 646 passed, 1 skipped, 0 failures, 0 warnings)
+- **Admin Dashboard Build**: Passing (10 routes including `/compliance` and `/batteries`, all compile cleanly)
 - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 88: Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe (Phase K / v0.73.0)
+- **Next Recommended Milestone**: Milestone 89: Geo-Distributed Multi-Region Edge Vector Read-Replicas (Phase K / v0.74.0)
 
 
 

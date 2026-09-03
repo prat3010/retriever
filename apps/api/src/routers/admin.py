@@ -28,6 +28,7 @@ from src.container import (
     backup_service,
     battery_service,
     celery_app,
+    compliance_certificate_service,
     config_service,
     document_repository,
     eval_dataset_repo,
@@ -55,6 +56,13 @@ from src.domain.abstractions.backup import (
     RestoreResponse,
 )
 from src.domain.abstractions.batteries import PlatformBatteriesResponse
+from src.domain.abstractions.compliance import (
+    ComplianceCertificateDTO,
+    ComplianceVerificationResponse,
+    MaskingMode,
+    PiiCategory,
+    PiiRedactionRequest,
+)
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.connector import ConnectorConfig
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
@@ -1052,6 +1060,8 @@ async def compute_admin_grounding_diff(
 class AnonymizeRequest(BaseModel):
     text: str
     types: list[str] | None = None
+    categories: list[PiiCategory] | None = None
+    masking_mode: MaskingMode = MaskingMode.REDACT
     custom_patterns: list[str] | None = None
 
 
@@ -1061,8 +1071,18 @@ class AnonymizeRequest(BaseModel):
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_hard_purge_document(tenantId: str, documentId: str) -> Any:
-    stats = await hard_purge_service.hard_purge_document(tenantId, documentId)
-    return {"status": "purged", "documentId": documentId, "stats": stats}
+    certificate = await hard_purge_service.purge_document_with_certificate(
+        tenant_id=tenantId,
+        document_id=documentId,
+        requester="admin_system",
+        reason="Admin Hard Purge Document",
+    )
+    return {
+        "status": "purged",
+        "documentId": documentId,
+        "stats": certificate.records_purged,
+        "certificate": certificate.model_dump(),
+    }
 
 
 @router.post(
@@ -1071,8 +1091,50 @@ async def admin_hard_purge_document(tenantId: str, documentId: str) -> Any:
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_forget_tenant(tenantId: str) -> Any:
-    stats = await hard_purge_service.hard_purge_tenant_data(tenantId)
-    return {"status": "tenant_purged", "tenantId": tenantId, "stats": stats}
+    certificate = await hard_purge_service.purge_tenant_with_certificate(
+        tenant_id=tenantId,
+        requester="admin_system",
+        reason="GDPR Article 17 Full Tenant Erasure",
+    )
+    return {
+        "status": "tenant_purged",
+        "tenantId": tenantId,
+        "stats": certificate.records_purged,
+        "certificate": certificate.model_dump(),
+    }
+
+
+@router.get(
+    "/tenants/{tenantId}/compliance/certificates",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_compliance_certificates(tenantId: str) -> list[ComplianceCertificateDTO]:
+    return await hard_purge_service.get_certificates(tenantId)
+
+
+@router.get(
+    "/compliance/verify/{certificateId}",
+    status_code=status.HTTP_200_OK,
+)
+async def verify_compliance_certificate(certificateId: str) -> ComplianceVerificationResponse:
+    cert = await hard_purge_service.get_certificate_by_id(certificateId)
+    if not cert:
+        return ComplianceVerificationResponse(
+            certificate_id=certificateId,
+            is_valid=False,
+            audit_signature="",
+            certificate=None,
+            message="Certificate ID not found in compliance ledger.",
+        )
+    is_valid = compliance_certificate_service.verify_certificate(cert)
+    return ComplianceVerificationResponse(
+        certificate_id=certificateId,
+        is_valid=is_valid,
+        audit_signature=cert.sha256_audit_signature,
+        certificate=cert,
+        message="Cryptographic HMAC-SHA256 signature is authentic and untampered." if is_valid else "Cryptographic signature mismatch: certificate payload has been tampered.",
+    )
 
 
 @router.post(
@@ -1081,12 +1143,20 @@ async def admin_forget_tenant(tenantId: str) -> Any:
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_anonymize_text(tenantId: str, payload: AnonymizeRequest) -> Any:
-    redacted = pii_anonymizer.anonymize_text(
-        payload.text,
-        enabled_types=payload.types,
-        custom_patterns=payload.custom_patterns,
+    res = pii_anonymizer.redact(
+        PiiRedactionRequest(
+            text=payload.text,
+            categories=payload.categories,
+            masking_mode=payload.masking_mode,
+            custom_patterns=payload.custom_patterns,
+        )
     )
-    return {"redacted_text": redacted}
+    return {
+        "redacted_text": res.redacted_text,
+        "original_length": res.original_length,
+        "total_redacted": res.total_redacted,
+        "entities_detected": [m.model_dump() for m in res.entities_detected],
+    }
 
 
 @router.post(

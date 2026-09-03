@@ -274,9 +274,20 @@ export default function SystemDataPage() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground border-b border-border/40 pb-2">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span>Off-Site Cloud Storage: <strong className="text-foreground">Connected (S3 / R2 Bucket)</strong></span>
+                    <span>Storage Engine: <strong className="text-foreground">AES-256 GCM Encrypted Vault (Local & S3/R2 Ready)</strong></span>
                   </div>
                   <span>Continuous WAL Archival & PITR Recovery Engine</span>
+                </div>
+
+                <div className="bg-muted/40 border border-border/40 rounded-lg p-3 text-xs space-y-1 text-muted-foreground">
+                  <div className="font-semibold text-foreground flex items-center gap-1.5">
+                    <span>💡 Cloud Replication Setup (Cloudflare R2 / AWS S3 / MinIO)</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    By default, snapshots are encrypted with AES-256 and saved locally to <code className="bg-background px-1 py-0.5 rounded font-mono text-foreground">/tmp/retriever/backups</code>.
+                    To enable automatic off-site cloud sync, configure <code className="bg-background px-1 py-0.5 rounded font-mono text-foreground">STORAGE_PROVIDER=&quot;s3&quot;</code> and S3/R2 credentials in your server <code className="bg-background px-1 py-0.5 rounded font-mono text-foreground">.env</code>.
+                    Full instructions in <code className="text-foreground font-medium">docs/runbooks/DISASTER_RECOVERY_AND_BACKUPS.md</code>.
+                  </p>
                 </div>
 
                 {backupsLoading ? (

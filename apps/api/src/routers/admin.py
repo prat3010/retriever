@@ -1851,12 +1851,22 @@ async def trigger_self_tune(
     config_service = container.configuration_service
     tenant_cfg = await config_service.get_tenant_config(tenantId)
 
-    # Sample mock or live recent metrics
+    # Query live evaluation telemetry from online_eval_repo with resilient fallback
     metric_sample = QualityMetrics(
         context_precision=0.75,
         answer_relevance=0.85,
         faithfulness=0.80,
     )
+    try:
+        online_summary = await online_eval_repo.get_online_summary(tenantId)
+        if online_summary and online_summary.get("total_evaluations", 0) > 0:
+            metric_sample = QualityMetrics(
+                context_precision=float(online_summary["avg_context_precision"]),
+                answer_relevance=float(online_summary["avg_faithfulness"]),
+                faithfulness=float(online_summary["avg_faithfulness"]),
+            )
+    except Exception:
+        pass
 
     if payload.apply_changes:
         report = await tuner.tune_and_apply(tenantId, [metric_sample], config_service)

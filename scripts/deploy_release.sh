@@ -38,9 +38,11 @@ cd "$BASE_DIR"
 git archive HEAD | tar -x -C "$RELEASE_DIR"
 
 # Link shared environment and virtualenv
+ln -sf "$SHARED_ENV" "$BASE_DIR/apps/api/.env"
 ln -sf "$SHARED_ENV" "$RELEASE_DIR/.env"
 ln -sf "$SHARED_ENV" "$RELEASE_DIR/apps/api/.env"
 ln -sf "$SHARED_VENV" "$RELEASE_DIR/.venv"
+
 
 
 # 4. Trigger pre-deployment logical database backup
@@ -82,19 +84,27 @@ echo "🩺 Probing service health (/health/liveness & /health/readiness)..."
 HEALTHY=false
 for i in $(seq 1 12); do
     sleep 5
-    if curl -sSf http://localhost:8000/health/liveness > /dev/null 2>&1; then
-        if curl -sSf http://localhost:8000/health/readiness > /dev/null 2>&1; then
-            echo "✅ Health probes passed at attempt $i (liveness & readiness OK)"
-            HEALTHY=true
-            break
-        fi
+    LIVE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/liveness || echo "000")
+    READY=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/readiness || echo "000")
+    if [ "$LIVE" = "200" ] && [ "$READY" = "200" ]; then
+        echo "✅ Health probes passed at attempt $i (liveness & readiness OK)"
+        HEALTHY=true
+        break
     fi
-    echo "⏳ Waiting for service readiness... ($((i * 5))/60s)"
+    echo "⏳ Waiting for service readiness... ($((i * 5))/60s, liveness=$LIVE, readiness=$READY)"
 done
 
 # 10. Automated Rollback Trigger if unhealthy
 if [ "$HEALTHY" = false ]; then
     echo "❌ CRITICAL: Post-deployment health checks failed! Initiating automated rollback..."
+    echo "📋 Output of curl http://localhost:8000/health/readiness:"
+    curl -sS http://localhost:8000/health/readiness || true
+    echo ""
+    echo "📋 Last 60 lines of retriever-api systemd journal:"
+    sudo journalctl -u retriever-api -n 60 --no-pager || true
+    echo "📋 Last 40 lines of retriever-worker systemd journal:"
+    sudo journalctl -u retriever-worker -n 40 --no-pager || true
+
     if [ -n "$PREVIOUS_RELEASE" ] && [ -d "$PREVIOUS_RELEASE" ]; then
         echo "⏮️ Rolling back symlink to $PREVIOUS_RELEASE"
         ln -sfn "$PREVIOUS_RELEASE" "$CURRENT_LINK"
@@ -105,6 +115,7 @@ if [ "$HEALTHY" = false ]; then
     fi
     exit 1
 fi
+
 
 # 11. Prune older releases (keep latest 5)
 echo "🧹 Pruning old release directories (retaining last $KEEP_RELEASES)..."

@@ -28,6 +28,9 @@ jobs:
             cd /opt/retriever
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
             git checkout origin/main -B main
             chmod +x scripts/deploy_release.sh scripts/rollback.sh scripts/backup-db.sh
             ./scripts/deploy_release.sh
+

@@ -11,9 +11,9 @@
 Retriever's open-source release must not be perceived as "just another LangChain tutorial wrapper". The AI ecosystem is inundated with toy scripts that break in production.
 
 ### The Core Positioning Angle:
-> **"The Developer's Self-Hosted, Multi-Tenant Cognitive RAG Engine on PostgreSQL."**
+> **"The Developer's Batteries-Included, Multi-Tenant Cognitive RAG Platform on PostgreSQL."**
 > 
-> *Tired of paying $100+/mo for Pinecone, struggling with cross-tenant data leaks, and watching dense embeddings fail on exact code and technical identifiers? Retriever delivers an enterprise-grade, self-hosted RAG platform featuring PostgreSQL Row-Level Security (RLS), ColBERT MaxSim late-interaction reranking, unsupervised ML anomaly sentinels, and zero-cost local Ollama embeddings out of the box.*
+> *Tired of paying $100+/mo for Pinecone, struggling with cross-tenant data leaks, and stitching together 10 different SaaS tools for reranking, OCR, and rate limiting? Retriever delivers a production-grade, self-hosted RAG platform featuring PostgreSQL Row-Level Security (RLS), ColBERT MaxSim late-interaction reranking, Docling OCR layout parsing, and built-in Scikit-Learn operational intelligence (anti-abuse anomaly sentinels, project effort regression, and zero-cookie visitor clustering) — completely free with zero-cost local Ollama embeddings.*
 
 ---
 
@@ -99,7 +99,9 @@ Open-source developers don't read internal roadmaps or private milestone progres
     | **Strict DB-Level Multi-Tenancy (RLS)** | ✅ Native Postgres | ⚠️ Namespace only | ❌ App code filter | ⚠️ Basic |
     | **ColBERT MaxSim Late-Interaction** | ✅ Built-in | ❌ Dense only | ❌ Complex setup | ❌ Cross-encoder only |
     | **Zero-Cost Embeddings** | ✅ Local Ollama | ❌ Paid API | ❌ Paid API | ⚠️ Configurable |
-    | **Telemetry Anomaly Sentinel** | ✅ Isolation Forest | ❌ None | ❌ None | ❌ None |
+    | **Telemetry Anomaly Sentinel (M83)** | ✅ Isolation Forest | ❌ None | ❌ None | ❌ None |
+    | **Effort & Timeline Regressor (M84)** | ✅ Quantile Gradient Boost | ❌ None | ❌ None | ❌ None |
+    | **Zero-Cookie Visitor Clustering (M85)** | ✅ KMeans Intent ML | ❌ None | ❌ None | ❌ None |
     | **Presigned Citation Downloads** | ✅ S3/R2 Presigned | ❌ None | ❌ Custom code | ⚠️ Partial |
 - [ ] **Comprehensive User Manual (`docs/USER_MANUAL.md`):**
   - Section 1: Quickstart & First Query (curl and Python SDK examples).
@@ -108,7 +110,10 @@ Open-source developers don't read internal roadmaps or private milestone progres
   - Section 4: Multi-Tenancy & Workspace Isolation Configuration.
   - Section 5: Streaming Chat with SSE & Clickable Citations.
   - Section 6: Embedding the 1-Line Widget (`widget.js`) onto external websites.
-  - Section 7: Telemetry Sentinel & Anomaly Detection Administration.
+  - Section 7: Telemetry Sentinel & Anomaly Detection Administration (M83).
+  - Section 8: CPQ Software Effort & Timeline Confidence Estimator (M84).
+  - Section 9: Zero-Cookie Visitor Intent Clustering & Lead Scorer (M85).
+  - Section 10: Toggle Flags (`ENABLE_ML_MODULES=false`) for Pure-RAG Deployments.
 - [ ] **Clean Public Roadmap (`ROADMAP.md`):**
   - Replace internal milestone logs with a forward-looking, developer-facing roadmap (e.g. GraphRAG v2, Multi-Modal Audio RAG, Kubernetes Operator Helm chart).
 
@@ -142,10 +147,10 @@ A great project dies in silence without targeted distribution. Launching require
 ### Channel 1: Hacker News ("Show HN")
 - **Timing:** Tuesday or Wednesday at 8:00 AM EST (optimal front-page traction window).
 - **Title Formula:**
-  > `Show HN: Retriever – Self-hosted multi-tenant RAG engine with ColBERT reranking & pgvector RLS`
+  > `Show HN: Retriever – Self-hosted multi-tenant RAG platform with ColBERT, pgvector RLS & built-in ML intelligence`
 - **Post Copy Structure:**
-  1. *The Hook:* Why standard RAG fails in real production (tenant leakage, token costs, dense embedding blindness).
-  2. *The Solution:* How Retriever solves it at the database engine layer (PostgreSQL RLS) and token level (ColBERT MaxSim).
+  1. *The Hook:* Why standard RAG fails in real production (tenant leakage, token costs, dense embedding blindness, lack of operational batteries).
+  2. *The Solution:* How Retriever solves it at the database engine layer (PostgreSQL RLS), token level (ColBERT MaxSim), and operational intelligence layer (Scikit-Learn).
   3. *The Stack:* Python 3.12, FastAPI, PostgreSQL 16, pgvector, Ollama, Next.js 16.
   4. *Live Demo Link:* `https://rag.prateeq.in` + GitHub link.
   5. *Founder Engagement:* Stay in the comments for 6 hours answering deep technical questions about vector math, latency benchmarks, and memory usage.
@@ -155,8 +160,8 @@ A great project dies in silence without targeted distribution. Launching require
   - *Tweet 1:* The Hook + Short video/GIF showing 1-click Docker launch and streaming citation chat.
   - *Tweet 2:* Why PostgreSQL RLS beats application-level tenant filtering (with SQL snippet).
   - *Tweet 3:* How ColBERT MaxSim late-interaction finds exact code symbols and error IDs that cosine similarity misses.
-  - *Tweet 4:* The Scikit-Learn Isolation Forest sentinel scoring Shannon entropy and request velocity.
-  - *Tweet 5:* Benchmark stats: 617 automated tests, sublinear latency, zero OpenAI cost via local Ollama.
+  - *Tweet 4:* The built-in Scikit-Learn operational intelligence (Isolation Forest anomaly sentinel, timeline effort regression, zero-cookie visitor clustering).
+  - *Tweet 5:* Benchmark stats: 631 automated tests, sublinear latency, zero OpenAI cost via local Ollama.
   - *Tweet 6:* GitHub repo link + call for stars and contributors.
 
 ### Channel 3: Targeted Reddit Communities

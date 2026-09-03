@@ -1414,13 +1414,17 @@
 
 ---
 
-### [Planned] Milestone 87: Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery (v0.72.0)
+### [Completed] Milestone 87: Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery (v0.72.0)
 
-**Objective:** Ensure enterprise disaster recovery with encrypted daily cloud backups and point-in-time recovery.
+**Objective:** Ensure enterprise disaster recovery with encrypted daily cloud backups, cryptographic integrity validation, and point-in-time recovery.
 
-**Target Deliverables:**
-- **Automated pg_dump Cloud Snapshot**: Daily AES-256 GCM encrypted database dumps uploaded to Cloudflare R2 / AWS S3 via background timer.
-- **WAL Archival & PITR Script**: Point-in-Time Recovery script for single-command database restoration to any exact minute.
+**Delivered:**
+- **Pooler-Safe Encrypted Snapshots (`apps/api/src/adapters/backup/cloud_backup_adapter.py`)**: Transaction-pooler safe logical database streaming, gzip compression, AES-256 GCM envelope encryption, and SHA-256 manifest generation.
+- **Cloud Archival & Off-Site Storage (`S3Storage`)**: Direct streaming upload to Cloudflare R2 / AWS S3 with automated retention policy cleanup (14-day rotation).
+- **Point-in-Time Recovery (PITR) & Restore Engine (`apps/api/src/adapters/backup/cloud_restore_adapter.py`)**: Cryptographic SHA-256 integrity checks, topological foreign key DAG traversal (`tenants` -> `users` -> `documents` -> `vector_records`), and zero-downtime `--dry-run` simulation mode.
+- **Single-Command CLI Suite**: `scripts/db_snapshot.py` and `scripts/db_restore.py` for systemd timers and immediate disaster recovery.
+- **Admin Dashboard Integration (`apps/web` `/system-data`)**: Real-time snapshot inventory, encrypted size meters, on-demand backup trigger button, and 1-click dry-run audit inspection.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_backup_restore.py` covering roundtrip encryption/decryption, tampered archive rejection, REST APIs, and Hexagonal boundaries.
 
 ---
 

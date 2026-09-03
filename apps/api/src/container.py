@@ -16,6 +16,8 @@ try:
 except Exception:
     _event_publisher_available = False
 
+from src.adapters.backup.cloud_backup_adapter import CloudBackupAdapter
+from src.adapters.backup.cloud_restore_adapter import CloudRestoreAdapter
 from src.adapters.broker.noop_event_publisher import NoOpEventPublisher
 from src.adapters.cache.config_cache import RedisTenantConfigCache
 from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
@@ -83,6 +85,7 @@ from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import settings
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
+from src.domain.backup.backup_service import BackupService
 from src.domain.batteries.battery_service import BatteryService
 from src.domain.clustering.persona_service import PersonaIntelligenceService
 from src.domain.config.config_service import ConfigurationService
@@ -398,6 +401,13 @@ class Container:
 
         self._cache["battery_service"] = BatteryService()
 
+        cloud_backup = CloudBackupAdapter(storage=self._cache.get("s3_storage"))
+        cloud_restore = CloudRestoreAdapter(storage=self._cache.get("s3_storage"))
+        self._cache["backup_service"] = BackupService(
+            backup_adapter=cloud_backup,
+            restore_adapter=cloud_restore,
+        )
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -469,6 +479,7 @@ anomaly_sentinel_service = container.anomaly_sentinel_service
 effort_estimation_service = container.effort_estimation_service
 persona_intelligence_service = container.persona_intelligence_service
 battery_service = container.battery_service
+backup_service = container.backup_service
 
 
 

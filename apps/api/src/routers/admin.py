@@ -25,6 +25,7 @@ from src.config import settings
 from src.container import (
     admin_repository,
     audit_logger,
+    backup_service,
     battery_service,
     celery_app,
     config_service,
@@ -45,6 +46,13 @@ from src.container import (
     template_registry,
     tenant_registry,
     user_repository,
+)
+from src.domain.abstractions.backup import (
+    BackupSnapshotMetadata,
+    BackupTriggerRequest,
+    BackupTriggerResponse,
+    RestoreRequest,
+    RestoreResponse,
 )
 from src.domain.abstractions.batteries import PlatformBatteriesResponse
 from src.domain.abstractions.config import TenantConfiguration
@@ -559,6 +567,41 @@ async def admin_platform_stats() -> dict[str, Any]:
 )
 async def admin_platform_batteries() -> PlatformBatteriesResponse:
     return battery_service.get_platform_batteries()
+
+
+@router.get(
+    "/platform/backups",
+    status_code=status.HTTP_200_OK,
+    response_model=list[BackupSnapshotMetadata],
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_list_backups() -> list[BackupSnapshotMetadata]:
+    return await backup_service.list_snapshots()
+
+
+@router.post(
+    "/platform/backups/trigger",
+    status_code=status.HTTP_200_OK,
+    response_model=BackupTriggerResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_trigger_backup(
+    payload: BackupTriggerRequest | None = None,
+) -> BackupTriggerResponse:
+    req = payload or BackupTriggerRequest()
+    return await backup_service.create_snapshot(req)
+
+
+@router.post(
+    "/platform/backups/restore",
+    status_code=status.HTTP_200_OK,
+    response_model=RestoreResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_restore_backup(
+    payload: RestoreRequest,
+) -> RestoreResponse:
+    return await backup_service.restore_snapshot(payload)
 
 
 @router.post(

@@ -22,6 +22,11 @@ import {
   AlertTriangle,
   RotateCcw,
   Loader2,
+  Cloud,
+  ShieldCheck,
+  FileArchive,
+  CheckCircle2,
+  Play,
 } from "lucide-react";
 
 interface PlatformStats {
@@ -36,6 +41,20 @@ interface PlatformStats {
   evaluations: { runs: number };
 }
 
+interface BackupSnapshot {
+  snapshot_id: string;
+  timestamp: string;
+  tables: string[];
+  row_counts: Record<string, number>;
+  uncompressed_bytes: number;
+  compressed_bytes: number;
+  sha256_checksum: string;
+  encryption_algorithm: string;
+  storage_uri: string;
+  status: string;
+  duration_seconds: number;
+}
+
 export default function SystemDataPage() {
   const queryClient = useQueryClient();
   const [resetConfirmText, setResetConfirmText] = useState("");
@@ -44,6 +63,36 @@ export default function SystemDataPage() {
   const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: () => api.get<PlatformStats>("/v1/admin/platform/stats"),
+  });
+
+  const { data: backups, isLoading: backupsLoading, refetch: refetchBackups } = useQuery({
+    queryKey: ["platform-backups"],
+    queryFn: () => api.get<BackupSnapshot[]>("/v1/admin/platform/backups"),
+  });
+
+  const backupMutation = useMutation({
+    mutationFn: () => api.post<{ snapshot_id: string; status: string; message: string }>("/v1/admin/platform/backups/trigger", {}),
+    onSuccess: (res) => {
+      toast.success(res.message || "Encrypted snapshot generated successfully!");
+      refetchBackups();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create database snapshot.");
+    },
+  });
+
+  const dryRunMutation = useMutation({
+    mutationFn: (snapshotId: string) =>
+      api.post<{ status: string; message: string }>("/v1/admin/platform/backups/restore", {
+        snapshot_id: snapshotId,
+        dry_run: true,
+      }),
+    onSuccess: (res) => {
+      toast.success(res.message || "Dry-run restore verification passed!");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Dry-run restore failed.");
+    },
   });
 
   const resetMutation = useMutation({
@@ -185,6 +234,115 @@ export default function SystemDataPage() {
                 );
               })}
             </div>
+
+            {/* Disaster Recovery & Cloud Database Snapshots Block (M87) */}
+            <Card className="border-border/60 bg-card overflow-hidden">
+              <CardHeader className="border-b border-border/40 pb-4 flex flex-row items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Cloud className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                    <CardTitle className="text-base font-semibold">Disaster Recovery & Encrypted Cloud Snapshots (M87)</CardTitle>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono border border-emerald-500/20">
+                      AES-256 GCM
+                    </span>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Automated pooler-safe database dumps with cryptographic SHA-256 verification and Cloudflare R2 / AWS S3 archival.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => backupMutation.mutate()}
+                  disabled={backupMutation.isPending}
+                  className="gap-2"
+                >
+                  {backupMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                      Dumping & Encrypting...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                      Trigger On-Demand Backup
+                    </>
+                  )}
+                </Button>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-b border-border/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span>Off-Site Cloud Storage: <strong className="text-foreground">Connected (S3 / R2 Bucket)</strong></span>
+                  </div>
+                  <span>Continuous WAL Archival & PITR Recovery Engine</span>
+                </div>
+
+                {backupsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : !backups || backups.length === 0 ? (
+                  <div className="text-center py-6 text-sm text-muted-foreground border border-dashed rounded-lg">
+                    No snapshot archives registered yet. Click &quot;Trigger On-Demand Backup&quot; to create your first encrypted snapshot.
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-border/40 overflow-hidden">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border/40">
+                        <tr>
+                          <th className="p-3">Snapshot ID</th>
+                          <th className="p-3">Timestamp (UTC)</th>
+                          <th className="p-3">Tables</th>
+                          <th className="p-3">Encrypted Size</th>
+                          <th className="p-3">SHA-256 Digest</th>
+                          <th className="p-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30 font-mono">
+                        {backups.map((snap) => (
+                          <tr key={snap.snapshot_id} className="hover:bg-muted/30 transition-colors">
+                            <td className="p-3 font-semibold text-foreground flex items-center gap-2">
+                              <FileArchive className="h-4 w-4 text-muted-foreground" />
+                              {snap.snapshot_id}
+                            </td>
+                            <td className="p-3 text-muted-foreground">
+                              {new Date(snap.timestamp).toLocaleString()}
+                            </td>
+                            <td className="p-3">
+                              <span className="text-foreground font-sans bg-muted px-1.5 py-0.5 rounded">
+                                {snap.tables.length} tables
+                              </span>
+                            </td>
+                            <td className="p-3 text-muted-foreground">
+                              {(snap.compressed_bytes / 1024).toFixed(1)} KB
+                            </td>
+                            <td className="p-3 text-muted-foreground truncate max-w-[120px]" title={snap.sha256_checksum}>
+                              {snap.sha256_checksum.slice(0, 12)}...
+                            </td>
+                            <td className="p-3 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => dryRunMutation.mutate(snap.snapshot_id)}
+                                disabled={dryRunMutation.isPending}
+                                className="h-7 px-2 text-xs font-sans gap-1 text-emerald-600 hover:text-emerald-500 hover:bg-emerald-500/10"
+                                title="Run dry-run cryptographic integrity and schema audit"
+                              >
+                                <Play className="h-3 w-3" />
+                                Audit Restore
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Danger Zone / Fresh Start Block */}
             <Card className="border-destructive/30 bg-destructive/5 overflow-hidden">

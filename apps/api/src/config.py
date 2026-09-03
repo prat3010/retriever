@@ -171,6 +171,12 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672//"
 
+    # Multi-Region Read-Replicas & Edge Routing (Milestone 89)
+    PRIMARY_REGION: str = "ap-south"
+    REPLICA_US_EAST_DATABASE_URL: str | None = None
+    REPLICA_EU_CENTRAL_DATABASE_URL: str | None = None
+    REPLICA_AP_SOUTH_DATABASE_URL: str | None = None
+
     # Infra auto-detection (auto/true/false — auto detects from server specs)
     REDIS_ENABLED: str = "auto"
     BROKER_ENABLED: str = "auto"

@@ -415,6 +415,29 @@ class Container:
             restore_adapter=cloud_restore,
         )
 
+        # --- Milestone 89: Geo-Distributed Edge Router & Read-Replicas ---
+        from src.adapters.database.read_replica_adapter import ReadReplicaAdapter
+        from src.domain.abstractions.edge_router import RegionCode
+        from src.domain.routing.edge_router_service import EdgeRouterService
+
+        configured_regions = {RegionCode(settings.PRIMARY_REGION)}
+        if settings.REPLICA_US_EAST_DATABASE_URL:
+            configured_regions.add(RegionCode.US_EAST)
+        if settings.REPLICA_EU_CENTRAL_DATABASE_URL:
+            configured_regions.add(RegionCode.EU_CENTRAL)
+        if settings.REPLICA_AP_SOUTH_DATABASE_URL:
+            configured_regions.add(RegionCode.AP_SOUTH)
+
+        edge_router = EdgeRouterService(
+            configured_regions=configured_regions,
+            primary_region=RegionCode(settings.PRIMARY_REGION),
+        )
+        replica_adapter = ReadReplicaAdapter(
+            router_service=edge_router,
+        )
+        self._cache["edge_router_service"] = edge_router
+        self._cache["read_replica_adapter"] = replica_adapter
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -488,6 +511,5 @@ persona_intelligence_service = container.persona_intelligence_service
 battery_service = container.battery_service
 backup_service = container.backup_service
 compliance_certificate_service = container.compliance_certificate_service
-
-
-
+edge_router_service = container.edge_router_service
+read_replica_adapter = container.read_replica_adapter

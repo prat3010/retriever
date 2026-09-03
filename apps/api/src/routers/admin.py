@@ -65,6 +65,11 @@ from src.domain.abstractions.compliance import (
 )
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.connector import ConnectorConfig
+from src.domain.abstractions.edge_router import (
+    EdgeRoutingDecision,
+    MultiRegionClusterStatus,
+    RegionProbeResponse,
+)
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.experiment import ExperimentConfig
 from src.domain.abstractions.inference import PromptTemplate
@@ -2517,8 +2522,40 @@ async def unquarantine_api_key(
     return {"status": "success", "key_id": key_id, "active": success}
 
 
+# ---------------------------------------------------------------------------
+# Milestone 89: Geo-Distributed Multi-Region Edge Vector Read-Replicas
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/platform/regions",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_cluster_regions() -> MultiRegionClusterStatus:
+    """Retrieve global edge routing cluster topology, active regions, and health."""
+    from src.container import edge_router_service
+    return edge_router_service.get_cluster_status()
 
 
+@router.post(
+    "/platform/regions/probe",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def probe_cluster_regions() -> RegionProbeResponse:
+    """Trigger an active RTT latency probe across all configured regional endpoints."""
+    from src.container import read_replica_adapter
+    return await read_replica_adapter.probe_regional_health()
 
 
-
+@router.get(
+    "/platform/regions/preview",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def preview_edge_routing(
+    country: str = Query("US", description="ISO-3166 alpha-2 country code to simulate"),
+) -> EdgeRoutingDecision:
+    """Preview the Geo-IP dynamic routing decision and estimated latency reduction."""
+    from src.container import edge_router_service
+    return edge_router_service.resolve_region(country)

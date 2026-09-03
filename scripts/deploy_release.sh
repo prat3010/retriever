@@ -79,10 +79,10 @@ echo "⚡ Restarting systemd services..."
 sudo systemctl daemon-reload
 sudo systemctl restart retriever-api retriever-worker
 
-# 9. Health probe verification gate (up to 60s)
+# 9. Health probe verification gate (up to 120s for cold start)
 echo "🩺 Probing service health (/health/liveness & /health/readiness)..."
 HEALTHY=false
-for i in $(seq 1 12); do
+for i in $(seq 1 24); do
     sleep 5
     LIVE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/liveness || echo "000")
     READY=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/readiness || echo "000")
@@ -91,8 +91,9 @@ for i in $(seq 1 12); do
         HEALTHY=true
         break
     fi
-    echo "⏳ Waiting for service readiness... ($((i * 5))/60s, liveness=$LIVE, readiness=$READY)"
+    echo "⏳ Waiting for service readiness... ($((i * 5))/120s, liveness=$LIVE, readiness=$READY)"
 done
+
 
 # 10. Automated Rollback Trigger if unhealthy
 if [ "$HEALTHY" = false ]; then

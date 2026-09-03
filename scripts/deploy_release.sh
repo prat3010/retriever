@@ -51,13 +51,20 @@ fi
 echo "🐍 Syncing Python dependencies..."
 cd "$RELEASE_DIR"
 . "$SHARED_VENV/bin/activate"
-pip install --no-cache-dir -r requirements.txt 2>&1 | tail -n 15
+if [ -f "requirements.txt" ]; then
+    pip install --no-cache-dir -r requirements.txt 2>&1 | tail -n 15
+else
+    pip install --no-cache-dir -e apps/api 2>&1 | tail -n 15
+fi
 
 # 6. Execute database migrations
 echo "🗄️ Executing Alembic database migrations..."
 if [ -f "alembic.ini" ]; then
     alembic upgrade head
+elif [ -f "apps/api/alembic.ini" ]; then
+    (cd apps/api && alembic upgrade head)
 fi
+
 
 # 7. Atomically switch current symlink
 echo "🔄 Switching active symlink to $RELEASE_DIR..."

@@ -39,7 +39,9 @@ git archive HEAD | tar -x -C "$RELEASE_DIR"
 
 # Link shared environment and virtualenv
 ln -sf "$SHARED_ENV" "$RELEASE_DIR/.env"
+ln -sf "$SHARED_ENV" "$RELEASE_DIR/apps/api/.env"
 ln -sf "$SHARED_VENV" "$RELEASE_DIR/.venv"
+
 
 # 4. Trigger pre-deployment logical database backup
 if [ -x "$BASE_DIR/scripts/backup-db.sh" ]; then

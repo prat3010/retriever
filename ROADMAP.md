@@ -1510,6 +1510,20 @@
 
 ---
 
+### [Planned] Milestone 97: Autonomous FDE Metaprogrammer & Self-Extending Capability Studio (v0.82.0)
+
+**Objective:** Enable the platform to autonomously analyze user requirements, recommend existing batteries, and scaffold verified, production-grade Hexagonal architecture modules for self-hosted instances.
+
+**Target Deliverables:**
+- **Dual-Persona Solution Engine**:
+  1. *For Business / Non-Tech Users:* Natural language use-case wizard in SaaS Studio that recommends and configures existing batteries (System Prompts, PII redaction toggles, chunk sizes, and n8n webhooks) with zero code exposure.
+  2. *For Developers & Forward Deployed Engineers:* Autonomous Metaprogrammer agent that ingests custom domain requirements, analyzes missing capabilities, and auto-scaffolds complete Hexagonal architecture slices (`domain/abstractions/`, `domain/`, `adapters/`, `routers/`, `container.py` injection, and automated Pytest test suites).
+- **Isolated Plugin / Extension Directory (`apps/api/src/plugins/custom/`)**: Scaffolds into dedicated, git-isolated directories preventing merge conflicts when users pull upstream updates from the core open-source repository.
+- **Automated AST & Pytest Gate**: Verifies that generated modules adhere strictly to Hexagonal boundaries (0 framework imports in domain) and pass unit tests before hot-reloading into the active container.
+- **Community PR Generator**: 1-click command creating clean git branches and Pull Request templates for contributing verified custom adapters back to the upstream open-source project.
+
+---
+
 ## 7. Cross-Cutting Engineering Invariants
 
 These are tracked across all milestones and are not individual deliverables:

@@ -88,7 +88,7 @@
 | **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Completed** (Phase J / v0.67.0) |
 | **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Completed** (Phase J / v0.68.0) |
 | **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Completed** (Phase J / v0.69.0) |
-| **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **ACTIVE NEXT (Phase J)** |
+| **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Completed** (Phase J / v0.70.0) |
 | **M85.1–M85.4**| Forensic Audit Remediation (Blueprint-to-Reality Parity) | LlamaGuard 3 structured safety, LongLLMLingua entropy scoring, Dashboard live wire | **Completed** (Phase J.5) |
 | **M85.5–M85.6**| Security Hardening & Production Logging | Secret rotation, KEK validation, structured exception handling across 50+ files | **Completed** (Phase J.6) |
 | **M85.7**| Safe Deployment Pipeline (Blue/Green with Rollback & Health Gates) | Release directory versioning (`/opt/retriever/releases`), atomic symlinks, and automatic rollback on health failure | **Completed** (Phase J.6 / DevOps) |
@@ -1382,7 +1382,7 @@
 
 ---
 
-### [Planned] Milestone 85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier (v0.70.0)
+### [Completed] Milestone 85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier (v0.70.0)
 
 **Objective:** Segment anonymous visitors into dynamic personas and score cold outreach prospects by conversion probability.
 
@@ -1392,7 +1392,7 @@
 
 ---
 
-### [Planned] Milestone 86: Edge AI Token Shield, DDoS Defense & Upstash Redis Rate Limiting (v0.71.0)
+### [Active Next] Milestone 86: Edge AI Token Shield, DDoS Defense & Upstash Redis Rate Limiting (v0.71.0)
 
 **Objective:** Protect public inference endpoints from API token drain and provide resilient auto-reconnect streaming for mobile clients.
 

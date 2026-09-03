@@ -65,6 +65,10 @@ from src.adapters.ingestion.sync_ingestion_service import (
     ingest_file_sync,  # noqa: F401 — re-exported for routers
 )
 from src.adapters.ml.scikit_effort_regressor import ScikitEffortRegressor
+from src.adapters.ml.scikit_persona_classifier import (
+    ScikitLeadPropensityScorer,
+    ScikitPersonaClusterer,
+)
 from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.adapters.sandbox.python_sandbox_adapter import (
     RestrictedPythonSandboxAdapter,
@@ -79,6 +83,7 @@ from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import settings
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
+from src.domain.clustering.persona_service import PersonaIntelligenceService
 from src.domain.config.config_service import ConfigurationService
 from src.domain.consensus.reflection_loop import MultiAgentConsensusEngine
 from src.domain.estimation.effort_estimation_service import EffortEstimationService
@@ -381,6 +386,15 @@ class Container:
         self._cache["effort_regressor"] = effort_regressor
         self._cache["effort_estimation_service"] = EffortEstimationService(effort_regressor)
 
+        persona_clusterer = ScikitPersonaClusterer()
+        lead_scorer = ScikitLeadPropensityScorer()
+        self._cache["persona_clusterer"] = persona_clusterer
+        self._cache["lead_scorer"] = lead_scorer
+        self._cache["persona_intelligence_service"] = PersonaIntelligenceService(
+            persona_classifier=persona_clusterer,
+            lead_scorer=lead_scorer,
+        )
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -450,6 +464,7 @@ anomaly_repository = container.anomaly_repository
 alert_service = container.alert_service
 anomaly_sentinel_service = container.anomaly_sentinel_service
 effort_estimation_service = container.effort_estimation_service
+persona_intelligence_service = container.persona_intelligence_service
 
 
 

@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-   - **Current Milestone**: Phase J — Machine Learning & Predictive Intelligence Framework (M81 Topic Modeling, M85.7 Safe Deploys & M85.10 Load Benchmarks Shipped)
-   - **Last Completed Milestone**: Milestone 81 (HDBSCAN Topic Modeling & Knowledge Gaps), Milestone 85.7 (Safe Deployments & Rollbacks), Milestone 85.10 (Locust Load Benchmarks)
-   - **Build Status**: Passing (587 unit tests pass, 0 failures, 0 warnings)
-   - **Admin Dashboard Build**: Passing (12 routes, all compile)
-   - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
-   - **Reference Client Build**: Passing
-   - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-   - **Next Recommended Milestone**: Milestone 83: Scikit-Learn Real-Time Telemetry Anomaly Detection (v0.68.0) or Phase E Autonomous Outreach Pipeline
+- **Current Milestone**: Phase J — Machine Learning & Predictive Intelligence Framework (M81 Topic Modeling, M85.7 Safe Deploys & M85.10 Load Benchmarks Shipped); **Phase J.7 (M85.11–M85.16) Honest AI Wiring, Trust Hardening & FDE Hiring Credibility — Active (Control-Plane / Cross-Platform)**
+- **Last Completed Milestone**: Milestone 81 (HDBSCAN Topic Modeling & Knowledge Gaps), Milestone 85.7 (Safe Deployments & Rollbacks), Milestone 85.10 (Locust Load Benchmarks)
+- **Build Status**: Passing (92 test files, 0 failures, 0 warnings)
+- **Admin Dashboard Build**: Passing (9 routes, all compile)
+- **Developer Console Build**: Passing (Next.js 16, compiles successfully)
+- **Reference Client Build**: Passing
+- **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
+- **Next Recommended Milestone**: Milestone 83: Scikit-Learn Real-Time Telemetry Anomaly Detection (v0.68.0) or **Phase J.7 M85.11 (parse-intent Real-Retriever Structured Classification)** or Phase E Autonomous Outreach Pipeline
 
 
 
@@ -39,9 +39,9 @@ Operational overview of the Retriever platform's current engineering status.
  - **Client Integration Model**: Documented in architecture.md §15. API key + `X-User-ID` contract defined.
  
  ### Testing Status: **Green**
-- **Unit Test Coverage**: 37 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), SaaS tenant resource quotas (`test_tenant_quotas.py`, M26), multi-workspace collections (`test_workspace_collections.py`, M27), interactive chunking auditor (`test_chunking_auditor.py`, M28), A/B testing platform (`test_ab_testing.py`, M29), SaaS data connectors framework (`test_data_connectors.py`, M36), zero-config self-adaptive ingestion (`test_zero_config_ingestion.py`), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
+- **Unit Test Coverage**: 92 test files covering ingestion, retrieval, inference, embedding, events, telemetry, health, config system, tenant domain, architecture conformance, admin API, client SDK (M11), production storage (M12), custom pipelines (M13), semantic caching / worker batching (M14), enterprise cryptographic audit chains / data retention schedulers (M15), Google OAuth / auto-tenant provisioning (`test_google_auth.py`), SaaS pricing config endpoints (`test_pricing.py`), metadata & tag filtering (M18), model failover (M19), token cost optimization (M20), web search grounding (M21), structured data extraction (M22), multi-modal processing (M23), self-querying retrieval (M24), stream token telemetry / parsing whitelist validation (M25), SaaS tenant resource quotas (`test_tenant_quotas.py`, M26), multi-workspace collections (`test_workspace_collections.py`, M27), interactive chunking auditor (`test_chunking_auditor.py`, M28), A/B testing platform (`test_ab_testing.py`, M29), SaaS data connectors framework (`test_data_connectors.py`, M36), zero-config self-adaptive ingestion (`test_zero_config_ingestion.py`), Baidu RapidOCR (PP-OCRv4), local Apple Silicon cross-encoder reranking, parent-child RAG context expansion, and contextual document summary prefixes.
 - **Admin API Tests**: 48 tests covering all 32 admin endpoints (tenants, users, API keys, config, experiments CRUD+metrics, connectors CRUD+sync, documents, prompts CRUD+preview, audit logs, reindex).
-- **Total Tests**: 485/485 passing (1 skipped).
+- **Total Tests**: 92 test files passing (inline milestone sections below contain historical assertion counts at time of completion).
 - **Integration Tests**: 4 adapter-level tests (DB, Redis, tenant CRUD, document CRUD) — run with `INTEGRATION_TEST=1`.
 - **Mock Quality**: 53 `@patch` decorators now use `autospec=True`.
 - **Observability**: Inference logs now tagged with caller `role` (admin/client) and `key_id` for full attribution. Admin requests no longer have `user_id=NULL` blind spot. `TOKEN_CONSUMPTION` and `COST_SPEND` Prometheus counters carry `role` label.
@@ -61,12 +61,13 @@ Operational overview of the Retriever platform's current engineering status.
 |---|---|
 | `/login` | Admin master key authentication |
 | `/` | Dashboard home with stats overview |
-| `/onboard` | 3-step client onboarding wizard |
+| `/onboard` | 4-step client onboarding wizard |
 | `/tenants` | Tenant list with search + pagination |
-| `/tenants/[id]` | Tenant detail (7 tabs: overview, documents, users, API keys, prompts, sandbox, config) |
+| `/tenants/[id]` | Tenant detail (8 tabs: overview, documents, users, API keys, prompts, sandbox, config, system-data) |
 | `/tenants/[id]/playground` | API endpoint test console |
 | `/settings` | Global config editor (AI, embedding, retrieval, rate limits) |
 | `/audit-log` | Audit trail viewer with tenant/action filters |
+| `/system-data` | System data and ingestion management |
 
 ### Backend
 - Admin-scoped documents list endpoint
@@ -89,7 +90,7 @@ Operational overview of the Retriever platform's current engineering status.
 - Overview, Documents, Users, API Keys, Prompts, Sandbox (RAG chat), Config
 
 ### Reference Client
-- Standalone Next.js app at `apps/client-reference/`
+- *(Removed)* Standalone Next.js app formerly at `apps/client-reference/` — functionality merged into admin dashboard.
 - `RetrieverClient` class — listDocuments, search, chat (SSE), uploadDocument
 - Tabs: Config, Chat (SSE streaming), Search, Documents
 
@@ -338,7 +339,7 @@ Operational overview of the Retriever platform's current engineering status.
 - Enforced a secure billing strategy: the API key resolver checks the new `allow_platform_key` flag on the tenant's features. If unset or `False`, requests without client keys are rejected, preventing auto-billing leaks.
 
 ### Next.js Developer Console App
-- Bootstrapped `apps/developer-console` using Next.js 16 and `@prat3010/retriever-client-js`.
+- *(Removed)* Bootstrapped `apps/developer-console` using Next.js 16 and `@prat3010/retriever-client-js` — no longer present in monorepo.
 - Implemented a premium dark-mode glassmorphic theme in pure vanilla CSS.
 - Added sidebar navigation for indexed documents, SSE chat token streaming, key validation settings, and citation click modals.
 

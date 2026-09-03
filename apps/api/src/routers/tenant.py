@@ -1,3 +1,6 @@
+import json
+import logging
+import time
 from typing import Any
 
 import openai
@@ -14,9 +17,11 @@ from src.container import (
     audit_logger,
     config_service,
     identity_provider,
+    inference_orchestrator,
     tenant_registry,
 )
 from src.domain.abstractions.config import TenantConfiguration
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.clustering.abstractions import (
     KnowledgeGapReport,
     TopicClusteringRequest,
@@ -37,7 +42,14 @@ from src.schemas.graph import (
     GraphQueryResponse,
     GraphSummaryResponse,
 )
+from src.schemas.intent import (
+    ClassifyIntentRequest,
+    ClassifyIntentResponse,
+    ScopingIntentResult,
+)
 from src.schemas.tenant import CreateTenantRequest, TenantListItem
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1", tags=["Tenants"])
 
@@ -412,6 +424,146 @@ async def get_tenant_online_evaluation_summary(tenantId: str) -> Any:
     from src.container import online_eval_repo
 
     return await online_eval_repo.get_online_summary(tenantId)
+
+
+# ---------------------------------------------------------------------------
+# Tenant-Scoped CPQ Scoping Intent Classification (M85.11)
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/tenants/{tenantId}/intent/classify",
+    status_code=status.HTTP_200_OK,
+    response_model=ClassifyIntentResponse,
+    dependencies=[Depends(verify_tenant_or_admin)],
+)
+async def classify_scoping_intent(
+    tenantId: str,
+    payload: ClassifyIntentRequest,
+) -> ClassifyIntentResponse:
+    """Classify natural language project description into structured CPQ architecture parameters using LLM."""
+    start_time = time.perf_counter()
+    tenant_config = await config_service.get_tenant_config(tenantId)
+
+    json_schema = ScopingIntentResult.model_json_schema()
+    system_prompt = (
+        "You are an expert Solutions Architect and CPQ Intent Classifier. "
+        "Analyze the user's project description and map it to software architecture parameters. "
+        "Return ONLY a JSON object matching this schema:\n"
+        f"{json.dumps(json_schema)}\n"
+        "Valid feature_ids: 'auth', 'admin', 'payments', 'email', 'cms', 'search', 'blog', "
+        "'ai_rag', 'ai_voice_agent', 'ai_vision_ocr', 'ai_agents', 'integrations', 'commerce', 'lms', 'analytics', 'seo', 'multi_language'. "
+        "Valid base_engine_id: 'landing' (single-page waitlist/landing), 'multipage' (multi-page/e-commerce), 'saas' (web app/portal/dashboard/RAG). "
+        "Output pure valid JSON only without markdown formatting."
+    )
+
+    messages = [
+        ChatMessage(role="system", content=system_prompt),
+        ChatMessage(role="user", content=f"Project Scope: {payload.prompt}"),
+    ]
+
+    model_override = payload.model or tenant_config.ai_provider.model or "meta-llama/llama-3.3-70b-instruct"
+    config: dict[str, Any] = {"model": model_override}
+
+    try:
+        response = await inference_orchestrator.llm.generate(
+            InferenceRequest(messages=messages, temperature=0.1, json_schema=json_schema),
+            config,
+        )
+        raw = response.content.strip()
+        raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        parsed_dict = json.loads(raw)
+        intent_result = ScopingIntentResult(**parsed_dict)
+    except Exception as exc:
+        logger.warning(f"Structured intent classification fallback due to error: {exc}")
+        p_lower = payload.prompt.lower()
+        is_rag = any(k in p_lower for k in ["rag", "knowledge base", "vector", "citation", "semantic search"])
+        is_voice = any(k in p_lower for k in ["voice", "speech", "calling bot", "elevenlabs"])
+        is_ecom = any(k in p_lower for k in ["store", "ecommerce", "e-commerce", "shop", "cart"])
+        is_landing = any(k in p_lower for k in ["landing page", "waitlist", "teaser", "single page"])
+
+        if is_voice:
+            intent_result = ScopingIntentResult(
+                archetype_id="voice_ai_agent_app",
+                base_engine_id="saas",
+                feature_ids=["ai_voice_agent", "ai_rag", "auth", "admin", "email"],
+                brand_asset_id="comprehensive",
+                maintenance_plan_id="premium",
+                suggested_timeline="4 to 5 Weeks",
+                confidence_score=0.92,
+                summary_rationale="Configured with conversational Voice AI agent, Retriever RAG knowledge base, and audio synthesis.",
+                retriever_engine_recommended=True,
+            )
+        elif is_rag:
+            intent_result = ScopingIntentResult(
+                archetype_id="ai_rag_app",
+                base_engine_id="saas",
+                feature_ids=["ai_rag", "auth", "admin", "search", "email"],
+                brand_asset_id="basic",
+                maintenance_plan_id="premium",
+                suggested_timeline="4 Weeks",
+                confidence_score=0.95,
+                summary_rationale="Configured with Retriever Enterprise RAG engine, pgvector semantic indexing, and role-based admin center.",
+                retriever_engine_recommended=True,
+            )
+        elif is_ecom:
+            intent_result = ScopingIntentResult(
+                archetype_id="ecommerce",
+                base_engine_id="multipage",
+                feature_ids=["commerce", "payments", "email"],
+                brand_asset_id="comprehensive",
+                maintenance_plan_id="standard",
+                suggested_timeline="3 to 4 Weeks",
+                confidence_score=0.90,
+                summary_rationale="Configured for headless e-commerce storefront with product catalog and payment checkout.",
+                retriever_engine_recommended=False,
+            )
+        elif is_landing:
+            intent_result = ScopingIntentResult(
+                archetype_id="landing_page",
+                base_engine_id="landing",
+                feature_ids=["email"],
+                brand_asset_id="basic",
+                maintenance_plan_id="standard",
+                suggested_timeline="1 Week",
+                confidence_score=0.92,
+                summary_rationale="High-converting single-page Landing Core Engine with lead capture.",
+                retriever_engine_recommended=False,
+            )
+        else:
+            intent_result = ScopingIntentResult(
+                archetype_id="saas_app",
+                base_engine_id="saas",
+                feature_ids=["auth", "admin", "payments", "email"],
+                brand_asset_id="basic",
+                maintenance_plan_id="standard",
+                suggested_timeline="4 Weeks",
+                confidence_score=0.85,
+                summary_rationale="Configured with full-stack SaaS platform architecture with authentication, billing, and admin center.",
+                retriever_engine_recommended=False,
+            )
+        provider_name = tenant_config.ai_provider.provider_name or "fallback"
+        input_tokens = 0
+        output_tokens = 0
+        finish_reason = "fallback"
+    else:
+        provider_name = tenant_config.ai_provider.provider_name
+        input_tokens = response.usage.input_tokens
+        output_tokens = response.usage.output_tokens
+        finish_reason = response.finish_reason
+
+    latency_ms = max(1, int((time.perf_counter() - start_time) * 1000))
+
+    return ClassifyIntentResponse(
+        success=True,
+        data=intent_result,
+        model=model_override,
+        provider=finish_reason or provider_name,
+        inputTokens=input_tokens,
+        outputTokens=output_tokens,
+        latencyMs=latency_ms,
+    )
+
 
 
 

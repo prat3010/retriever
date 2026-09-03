@@ -21,6 +21,11 @@ from src.schemas.evaluation import (
     BulkImportQuestionsRequest,
     CreateEvalDatasetRequest,
 )
+from src.schemas.intent import (
+    ClassifyIntentRequest,
+    ClassifyIntentResponse,
+    ScopingIntentResult,
+)
 from src.schemas.search import (
     SearchMetaResponse,
     SearchRequest,
@@ -35,6 +40,8 @@ __all__ = [
     "ApplyPresetRequest",
     "BulkImportQuestionsRequest",
     "ChatMessageRequest",
+    "ClassifyIntentRequest",
+    "ClassifyIntentResponse",
     "CreateApiKeyRequest",
     "CreateEvalDatasetRequest",
     "CreatePromptRequest",
@@ -47,6 +54,7 @@ __all__ = [
     "FeedbackSubmitRequest",
     "PaginatedTenantList",
     "PreviewPromptRequest",
+    "ScopingIntentResult",
     "SearchMetaResponse",
     "SearchRequest",
     "SearchResponseDto",

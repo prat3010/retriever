@@ -95,6 +95,12 @@
 | **M85.8**| CI/CD Security Gate Enforcement & Full Test Coverage | Fail-blocking CodeQL & Trivy vulnerability scans with all continue-on-error flags removed | **Completed** (Phase J.6 / Security CI) |
 | **M85.9**| Dashboard God Component Decomposition & Zod Validation | Decomposed dashboard into 10 modular widgets with runtime Zod request validation | **Completed** (Phase J.6 / Frontend) |
 | **M85.10**| Multi-Tenant Locust Load Testing & Benchmark Reporting | Multi-tenant Locust concurrent load testing suite and automated latency & throughput report generator | **Completed** (Phase J.6 / Benchmarks) |
+| **M85.11**| parse-intent Real-Retriever Structured Classification | Replace `if/else` keyword classifier in `Prateek_website` scoping with authentic Retriever chat/orchestrator structured JSON classification (archetype, features, confidence, telemetry); remove fabricated latency/model; keep labeled fallback | **Planned (Phase J.7)** |
+| **M85.12**| AiScopingPromptBar AI-Theater Removal & Honest Telemetry | Remove fake default telemetry + stale "primed for prateeq-scoping-live" badge + simulated 3-step `setTimeout` progress; show real backend telemetry only | **Planned (Phase J.7)** |
+| **M85.13**| Scoping PRD & Audit Docs Reconciliation | Reconcile `SCOPING_AUDIT_ROADMAP.md` §5.1 / SOTA PRD "powered by gemini-3.6-flash" claims with the real Retriever implementation | **Planned (Phase J.7)** |
+| **M85.14**| CI Test Execution Gate & Coverage (Frontend) | Add `npm test` + coverage + Playwright interaction job to `Prateek_website` CI (`db_sync.yml`); tests currently never run in CI | **Planned (Phase J.7)** |
+| **M85.15**| Honest Communication Pass | Reword "256-bit Encrypted" badge, un-hide reCAPTCHA, correct stale hardcoded test counts in terminal copy | **Planned (Phase J.7)** |
+| **M85.16**| FDE Career Artifacts & Persona Roadmap | Rewrite `retriever/README.md` for technical interviewers; publish 2–3 case-study writeups (webhook HMAC/idempotency, GST, RLS, ColBERT/LoRA); align `21_Future_Roadmap` personae | **Planned (Phase J.7)** |
 | **M86** | Edge AI Token Shield, DDoS Defense & Upstash Rate Limiting | Sliding-window token limiter & resilient SSE connection recovery protocol | **Planned (Phase K)** |
 | **M87** | Automated Cloud Database Snapshots & PITR Recovery Engine | Encrypted daily pg_dump to Cloudflare R2 / S3 with Point-in-Time Recovery | **Planned (Phase K)** |
 | **M88** | Enterprise Compliance Vault: Presidio PII & GDPR Wipe | Microsoft Presidio PII entity redaction & cryptographic deletion certificate PDF | **Planned (Phase K)** |
@@ -112,6 +118,7 @@
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
 > - For the Master Unified Cross-Platform Roadmap (M1–M96), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Active **Phase J.7** (M85.11–M85.16: Honest AI Wiring, Trust Hardening & FDE Hiring Credibility), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` §Phase J.7](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
 

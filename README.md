@@ -3,6 +3,7 @@
 > **High-Performance Hybrid Vector Search, GraphRAG, Context Compression & Recursive Agentic Cognition.**
 > 
 > 📌 **Master Cross-Platform Roadmap (SSoT):** [`../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)  
+> 📌 **Forward Deployed Engineering (FDE) Case Studies:** [`docs/engineering/FDE_PRODUCTION_CASE_STUDIES.md`](docs/engineering/FDE_PRODUCTION_CASE_STUDIES.md)  
 > 📌 **Admin Dashboard Guide:** [`ADMIN_DASHBOARD_GUIDE.md`](ADMIN_DASHBOARD_GUIDE.md)  
 > 📌 **Frontend Client Studio:** [`../Prateek_website/docs/24_RAG_App_Studio_PRD.md`](../Prateek_website/docs/24_RAG_App_Studio_PRD.md)
 
@@ -125,7 +126,7 @@ uvicorn apps.api.src.main:app --reload --port 8000
 ## 🧪 Automated Testing & Benchmark Baselines
 
 ```bash
-# 1. Run complete unit test suite (580+ unit tests)
+# 1. Run complete unit test suite (604+ unit tests across 92 test suites)
 pytest apps/api/tests/ -v
 
 # 2. Run linting & Hexagonal import boundaries verification

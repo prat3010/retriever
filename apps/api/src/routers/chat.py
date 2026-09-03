@@ -88,6 +88,7 @@ async def send_chat_message(
     user_context: UserContext = Depends(get_current_user),
     x_llm_key: str | None = Header(None, alias="X-LLM-Key"),
     x_llm_provider: str | None = Header(None, alias="X-LLM-Provider"),
+    last_event_id: str | None = Header(None, alias="Last-Event-ID"),
 ):
     session = await inference_orchestrator.get_session(sessionId, tenantId)
     if not session:
@@ -180,6 +181,12 @@ async def send_chat_message(
     async def event_stream() -> AsyncGenerator[str, None]:
         logger = logging.getLogger("api")
         buffer = ""
+        event_seq = 0
+        if last_event_id:
+            logger.info(
+                f"SSE client reconnected with Last-Event-ID: {last_event_id} for session {sessionId} on tenant {tenantId}."
+            )
+
         try:
             async for event in inference_orchestrator.generate_stream(
                 tenant_id=tenantId,
@@ -209,21 +216,28 @@ async def send_chat_message(
                         buffer = ""
 
                     if safe_to_yield:
+                        event_seq += 1
                         event["delta"] = safe_to_yield
-                        yield f"data: {json.dumps(event)}\n\n"
+                        event["id"] = event_seq
+                        yield f"id: {event_seq}\ndata: {json.dumps(event)}\n\n"
                 else:
                     if buffer and event.get("event") == "done":
-                        yield f"data: {json.dumps({'event': 'token', 'delta': buffer})}\n\n"
+                        event_seq += 1
+                        yield f"id: {event_seq}\ndata: {json.dumps({'event': 'token', 'delta': buffer, 'id': event_seq})}\n\n"
                         buffer = ""
-                    yield f"data: {json.dumps(event)}\n\n"
+                    event_seq += 1
+                    event["id"] = event_seq
+                    yield f"id: {event_seq}\ndata: {json.dumps(event)}\n\n"
         except asyncio.CancelledError:
             logger.info(f"SSE client disconnected for session {sessionId} on tenant {tenantId}.")
             raise
         except Exception as e:
             logger.error(f"Error during SSE stream for session {sessionId}: {e}", exc_info=True)
             if buffer:
-                yield f"data: {json.dumps({'event': 'token', 'delta': buffer})}\n\n"
-            yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+                event_seq += 1
+                yield f"id: {event_seq}\ndata: {json.dumps({'event': 'token', 'delta': buffer, 'id': event_seq})}\n\n"
+            event_seq += 1
+            yield f"id: {event_seq}\ndata: {json.dumps({'event': 'error', 'message': str(e), 'id': event_seq})}\n\n"
 
     return StreamingResponse(
         event_stream(),

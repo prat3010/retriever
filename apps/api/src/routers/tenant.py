@@ -12,6 +12,7 @@ from src.adapters.api.security import (
     verify_tenant_isolation,
     verify_tenant_or_admin,
 )
+from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.config import settings
 from src.container import (
     audit_logger,
@@ -435,7 +436,10 @@ async def get_tenant_online_evaluation_summary(tenantId: str) -> Any:
     "/tenants/{tenantId}/intent/classify",
     status_code=status.HTTP_200_OK,
     response_model=ClassifyIntentResponse,
-    dependencies=[Depends(verify_tenant_or_admin)],
+    dependencies=[
+        Depends(verify_tenant_or_admin),
+        Depends(rate_limit(scope="intent", max_requests=30)),
+    ],
 )
 async def classify_scoping_intent(
     tenantId: str,

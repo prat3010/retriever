@@ -116,3 +116,30 @@ async def test_classify_intent_rejects_empty_prompt(auth_headers: dict[str, str]
         )
 
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_classify_intent_rate_limit_exceeded(auth_headers: dict[str, str]) -> None:
+    mock_limiter = AsyncMock()
+    mock_result = AsyncMock()
+    mock_result.allowed = False
+    mock_result.limit = 30
+    mock_result.remaining = 0
+    mock_result.reset_after = 45
+    mock_limiter.acquire.return_value = mock_result
+
+    with patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter", return_value=mock_limiter):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                "/v1/tenants/test-tenant/intent/classify",
+                headers=auth_headers,
+                json={"prompt": "Build an e-commerce platform with Stripe"},
+            )
+
+        assert resp.status_code == 429
+        body = resp.json()
+        assert body["detail"]["error"] == "rate_limit_exceeded"
+        assert body["detail"]["scope"] == "intent"
+        assert body["detail"]["retry_after_seconds"] == 45
+

@@ -22,7 +22,9 @@ async def _enable_rls_on_tables(conn) -> None:
         "chat_message_feedback",
         "eval_datasets", "eval_runs", "graph_triples",
         "online_evaluations", "payment_transactions",
+        "telemetry_anomalies",
     ]
+
     for table in tables:
         await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
         await conn.execute(text(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table};"))

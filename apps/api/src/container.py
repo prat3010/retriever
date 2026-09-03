@@ -354,6 +354,28 @@ class Container:
 
         self._cache["embedding_projector"] = EmbeddingProjectionAdapter()
 
+        # --- Milestone 83: Telemetry Anomaly Sentinel & Quota Abuse Guard ---
+        from src.adapters.cognitive.anomaly_detector_adapter import (
+            AnomalyDetectorAdapter,
+        )
+        from src.adapters.database.anomaly_repository import SqlAnomalyRepository
+        from src.domain.telemetry.alert_service import AlertService
+        from src.domain.telemetry.anomaly_sentinel_service import AnomalySentinelService
+
+        anomaly_detector = AnomalyDetectorAdapter()
+        anomaly_repo = SqlAnomalyRepository()
+        alert_svc = AlertService()
+        self._cache["anomaly_detector"] = anomaly_detector
+        self._cache["anomaly_repository"] = anomaly_repo
+        self._cache["alert_service"] = alert_svc
+        self._cache["anomaly_sentinel_service"] = AnomalySentinelService(
+            detector=anomaly_detector,
+            repository=anomaly_repo,
+            alert_service=alert_svc,
+            inference_repo=log_writer,
+        )
+
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -417,5 +439,10 @@ contextual_header_generator = container.contextual_header_generator
 colbert_reranker = container.colbert_reranker
 topic_clusterer = container.topic_clusterer
 embedding_projector = container.embedding_projector
+anomaly_detector = container.anomaly_detector
+anomaly_repository = container.anomaly_repository
+alert_service = container.alert_service
+anomaly_sentinel_service = container.anomaly_sentinel_service
+
 
 

@@ -4,6 +4,31 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [0.68.0] - 2026-09-03 - Milestone 83: Telemetry Anomaly Sentinel & Abuse Guard
+
+### Added
+- **Scikit-Learn Isolation Forest & Robust Statistical Anomaly Detector** (`apps/api/src/adapters/cognitive/anomaly_detector_adapter.py`, `src/domain/abstractions/anomaly.py`):
+  - Multi-dimensional telemetry feature vector scoring: request velocity ($rpm$), token asymmetry ratio, character/token Shannon entropy ($H(X)$), P99 latency variance, error rate, and cost velocity ($/hr$).
+  - Primary unsupervised `IsolationForest` engine (0.05 contamination, 100 estimators, `StandardScaler`) with calibrated $0.0 - 1.0$ probability scoring.
+  - Authentic pure-NumPy multivariate Mahalanobis / robust Median Absolute Deviation (MAD) distance fallback (`numpy_multivariate_baseline`) guaranteeing zero-toy mathematical integrity in lean runtimes.
+  - Natural-language explanatory factor attribution synthesis for flagged anomalies.
+- **Telemetry Anomaly Sentinel Domain Service** (`apps/api/src/domain/telemetry/anomaly_sentinel_service.py`):
+  - Sliding-window inference log feature aggregation across API keys and tenants.
+  - Tiered risk classification: `LOW` (<0.50), `MEDIUM` (0.50–0.69), `HIGH` (0.70–0.84), and `CRITICAL` (>=0.85).
+  - Automated credential quarantine policy enforcement and 1-click administrative resolution.
+- **Credential Quarantine & Abuse Enforcement** (`apps/api/src/adapters/database/anomaly_repository.py`, `apps/api/src/adapters/database/identity_repository.py`, `apps/api/src/adapters/telemetry/rate_limiter_dep.py`):
+  - Immediate token suspension (`ApiKeyDb.status = "quarantined"`) for CRITICAL threats with informative authentication errors.
+  - Redis fast-path dynamic quarantine throttling (2 req/min sliding-window).
+- **PostgreSQL Persistence & Alembic Migration** (`models.py`, `apps/api/alembic/versions/e2f1a3b4c5d6_create_telemetry_anomalies_table.py`):
+  - Created `telemetry_anomalies` table with composite indexes on `(tenant_id, created_at)` and `(risk_level, status)`.
+- **Asynchronous Celery Sentinel Task** (`workers/src/tasks/anomaly_sentinel.py`):
+  - Background task `run_telemetry_anomaly_sentinel` scanning rolling windows and triggering automatic protection.
+- **Admin & Tenant REST APIs** (`apps/api/src/routers/admin.py`, `apps/api/src/routers/tenant.py`):
+  - `GET /v1/admin/telemetry/anomalies`, `POST /v1/admin/telemetry/anomalies/scan`, `POST /v1/admin/telemetry/anomalies/{id}/resolve`, `POST /v1/admin/api-keys/{id}/quarantine`, `POST /v1/admin/api-keys/{id}/unquarantine`.
+  - `GET /v1/tenants/{id}/telemetry/anomalies`.
+- **Comprehensive Pytest Suites** (`test_anomaly_detector.py`, `test_anomaly_sentinel_service.py`, `test_anomaly_api.py`): 12 new passing unit/integration tests (617 total passing tests across 95 suites).
+
+
 ### Added
 - **Unified Monorepo Vercel Build Pipeline** (`package.json`, `apps/web/vercel.json`, `ADMIN_DASHBOARD_GUIDE.md`):
   - **Dual Build Bridging**: Enhanced root build script with automated artifact bridging (`npm run build --workspace=retriever-web && (rm -rf .next && cp -R apps/web/.next .next 2>/dev/null || true)`), guaranteeing 100% build compatibility whether Vercel projects target monorepo root (`/`) or dashboard subfolder (`apps/web`).

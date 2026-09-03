@@ -5,6 +5,7 @@ InferenceLogWriter ports using SQLAlchemy ORM with RLS enforcement.
 """
 
 import uuid
+from datetime import datetime
 
 from sqlalchemy import select
 
@@ -310,3 +311,18 @@ class SqlInferenceLogWriter(InferenceLogWriter):
                 )
             )
             await session.flush()
+
+    async def get_recent_logs(
+        self, window_start: datetime, tenant_id: str | None = None
+    ) -> list[InferenceLogDb]:
+        """Fetch recent inference logs since window_start optionally filtered by tenant."""
+        from sqlalchemy import select
+
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=True) as session:
+            stmt = select(InferenceLogDb).where(InferenceLogDb.created_at >= window_start)
+            if tenant_id:
+                stmt = stmt.where(InferenceLogDb.tenant_id == uuid.UUID(tenant_id))
+            stmt = stmt.order_by(InferenceLogDb.created_at.desc())
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+

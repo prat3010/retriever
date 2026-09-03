@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 import openai
-from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 
 from src.adapters.api.security import (
     verify_admin_key,
@@ -567,6 +567,41 @@ async def classify_scoping_intent(
         outputTokens=output_tokens,
         latencyMs=latency_ms,
     )
+
+
+# ── Milestone 83: Tenant Security Anomalies ─────────────────────────────────
+
+
+@router.get(
+    "/tenants/{tenantId}/telemetry/anomalies",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def get_tenant_telemetry_anomalies(
+    tenantId: str,
+    risk_level: str | None = Query(None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"),
+    status: str | None = Query(None, description="Filter by status (active, resolved)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    """Retrieve security anomaly events scoped to the authenticated tenant."""
+    from src.container import anomaly_sentinel_service
+
+    items, total = await anomaly_sentinel_service.list_anomalies(
+        tenant_id=tenantId,
+        risk_level=risk_level,
+        status=status,
+        limit=limit,
+        offset=offset,
+    )
+    return {
+        "tenant_id": tenantId,
+        "total": total,
+        "items": items,
+        "limit": limit,
+        "offset": offset,
+    }
+
 
 
 

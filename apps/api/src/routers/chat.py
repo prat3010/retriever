@@ -135,8 +135,9 @@ async def send_chat_message(
 
     search_query = _build_search_query(tenantId, tenant_config, payload, user_id=user_id, user_role=caller_role)
     if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
-        context_chunks, crag_decision = await corrective_service.prepare_crag_context(
+        context_chunks, _crag_decision = await corrective_service.prepare_crag_context(
             tenant_id=tenantId,
+
             query=payload.query,
             search_query=search_query,
             tenant_config=tenant_config,

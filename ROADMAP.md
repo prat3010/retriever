@@ -86,8 +86,9 @@
 | **M80** | PyTorch ColBERT Late-Interaction MaxSim Engine | Token-level multi-vector representations + Apple Silicon MPS/CUDA MaxSim reranker | **Completed** (Phase J) |
 | **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Completed** (Phase J / v0.66.0) |
 | **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Completed** (Phase J / v0.67.0) |
-| **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **ACTIVE NEXT (Phase J)** |
-| **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Planned (Phase J)** |
+| **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Completed** (Phase J / v0.68.0) |
+| **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **ACTIVE NEXT (Phase J)** |
+
 | **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Planned (Phase J)** |
 | **M85.1–M85.4**| Forensic Audit Remediation (Blueprint-to-Reality Parity) | LlamaGuard 3 structured safety, LongLLMLingua entropy scoring, Dashboard live wire | **Completed** (Phase J.5) |
 | **M85.5–M85.6**| Security Hardening & Production Logging | Secret rotation, KEK validation, structured exception handling across 50+ files | **Completed** (Phase J.6) |
@@ -1356,13 +1357,19 @@
 
 ---
 
-### [Planned] Milestone 83: Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard (v0.68.0)
+### [Completed] Milestone 83: Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard (v0.68.0)
 
 **Objective:** Deploy an unsupervised machine learning anomaly detection sentinel to safeguard tenant API keys and prevent scraping.
 
-**Target Deliverables:**
-- **Isolation Forest Anomaly Sentinel** (`workers/src/tasks/anomaly_sentinel.py`): Asynchronous Scikit-Learn `IsolationForest` scoring inference log features (request velocity, prompt entropy, latency variance, IP churn).
-- **Automated Quarantine & Webhook Alerts**: Automatically downgrade anomalous traffic to restricted queues and dispatch high-priority security webhooks to Discord/Slack.
+**Delivered Artifacts:**
+- **Isolation Forest & Pure-NumPy Anomaly Detector** (`apps/api/src/adapters/cognitive/anomaly_detector_adapter.py`): Scikit-Learn `IsolationForest` (with `StandardScaler` and 0.05 contamination rate) and authentic pure-NumPy multivariate Mahalanobis / robust MAD distance baseline scoring multi-dimensional telemetry features (request velocity, prompt entropy, latency variance, token ratio, error rate, cost velocity).
+- **Telemetry Anomaly Sentinel Domain Service** (`apps/api/src/domain/telemetry/anomaly_sentinel_service.py`): Sliding-window inference log feature aggregation, automated risk classification (LOW, MEDIUM, HIGH, CRITICAL), and factor attribution explanation synthesis.
+- **Credential Quarantine & Abuse Enforcement** (`apps/api/src/adapters/database/anomaly_repository.py`, `apps/api/src/adapters/database/identity_repository.py`, `apps/api/src/adapters/telemetry/rate_limiter_dep.py`): Automated API key suspension (`status = "quarantined"`) for CRITICAL threats, dynamic Redis quarantine restriction (2 req/min), and 1-click unquarantine.
+- **Database Persistence & Alembic Migration** (`telemetry_anomalies` table, migration `e2f1a3b4c5d6`): Indexed tracking of security anomaly events, scores, raw features, and resolution audits.
+- **Celery Asynchronous Sentinel Task** (`workers/src/tasks/anomaly_sentinel.py`): Background task `run_telemetry_anomaly_sentinel` scanning rolling windows and triggering automatic protection.
+- **Admin & Tenant REST APIs** (`apps/api/src/routers/admin.py`, `apps/api/src/routers/tenant.py`): Endpoints for listing anomalies, on-demand scans, resolving alerts, and quarantining/unquarantining credentials.
+- **Incident Alerting** (`apps/api/src/domain/telemetry/alert_service.py`): Real-time Slack/Discord security webhooks on detected abuse.
+
 
 ---
 

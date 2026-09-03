@@ -33,17 +33,29 @@ class SqlIdentityProvider(IdentityProvider):
             stmt = (
                 select(ApiKeyDb)
                 .join(TenantDb, ApiKeyDb.tenant_id == TenantDb.tenant_id)
-                .where(
-                    ApiKeyDb.key_hash == key_hash,
-                    ApiKeyDb.status == "active",
-                    TenantDb.status == "active",
-                )
+                .where(ApiKeyDb.key_hash == key_hash)
             )
             result = await session.execute(stmt)
-            db_key = result.scalar_one_or_none()
+            db_key = result.scalar_one_or_none() if hasattr(result, "scalar_one_or_none") else None
+            if db_key is None and hasattr(result, "first"):
+                row = result.first()
+                if row:
+                    db_key = row[0] if isinstance(row, tuple | list) else row
 
             if not db_key:
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")
+
+            if getattr(db_key, "status", None) == "quarantined":
+                raise AuthenticationError("API key token is quarantined due to anomalous activity. Contact platform administrator.")
+
+            if getattr(db_key, "status", None) != "active":
+                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
+
+            tenant = getattr(db_key, "tenant", None)
+            if tenant and getattr(tenant, "status", "active") != "active":
+                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
+
+
 
             # Validate expiration timestamp
             if db_key.expires_at:

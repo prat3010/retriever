@@ -674,3 +674,40 @@ class PaymentTransactionDb(Base):
             postgresql_where=external_reference.is_not(None),
         ),
     )
+
+
+class TelemetryAnomalyDb(Base):
+    __tablename__ = "telemetry_anomalies"
+
+    anomaly_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    entity_id = Column(String(255), nullable=False, index=True)
+    entity_type = Column(String(50), nullable=False, default="api_key")
+    key_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("api_keys.key_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    risk_level = Column(String(50), nullable=False, default="LOW")
+    anomaly_score = Column(Float, nullable=False, default=0.0)
+    algorithm_used = Column(String(100), nullable=False, default="isolation_forest")
+    features = Column(JSONB, nullable=False, default=dict)
+    contributing_factors = Column(JSONB, nullable=False, default=list)
+    is_quarantined = Column(Boolean, nullable=False, default=False)
+    status = Column(String(50), nullable=False, default="active")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_telemetry_anomalies_tenant_created", "tenant_id", "created_at"),
+        Index("ix_telemetry_anomalies_risk_status", "risk_level", "status"),
+    )
+

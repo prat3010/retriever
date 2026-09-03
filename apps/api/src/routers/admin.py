@@ -2241,6 +2241,148 @@ async def activate_lora_adapter(tenantId: str, adapterId: str) -> dict[str, str]
     return {"status": "success", "message": f"Adapter {adapterId} activated for tenant {tenantId}."}
 
 
+# ── Milestone 83: Telemetry Anomaly Sentinel & Abuse Guard ──────────────────
+
+
+@router.get(
+    "/telemetry/anomalies",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_telemetry_anomalies(
+    tenant_id: str | None = Query(None, description="Filter by tenant UUID"),
+    risk_level: str | None = Query(None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"),
+    status: str | None = Query(None, description="Filter by status (active, resolved)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    """List detected telemetry anomalies across all tenants with filtering."""
+    from src.container import anomaly_sentinel_service
+
+    items, total = await anomaly_sentinel_service.list_anomalies(
+        tenant_id=tenant_id,
+        risk_level=risk_level,
+        status=status,
+        limit=limit,
+        offset=offset,
+    )
+    return {
+        "total": total,
+        "items": items,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post(
+    "/telemetry/anomalies/scan",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def trigger_anomaly_scan(
+    request: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Trigger an on-demand telemetry anomaly scan across inference logs."""
+    from src.container import anomaly_sentinel_service
+
+    req = request or {}
+    lookback = int(req.get("lookback_minutes", 60))
+    tenant_id = req.get("tenant_id")
+    auto_quarantine = bool(req.get("auto_quarantine", True))
+
+    scores = await anomaly_sentinel_service.scan_telemetry(
+        lookback_minutes=lookback,
+        tenant_id=tenant_id,
+        auto_quarantine=auto_quarantine,
+    )
+
+    anomalies = [s for s in scores if s.is_anomaly]
+    quarantined = [s for s in anomalies if s.risk_level == "CRITICAL" and s.entity_type == "api_key"]
+
+    return {
+        "status": "completed",
+        "total_evaluated": len(scores),
+        "anomalies_detected": len(anomalies),
+        "quarantined_count": len(quarantined),
+        "scores": [s.model_dump(mode="json") for s in scores],
+    }
+
+
+@router.post(
+    "/telemetry/anomalies/{anomaly_id}/resolve",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def resolve_telemetry_anomaly(
+    anomaly_id: str,
+    body: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Resolve or dismiss a flagged security anomaly."""
+    from src.container import anomaly_sentinel_service
+
+    notes = (body or {}).get("notes", "Resolved by administrator")
+    success = await anomaly_sentinel_service.resolve_anomaly(
+        anomaly_id=anomaly_id,
+        resolved_by="admin",
+        notes=notes,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Anomaly {anomaly_id} not found or update failed.",
+        )
+    return {"status": "success", "anomaly_id": anomaly_id, "resolved": True}
+
+
+@router.post(
+    "/api-keys/{key_id}/quarantine",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def quarantine_api_key(
+    key_id: str,
+    body: dict[str, Any],
+) -> dict[str, Any]:
+    """Manually quarantine an API key to suspend access immediately."""
+    from src.container import anomaly_sentinel_service
+
+    tenant_id = body.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="tenant_id is required.",
+        )
+    reason = body.get("reason", "Manual administrator quarantine")
+    level = body.get("level", "CRITICAL")
+
+    success = await anomaly_sentinel_service.quarantine_key(
+        key_id=key_id,
+        tenant_id=tenant_id,
+        reason=reason,
+        level=level,
+    )
+    return {"status": "success", "key_id": key_id, "quarantined": success}
+
+
+@router.post(
+    "/api-keys/{key_id}/unquarantine",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def unquarantine_api_key(
+    key_id: str,
+) -> dict[str, Any]:
+    """Restore a quarantined API key to active status."""
+    from src.container import anomaly_sentinel_service
+
+    success = await anomaly_sentinel_service.unquarantine_key(
+        key_id=key_id,
+        resolved_by="admin",
+    )
+    return {"status": "success", "key_id": key_id, "active": success}
+
+
+
 
 
 

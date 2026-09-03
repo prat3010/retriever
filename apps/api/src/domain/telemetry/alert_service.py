@@ -280,3 +280,31 @@ class AlertService(BaseAlertService):
         if tenant_id:
             return [a for a in reversed(self._alert_history) if a.tenant_id == tenant_id][:limit]
         return list(reversed(self._alert_history))[:limit]
+
+    async def dispatch_anomaly_alert(self, anomaly_score: Any) -> AlertPayload:
+        """Construct and record/dispatch a security incident alert for an AnomalyScore."""
+        now_str = datetime.now(UTC).isoformat()
+        factors_str = "\n• " + "\n• ".join(getattr(anomaly_score, "contributing_factors", [])[:3])
+        alert = AlertPayload(
+            alert_id=f"sec_{uuid.uuid4().hex[:12]}",
+            tenant_id=str(getattr(anomaly_score, "tenant_id", "unknown")),
+            rule_name="anomaly_abuse_detected",
+            severity=str(getattr(anomaly_score, "risk_level", "HIGH")),
+            title=f"Security Anomaly Detected: {getattr(anomaly_score, 'entity_type', 'entity').upper()} {getattr(anomaly_score, 'entity_id', '')[:12]}",
+            description=(
+                f"Unsupervised Anomaly Sentinel flagged {getattr(anomaly_score, 'entity_type', 'entity')} "
+                f"`{getattr(anomaly_score, 'entity_id', '')}` with anomaly score {getattr(anomaly_score, 'anomaly_score', 0.0):.2f} "
+                f"({getattr(anomaly_score, 'algorithm_used', 'isolation_forest')})."
+                f"{factors_str}"
+            ),
+            metrics={
+                "anomaly_score": getattr(anomaly_score, "anomaly_score", 0.0),
+                "risk_level": getattr(anomaly_score, "risk_level", "HIGH"),
+                "algorithm_used": getattr(anomaly_score, "algorithm_used", "isolation_forest"),
+                **(getattr(anomaly_score, "features", {}) or {}),
+            },
+            timestamp=now_str,
+        )
+        self._alert_history.append(alert)
+        return alert
+

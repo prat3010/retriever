@@ -29,7 +29,24 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
                     pass
 
         key = f"rate_limit:{t_id or 'anonymous'}:{scope}"
-        result = await limiter.acquire(key)
+        # Check for dynamic Redis quarantine restriction (Milestone 83)
+        effective_max = max_requests
+        if t_id:
+            try:
+                from src.adapters.cache.config_cache import redis_client
+                if redis_client is not None:
+                    quarantine_flag = await redis_client.get(f"quarantine:{t_id}")
+                    if quarantine_flag:
+                        effective_max = min(effective_max or 10, 2)
+            except Exception:
+                pass
+
+        if effective_max is not None:
+            result = await limiter.acquire(key, max_requests_override=effective_max)
+        else:
+            result = await limiter.acquire(key)
+
+
 
         # Set rate limit headers in the response if available
         if response is not None:

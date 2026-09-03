@@ -104,6 +104,10 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 ### 7. 📝 `/audit-log` — Immutable Security Audit Log
 * Append-only compliance log tracking API key creation, tenant suspension/reactivation, document deletion, and configuration overrides across all tenants.
 
+### 8. 🔋 `/batteries` — Platform Batteries & Engine Capabilities Matrix (M86.5)
+* Real-time operational command center providing unified visibility across all 12 platform retrieval, ML intelligence, safety defense, and graph computation batteries.
+* Displays algorithmic foundations, live memory statuses (`active`, `standby`, `disabled`), latency benchmarks (`<15ms`), category filter pills, and active hyperparameters.
+
 ---
 
 ## 4. Operational Roadmap & Development Phases
@@ -115,6 +119,8 @@ timeline
     Phase 2 : Control Plane Integration & Auth Harmonization (M39 Alignment)
     Phase 3 : SaaS Resource Quotas & Cost Analytics (M26)
     Phase 4 : Enterprise Security & Compliance Automation (M15 / M51)
+    Phase 5 : 2026 World-Class RAG Controls (M54–M60 Alignment)
+    Phase 6 : Active Engine Batteries & Observability Matrix (M86.5)
 ```
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)
@@ -143,6 +149,11 @@ timeline
 - **ColBERT Late-Interaction Engine Selector (M57):** Admin selector for Token-Level MaxSim Reranker (Local TEI container vs. Cloud API).
 - **Corrective RAG (CRAG) Threshold Configurator (M58):** Confidence score slider for triggering auto-query rewriting and web search fallbacks.
 - **Closed-Loop Telemetry Cockpit (M60):** Real-time dashboard panel mapping M50 faithfulness scores directly to automated retrieval parameter auto-tuning (`top_k`, `reranking_threshold`, `rrf_k`).
+
+### Phase 6: Active Engine Batteries & Observability Matrix (M86.5)
+- ✅ Dedicated `/batteries` operational command center with live query hooks and auto-refresh.
+- ✅ Full inventory of 12 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Sandbox, GraphRAG HDBSCAN, Anomaly Sentinel, Effort Regressor, Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua).
+- ✅ Real-time metric cards, pulsing status indicators, and category filter pills (`Retrieval`, `ML Intelligence`, `Safety & Defense`, `Computation & Graph`).
 
 ---
 

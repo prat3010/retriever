@@ -16,11 +16,13 @@ from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.config import settings
 from src.container import (
     audit_logger,
+    battery_service,
     config_service,
     identity_provider,
     inference_orchestrator,
     tenant_registry,
 )
+from src.domain.abstractions.batteries import PlatformBatteriesResponse
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.clustering.abstractions import (
@@ -601,6 +603,20 @@ async def get_tenant_telemetry_anomalies(
         "limit": limit,
         "offset": offset,
     }
+
+
+# ── Milestone 86.5: Platform Capabilities & Active Batteries ────────────────
+
+
+@router.get(
+    "/tenants/{tenantId}/batteries",
+    status_code=status.HTTP_200_OK,
+    response_model=PlatformBatteriesResponse,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def get_tenant_batteries(tenantId: str) -> PlatformBatteriesResponse:
+    """Retrieve platform batteries and active engine capabilities available for this tenant."""
+    return battery_service.get_tenant_batteries(tenantId)
 
 
 

@@ -1402,6 +1402,18 @@
 
 ---
 
+### [Completed] Milestone 86.5: Platform Capabilities & Active Batteries Observability Cockpit (v0.71.1)
+
+**Objective:** Build unified, real-time observability and control for all 12 platform retrieval, machine learning, and defense batteries across backend endpoints and admin dashboards.
+
+**Delivered:**
+- **Platform Batteries Domain Abstraction & Registry (`apps/api/src/domain/batteries/`)**: Assembled unified inventory of all 12 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Python REPL, GraphRAG HDBSCAN, Isolation Forest Anomaly Sentinel, Quantile Effort Regressor, Zero-Cookie Persona Clusterer, Token Shield, LlamaGuard 3, and LongLLMLingua).
+- **Admin & Tenant Inspection Endpoints**: `GET /v1/admin/platform/batteries` (Admin Master Key gated) and `GET /v1/tenants/{tenantId}/batteries` exposing live engine statuses, algorithmic foundations, latency profiles, and active hyperparameters.
+- **Admin Dashboard Visual Cockpit (`apps/web` at `/batteries`)**: High-tech operational command center with real-time KPI metrics, category filter pills, pulsing health indicators, and engine parameter tags.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_batteries.py` asserting inventory completeness, category coverage, and strict Hexagonal boundary isolation.
+
+---
+
 ### [Planned] Milestone 87: Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery (v0.72.0)
 
 **Objective:** Ensure enterprise disaster recovery with encrypted daily cloud backups and point-in-time recovery.

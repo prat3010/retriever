@@ -13,6 +13,7 @@ import {
   ScrollText,
   LogOut,
   Database,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -22,6 +23,7 @@ import { useTheme } from "next-themes";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tenants", label: "Tenants", icon: Building2 },
+  { href: "/batteries", label: "Batteries & Engines", icon: Zap },
   { href: "/onboard", label: "Onboard Client", icon: UserPlus },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/system-data", label: "System Data", icon: Database },

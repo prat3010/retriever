@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-- **Current Milestone**: Phase J / K — **Milestone 85 (Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier) — Completed (v0.70.0)**
-- **Last Completed Milestone**: Milestone 85 (Universal Multi-Tenant KMeans Visitor Persona Clusterer & Supervised Lead Conversion Propensity Scorer), Milestone 84 (Multi-Output Quantile Gradient Boosting Regressor for CPQ Scoping & Timeline Bounds), Milestone 83 (Isolation Forest Telemetry Anomaly Sentinel & Credential Abuse Guard), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Phase J.7 (M85.11–M85.17 Honest AI Wiring & Financial Accuracy), Milestone 82 (3D Embedding Space Projection), Milestone 81 (HDBSCAN Topic Modeling)
-- **Build Status**: Passing (97 test files, 631 passed, 1 skipped, 0 failures, 0 warnings)
-- **Admin Dashboard Build**: Passing (9 routes, all compile)
+- **Current Milestone**: Phase K — **Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit) — Completed (v0.71.1)**
+- **Last Completed Milestone**: Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Milestone 85 (Universal Multi-Tenant KMeans Visitor Persona Clusterer & Supervised Lead Conversion Propensity Scorer), Milestone 84 (Quantile Gradient Boosting Regressor for CPQ Scoping & Timeline Bounds), Milestone 83 (Isolation Forest Telemetry Anomaly Sentinel & Credential Abuse Guard), Phase J.7 (M85.11–M85.17 Honest AI Wiring & Financial Accuracy), Milestone 82 (3D Embedding Space Projection), Milestone 81 (HDBSCAN Topic Modeling)
+- **Build Status**: Passing (98 test files, 635 passed, 1 skipped, 0 failures, 0 warnings)
+- **Admin Dashboard Build**: Passing (10 routes including `/batteries`, all compile cleanly)
 - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 86: Edge AI Token Shield, DDoS Defense & Upstash Redis Rate Limiting (Phase K / v0.71.0)
+- **Next Recommended Milestone**: Milestone 87: Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery (Phase K / v0.72.0)
 
 
 

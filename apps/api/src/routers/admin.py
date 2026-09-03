@@ -25,6 +25,7 @@ from src.config import settings
 from src.container import (
     admin_repository,
     audit_logger,
+    battery_service,
     celery_app,
     config_service,
     document_repository,
@@ -45,6 +46,7 @@ from src.container import (
     tenant_registry,
     user_repository,
 )
+from src.domain.abstractions.batteries import PlatformBatteriesResponse
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.connector import ConnectorConfig
 from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
@@ -547,6 +549,16 @@ async def admin_download_document_file(tenantId: str, documentId: str) -> FileRe
 )
 async def admin_platform_stats() -> dict[str, Any]:
     return await admin_repository.get_platform_stats()
+
+
+@router.get(
+    "/platform/batteries",
+    status_code=status.HTTP_200_OK,
+    response_model=PlatformBatteriesResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_platform_batteries() -> PlatformBatteriesResponse:
+    return battery_service.get_platform_batteries()
 
 
 @router.post(

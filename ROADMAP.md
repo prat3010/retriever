@@ -87,9 +87,8 @@
 | **M81** | Scikit-Learn Unsupervised Chunk Clustering & HDBSCAN | Dynamic topic modeling & hierarchical community synthesis for GraphRAG knowledge graphs | **Completed** (Phase J / v0.66.0) |
 | **M82** | Scikit-Learn 2D/3D Embedding Space Projection Pipeline | PCA/UMAP projection service & Three.js interactive 3D vector space visualizer in SaaS Studio | **Completed** (Phase J / v0.67.0) |
 | **M83** | Scikit-Learn Real-Time Telemetry Anomaly Detection | Isolation Forest anomaly sentinel on inference logs for anti-abuse & quota protection | **Completed** (Phase J / v0.68.0) |
-| **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **ACTIVE NEXT (Phase J)** |
-
-| **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **Planned (Phase J)** |
+| **M84** | Scikit-Learn ML Project Effort & Timeline Estimator | Multi-Output Gradient Boosting Regressor for CPQ scoping effort & sprint timeline confidence bounds | **Completed** (Phase J / v0.69.0) |
+| **M85** | Scikit-Learn & PyTorch Visitor Persona & Lead Classifier | Zero-cookie telemetry clustering & autonomous outreach lead conversion propensity scorer | **ACTIVE NEXT (Phase J)** |
 | **M85.1–M85.4**| Forensic Audit Remediation (Blueprint-to-Reality Parity) | LlamaGuard 3 structured safety, LongLLMLingua entropy scoring, Dashboard live wire | **Completed** (Phase J.5) |
 | **M85.5–M85.6**| Security Hardening & Production Logging | Secret rotation, KEK validation, structured exception handling across 50+ files | **Completed** (Phase J.6) |
 | **M85.7**| Safe Deployment Pipeline (Blue/Green with Rollback & Health Gates) | Release directory versioning (`/opt/retriever/releases`), atomic symlinks, and automatic rollback on health failure | **Completed** (Phase J.6 / DevOps) |
@@ -1373,7 +1372,7 @@
 
 ---
 
-### [Planned] Milestone 84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model (v0.69.0)
+### [Completed] Milestone 84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model (v0.69.0)
 
 **Objective:** Predict realistic engineering sprint hours and delivery windows with statistical confidence intervals in the Scoping Lab and Client Workspace.
 

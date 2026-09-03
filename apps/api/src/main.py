@@ -157,6 +157,7 @@ from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
 from src.routers.consensus import router as consensus_router
 from src.routers.document import router as document_router
+from src.routers.estimation import router as estimation_router
 from src.routers.health import router as health_router
 from src.routers.payments import router as payments_router
 from src.routers.pricing import router as pricing_router
@@ -180,5 +181,6 @@ app.include_router(chat_router)
 app.include_router(document_router)
 app.include_router(search_router)
 app.include_router(tenant_router)
+app.include_router(estimation_router)
 
 

@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-- **Current Milestone**: Phase J / K — **Milestone 83 (Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard) — Completed**
-- **Last Completed Milestone**: Milestone 83 (Isolation Forest Telemetry Anomaly Sentinel & Credential Abuse Guard), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Phase J.7 (M85.11–M85.17 Honest AI Wiring & Financial Accuracy), Milestone 82 (3D Embedding Space Projection), Milestone 81 (HDBSCAN Topic Modeling)
-- **Build Status**: Passing (95 test files, 617 passed, 1 skipped, 0 failures, 0 warnings)
+- **Current Milestone**: Phase J / K — **Milestone 84 (Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model) — Completed (v0.69.0)**
+- **Last Completed Milestone**: Milestone 84 (Multi-Output Quantile Gradient Boosting Regressor for CPQ Scoping & Timeline Bounds), Milestone 83 (Isolation Forest Telemetry Anomaly Sentinel & Credential Abuse Guard), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect), Phase J.7 (M85.11–M85.17 Honest AI Wiring & Financial Accuracy), Milestone 82 (3D Embedding Space Projection), Milestone 81 (HDBSCAN Topic Modeling)
+- **Build Status**: Passing (96 test files, 622 passed, 1 skipped, 0 failures, 0 warnings)
 - **Admin Dashboard Build**: Passing (9 routes, all compile)
 - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model (Phase J)
+- **Next Recommended Milestone**: Milestone 85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier (Phase J / v0.70.0)
 
 
 

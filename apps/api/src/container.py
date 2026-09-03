@@ -64,6 +64,7 @@ from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
 from src.adapters.ingestion.sync_ingestion_service import (
     ingest_file_sync,  # noqa: F401 — re-exported for routers
 )
+from src.adapters.ml.scikit_effort_regressor import ScikitEffortRegressor
 from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.adapters.sandbox.python_sandbox_adapter import (
     RestrictedPythonSandboxAdapter,
@@ -80,6 +81,7 @@ from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.config.config_service import ConfigurationService
 from src.domain.consensus.reflection_loop import MultiAgentConsensusEngine
+from src.domain.estimation.effort_estimation_service import EffortEstimationService
 from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
@@ -375,6 +377,10 @@ class Container:
             inference_repo=log_writer,
         )
 
+        effort_regressor = ScikitEffortRegressor()
+        self._cache["effort_regressor"] = effort_regressor
+        self._cache["effort_estimation_service"] = EffortEstimationService(effort_regressor)
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -443,6 +449,7 @@ anomaly_detector = container.anomaly_detector
 anomaly_repository = container.anomaly_repository
 alert_service = container.alert_service
 anomaly_sentinel_service = container.anomaly_sentinel_service
+effort_estimation_service = container.effort_estimation_service
 
 
 

@@ -163,6 +163,7 @@ from src.routers.integrations import router as integrations_router
 from src.routers.payments import router as payments_router
 from src.routers.persona import router as persona_router
 from src.routers.pricing import router as pricing_router
+from src.routers.prompts import router as prompts_router
 from src.routers.rlm import router as rlm_router
 from src.routers.search import router as search_router
 from src.routers.security_compression import router as security_compression_router
@@ -186,5 +187,6 @@ app.include_router(tenant_router)
 app.include_router(estimation_router)
 app.include_router(persona_router)
 app.include_router(integrations_router)
+app.include_router(prompts_router)
 
 

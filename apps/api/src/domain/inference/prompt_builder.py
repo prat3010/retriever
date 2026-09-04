@@ -12,6 +12,7 @@ from src.domain.abstractions.inference import (
     ChatMessage,
     PromptTemplateRegistry,
 )
+from src.domain.inference.dspy_abstractions import CompiledPromptRepositoryProtocol
 
 CONTEXT_HEADER = "Here is the relevant context for answering (all chunks are equally important, order does not indicate priority):"
 CONTEXT_TEMPLATE = "[Source: {chunk_id}] {content}"
@@ -26,8 +27,13 @@ def _estimate_tokens(text: str) -> int:
 class PromptBuilder:
     """Compiles structured prompts from templates, context, and history."""
 
-    def __init__(self, template_registry: PromptTemplateRegistry) -> None:
+    def __init__(
+        self,
+        template_registry: PromptTemplateRegistry,
+        compiled_prompt_repo: CompiledPromptRepositoryProtocol | None = None,
+    ) -> None:
         self.template_registry = template_registry
+        self.compiled_prompt_repo = compiled_prompt_repo
 
     async def build_messages(
         self,
@@ -44,20 +50,43 @@ class PromptBuilder:
         1. Trim oldest history messages first.
         2. Prune lowest-scoring context chunks.
         """
-        # 1. Resolve system prompt
-        system_content = await self._resolve_system_prompt(
-            tenant_id, system_prompt_name
-        )
+        # 1. Resolve compiled DSPy program if active, else fallback to template registry
+        compiled_program = None
+        if self.compiled_prompt_repo:
+            try:
+                compiled_program = await self.compiled_prompt_repo.get_active_program(tenant_id)
+            except Exception:
+                compiled_program = None
+
+        if compiled_program and compiled_program.is_active and compiled_program.compiled_instruction:
+            system_content = compiled_program.compiled_instruction
+        else:
+            system_content = await self._resolve_system_prompt(
+                tenant_id, system_prompt_name
+            )
 
         # 2. Format context chunks
         context_block = self._format_context(context_chunks)
 
-        # 3. Build candidate message list
+        # 3. Format few-shot demonstrations if compiled DSPy program is active
+        demo_messages: list[ChatMessage] = []
+        if compiled_program and compiled_program.is_active and compiled_program.few_shot_demos:
+            for demo in compiled_program.few_shot_demos:
+                demo_user = f"Context:\n{demo.context}\n\nQuestion: {demo.question}"
+                demo_assistant = (
+                    f"Thought: {demo.thought}\nAnswer: {demo.answer}"
+                    if demo.thought
+                    else demo.answer
+                )
+                demo_messages.append(ChatMessage(role="user", content=demo_user))
+                demo_messages.append(ChatMessage(role="assistant", content=demo_assistant))
+
+        # 4. Build candidate message list
         system_msg = ChatMessage(role="system", content=system_content)
         context_msg = ChatMessage(role="system", content=context_block)
         user_msg = ChatMessage(role="user", content=query)
 
-        candidates = [system_msg] + history + [context_msg, user_msg]
+        candidates = [system_msg] + demo_messages + history + [context_msg, user_msg]
 
         # 4. Compress if over budget
         budget = int(max_tokens * 0.95)

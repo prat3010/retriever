@@ -28,6 +28,7 @@ from src.adapters.cognitive.context_compressor_adapter import (
 from src.adapters.cognitive.corrective_retrieval_adapter import (
     LLMCorrectiveRetrievalAdapter,
 )
+from src.adapters.cognitive.dspy_compiler_adapter import DSPyCompilerAdapter
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
 from src.adapters.cognitive.langgraph_orchestrator import LangGraphOrchestrator
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
@@ -46,6 +47,9 @@ from src.adapters.database.agent_checkpoint_repository import (
     SqlAgentCheckpointRepository,
 )
 from src.adapters.database.audit_repository import SqlAuditLogRepository
+from src.adapters.database.compiled_prompt_repository import (
+    SqlCompiledPromptRepository,
+)
 from src.adapters.database.config_repository import SqlConfigRegistry
 from src.adapters.database.document_repository import SqlDocumentRepository
 from src.adapters.database.evaluation_repository import (
@@ -220,16 +224,23 @@ class Container:
         # --- Inference ---
         session_repo = SqlChatSessionRepository()
         template_registry = SqlPromptTemplateRegistry()
+        compiled_prompt_repo = SqlCompiledPromptRepository()
+        dspy_compiler = DSPyCompilerAdapter(llm_provider=llm)
         log_writer = SqlInferenceLogWriter()
 
         self._cache["session_repo"] = session_repo
         self._cache["template_registry"] = template_registry
+        self._cache["compiled_prompt_repo"] = compiled_prompt_repo
+        self._cache["dspy_compiler"] = dspy_compiler
         self._cache["log_writer"] = log_writer
         self._cache["feedback_repo"] = SqlFeedbackRepository()
 
         self._cache["inference_orchestrator"] = InferenceOrchestrator(
             llm_provider=llm,
-            prompt_builder=PromptBuilder(template_registry=template_registry),
+            prompt_builder=PromptBuilder(
+                template_registry=template_registry,
+                compiled_prompt_repo=compiled_prompt_repo,
+            ),
             citation_validator=CitationValidator(),
             session_repo=session_repo,
             log_writer=log_writer,
@@ -529,3 +540,5 @@ compliance_certificate_service = container.compliance_certificate_service
 edge_router_service = container.edge_router_service
 read_replica_adapter = container.read_replica_adapter
 slack_service = container.slack_service
+compiled_prompt_repo = container.compiled_prompt_repo
+dspy_compiler = container.dspy_compiler

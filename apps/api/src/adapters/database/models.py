@@ -736,3 +736,35 @@ class AgentCheckpointDb(Base):
     )
 
 
+class CompiledPromptProgramDb(Base):
+    """Persisted compiled DSPy prompt programs with metric evaluation scores and few-shot exemplars."""
+
+    __tablename__ = "compiled_prompt_programs"
+
+    program_id = Column(String(128), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = Column(String(128), nullable=False, default="rag_cot_optimized")
+    signature_name = Column(String(128), nullable=False, default="RAGAnswerSignature")
+    optimizer = Column(String(64), nullable=False, default="BootstrapFewShot")
+    dataset_id = Column(String(128), nullable=True)
+    baseline_score = Column(Float, nullable=False, default=0.0)
+    compiled_score = Column(Float, nullable=False, default=0.0)
+    improvement_pct = Column(Float, nullable=False, default=0.0)
+    metric_name = Column(String(64), nullable=False, default="faithfulness_and_relevancy")
+    compiled_instruction = Column(Text, nullable=False, default="")
+    few_shot_demos = Column(JSONB, nullable=False, default=list)
+    is_active = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_compiled_prompts_tenant", "tenant_id"),
+        Index("ix_compiled_prompts_tenant_active", "tenant_id", "is_active"),
+    )
+
+
+

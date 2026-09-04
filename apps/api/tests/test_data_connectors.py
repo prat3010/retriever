@@ -17,11 +17,14 @@ client = TestClient(app)
 # ── 1. Connector Registry & Validation Tests ─────────────────────────────────
 
 
+from src.domain.connectors.google_drive import GoogleDriveConnector
+
+
 def test_connector_registry_resolution() -> None:
     """Verify ConnectorRegistry resolves connector instances by strategy name."""
     assert isinstance(ConnectorRegistry.get_connector("web_crawler"), WebCrawlerConnector)
     assert isinstance(ConnectorRegistry.get_connector("cloud_drive"), MockCloudDriveConnector)
-    assert isinstance(ConnectorRegistry.get_connector("google_drive"), MockCloudDriveConnector)
+    assert isinstance(ConnectorRegistry.get_connector("google_drive"), GoogleDriveConnector)
     assert isinstance(ConnectorRegistry.get_connector("unknown"), WebCrawlerConnector)
 
 
@@ -69,10 +72,10 @@ def test_admin_connector_lifecycle_crud(
 
     # Create Connector
     create_payload = {
-        "name": "Engineering Notion Connector",
-        "connector_type": "notion",
+        "name": "Engineering Cloud Drive Connector",
+        "connector_type": "cloud_drive",
         "sync_interval_minutes": 720,
-        "configuration": {"folder_id": "notion_eng_docs"},
+        "configuration": {"folder_id": "eng_docs"},
     }
 
     create_res = client.post(
@@ -83,8 +86,8 @@ def test_admin_connector_lifecycle_crud(
     assert create_res.status_code == 201
     conn_data = create_res.json()
     conn_id = conn_data["id"]
-    assert conn_data["name"] == "Engineering Notion Connector"
-    assert conn_data["connector_type"] == "notion"
+    assert conn_data["name"] == "Engineering Cloud Drive Connector"
+    assert conn_data["connector_type"] == "cloud_drive"
 
     # List Connectors
     list_res = client.get(f"/v1/admin/tenants/{tenant_id}/connectors", headers=headers)

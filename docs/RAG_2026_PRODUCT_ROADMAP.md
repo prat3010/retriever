@@ -1,10 +1,10 @@
 # Retriever RAG Platform — 2026 Architecture & Engine Specification
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the active sequential timeline (M1 to M68) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the active sequential timeline (M1 to M96) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
 
 **System:** Retriever Enterprise RAG Platform  
 **Repository:** `retriever`  
-**Document Version:** `v0.52.0`  
+**Document Version:** `v0.80.0`  
 **Target Audience:** Platform Architects, System Engineers & Product Leadership  
 
 ---
@@ -90,27 +90,35 @@ By 2026, standard enterprise RAG has evolved into a modular, multi-stage cogniti
 ```
 ROADMAP EXECUTION HORIZONS:
 ┌──────────────────────────────────────────────────┐
-│ PHASE G: COMMERCIAL SCOPING & DASHBOARD (M63-M68)│ ── Scoping V2, Embed Widget, 7-Day Trial Auto-Onboard
+│ PHASE G: COMMERCIAL SCOPING & DASHBOARD (M63-M68)│ ── Scoping V2, Embed Widget, 7-Day Trial Auto-Onboard (Completed)
 └────────────────────────┬─────────────────────────┘
                          │
 ┌────────────────────────▼─────────────────────────┐
-│ PHASE H1: COGNITIVE INGESTION & RERANK (M69-M70) │ ── Anthropic Contextual Ingestion, ColBERT Late-Interaction
+│ PHASE H1: COGNITIVE INGESTION & RERANK (M69-M70) │ ── Anthropic Contextual Ingestion, ColBERT Late-Interaction (Completed)
 └────────────────────────┬─────────────────────────┘
                          │
 ┌────────────────────────▼─────────────────────────┐
-│ PHASE H2: AGENTIC CRAG & KNOWLEDGE GRAPHS(M71-M73)│ ── CRAG Reflection, RLM Studio Tab, Leiden Community RAG
+│ PHASE H2: AGENTIC CRAG & KNOWLEDGE GRAPHS(M71-M73)│ ── CRAG Reflection, RLM Studio Tab, Leiden Community RAG (Completed)
 └────────────────────────┬─────────────────────────┘
                          │
 ┌────────────────────────▼─────────────────────────┐
-│ PHASE I: ENTERPRISE COGNITIVE EVALUATION (M74-M78)│ ── Semantic NLI, Full-Stack OTel, Golden Dataset CI Gates
+│ PHASE I: ENTERPRISE COGNITIVE EVALUATION (M74-M78)│ ── Semantic NLI, Full-Stack OTel, Golden Dataset CI Gates (Completed)
 └────────────────────────┬─────────────────────────┘
                          │
 ┌────────────────────────▼─────────────────────────┐
-│ PHASE J: PREDICTIVE ML & NEURAL FRAMEWORK (M79-M85)│ ── ColBERT MaxSim, HDBSCAN Clustering, 3D UMAP, ML Effort Regressor
+│ PHASE J: PREDICTIVE ML & NEURAL FRAMEWORK (M79-M85)│ ── ColBERT MaxSim, HDBSCAN Clustering, 3D UMAP, ML Effort Regressor (Completed)
+└────────────────────────┬─────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────┐
+│ PHASE K: RESILIENT EDGE & ENTERPRISE VAULT (M86-90)│ ── Token Shield, PITR Snapshots, Presidio Wipe, Read-Replicas, Plugins (Completed)
+└────────────────────────┬─────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────┐
+│ PHASE L: FORWARD DEPLOYED AGENTIC STACK (M91-M97) │ ── LangGraph, DSPy, LiteLLM, NeMo Rails, Inngest Workflows (M91–M95 Complete, M96 Next)
 └──────────────────────────────────────────────────┘
 ```
 
-### Phase G: Commercial Scoping V2 & Dashboard Integration (Active Next)
+### Phase G: Commercial Scoping V2 & Dashboard Integration (Completed)
 * **Milestone M63–M68:** Documented in detail in [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
   - Authentic dogfooding tenant (`prateeq_scoping`) configured via Retriever Admin.
   - Scoping chatbox powered by the public 1-line `<script src="https://prateeq.in/widget.js" ...>` embed widget.
@@ -152,7 +160,7 @@ ROADMAP EXECUTION HORIZONS:
 
 ---
 
-### Phase I: Enterprise Cognitive Evaluation & Deep Observability Hardening (M74 – M78) — **ACTIVE NEXT**
+### Phase I: Enterprise Cognitive Evaluation & Deep Observability Hardening (M74 – M78) — **Completed**
 
 
 #### Milestone M74: Semantic NLI & SLM-as-a-Judge Online Hallucination Engine
@@ -193,7 +201,7 @@ ROADMAP EXECUTION HORIZONS:
 
 ---
 
-### Phase J: Machine Learning & Predictive Intelligence Framework (M79 – M85) — **IN PROGRESS**
+### Phase J: Machine Learning & Predictive Intelligence Framework (M79 – M85) — **Completed**
 
 #### Milestone M79: Sparse-Dense Hybrid Engine & Contrastive LoRA Domain Adapters (Completed)
 *   **Objective:** Combine Scikit-Learn sparse vectorization with PyTorch contrastive domain adapter fine-tuning.
@@ -219,19 +227,19 @@ ROADMAP EXECUTION HORIZONS:
     1.  PCA + UMAP dimensionality reduction endpoint `POST /v1/tenants/{id}/embeddings/project` reducing 768D vectors to 3D coordinates $(x, y, z)$.
     2.  Interactive 3D WebGL / Three.js point cloud in SaaS Studio displaying document clusters and live query vector intersection.
 
-#### Milestone M83: Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard
+#### Milestone M83: Scikit-Learn Real-Time Telemetry Anomaly Detection & Quota Abuse Guard (Completed)
 *   **Objective:** Deploy an unsupervised machine learning anomaly detection sentinel to safeguard tenant API keys and prevent scraping.
 *   **Key Deliverables:**
     1.  Async Celery task running Scikit-Learn `IsolationForest` on streaming inference log features.
     2.  Automated quarantine downgrading suspicious traffic and firing high-priority security webhooks.
 
-#### Milestone M84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model
+#### Milestone M84: Scikit-Learn ML Project Effort & Sprint Delivery Timeline Regression Model (Completed)
 *   **Objective:** Predict realistic engineering sprint hours and delivery windows with statistical confidence intervals in the Scoping Lab and Client Workspace.
 *   **Key Deliverables:**
     1.  Multi-Output Gradient Boosting Regressor trained on CPQ scoping configurations predicting sprint hours ($P_{50} / P_{90}$) and complexity index.
     2.  Live interactive sprint confidence bar embedded in the Cart Drawer (`/scoping`) and Client Workspace (`/dashboard`).
 
-#### Milestone M85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier
+#### Milestone M85: Scikit-Learn & PyTorch Visitor Persona & Lead Conversion Propensity Classifier (Completed)
 *   **Objective:** Segment anonymous visitors into dynamic personas and score cold outreach prospects by conversion probability.
 *   **Key Deliverables:**
     1.  Zero-cookie `KMeans` clustering on GDPR-compliant telemetry to identify Enterprise Clients, SaaS Buyers, Recruiters, and Dev Peers.

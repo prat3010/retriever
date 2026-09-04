@@ -140,7 +140,7 @@ timeline
     Phase 6 : Active Engine Batteries & Observability Matrix (M86.5)
     Phase 7 : Enterprise Ecosystem Plugins & Compliance Vault (M87–M90)
     Phase 8 : LangGraph Orchestration, DSPy Compilation & Smart Gateway (M91–M93)
-```
+    Phase 9 : NeMo Guardrails & Durable Asynchronous Workflows (M94–M95)
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)
 - ✅ Next.js 16 scaffold with shadcn/ui, Tailwind v4, TanStack Query, and Zustand.
@@ -171,8 +171,23 @@ timeline
 
 ### Phase 6: Active Engine Batteries & Observability Matrix (M86.5)
 - ✅ Dedicated `/batteries` operational command center with live query hooks and auto-refresh.
-- ✅ Full inventory of 14 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Sandbox, GraphRAG HDBSCAN, Anomaly Sentinel, Effort Regressor, Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua, NeMo Conversational Guardrails, Neo4j Cypher Graph Engine).
-- ✅ Real-time metric cards, pulsing status indicators, dynamic hardware sensing, and category filter pills (`Retrieval`, `ML Intelligence`, `Safety & Defense`, `Computation & Graph`).
+- ✅ Full inventory of 15 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Sandbox, GraphRAG HDBSCAN, Anomaly Sentinel, Effort Regressor, Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua, NeMo Conversational Guardrails, Neo4j Cypher Graph Engine, Durable Workflow Engine).
+- ✅ Real-time metric cards, pulsing status indicators, dynamic hardware sensing, and category filter pills (`Retrieval`, `ML Intelligence`, `Safety & Defense`, `Computation & Graph`, `Background Workflows`).
+
+### Phase 7: Enterprise Ecosystem Plugins & Compliance Vault (M87–M90)
+- ✅ `/system-data`: Automated daily cloud database snapshots (Cloudflare R2 / AWS S3) and Point-in-Time Recovery (PITR) engine (M87).
+- ✅ `/compliance`: Enterprise compliance vault with Presidio PII redaction and cryptographic GDPR erasure certificate generation (M88).
+- ✅ `/system-data`: Multi-region edge read-replica connection pooler and Geo-IP latency routing (M89).
+- ✅ `/integrations`: Universal ecosystem plugins for Slack workspace bots (`/ask-retriever`), Manifest V3 Chrome Extension, and 2-way Google Drive / Notion sync (M90).
+
+### Phase 8: LangGraph Orchestration, DSPy Compilation & Smart Gateway (M91–M93)
+- ✅ `/orchestration`: LangGraph cyclic multi-agent workflow visualizer with live node executions and Human-in-the-Loop (HITL) approval gates (M91).
+- ✅ `/prompts`: DSPy declarative prompt compilation and teleprompter studio with score lift metrics and atomic hot-activation (M92).
+- ✅ `/gateway`: Enterprise LLM Gateway and multi-model smart router across 100+ models with live latency probes and virtual tenant spending caps (M93).
+
+### Phase 9: NeMo Guardrails & Durable Asynchronous Workflows (M94–M95)
+- ✅ Guardrails & Conversational Safety: NVIDIA NeMo Guardrails integration with Colang dialogue flows and factual grounding checks (M94).
+- ✅ Durable Asynchronous AI Workflows: Step-level memoization (<2ms replay), fault-tolerant retry backoff, and execution ledger overview (M95).
 
 ---
 

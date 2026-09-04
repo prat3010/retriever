@@ -3,7 +3,10 @@
 import math
 
 import numpy as np
-from apps.api.src.domain.abstractions.persona_classifier import (
+from sklearn.cluster import KMeans
+from sklearn.linear_model import LogisticRegression
+
+from src.domain.abstractions.persona_classifier import (
     LeadFeatureVector,
     LeadPropensityScore,
     LeadScorerInterface,
@@ -11,8 +14,6 @@ from apps.api.src.domain.abstractions.persona_classifier import (
     VisitorPersonaPrediction,
     VisitorTelemetryVector,
 )
-from sklearn.cluster import KMeans
-from sklearn.linear_model import LogisticRegression
 
 DOMAIN_CODE_MAP: dict[str, float] = {
     "ai_ml": 1.0,

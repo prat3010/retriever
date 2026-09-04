@@ -1,6 +1,6 @@
 """Domain service for project effort vectorization and sprint estimation orchestration."""
 
-from apps.api.src.domain.abstractions.effort_estimation import (
+from src.domain.abstractions.effort_estimation import (
     EffortEstimatorInterface,
     EffortPrediction,
     ProjectScopeInput,

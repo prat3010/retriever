@@ -3,12 +3,13 @@
 import math
 
 import numpy as np
-from apps.api.src.domain.abstractions.effort_estimation import (
+from sklearn.ensemble import GradientBoostingRegressor
+
+from src.domain.abstractions.effort_estimation import (
     EffortEstimatorInterface,
     EffortPrediction,
     ScopeFeatureVector,
 )
-from sklearn.ensemble import GradientBoostingRegressor
 
 ENGINE_CODE_MAP = {
     "landing": 1.0,

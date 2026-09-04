@@ -1,6 +1,6 @@
 """Domain service for visitor persona classification and lead propensity scoring orchestration."""
 
-from apps.api.src.domain.abstractions.persona_classifier import (
+from src.domain.abstractions.persona_classifier import (
     LeadFeatureVector,
     LeadPropensityScore,
     LeadScorerInterface,

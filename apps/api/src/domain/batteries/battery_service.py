@@ -158,6 +158,18 @@ class BatteryService:
                 active_parameters={"compression_target_ratio": 0.5, "min_retained_tokens": 150},
                 health_check_endpoint="/v1/cognitive/compress/status",
             ),
+            PlatformBatteryDTO(
+                id="nemo_conversational_guardrails",
+                name="NVIDIA NeMo Conversational Safety Rails",
+                category=BatteryCategory.SAFETY_DEFENSE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Programmable Colang Dialog Flows & Sub-20ms Fast-Path Input Rails",
+                milestone="M94 (v0.79.0)",
+                latency_profile="~14ms",
+                description="Enforces conversational scope boundaries, brand tone, anti-jailbreak defenses, and post-inference factual grounding.",
+                active_parameters={"mode": "full_conversational", "competitor_shield": True, "grounding_threshold": 0.70},
+                health_check_endpoint="/v1/guardrails/overview",
+            ),
         ]
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:

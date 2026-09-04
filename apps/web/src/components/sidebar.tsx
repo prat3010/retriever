@@ -18,6 +18,7 @@ import {
   Bot,
   Sparkles,
   Network,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/tenants", label: "Tenants", icon: Building2 },
   { href: "/gateway", label: "LLM Gateway & Router", icon: Network },
   { href: "/prompts", label: "Prompt Optimization", icon: Sparkles },
+  { href: "/guardrails", label: "NeMo Guardrails", icon: ShieldAlert },
   { href: "/batteries", label: "Batteries & Engines", icon: Zap },
   { href: "/integrations", label: "Integrations & Plugins", icon: Puzzle },
   { href: "/orchestration", label: "Agentic Orchestration", icon: Bot },

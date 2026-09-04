@@ -4,7 +4,41 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
-## [0.68.0] - 2026-09-03 - Milestone 83: Telemetry Anomaly Sentinel & Abuse Guard
+### Added / Improved
+- **Hardware-Sensing Neo4j Auto-Activation (`InfraCapabilities`)**:
+  - Enhanced `InfraCapabilities` in `src/config.py` with `neo4j_viable` property, automatically detecting available RAM pool ($\ge 2.0\text{ GB}$ physical + swap) with `NEO4J_ENABLED` environment override support.
+  - Dynamically wires `Neo4jGraphRepository` in `src/container.py` when hardware capacity permits, preserving seamless fallback to `PgGraphRepository` (PostgreSQL recursive CTEs) if Neo4j port 7687 is unreachable or offline.
+  - Added fast 2.0-second connection timeout and safe connectivity check in `Neo4jGraphRepository._get_driver()` and `is_online()`.
+  - Updated `/v1/admin/tenants/{tenantId}/graph/capabilities` and `/v1/admin/tenants/{tenantId}/graph/engine` in `src/routers/admin.py` to dynamically reflect host profiles (`expanded_vps` / `macbook` vs `oracle_vm_lean`).
+  - Updated web dashboard `tenant-graph.tsx` to display real-time host status and enable 1-click Neo4j Cypher engine activation on expanded VPS nodes.
+
+
+## [0.79.0] - 2026-09-04 - Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails
+
+### Added
+- **Domain Abstractions & Ports** (`src/domain/abstractions/guardrails.py`):
+  - Pure domain models: `GuardrailExecutionMode`, `ColangFlowDefinition`, `GuardrailRule`, `GuardrailViolation`, `GuardrailCheckResult`, `TenantGuardrailsConfig`, and `INeMoGuardrailsAdapter`.
+- **NeMo Guardrails Adapter & Pure Python Colang Interpreter** (`src/adapters/guardrails/nemo_guardrails_adapter.py`):
+  - Authentic parser for Colang (`.co`) syntax supporting `define user`, `define bot`, and `define flow` blocks.
+  - Sub-20ms fast-path input rail scanning for prompt injections, system prompt exfiltration, and DAN payloads.
+  - Multi-turn conversational flow steering, competitor shielding, and brand tone enforcement.
+  - Post-inference factual grounding rail calculating token containment and entailment against retrieved context chunks.
+- **NeMo Guardrail Domain Service** (`src/domain/guardrails/nemo_guardrail_service.py`):
+  - Manages tenant policy configurations, in-memory security violation telemetry, and pre-packaged enterprise templates (`enterprise_support`, `legal_boundary`, `financial_pricing`, `developer_assistant`).
+- **Platform Battery #13 Registration** (`src/domain/batteries/battery_service.py`):
+  - Registered `nemo_conversational_guardrails` under `SAFETY_DEFENSE` category (catalog now tracking 13 platform batteries).
+- **FastAPI REST Router** (`src/routers/guardrails.py`):
+  - `/v1/guardrails/templates`, `/v1/guardrails/overview`, `/v1/tenants/{tenantId}/guardrails/config`, `/v1/tenants/{tenantId}/guardrails/validate-input`, `/v1/tenants/{tenantId}/guardrails/validate-output`, `/v1/tenants/{tenantId}/guardrails/test-flow`, `/v1/tenants/{tenantId}/guardrails/telemetry`.
+- **Chat Router Integration** (`src/routers/chat.py`):
+  - Integrated fast-path and dialogue flow checks into pre-inference input processing and factual grounding on post-inference responses.
+- **Comprehensive Pytest Suite** (`tests/test_nemo_guardrails.py`):
+  - 8 new tests verifying Colang parsing, fast-path injection rejection, competitor shielding, flow steering, factual grounding, tenant isolation, and Hexagonal boundaries (17 passing tests with updated `test_batteries.py` and `test_architecture.py`).
+- **Comprehensive Documentation**:
+  - Detailed REST API specification (`docs/api/GUARDRAILS_REST_API.md`).
+  - Cognitive architecture deep-dive (`docs/features/nemo-conversational-guardrails.md`).
+  - Operational runbook (`docs/runbooks/RUNBOOK_GUARDRAILS_OPS.md`).
+  - Architecture Decision Record (`docs/decisions/016-nemo-conversational-guardrails.md`).
+
 
 ### Added
 - **Scikit-Learn Isolation Forest & Robust Statistical Anomaly Detector** (`apps/api/src/adapters/cognitive/anomaly_detector_adapter.py`, `src/domain/abstractions/anomaly.py`):

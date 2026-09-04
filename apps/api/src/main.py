@@ -178,6 +178,8 @@ from src.routers.document import router as document_router
 from src.routers.estimation import router as estimation_router
 from src.routers.gateway import router as gateway_router
 from src.routers.gateway import tenant_router as gateway_tenant_router
+from src.routers.guardrails import router as guardrails_router
+from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
 from src.routers.integrations import router as integrations_router
 from src.routers.payments import router as payments_router
@@ -210,5 +212,7 @@ app.include_router(integrations_router)
 app.include_router(prompts_router)
 app.include_router(gateway_router)
 app.include_router(gateway_tenant_router)
+app.include_router(guardrails_router)
+app.include_router(guardrails_tenant_router)
 
 

@@ -145,7 +145,11 @@ export function TenantGraphTab({ tenantId }: { tenantId: string }) {
             <>
               <div>
                 <p className="font-medium">
-                  {isLeanMode ? "Oracle Cloud VM (LEAN Mode)" : "MacBook Air M4 (Standard Mode)"}
+                  {isLeanMode
+                    ? "Oracle Cloud VM (LEAN Mode)"
+                    : capabilities?.machine_profile === "expanded_vps"
+                    ? "Expanded Cloud Host (High-Performance Mode)"
+                    : "Standard Host / Local Dev"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {capabilities?.message || "Auto-detecting hardware capabilities..."}

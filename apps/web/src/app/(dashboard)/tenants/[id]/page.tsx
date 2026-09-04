@@ -22,6 +22,7 @@ import { TenantTelemetryTab } from "@/components/tenant-telemetry";
 import { TenantComplianceTab } from "@/components/tenant-compliance";
 import { TenantBillingTab } from "@/components/tenant-billing";
 import { TenantWorkflowTab } from "@/components/tenant-workflow";
+import { TenantGuardrailsTab } from "@/components/tenant-guardrails";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -73,6 +74,7 @@ export default function TenantDetailPage() {
             <TabsTrigger value="compliance">🛡️ Compliance</TabsTrigger>
             <TabsTrigger value="billing">💳 Billing</TabsTrigger>
             <TabsTrigger value="workflow">⚡ n8n Workflow</TabsTrigger>
+            <TabsTrigger value="guardrails">🛡️ Guardrails</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -137,6 +139,10 @@ export default function TenantDetailPage() {
 
           <TabsContent value="workflow">
             <TenantWorkflowTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="guardrails">
+            <TenantGuardrailsTab tenantId={tenantId} />
           </TabsContent>
         </Tabs>
       </div>

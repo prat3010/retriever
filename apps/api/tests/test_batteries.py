@@ -17,9 +17,9 @@ def test_platform_batteries_inventory_completeness():
     """Verify that all 12 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 12
-    assert resp.active_count >= 10
-    assert len(resp.batteries) == 12
+    assert resp.total_batteries == 13
+    assert resp.active_count >= 11
+    assert len(resp.batteries) == 13
 
     # Check key expected battery IDs
     expected_ids = {
@@ -35,6 +35,7 @@ def test_platform_batteries_inventory_completeness():
         "token_shield_rate_limiter",
         "llama_guard_safety_rails",
         "longllmlingua_compression",
+        "nemo_conversational_guardrails",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -68,9 +69,9 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 12
-        assert data["active_count"] >= 10
-        assert len(data["batteries"]) == 12
+        assert data["total_batteries"] == 13
+        assert data["active_count"] >= 11
+        assert len(data["batteries"]) == 13
 
 
 def test_hexagonal_architecture_batteries():

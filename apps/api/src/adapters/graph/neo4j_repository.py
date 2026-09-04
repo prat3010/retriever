@@ -46,7 +46,9 @@ class Neo4jGraphRepository(BaseGraphRepository):
         if self._driver is None:
             try:
                 self._driver = AsyncGraphDatabase.driver(
-                    self.uri, auth=(self.user, self.password)
+                    self.uri,
+                    auth=(self.user, self.password),
+                    connection_timeout=2.0,
                 )
                 await self._driver.verify_connectivity()
             except Exception as err:
@@ -58,8 +60,17 @@ class Neo4jGraphRepository(BaseGraphRepository):
 
     async def is_online(self) -> bool:
         """Check if Neo4j database server is online and accessible."""
-        driver = await self._get_driver()
-        return driver is not None
+        if not NEO4J_AVAILABLE:
+            return False
+        try:
+            driver = await self._get_driver()
+            if not driver:
+                return False
+            await driver.verify_connectivity()
+            return True
+        except Exception:
+            self._driver = None
+            return False
 
     async def add_triples(self, tenant_id: str, triples: list[EntityTriple]) -> int:
         """Persist entity relationship triples into Neo4j or fallback to PostgreSQL."""

@@ -72,6 +72,7 @@ from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.graph.neo4j_repository import Neo4jGraphRepository
 from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
+from src.adapters.guardrails.nemo_guardrails_adapter import NeMoGuardrailsAdapter
 from src.adapters.ingestion.sync_ingestion_service import (
     ingest_file_sync,  # noqa: F401 — re-exported for routers
 )
@@ -91,7 +92,7 @@ from src.adapters.telemetry.setup import get_metrics
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
-from src.config import settings
+from src.config import InfraCapabilities, settings
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.backup.backup_service import BackupService
@@ -101,6 +102,7 @@ from src.domain.config.config_service import ConfigurationService
 from src.domain.consensus.reflection_loop import MultiAgentConsensusEngine
 from src.domain.estimation.effort_estimation_service import EffortEstimationService
 from src.domain.evaluation.evaluator import EvalRunService
+from src.domain.guardrails.nemo_guardrail_service import NeMoGuardrailService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.inference.prompt_builder import PromptBuilder
@@ -180,7 +182,8 @@ class Container:
 
         # --- Graph Repository ---
         pg_graph = PgGraphRepository()
-        if getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
+        infra = InfraCapabilities.detect()
+        if infra.neo4j_viable or getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
             self._cache["graph_repository"] = Neo4jGraphRepository(
                 uri=getattr(settings, "NEO4J_URI", "bolt://localhost:7687"),
                 user=getattr(settings, "NEO4J_USER", "neo4j"),
@@ -470,6 +473,10 @@ class Container:
         self._cache["read_replica_adapter"] = replica_adapter
         self._cache["slack_service"] = SlackService()
 
+        nemo_adapter = NeMoGuardrailsAdapter()
+        self._cache["nemo_guardrails_adapter"] = nemo_adapter
+        self._cache["nemo_guardrail_service"] = NeMoGuardrailService(adapter=nemo_adapter)
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -550,3 +557,5 @@ compiled_prompt_repo = container.compiled_prompt_repo
 dspy_compiler = container.dspy_compiler
 gateway_router = container.gateway_router
 budget_repo = container.budget_repo
+nemo_guardrails_adapter = container.nemo_guardrails_adapter
+nemo_guardrail_service = container.nemo_guardrail_service

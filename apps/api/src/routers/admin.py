@@ -1649,6 +1649,8 @@ async def admin_trigger_connector_sync(
 )
 async def get_graph_capabilities(tenantId: str) -> GraphCapabilitiesResponse:
     """Check hardware RAM profile, supported graph engines, and active status."""
+    import sys
+
     from src.config import InfraCapabilities
     from src.container import container
 
@@ -1663,21 +1665,27 @@ async def get_graph_capabilities(tenantId: str) -> GraphCapabilitiesResponse:
         except Exception:
             neo4j_online = False
 
-    if infra.lean_mode or infra.ram_gb < 2.0:
+    if not infra.neo4j_viable:
         return GraphCapabilitiesResponse(
             machine_profile="oracle_vm_lean",
             supported_engines=["postgres"],
             active_engine="postgres",
             neo4j_status="unsupported",
-            message="Neo4j engine is disabled on LEAN Oracle VM to safeguard RAM. Running PostgreSQL Recursive SQL.",
+            message="Neo4j engine is disabled on LEAN Oracle VM to safeguard RAM (< 2 GB). Running PostgreSQL Recursive SQL.",
         )
 
+    profile_name = "expanded_vps" if "linux" in sys.platform.lower() else "macbook"
+    message = (
+        "Dual-engine support active. Neo4j is online and active."
+        if neo4j_online
+        else "Dual-engine support active. Neo4j is offline; queries fall back seamlessly to PostgreSQL Recursive CTEs."
+    )
     return GraphCapabilitiesResponse(
-        machine_profile="macbook",
+        machine_profile=profile_name,
         supported_engines=["postgres", "neo4j"],
         active_engine=active_engine,
         neo4j_status="online" if neo4j_online else "offline",
-        message="Dual-engine support active on MacBook. Docker Neo4j available on port 7687.",
+        message=message,
     )
 
 
@@ -1691,7 +1699,7 @@ async def switch_graph_engine(tenantId: str, payload: GraphEngineSwitchRequest) 
     from src.config import InfraCapabilities
 
     infra = InfraCapabilities.detect()
-    if payload.engine == "neo4j" and (infra.lean_mode or infra.ram_gb < 2.0):
+    if payload.engine == "neo4j" and not infra.neo4j_viable:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Neo4j engine cannot be activated on LEAN Oracle VM (RAM < 2GB limit).",

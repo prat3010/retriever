@@ -6,14 +6,14 @@ Operational overview of the Retriever platform's current engineering status.
 
   ##  1. Status Overview
    
-- **Current Milestone**: Phase L — **Milestone 93 (Enterprise LLM Gateway & Multi-Model Smart Router) — Completed (v0.78.0)**
-- **Last Completed Milestone**: Milestone 93 (Enterprise LLM Gateway & Multi-Model Smart Router), Milestone 92 (DSPy Declarative Prompt Compilation & Algorithmic Self-Optimization Pipeline), Milestone 91 (LangGraph Cyclic Agentic Orchestration & HITL State Engine), Milestone 90 (Universal Ecosystem Plugins: Slack Bot, Chrome Extension & 2-Way GDrive Sync), Milestone 89 (Geo-Distributed Multi-Region Edge Vector Read-Replicas), Milestone 88 (Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe), Milestone 87 (Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery Engine), Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect)
-- **Build Status**: Passing (105 test files, 690+ passed, 1 skipped, 0 failures, 0 warnings)
+- **Current Milestone**: Phase L — **Milestone 94 (NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails) — Completed (v0.79.0)**
+- **Last Completed Milestone**: Milestone 94 (NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails), Milestone 93 (Enterprise LLM Gateway & Multi-Model Smart Router), Milestone 92 (DSPy Declarative Prompt Compilation & Algorithmic Self-Optimization Pipeline), Milestone 91 (LangGraph Cyclic Agentic Orchestration & HITL State Engine), Milestone 90 (Universal Ecosystem Plugins: Slack Bot, Chrome Extension & 2-Way GDrive Sync), Milestone 89 (Geo-Distributed Multi-Region Edge Vector Read-Replicas), Milestone 88 (Enterprise Compliance Vault: Presidio PII Redaction & GDPR Cryptographic Wipe), Milestone 87 (Automated Cloud Database Snapshots, S3/R2 WAL Archival & PITR Recovery Engine), Milestone 86.5 (Platform Capabilities & Active Batteries Observability Cockpit), Milestone 86 (Edge AI Token Shield & SSE Resilient Reconnect)
+- **Build Status**: Passing (106 test files, 705+ passed, 1 skipped, 0 failures, 0 warnings)
 - **Admin Dashboard Build**: Passing (14 routes including `/gateway`, `/prompts`, `/orchestration`, `/integrations`, `/compliance`, `/batteries`, and `/system-data`, all compile cleanly)
 - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Phase L — Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails (Phase L / v0.79.0)
+- **Next Recommended Milestone**: Phase L — Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine (Inngest) (Phase L / v0.80.0)
 
 
 

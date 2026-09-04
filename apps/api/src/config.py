@@ -72,6 +72,15 @@ class InfraCapabilities:
             return False
         return self.effective_memory_gb >= 4.0 and self.cpu_cores >= 1
 
+    @property
+    def neo4j_viable(self) -> bool:
+        override = os.environ.get("NEO4J_ENABLED", "").lower()
+        if override in ("true", "1", "yes"):
+            return True
+        if override in ("false", "0", "no"):
+            return False
+        return self.effective_memory_gb >= 2.0
+
     def log_boot_status(self) -> None:
         mode = (
             "LEAN (synchronous processing)"
@@ -96,6 +105,10 @@ class InfraCapabilities:
         logger.info(
             "Celery/Background workers: %s (need >=4 GB memory pool)",
             "ENABLED" if self.workers_viable else "DISABLED",
+        )
+        logger.info(
+            "Neo4j Graph Engine: %s (need >=2 GB memory pool)",
+            "ENABLED" if self.neo4j_viable else "DISABLED (safeguarding RAM)",
         )
         logger.info("Running in %s mode", mode)
 

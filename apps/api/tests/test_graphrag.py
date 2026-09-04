@@ -111,20 +111,37 @@ async def test_neo4j_graph_repository_fallback(mock_pg_class):
     assert res_search.root_entity == "Alice"
     mock_fallback.search_triples.assert_awaited_once_with(tenant_id, "Alice", 2)
 
+    assert await repo.is_online() is False
+
 
 # ── 4. Unit Test: Environment Auto-Detection Logic ──────────────────────────
 
 def test_infra_capabilities_graph_detection():
-    """Verify InfraCapabilities detects low-RAM Oracle VM vs MacBook profile."""
+    """Verify InfraCapabilities detects low-RAM Oracle VM vs expanded VPS/MacBook profile."""
     infra_oracle = InfraCapabilities()
     infra_oracle.ram_gb = 0.9
     infra_oracle.swap_gb = 0.0
     assert infra_oracle.lean_mode is True
+    assert infra_oracle.neo4j_viable is False
 
     infra_mac = InfraCapabilities()
     infra_mac.ram_gb = 16.0
     infra_mac.swap_gb = 0.0
     assert infra_mac.lean_mode is False
+    assert infra_mac.neo4j_viable is True
+
+    # Upgraded 8 GB Oracle VPS
+    infra_vps = InfraCapabilities()
+    infra_vps.ram_gb = 8.0
+    infra_vps.swap_gb = 0.0
+    assert infra_vps.lean_mode is False
+    assert infra_vps.neo4j_viable is True
+
+    # Manual environment override
+    with patch.dict("os.environ", {"NEO4J_ENABLED": "true"}):
+        assert infra_oracle.neo4j_viable is True
+    with patch.dict("os.environ", {"NEO4J_ENABLED": "false"}):
+        assert infra_vps.neo4j_viable is False
 
 
 # ── 5. Integration Test: Admin Graph Endpoints ──────────────────────────────

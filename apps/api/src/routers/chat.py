@@ -25,6 +25,7 @@ from src.adapters.api.security import (
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.container import (
     config_service,
+    container,
     corrective_service,
     feedback_repo,
     inference_orchestrator,
@@ -128,6 +129,19 @@ async def send_chat_message(
         tenant_config, payload.query, llm_safety_fn=llm_safety_guard
     )
 
+    nemo_guard_service = getattr(container, "nemo_guardrail_service", None)
+    if nemo_guard_service:
+        nemo_res = await nemo_guard_service.evaluate_input(tenant_id=tenantId, query=payload.query)
+        if not nemo_res.allowed:
+            if nemo_res.action.value == "block":
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=nemo_res.reason)
+            elif nemo_res.action.value == "steer" and nemo_res.bot_response:
+                return {
+                    "content": nemo_res.bot_response,
+                    "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    "finish_reason": "steered_by_guardrails",
+                }
+
     if x_llm_key:
         tenant_config.ai_provider.api_key = x_llm_key
     if x_llm_provider:
@@ -164,6 +178,16 @@ async def send_chat_message(
         )
         formatted_content = _format_citations(response.content, context_chunks, citation_template)
         formatted_content = await _apply_output_guardrails(formatted_content, tenant_config)
+
+        if nemo_guard_service:
+            nemo_out = await nemo_guard_service.evaluate_output(
+                tenant_id=tenantId,
+                query=payload.query,
+                generated_response=formatted_content,
+                retrieved_contexts=[r.content for r in context_chunks if r.content],
+            )
+            if not nemo_out.allowed and nemo_out.bot_response:
+                formatted_content = nemo_out.bot_response
         background_tasks.add_task(
             online_evaluator.evaluate_inference,
             tenant_id=tenantId,

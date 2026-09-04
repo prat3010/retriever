@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Puzzle,
   MessageSquare,
-  Chrome,
+  Globe,
   FolderSync,
   FileText,
   Copy,
@@ -213,7 +213,7 @@ export default function IntegrationsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <Chrome className="h-5 w-5" />
+                  <Globe className="h-5 w-5" />
                 </div>
                 <div>
                   <CardTitle className="text-base font-semibold">1-Click Chrome Ingestion Extension</CardTitle>

@@ -108,8 +108,8 @@
 | **M90** | Universal Ecosystem Plugins (Slack Bot, Chrome Ext, GDrive) | Native Slack workspace bot, 1-click Chrome ingestion & 2-way Google Drive sync | **Planned (Phase K)** |
 | **M91** | LangGraph Cyclic Agentic Workflows & Multi-Agent HITL Engine | State-machine cognitive graphs, conditional routing, human-in-the-loop approvals, and checkpoint time-travel | **Completed** (v0.76.0) |
 | **M92** | DSPy Declarative Prompt Compilation & Teleprompter | Metric-driven automated prompt & few-shot optimization pipeline | **Completed** (v0.77.0) |
-| **M93** | Enterprise LLM Gateway & Multi-Model Smart Router | LiteLLM gateway, dynamic model failover, cost & quota management | **Planned (Phase L)** |
-| **M94** | NVIDIA NeMo Guardrails & Conversational Safety Rails | Colang conversational safety rails, factual topic grounding & scope enforcement | **Planned (Phase L)** |
+| **M93** | Enterprise LLM Gateway & Multi-Model Smart Router | LiteLLM gateway, dynamic model failover, cost & quota management | **Completed** (v0.78.0) |
+| **M94** | NVIDIA NeMo Guardrails & Conversational Safety Rails | Colang conversational safety rails, factual topic grounding & scope enforcement | **Completed** (v0.79.0) |
 | **M95** | Durable Asynchronous Execution & AI Workflow Engine | Inngest / Trigger.dev event-driven durable multi-step AI workflow orchestration | **Planned (Phase L)** |
 | **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Planned (Phase L)** |
 
@@ -1521,14 +1521,18 @@
 
 ---
 
-### [Planned] Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails (v0.79.0)
+### [Completed] Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails (v0.79.0)
 
 **Objective:** Enforce conversational safety, factual grounding, and topical scope limits via programmable Colang rails.
 
-**Target Deliverables:**
-- **NVIDIA NeMo Guardrails Integration**: Colang `.co` flow definitions controlling dialogue direction and preventing jailbreaks / prompt injection.
+**Deliverables:**
+- **NVIDIA NeMo Guardrails Integration**: Colang `.co` flow definitions controlling dialogue direction, factual topic grounding, and preventing jailbreaks / prompt injection.
 - **Multi-Turn Scope Anchoring**: Conversational constraints ensuring LLM outputs stay strictly within tenant-defined business domain.
-- **Sub-200ms Fast-Path Input Rails**: Asynchronous input verification running concurrently with vector embedding generation.
+- **Sub-20ms Fast-Path Input Rails**: Asynchronous input verification running concurrently with vector embedding generation.
+- **Post-Inference Factual Grounding**: Automated claim entailment verification cross-checking generated responses against retrieved context chunks.
+- **Platform Battery #13**: Registered in `BatteryService` catalog under `SAFETY_DEFENSE`.
+- **SaaS Studio Guardrails Panel**: Full-featured UI panel in `/rag/app` with live Colang flow editor, preset templates, real-time safety sandbox, and audit telemetry stream.
+- **Documentation & Conformance**: Complete REST API spec, Cognitive Deep-Dive, Runbook, ADR-016, and 100% passing tests (17 unit & conformance tests).
 
 ---
 

@@ -148,6 +148,24 @@ async def handle_quota_error(request, exc: QuotaExceededError):
     )
 
 
+from src.domain.abstractions.gateway import BudgetExceededError
+
+
+@app.exception_handler(BudgetExceededError)
+async def handle_budget_exceeded_error(request, exc: BudgetExceededError):
+    return JSONResponse(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+        content={
+            "detail": str(exc),
+            "error_code": "BUDGET_CEILING_EXCEEDED",
+            "tenant_id": exc.tenant_id,
+            "current_spend": exc.current_spend,
+            "budget": exc.budget,
+            "period": exc.period,
+        },
+    )
+
+
 
 # --- Router Includes ---
 
@@ -158,6 +176,8 @@ from src.routers.chat import router as chat_router
 from src.routers.consensus import router as consensus_router
 from src.routers.document import router as document_router
 from src.routers.estimation import router as estimation_router
+from src.routers.gateway import router as gateway_router
+from src.routers.gateway import tenant_router as gateway_tenant_router
 from src.routers.health import router as health_router
 from src.routers.integrations import router as integrations_router
 from src.routers.payments import router as payments_router
@@ -188,5 +208,7 @@ app.include_router(estimation_router)
 app.include_router(persona_router)
 app.include_router(integrations_router)
 app.include_router(prompts_router)
+app.include_router(gateway_router)
+app.include_router(gateway_tenant_router)
 
 

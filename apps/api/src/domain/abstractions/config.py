@@ -94,6 +94,19 @@ class QueryIntentSettings(BaseModel):
 class BudgetSettings(BaseModel):
     daily_cost_budget: float | None = None
     monthly_cost_budget: float | None = None
+    hard_limit_action: str = "warn_only"  # "warn_only", "block", "downgrade_free_model"
+    free_fallback_model: str = "ollama/qwen2.5:14b"
+    currency: str = "USD"
+
+
+class GatewaySettings(BaseModel):
+    primary_model: str = "gemini-2.5-flash"
+    fallback_models: list[str] = Field(
+        default_factory=lambda: ["openai/gpt-4o-mini", "ollama/qwen2.5:14b"]
+    )
+    latency_sla_ms: int = 4000
+    cooldown_seconds: int = 60
+    retry_attempts: int = 2
 
 
 class RetrievalSettings(BaseModel):
@@ -183,6 +196,7 @@ class TenantConfiguration(BaseModel):
     graph_settings: GraphSettings = Field(default_factory=GraphSettings)
     evaluation_settings: EvaluationSettings = Field(default_factory=EvaluationSettings)
     budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
+    gateway_settings: GatewaySettings = Field(default_factory=GatewaySettings)
     security_settings: SecuritySettings = Field(default_factory=SecuritySettings)
     rate_limits: RateLimits = Field(default_factory=RateLimits)
     quota_settings: TenantQuotaSettings = Field(default_factory=TenantQuotaSettings)

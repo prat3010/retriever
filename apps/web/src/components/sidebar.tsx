@@ -17,6 +17,7 @@ import {
   Puzzle,
   Bot,
   Sparkles,
+  Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -26,6 +27,7 @@ import { useTheme } from "next-themes";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tenants", label: "Tenants", icon: Building2 },
+  { href: "/gateway", label: "LLM Gateway & Router", icon: Network },
   { href: "/prompts", label: "Prompt Optimization", icon: Sparkles },
   { href: "/batteries", label: "Batteries & Engines", icon: Zap },
   { href: "/integrations", label: "Integrations & Plugins", icon: Puzzle },

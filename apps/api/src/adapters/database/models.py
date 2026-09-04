@@ -16,7 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship, synonym
 
 
 def utc_now() -> datetime:
@@ -457,6 +457,10 @@ class InferenceLogDb(Base):
         index=True,
     )
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    # Column synonyms for query backward compatibility
+    prompt_tokens = synonym("input_tokens")
+    completion_tokens = synonym("output_tokens")
 
 
 class SemanticCacheDb(Base):

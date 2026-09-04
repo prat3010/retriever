@@ -29,6 +29,7 @@ from src.adapters.cognitive.corrective_retrieval_adapter import (
     LLMCorrectiveRetrievalAdapter,
 )
 from src.adapters.cognitive.dspy_compiler_adapter import DSPyCompilerAdapter
+from src.adapters.cognitive.gateway_router import GatewayRouterAdapter
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
 from src.adapters.cognitive.langgraph_orchestrator import LangGraphOrchestrator
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
@@ -37,7 +38,6 @@ from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
 from src.adapters.cognitive.query_rewriter_adapter import LLMQueryRewriterAdapter
 from src.adapters.cognitive.reranker_adapter import CohereRerankerAdapter
-from src.adapters.cognitive.routing_provider import RoutingLLMProvider
 from src.adapters.cognitive.self_query_adapter import LLMSelfQueryAdapter
 from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.cognitive.tei_reranker_adapter import TeiRerankerAdapter
@@ -47,6 +47,7 @@ from src.adapters.database.agent_checkpoint_repository import (
     SqlAgentCheckpointRepository,
 )
 from src.adapters.database.audit_repository import SqlAuditLogRepository
+from src.adapters.database.budget_repository import SqlBudgetRepository
 from src.adapters.database.compiled_prompt_repository import (
     SqlCompiledPromptRepository,
 )
@@ -155,10 +156,12 @@ class Container:
         anthropic_adapter = AnthropicLLMAdapter(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
         )
-        self._cache["llm_provider"] = RoutingLLMProvider(
+        gateway_router = GatewayRouterAdapter(
             openai_adapter=openai_adapter,
             anthropic_adapter=anthropic_adapter,
         )
+        self._cache["gateway_router"] = gateway_router
+        self._cache["llm_provider"] = gateway_router
 
         self._cache["embedder"] = (
             HFEmbeddingAdapter(
@@ -227,12 +230,14 @@ class Container:
         compiled_prompt_repo = SqlCompiledPromptRepository()
         dspy_compiler = DSPyCompilerAdapter(llm_provider=llm)
         log_writer = SqlInferenceLogWriter()
+        budget_repo = SqlBudgetRepository()
 
         self._cache["session_repo"] = session_repo
         self._cache["template_registry"] = template_registry
         self._cache["compiled_prompt_repo"] = compiled_prompt_repo
         self._cache["dspy_compiler"] = dspy_compiler
         self._cache["log_writer"] = log_writer
+        self._cache["budget_repo"] = budget_repo
         self._cache["feedback_repo"] = SqlFeedbackRepository()
 
         self._cache["inference_orchestrator"] = InferenceOrchestrator(
@@ -247,6 +252,7 @@ class Container:
             metrics_registry=get_metrics(),
             notification_provider=LoggingNotificationAdapter(),
             document_repository=self._cache["document_repository"],
+            budget_repository=budget_repo,
         )
 
         self._cache["llm_safety_guard"] = apply_llm_safety_guard
@@ -542,3 +548,5 @@ read_replica_adapter = container.read_replica_adapter
 slack_service = container.slack_service
 compiled_prompt_repo = container.compiled_prompt_repo
 dspy_compiler = container.dspy_compiler
+gateway_router = container.gateway_router
+budget_repo = container.budget_repo

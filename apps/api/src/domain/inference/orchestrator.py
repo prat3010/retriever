@@ -9,8 +9,13 @@ import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import date
+from typing import Any
 
 from src.domain.abstractions.config import ModelPricing, TenantConfiguration
+from src.domain.abstractions.gateway import (
+    BudgetExceededError,
+    BudgetRepositoryProtocol,
+)
 from src.domain.abstractions.inference import (
     ChatMessage,
     ChatSessionInfo,
@@ -54,6 +59,7 @@ class InferenceOrchestrator:
         metrics_registry: MetricsRegistry | None = None,
         notification_provider: NotificationProvider | None = None,
         document_repository: DocumentRepository | None = None,
+        budget_repository: BudgetRepositoryProtocol | None = None,
     ) -> None:
         self.llm = llm_provider
         self.prompt_builder = prompt_builder
@@ -63,6 +69,7 @@ class InferenceOrchestrator:
         self.metrics = metrics_registry
         self.notifier = notification_provider
         self.doc_repo = document_repository
+        self.budget_repo = budget_repository
         self._daily_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         self._monthly_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         self._notified: set[str] = set()
@@ -180,12 +187,70 @@ class InferenceOrchestrator:
 
         return prompt_messages, model_config
 
-    def _build_notes(self, actual_provider: str | None, experiment_id: str | None = None, experiment_variant: str | None = None) -> str | None:
-        notes = f"actual_provider={actual_provider}" if actual_provider else None
+    def _build_notes(
+        self,
+        actual_provider: str | None,
+        experiment_id: str | None = None,
+        experiment_variant: str | None = None,
+        budget_downgraded: bool = False,
+    ) -> str | None:
+        parts: list[str] = []
+        if actual_provider:
+            parts.append(f"actual_provider={actual_provider}")
         if experiment_id and experiment_variant:
-            exp = f"experiment={experiment_id},variant={experiment_variant}"
-            notes = f"{notes};{exp}" if notes else exp
-        return notes
+            parts.append(f"experiment={experiment_id},variant={experiment_variant}")
+        if budget_downgraded:
+            parts.append("budget_downgraded=true")
+        return ";".join(parts) if parts else None
+
+    async def _preflight_budget_check(
+        self,
+        tenant_id: str,
+        budget_settings: object,
+        config_dict: dict[str, Any],
+    ) -> None:
+        if not budget_settings:
+            return
+
+        daily_budget = getattr(budget_settings, "daily_cost_budget", None)
+        monthly_budget = getattr(budget_settings, "monthly_cost_budget", None)
+        action = getattr(budget_settings, "hard_limit_action", "warn_only")
+
+        if not daily_budget and not monthly_budget:
+            return
+
+        # Check current spend via budget_repo if available, or in-memory fallback
+        if self.budget_repo:
+            daily_spend, monthly_spend, _ = await self.budget_repo.get_tenant_spend(tenant_id)
+        else:
+            today = date.today().isoformat()
+            this_month = date.today().strftime("%Y-%m")
+            daily_spend = self._daily_costs[tenant_id][today]
+            monthly_spend = self._monthly_costs[tenant_id][this_month]
+
+        exceeded = False
+        exceeded_period = ""
+        current_val = 0.0
+        budget_val = 0.0
+
+        if daily_budget and daily_spend >= daily_budget:
+            exceeded = True
+            exceeded_period = "daily"
+            current_val = daily_spend
+            budget_val = daily_budget
+        elif monthly_budget and monthly_spend >= monthly_budget:
+            exceeded = True
+            exceeded_period = "monthly"
+            current_val = monthly_spend
+            budget_val = monthly_budget
+
+        if exceeded:
+            if action == "block":
+                raise BudgetExceededError(tenant_id, current_val, budget_val, period=exceeded_period)
+            elif action == "downgrade_free_model":
+                fallback_model = getattr(budget_settings, "free_fallback_model", "ollama/qwen2.5:14b")
+                config_dict["model"] = fallback_model
+                config_dict["_budget_downgraded"] = True
 
     async def _record_metrics(
         self,
@@ -324,9 +389,17 @@ class InferenceOrchestrator:
 
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
+
+        if hasattr(tenant_config, "gateway_settings") and tenant_config.gateway_settings:
+            config_dict["primary_model"] = tenant_config.gateway_settings.primary_model
+            config_dict["fallback_models"] = tenant_config.gateway_settings.fallback_models
+            config_dict["cooldown_seconds"] = tenant_config.gateway_settings.cooldown_seconds
+
+        await self._preflight_budget_check(tenant_id, tenant_config.budget_settings, config_dict)
+
         response = await self.llm.generate(request, config_dict)
 
-        model_used = model_config.default_model
+        model_used = config_dict.get("model") or model_config.default_model
         cost = calculate_cost(response.usage, model_used, model_config.pricing)
 
         if self.citation_validator.get_invalid_citations(response.content):
@@ -335,7 +408,12 @@ class InferenceOrchestrator:
         self._emit_search_quality_metrics(tenant_id, context_chunks, response.content)
 
         elapsed = int((time.monotonic() - start) * 1000)
-        notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
+        notes = self._build_notes(
+            config_dict.get("_actual_provider"),
+            experiment_id,
+            experiment_variant,
+            budget_downgraded=bool(config_dict.get("_budget_downgraded")),
+        )
 
         await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost, role)
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
@@ -456,6 +534,14 @@ class InferenceOrchestrator:
 
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
+
+        if hasattr(tenant_config, "gateway_settings") and tenant_config.gateway_settings:
+            config_dict["primary_model"] = tenant_config.gateway_settings.primary_model
+            config_dict["fallback_models"] = tenant_config.gateway_settings.fallback_models
+            config_dict["cooldown_seconds"] = tenant_config.gateway_settings.cooldown_seconds
+
+        await self._preflight_budget_check(tenant_id, tenant_config.budget_settings, config_dict)
+
         async for chunk in self.llm.generate_stream(request, config_dict):
             if chunk.get("event") == "info":
                 yield chunk
@@ -484,10 +570,15 @@ class InferenceOrchestrator:
         elapsed = int((time.monotonic() - start) * 1000)
         await self._persist_messages(tenant_id, session_id, query, final_text, user_id)
 
-        model_used = model_config.default_model
+        model_used = config_dict.get("model") or model_config.default_model
         usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=input_tokens + output_tokens)
         cost = calculate_cost(usage, model_used, model_config.pricing)
-        notes = self._build_notes(config_dict.get("_actual_provider"), experiment_id, experiment_variant)
+        notes = self._build_notes(
+            config_dict.get("_actual_provider"),
+            experiment_id,
+            experiment_variant,
+            budget_downgraded=bool(config_dict.get("_budget_downgraded")),
+        )
 
         await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost, role)
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)

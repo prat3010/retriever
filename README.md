@@ -101,6 +101,17 @@ Retriever is designed as an enterprise-grade, highly modular Retrieval-Augmented
 | [`docs/integrations/n8n_workflow_integration.md`](docs/integrations/n8n_workflow_integration.md) | Gmail, Notion & Google Drive ingestion pipelines via n8n |
 | [`docs/integrations/commercial_billing_integration.md`](docs/integrations/commercial_billing_integration.md) | Multi-gateway billing setup (Stripe, Razorpay, PhonePe) |
 
+### 📖 5. Production Operations & Runbooks (`docs/runbooks/`)
+| Runbook | Focus & Compliance Standard |
+|:---|:---|
+| [`docs/runbooks/ECOSYSTEM_PLUGINS_AND_INTEGRATIONS.md`](docs/runbooks/ECOSYSTEM_PLUGINS_AND_INTEGRATIONS.md) | Native Slack bot `/ask-retriever`, Manifest V3 Chrome Extension, 2-way Google Drive & Notion sync |
+| [`docs/runbooks/GEO_DISTRIBUTED_EDGE_ROUTING.md`](docs/runbooks/GEO_DISTRIBUTED_EDGE_ROUTING.md) | Sub-30ms global latency, Geo-IP routing, CQRS read-replica connection pooler & $0 fallback |
+| [`docs/runbooks/COMPLIANCE_AND_GDPR_ERASURE.md`](docs/runbooks/COMPLIANCE_AND_GDPR_ERASURE.md) | GDPR Article 17 Right-to-be-Forgotten, Luhn credit card validation & HMAC-SHA256 deletion certificates |
+| [`docs/runbooks/DISASTER_RECOVERY_AND_BACKUPS.md`](docs/runbooks/DISASTER_RECOVERY_AND_BACKUPS.md) | AES-256 GCM logical table streaming, S3/R2 WAL replication & zero-downtime `--dry-run` PITR recovery |
+| [`docs/runbooks/TOKEN_SHIELD_AND_RATE_LIMITING.md`](docs/runbooks/TOKEN_SHIELD_AND_RATE_LIMITING.md) | Upstash Redis sliding window, DDoS defense & resilient SSE stream reconnection (`Last-Event-ID`) |
+| [`docs/runbooks/VISITOR_PERSONA_AND_LEAD_SCORING.md`](docs/runbooks/VISITOR_PERSONA_AND_LEAD_SCORING.md) | Unsupervised `KMeans` buyer clustering, supervised conversion propensity scoring ($0.0 - 1.0$) |
+| [`docs/runbooks/ANOMALY_SENTINEL_AND_KEY_QUARANTINE.md`](docs/runbooks/ANOMALY_SENTINEL_AND_KEY_QUARANTINE.md) | Scikit-Learn `IsolationForest` behavioral profiling, autonomous API key quarantine & SRE resolution |
+
 ---
 
 ## 🛠️ Quick Start (Local Development)
@@ -126,7 +137,7 @@ uvicorn apps.api.src.main:app --reload --port 8000
 ## 🧪 Automated Testing & Benchmark Baselines
 
 ```bash
-# 1. Run complete unit test suite (604+ unit tests across 92 test suites)
+# 1. Run complete unit test suite (660+ unit tests across 102 test suites)
 pytest apps/api/tests/ -v
 
 # 2. Run linting & Hexagonal import boundaries verification

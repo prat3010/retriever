@@ -195,6 +195,8 @@ from src.routers.prompts import router as prompts_router
 from src.routers.rlm import router as rlm_router
 from src.routers.search import router as search_router
 from src.routers.security_compression import router as security_compression_router
+from src.routers.serverless_gpu import admin_router as serverless_admin_router
+from src.routers.serverless_gpu import tenant_router as serverless_tenant_router
 from src.routers.tenant import router as tenant_router
 from src.routers.workflow import router as workflow_router
 
@@ -222,6 +224,8 @@ app.include_router(gateway_router)
 app.include_router(gateway_tenant_router)
 app.include_router(guardrails_router)
 app.include_router(guardrails_tenant_router)
+app.include_router(serverless_admin_router)
+app.include_router(serverless_tenant_router)
 
 
 

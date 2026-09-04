@@ -33,6 +33,7 @@ from src.adapters.cognitive.gateway_router import GatewayRouterAdapter
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
 from src.adapters.cognitive.langgraph_orchestrator import LangGraphOrchestrator
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
+from src.adapters.cognitive.modal_client import ServerlessGpuClientAdapter
 from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 from src.adapters.cognitive.query_intent_adapter import LLMQueryIntentAdapter
@@ -68,6 +69,7 @@ from src.adapters.database.inference_repository import (
 )
 from src.adapters.database.quota_repository import SqlQuotaRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
+from src.adapters.database.tenant_lora_repository import SqlTenantLoraRepository
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.database.workflow_repository import SqlWorkflowRepository
@@ -162,10 +164,22 @@ class Container:
         anthropic_adapter = AnthropicLLMAdapter(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
         )
+        serverless_gpu_client = ServerlessGpuClientAdapter(
+            endpoint_url=settings.MODAL_ENDPOINT_URL or settings.BENTOML_ENDPOINT_URL,
+            api_key=settings.MODAL_API_KEY,
+            base_model=settings.SERVERLESS_BASE_MODEL,
+            gpu_tier=settings.SERVERLESS_GPU_TIER,
+            scaledown_window_sec=settings.SERVERLESS_IDLE_TIMEOUT_SEC,
+        )
+        tenant_lora_repository = SqlTenantLoraRepository()
         gateway_router = GatewayRouterAdapter(
             openai_adapter=openai_adapter,
             anthropic_adapter=anthropic_adapter,
+            serverless_gpu_client=serverless_gpu_client,
+            tenant_lora_repo=tenant_lora_repository,
         )
+        self._cache["serverless_gpu_client"] = serverless_gpu_client
+        self._cache["tenant_lora_repository"] = tenant_lora_repository
         self._cache["gateway_router"] = gateway_router
         self._cache["llm_provider"] = gateway_router
 
@@ -457,6 +471,12 @@ class Container:
                     statuses["neo4j_cypher_graph"] = BatteryStatus.ACTIVE
                 else:
                     statuses["neo4j_cypher_graph"] = BatteryStatus.STANDBY
+
+            if settings.MODAL_ENDPOINT_URL or settings.BENTOML_ENDPOINT_URL:
+                statuses["serverless_gpu_vllm"] = BatteryStatus.ACTIVE
+            else:
+                statuses["serverless_gpu_vllm"] = BatteryStatus.STANDBY
+
             return statuses
 
         self._cache["battery_service"] = BatteryService(status_resolver=_resolve_battery_statuses)
@@ -593,4 +613,6 @@ nemo_guardrail_service = container.nemo_guardrail_service
 workflow_repository = container.workflow_repository
 durable_engine = container.durable_engine
 durable_workflow_adapter = container.durable_workflow_adapter
+serverless_gpu_client = container.serverless_gpu_client
+tenant_lora_repository = container.tenant_lora_repository
 

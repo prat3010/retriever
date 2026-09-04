@@ -222,6 +222,16 @@ class Settings(BaseSettings):
     TEI_RERANK_URL: str | None = None
     SPARSE_SEARCH_PROVIDER: str = "bm25"
 
+    # Serverless GPU & Custom vLLM / LoRA Serving (Milestone 96)
+    MODAL_ENABLED: bool = False
+    MODAL_APP_NAME: str = "retriever-vllm-serving"
+    MODAL_ENDPOINT_URL: str | None = None
+    MODAL_API_KEY: str | None = None
+    BENTOML_ENDPOINT_URL: str | None = None
+    SERVERLESS_BASE_MODEL: str = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+    SERVERLESS_GPU_TIER: str = "A10G"
+    SERVERLESS_IDLE_TIMEOUT_SEC: int = 300
+
     # CORS
     CORS_ORIGINS: str = "https://prateeq.in,https://admin.rag.prateeq.in,http://localhost:3000,http://127.0.0.1:3000,*"
 

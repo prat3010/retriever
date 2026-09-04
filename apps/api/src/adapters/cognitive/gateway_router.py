@@ -128,6 +128,26 @@ CATALOG_MODELS: list[GatewayModelInfo] = [
         is_local=True,
         description="Ultra-lightweight local CPU-friendly edge model.",
     ),
+    GatewayModelInfo(
+        model_id="modal/vllm-llama-3.1-8b",
+        provider="modal",
+        name="Modal vLLM Llama 3.1 8B (Serverless GPU)",
+        input_cost_per_1k=0.08,
+        output_cost_per_1k=0.15,
+        capabilities=["chat", "tools", "json", "lora"],
+        is_local=False,
+        description="Dedicated fine-tuned tenant model on auto-scaling serverless A10G GPU with dynamic Multi-LoRA swapping.",
+    ),
+    GatewayModelInfo(
+        model_id="bentoml/vllm-qwen-2.5-7b",
+        provider="bentoml",
+        name="BentoML vLLM Qwen 2.5 7B (Serverless GPU)",
+        input_cost_per_1k=0.06,
+        output_cost_per_1k=0.12,
+        capabilities=["chat", "tools", "json", "lora"],
+        is_local=False,
+        description="BentoCloud serverless GPU instance auto-scaling down to zero when idle.",
+    ),
 ]
 
 
@@ -138,9 +158,13 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
         self,
         openai_adapter: OpenAILLMAdapter | None = None,
         anthropic_adapter: AnthropicLLMAdapter | None = None,
+        serverless_gpu_client: Any | None = None,
+        tenant_lora_repo: Any | None = None,
     ) -> None:
         self.openai_adapter = openai_adapter
         self.anthropic_adapter = anthropic_adapter
+        self.serverless_gpu_client = serverless_gpu_client
+        self.tenant_lora_repo = tenant_lora_repo
         self._cooldowns: dict[str, float] = {}  # model_id -> monotonic failure timestamp
         self._models_catalog = {m.model_id: m for m in CATALOG_MODELS}
 
@@ -199,6 +223,10 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
 
     def _resolve_provider_for_model(self, model: str) -> str:
         """Derive the upstream provider name from model identifier."""
+        if model.startswith("modal") or "/vllm" in model:
+            return "modal"
+        if model.startswith("bentoml"):
+            return "bentoml"
         if "/" in model:
             return model.split("/", 1)[0]
         if "gemini" in model.lower():
@@ -217,6 +245,21 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
         cfg = dict(configuration)
         cfg["model"] = model
         cfg["provider_name"] = provider
+
+        # 0. Check for Serverless GPU runtime (Modal / BentoML)
+        if provider in ("modal", "bentoml") and self.serverless_gpu_client:
+            lora_adapter = None
+            tenant_id = cfg.get("tenant_id")
+            if tenant_id and self.tenant_lora_repo:
+                try:
+                    lora_adapter = await self.tenant_lora_repo.get_active_adapter(
+                        tenant_id, adapter_type="llm"
+                    )
+                except Exception:
+                    pass
+            return await self.serverless_gpu_client.execute_serverless_completion(
+                request, cfg, lora_adapter=lora_adapter
+            )
 
         # 1. Check if LiteLLM is installed and can be imported
         try:
@@ -326,6 +369,25 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                 yield {"event": "info", "message": f"Smart router failing over to {model}"}
 
             try:
+                # 0. Check for Serverless GPU streaming
+                if provider in ("modal", "bentoml") and self.serverless_gpu_client:
+                    lora_adapter = None
+                    tenant_id = cfg.get("tenant_id")
+                    if tenant_id and self.tenant_lora_repo:
+                        try:
+                            lora_adapter = await self.tenant_lora_repo.get_active_adapter(
+                                tenant_id, adapter_type="llm"
+                            )
+                        except Exception:
+                            pass
+                    configuration["_actual_model"] = model
+                    configuration["_actual_provider"] = provider
+                    async for chunk in self.serverless_gpu_client.execute_serverless_stream(
+                        request, cfg, lora_adapter=lora_adapter
+                    ):
+                        yield chunk
+                    return
+
                 # Use native adapters for robust streaming
                 active_adapter = (
                     self.anthropic_adapter
@@ -360,6 +422,7 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
             ("openai", "openai/gpt-4o-mini"),
             ("anthropic", "anthropic/claude-3-haiku"),
             ("ollama", "ollama/qwen2.5:14b"),
+            ("modal", "modal/vllm-llama-3.1-8b"),
         ]
 
         for provider, model in test_targets:

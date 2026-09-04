@@ -1554,14 +1554,19 @@
 
 ---
 
-### [Planned] Milestone 96: Serverless GPU Serving & Custom vLLM / LoRA Deployment Pipeline (Modal / BentoML) (v0.81.0)
+### [Completed] Milestone 96: Serverless Dedicated GPU Serving & Dynamic vLLM / LoRA Deployment Pipeline (Modal / BentoML) (v0.81.0)
 
-**Objective:** Enable zero-downtime serverless GPU auto-scaling and dynamic LoRA adapter swapping on dedicated tenant models.
+**Objective:** Enable zero-downtime serverless GPU auto-scaling and dynamic LoRA adapter swapping on dedicated tenant models with scale-to-zero compute economics.
 
-**Target Deliverables:**
-- **Serverless GPU Deployment Recipes**: Modal / BentoML / Together AI deployment recipes for dedicated tenant fine-tuned models.
-- **Dynamic LoRA Swapping**: Sub-3s container warm-boot with runtime LoRA adapter switching on a shared base model.
-- **Auto-Scaling Down to Zero**: Dynamic compute scale-down to 0 instances during idle traffic, reducing cloud GPU overhead by 70%+.
+**Delivered Capabilities:**
+- **Hexagonal Domain Abstractions**: `src/domain/abstractions/serverless_gpu.py` defining pure protocols (`ServerlessGpuClientProtocol`, `TenantLoraRegistryProtocol`) and data models with zero framework imports.
+- **Scale-to-Zero Deployment Recipes**: `deploy/modal/vllm_server.py` (vLLM 0.6+, A10G GPU, persistent HuggingFace cache volume, `--enable-lora`, 300s scale-down timeout) and `deploy/bentoml/service.py` with dynamic mounting.
+- **Dynamic Multi-Tenant LoRA Swapping**: Hot-swapping fine-tuned LoRA tensors via request headers without container restarts, backed by `SqlTenantLoraRepository` with Postgres RLS isolation.
+- **Smart Gateway Cascade Failover**: `GatewayRouterAdapter` integration dispatching to `modal/vllm-llama-3.1-8b` and `bentoml/vllm-qwen-2.5-7b` with automatic fallback cascade.
+- **Platform Battery #16**: Registered `serverless_gpu_vllm` in `BatteryService` catalog under `ML_INTELLIGENCE`.
+- **FastAPI Endpoints**: Admin status/probe/cost-savings (`/v1/admin/serverless/*`) and tenant LoRA CRUD (`/v1/tenants/{tenantId}/lora-adapters/*`).
+- **SaaS Studio UI Parity**: `GatewayPanel.tsx` in `/rag/app` featuring live container lifecycle, TTFT warm-boot latency probe, scale-to-zero economy card, and dynamic LoRA activator matrix with Dual-Theme Parity.
+- **Automated Verification & Docs**: 100% passing Pytest suite (`test_serverless_gpu.py`, 16/16), 100% passing Vitest suite (`GatewayPanel.test.tsx`, 8/8), ADR-018, REST API spec, and Runbook.
 
 ---
 

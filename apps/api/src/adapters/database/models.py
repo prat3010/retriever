@@ -87,6 +87,12 @@ class TenantLoraAdapterDb(Base):
     rank = Column(Integer, nullable=False, default=8)
     loss_score = Column(Float, nullable=True)
     weights_json = Column(JSONB, nullable=False, default=dict)
+    adapter_type = Column(String(50), nullable=False, default="embedding")
+    base_model = Column(String(255), nullable=True)
+    artifact_uri = Column(String(500), nullable=True)
+    alpha = Column(Float, nullable=True, default=16.0)
+    target_modules = Column(JSONB, nullable=False, default=list)
+    is_active = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (

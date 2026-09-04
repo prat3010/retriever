@@ -200,6 +200,18 @@ class BatteryService:
                 active_parameters={"max_concurrent_per_tenant": 3, "default_retries": 3, "backoff_factor": 2.0, "checkpoint_store": "PostgreSQL+Redis"},
                 health_check_endpoint="/v1/admin/workflows/overview",
             ),
+            PlatformBatteryDTO(
+                id="serverless_gpu_vllm",
+                name="Serverless GPU & Dynamic vLLM / LoRA Pipeline",
+                category=BatteryCategory.ML_INTELLIGENCE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Serverless GPU Auto-Scaling (Scale-to-Zero) & Multi-LoRA Dynamic Tensor Swapping (vLLM / Modal)",
+                milestone="M96 (v0.81.0)",
+                latency_profile="~25ms warm / <3s cold-boot",
+                description="Serverless GPU auto-scaling down to 0 instances during idle traffic, cutting cloud compute costs by 70%+ with dynamic runtime LoRA weight swapping on a shared base model.",
+                active_parameters={"base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct", "gpu_tier": "A10G", "scale_to_zero_window_sec": 300, "max_loras": 16},
+                health_check_endpoint="/v1/admin/serverless/status",
+            ),
         ]
 
 

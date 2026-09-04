@@ -1404,13 +1404,13 @@
 
 ### [Completed] Milestone 86.5: Platform Capabilities & Active Batteries Observability Cockpit (v0.71.1)
 
-**Objective:** Build unified, real-time observability and control for all 12 platform retrieval, machine learning, and defense batteries across backend endpoints and admin dashboards.
+**Objective:** Build unified, real-time observability and control for platform retrieval, machine learning, and defense batteries across backend endpoints and admin dashboards.
 
 **Delivered:**
-- **Platform Batteries Domain Abstraction & Registry (`apps/api/src/domain/batteries/`)**: Assembled unified inventory of all 12 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Python REPL, GraphRAG HDBSCAN, Isolation Forest Anomaly Sentinel, Quantile Effort Regressor, Zero-Cookie Persona Clusterer, Token Shield, LlamaGuard 3, and LongLLMLingua).
+- **Platform Batteries Domain Abstraction & Registry (`apps/api/src/domain/batteries/`)**: Assembled unified inventory of platform batteries (expanded from initial 12 to 14 batteries: BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Python REPL, GraphRAG HDBSCAN, Isolation Forest Anomaly Sentinel, Quantile Effort Regressor, Zero-Cookie Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua, NeMo Conversational Guardrails, and Neo4j Cypher Graph Engine with hardware sensing).
 - **Admin & Tenant Inspection Endpoints**: `GET /v1/admin/platform/batteries` (Admin Master Key gated) and `GET /v1/tenants/{tenantId}/batteries` exposing live engine statuses, algorithmic foundations, latency profiles, and active hyperparameters.
 - **Admin Dashboard Visual Cockpit (`apps/web` at `/batteries`)**: High-tech operational command center with real-time KPI metrics, category filter pills, pulsing health indicators, and engine parameter tags.
-- **Automated Verification**: Pytest suite `apps/api/tests/test_batteries.py` asserting inventory completeness, category coverage, and strict Hexagonal boundary isolation.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_batteries.py` asserting inventory completeness, category coverage, dynamic hardware sensing overrides, and strict Hexagonal boundary isolation.
 
 ---
 

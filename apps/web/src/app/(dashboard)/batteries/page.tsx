@@ -90,7 +90,7 @@ export default function BatteriesPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <div className="text-2xl font-bold font-mono text-foreground">
-                  {data?.total_batteries || 12}
+                  {data?.total_batteries || 14}
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
@@ -111,7 +111,7 @@ export default function BatteriesPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                  {data?.active_count || 12} / {data?.total_batteries || 12}
+                  {data?.active_count || 13} / {data?.total_batteries || 14}
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">

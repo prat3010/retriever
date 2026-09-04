@@ -93,6 +93,7 @@ from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.config import InfraCapabilities, settings
+from src.domain.abstractions.batteries import BatteryStatus
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.backup.backup_service import BackupService
@@ -440,7 +441,22 @@ class Container:
             lead_scorer=lead_scorer,
         )
 
-        self._cache["battery_service"] = BatteryService()
+        def _resolve_battery_statuses() -> dict[str, BatteryStatus]:
+            statuses: dict[str, BatteryStatus] = {}
+            infra_cap = InfraCapabilities.detect()
+            if not infra_cap.neo4j_viable:
+                statuses["neo4j_cypher_graph"] = BatteryStatus.STANDBY
+            else:
+                repo = self._cache.get("graph_repository")
+                if repo and hasattr(repo, "_driver") and repo._driver is not None:
+                    statuses["neo4j_cypher_graph"] = BatteryStatus.ACTIVE
+                elif getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
+                    statuses["neo4j_cypher_graph"] = BatteryStatus.ACTIVE
+                else:
+                    statuses["neo4j_cypher_graph"] = BatteryStatus.STANDBY
+            return statuses
+
+        self._cache["battery_service"] = BatteryService(status_resolver=_resolve_battery_statuses)
 
         cloud_backup = CloudBackupAdapter(storage=self._cache.get("s3_storage"))
         cloud_restore = CloudRestoreAdapter(storage=self._cache.get("s3_storage"))

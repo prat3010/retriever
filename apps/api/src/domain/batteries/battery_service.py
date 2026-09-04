@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from src.domain.abstractions.batteries import (
     BatteryCategory,
     BatteryStatus,
@@ -9,7 +11,11 @@ from src.domain.abstractions.batteries import (
 class BatteryService:
     """Pure domain service managing the platform batteries inventory."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        status_resolver: Callable[[], dict[str, BatteryStatus]] | None = None,
+    ) -> None:
+        self._status_resolver = status_resolver
         self._batteries = self._build_catalog()
 
     def _build_catalog(self) -> list[PlatformBatteryDTO]:
@@ -85,6 +91,18 @@ class BatteryService:
                 description="Discovers semantic knowledge topics and multi-hop entity relationships without requiring predefined cluster counts (k).",
                 active_parameters={"min_cluster_size": 3, "metric": "euclidean", "cluster_selection_epsilon": 0.15},
                 health_check_endpoint="/v1/graph/communities",
+            ),
+            PlatformBatteryDTO(
+                id="neo4j_cypher_graph",
+                name="Neo4j Cypher Labeled Property Graph Engine",
+                category=BatteryCategory.COMPUTATION_GRAPH,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Labeled Property Graph (LPG) Indexing & Cypher Multi-Hop Traversal (Bolt Protocol)",
+                milestone="M37 / M44 (v0.35.0)",
+                latency_profile="<5ms",
+                description="High-throughput multi-hop entity traversal, community clustering, and labeled property graph path finding with automatic PostgreSQL Recursive CTE fallback.",
+                active_parameters={"engine": "neo4j", "fallback_engine": "postgres_recursive_cte", "max_hops": 5},
+                health_check_endpoint="/v1/admin/tenants/{tenantId}/graph/capabilities",
             ),
             PlatformBatteryDTO(
                 id="isolation_forest_sentinel",
@@ -173,13 +191,22 @@ class BatteryService:
         ]
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:
-        active = sum(1 for b in self._batteries if b.status == BatteryStatus.ACTIVE)
-        standby = sum(1 for b in self._batteries if b.status == BatteryStatus.STANDBY)
+        resolved = [b.model_copy() for b in self._batteries]
+        if self._status_resolver:
+            try:
+                overrides = self._status_resolver()
+                for b in resolved:
+                    if b.id in overrides:
+                        b.status = overrides[b.id]
+            except Exception:
+                pass
+        active = sum(1 for b in resolved if b.status == BatteryStatus.ACTIVE)
+        standby = sum(1 for b in resolved if b.status == BatteryStatus.STANDBY)
         return PlatformBatteriesResponse(
-            total_batteries=len(self._batteries),
+            total_batteries=len(resolved),
             active_count=active,
             standby_count=standby,
-            batteries=self._batteries,
+            batteries=resolved,
         )
 
     def get_tenant_batteries(self, tenant_id: str) -> PlatformBatteriesResponse:

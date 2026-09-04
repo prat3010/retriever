@@ -11,6 +11,11 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Added fast 2.0-second connection timeout and safe connectivity check in `Neo4jGraphRepository._get_driver()` and `is_online()`.
   - Updated `/v1/admin/tenants/{tenantId}/graph/capabilities` and `/v1/admin/tenants/{tenantId}/graph/engine` in `src/routers/admin.py` to dynamically reflect host profiles (`expanded_vps` / `macbook` vs `oracle_vm_lean`).
   - Updated web dashboard `tenant-graph.tsx` to display real-time host status and enable 1-click Neo4j Cypher engine activation on expanded VPS nodes.
+- **Platform Battery #14 Registration (`neo4j_cypher_graph`)**:
+  - Registered Neo4j Cypher Graph Engine as **Platform Battery #14** under `COMPUTATION_GRAPH` in `src/domain/batteries/battery_service.py`.
+  - Added dynamic `status_resolver` callable in `BatteryService` and wired runtime capability evaluation in `src/container.py`: resolves to `ACTIVE` when host hardware supports it and Bolt port 7687 is reachable, and `STANDBY` when running on lean VPS with PostgreSQL recursive CTE fallback.
+  - Updated fallback counts in Master Admin Dashboard (`apps/web/src/app/(dashboard)/batteries/page.tsx`) to 14 total platform batteries.
+  - Added comprehensive automated test coverage in `tests/test_batteries.py` verifying battery metadata, latency profile (<5ms), algorithm foundation, and active hyperparameters.
 
 
 ## [0.79.0] - 2026-09-04 - Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails

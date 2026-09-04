@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 12 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 14 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 13
+    assert resp.total_batteries == 14
     assert resp.active_count >= 11
-    assert len(resp.batteries) == 13
+    assert len(resp.batteries) == 14
 
     # Check key expected battery IDs
     expected_ids = {
@@ -29,6 +29,7 @@ def test_platform_batteries_inventory_completeness():
         "docling_layout_ocr",
         "rlm_python_repl",
         "graphrag_hdbscan_clustering",
+        "neo4j_cypher_graph",
         "isolation_forest_sentinel",
         "quantile_effort_regressor",
         "kmeans_persona_classifier",
@@ -69,9 +70,21 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 13
+        assert data["total_batteries"] == 14
         assert data["active_count"] >= 11
-        assert len(data["batteries"]) == 13
+        assert len(data["batteries"]) == 14
+
+
+def test_neo4j_cypher_graph_battery():
+    """Verify Battery #14: Neo4j Cypher Labeled Property Graph Engine properties."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "neo4j_cypher_graph"), None)
+    assert battery is not None
+    assert battery.name == "Neo4j Cypher Labeled Property Graph Engine"
+    assert battery.category == BatteryCategory.COMPUTATION_GRAPH
+    assert battery.latency_profile == "<5ms"
+    assert battery.active_parameters["fallback_engine"] == "postgres_recursive_cte"
+    assert "capabilities" in (battery.health_check_endpoint or "")
 
 
 def test_hexagonal_architecture_batteries():

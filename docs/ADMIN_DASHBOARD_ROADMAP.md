@@ -105,8 +105,8 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 * Append-only compliance log tracking API key creation, tenant suspension/reactivation, document deletion, and configuration overrides across all tenants.
 
 ### 8. 🔋 `/batteries` — Platform Batteries & Engine Capabilities Matrix (M86.5)
-* Real-time operational command center providing unified visibility across all 12 platform retrieval, ML intelligence, safety defense, and graph computation batteries.
-* Displays algorithmic foundations, live memory statuses (`active`, `standby`, `disabled`), latency benchmarks (`<15ms`), category filter pills, and active hyperparameters.
+* Real-time operational command center providing unified visibility across all 14 platform retrieval, ML intelligence, safety defense, and graph computation batteries (including Neo4j Cypher Graph Engine and NeMo Conversational Guardrails).
+* Displays algorithmic foundations, live memory statuses (`active`, `standby`, `disabled`), latency benchmarks (`<5ms` to `<15ms`), category filter pills, and active hyperparameters.
 
 ### 9. 🔌 `/integrations` — Universal Ecosystem Plugins & Surface Connectors (M90)
 * Central management cockpit for **Slack Workspace Bots** (slash commands, webhook signatures), **1-Click Chrome Ingestion Extension** (ZIP bundle generator and token pairing), and **Google Drive 2-Way Sync** (service account permissions, folder webhooks).
@@ -171,8 +171,8 @@ timeline
 
 ### Phase 6: Active Engine Batteries & Observability Matrix (M86.5)
 - ✅ Dedicated `/batteries` operational command center with live query hooks and auto-refresh.
-- ✅ Full inventory of 12 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Sandbox, GraphRAG HDBSCAN, Anomaly Sentinel, Effort Regressor, Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua).
-- ✅ Real-time metric cards, pulsing status indicators, and category filter pills (`Retrieval`, `ML Intelligence`, `Safety & Defense`, `Computation & Graph`).
+- ✅ Full inventory of 14 platform batteries (BM25, pgvector HNSW, ColBERT MaxSim, Docling OCR, RLM Sandbox, GraphRAG HDBSCAN, Anomaly Sentinel, Effort Regressor, Persona Clusterer, Token Shield, LlamaGuard 3, LongLLMLingua, NeMo Conversational Guardrails, Neo4j Cypher Graph Engine).
+- ✅ Real-time metric cards, pulsing status indicators, dynamic hardware sensing, and category filter pills (`Retrieval`, `ML Intelligence`, `Safety & Defense`, `Computation & Graph`).
 
 ---
 

@@ -108,6 +108,23 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 * Real-time operational command center providing unified visibility across all 12 platform retrieval, ML intelligence, safety defense, and graph computation batteries.
 * Displays algorithmic foundations, live memory statuses (`active`, `standby`, `disabled`), latency benchmarks (`<15ms`), category filter pills, and active hyperparameters.
 
+### 9. 🔌 `/integrations` — Universal Ecosystem Plugins & Surface Connectors (M90)
+* Central management cockpit for **Slack Workspace Bots** (slash commands, webhook signatures), **1-Click Chrome Ingestion Extension** (ZIP bundle generator and token pairing), and **Google Drive 2-Way Sync** (service account permissions, folder webhooks).
+
+### 10. 🤖 `/orchestration` — LangGraph Cyclic Multi-Agent Workflows & HITL Cockpit (M91)
+* Real-time workflow state graph visualizer with live node executions, cyclic tool routing, human-in-the-loop (HITL) approval gates, and time-travel state checkpoint browser.
+
+### 11. ✨ `/prompts` — DSPy Declarative Prompt Compilation & Teleprompter Studio (M92)
+* Algorithmic prompt optimization studio supporting `BootstrapFewShot` and `MIPROv2` teleprompters.
+* Features score lift delta cards ($\Delta > 0$), few-shot demonstration drawer, and 1-click atomic production hot-activation.
+
+### 12. 🔀 `/gateway` — Enterprise LLM Gateway & Multi-Model Smart Router (M93)
+* Universal multi-provider proxying across 100+ models (OpenAI, Anthropic, Gemini, Groq, Mistral, and local Ollama/vLLM).
+* Live upstream provider latency and connectivity probes, visual fallback cascade editor, circuit-breaker cooldown controls, and virtual tenant spending caps.
+
+### 13. 💾 `/system-data` — Automated Database Snapshots & PITR Recovery Engine (M87)
+* Cloud storage snapshot management (S3 / Cloudflare R2), continuous WAL segment archival monitoring, point-in-time recovery (PITR) drills, and atomic database state restoration.
+
 ---
 
 ## 4. Operational Roadmap & Development Phases
@@ -121,6 +138,8 @@ timeline
     Phase 4 : Enterprise Security & Compliance Automation (M15 / M51)
     Phase 5 : 2026 World-Class RAG Controls (M54–M60 Alignment)
     Phase 6 : Active Engine Batteries & Observability Matrix (M86.5)
+    Phase 7 : Enterprise Ecosystem Plugins & Compliance Vault (M87–M90)
+    Phase 8 : LangGraph Orchestration, DSPy Compilation & Smart Gateway (M91–M93)
 ```
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)

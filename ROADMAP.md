@@ -1456,14 +1456,20 @@
 
 ---
 
-### [Planned] Milestone 90: Universal Ecosystem Plugins (Slack Bot, Chrome Extension & 2-Way GDrive Sync) (v0.75.0)
+### [Completed] Milestone 90: Universal Ecosystem Plugins (Slack Bot, Chrome Extension & 2-Way GDrive Sync) (v0.75.0)
 
-**Objective:** Embed Retriever directly into everyday workflows across Slack, browsers, and cloud storage.
+**Objective:** Embed Retriever directly into everyday client workflows across Slack, Chromium browsers, and 2-way Cloud Storage (Google Drive & Notion), completing Phase K.
 
-**Target Deliverables:**
-- **Native Slack Workspace Bot**: `/ask-retriever <query>` with grounded citations and feedback buttons.
-- **1-Click Chrome Ingestion Extension**: One-click ingestion of active web pages, PDFs, and articles into client tenants.
-- **2-Way Live Sync Connectors**: Google Drive & Notion webhooks with differential vector re-indexing on file edits.
+**Delivered:**
+- **Authentic Google Drive v3 REST Connector (`src/domain/connectors/google_drive.py`)**: Real HTTP-backed connector querying target Google Drive folders, automatically exporting Google Docs to clean plain text, and tracking differential changes via `modifiedTime` and MD5 checksums.
+- **Authentic Notion Knowledge Base Connector (`src/domain/connectors/notion.py`)**: Real Notion REST API v1 connector traversing database pages and block children trees into GitHub Flavored Markdown with `last_edited_time` differential synchronization.
+- **Retired Mock Connectors (`src/domain/connectors/registry.py`)**: Permanently replaced mock implementations with authentic HTTP-backed connector strategies conforming to zero-toy utility invariants.
+- **Native Slack Workspace Bot Service (`src/domain/integrations/slack_service.py` & `src/routers/integrations.py`)**: HMAC-SHA256 signature verification, replay attack prevention, and dynamic Slack Block Kit message composer with grounded citation pills, latency metadata, and interactive 👍/👎 feedback buttons for `/ask-retriever <query>`.
+- **Direct JSON Raw Document Ingestion API (`POST /v1/tenants/{tenantId}/documents/raw`)**: Fast-path text and markdown ingestion route supporting Chrome extension clippers and Slack thread archiving.
+- **1-Click Chrome Ingestion Extension (Manifest V3) (`apps/extension/`)**: Production-ready Chromium extension with reader-mode DOM text extraction, tenant credentials storage, and direct 1-click `.zip` bundle download endpoint (`GET /v1/integrations/extension/bundle`).
+- **Command Center & Studio Integrations Hub**: Live Integrations management page in Admin Dashboard (`/integrations`) and SaaS App Studio (`/rag/app` Integrations tab) with test simulators and 1-click copy buttons.
+- **Operational Runbook**: Published comprehensive operations guide at `docs/runbooks/ECOSYSTEM_PLUGINS_AND_INTEGRATIONS.md`.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_ecosystem_plugins.py` (7/7 passed) covering Slack signature security, Block Kit layout, connector discovery, markdown parsing, bundle download, and Hexagonal boundaries.
 
 ---
 

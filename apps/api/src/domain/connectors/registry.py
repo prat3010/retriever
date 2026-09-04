@@ -2,6 +2,8 @@ from typing import ClassVar
 
 from src.domain.abstractions.connector import BaseConnector
 from src.domain.connectors.cloud_drive import MockCloudDriveConnector
+from src.domain.connectors.google_drive import GoogleDriveConnector
+from src.domain.connectors.notion import NotionConnector
 from src.domain.connectors.web_crawler import WebCrawlerConnector
 
 
@@ -10,9 +12,9 @@ class ConnectorRegistry:
 
     _connectors: ClassVar[dict[str, BaseConnector]] = {
         "web_crawler": WebCrawlerConnector(),
+        "google_drive": GoogleDriveConnector(),
+        "notion": NotionConnector(),
         "cloud_drive": MockCloudDriveConnector(),
-        "google_drive": MockCloudDriveConnector(),
-        "notion": MockCloudDriveConnector(),
         "slack": MockCloudDriveConnector(),
         "s3": MockCloudDriveConnector(),
     }

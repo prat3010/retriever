@@ -23,3 +23,19 @@ class ExtractResponse(BaseModel):
     model: str
     inputTokens: int
     outputTokens: int
+
+
+class RawDocumentRequest(BaseModel):
+    title: str = Field(..., description="Document title or web page title")
+    content: str = Field(..., description="Raw text or markdown content extracted")
+    source_url: str | None = Field(None, description="Origin URL or file path")
+    mime_type: str = Field("text/markdown", description="Content MIME type")
+    tags: list[str] = Field(default_factory=lambda: ["raw_ingest"])
+
+
+class RawDocumentResponse(BaseModel):
+    document_id: str
+    filename: str
+    chunk_count: int
+    status: str
+    message: str

@@ -95,6 +95,7 @@ from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.inference.prompt_builder import PromptBuilder
+from src.domain.integrations.slack_service import SlackService
 from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
@@ -437,6 +438,7 @@ class Container:
         )
         self._cache["edge_router_service"] = edge_router
         self._cache["read_replica_adapter"] = replica_adapter
+        self._cache["slack_service"] = SlackService()
 
 
     def reset(self) -> None:
@@ -513,3 +515,4 @@ backup_service = container.backup_service
 compliance_certificate_service = container.compliance_certificate_service
 edge_router_service = container.edge_router_service
 read_replica_adapter = container.read_replica_adapter
+slack_service = container.slack_service

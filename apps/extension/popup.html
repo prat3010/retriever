@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retriever AI Ingestion</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --card: #18181b;
+      --border: #27272a;
+      --primary: #00f0ff;
+      --primary-hover: #00d4e2;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+    }
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--primary);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .page-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-url {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #000;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .settings-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .settings-drawer {
+      display: none;
+      margin-bottom: 12px;
+    }
+    .settings-drawer.open {
+      display: block;
+    }
+    .input-group {
+      margin-bottom: 8px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .input-group input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+    }
+    .status-box {
+      display: none;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .status-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+    .status-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span>⚡ RETRIEVER</span>
+      <span class="badge">v1.0</span>
+    </div>
+    <a href="https://prateeq.in/rag/app" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 11px;">Studio ↗</a>
+  </div>
+
+  <div class="card">
+    <div class="page-title" id="page-title">Loading active tab...</div>
+    <div class="page-url" id="page-url">Detecting URL...</div>
+  </div>
+
+  <button class="settings-toggle" id="toggle-settings">⚙️ Configure Workspace</button>
+  <div class="settings-drawer" id="settings-drawer">
+    <div class="input-group">
+      <label for="server-url">Retriever API Server</label>
+      <input type="text" id="server-url" value="https://rag.prateeq.in" placeholder="https://rag.prateeq.in">
+    </div>
+    <div class="input-group">
+      <label for="tenant-id">Tenant ID</label>
+      <input type="text" id="tenant-id" placeholder="tn_client_...">
+    </div>
+    <div class="input-group">
+      <label for="api-key">API Key / Bearer Token</label>
+      <input type="password" id="api-key" placeholder="Enter API Key">
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="ingest-btn">⚡ Ingest Active Page</button>
+
+  <div class="status-box" id="status-box"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

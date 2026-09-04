@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import time
 import uuid
 from datetime import UTC, datetime
@@ -31,12 +32,19 @@ from src.container import (
     config_service,
     document_repository,
     inference_orchestrator,
+    ingest_file_sync,
     local_storage,
     quota_service,
 )
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.ingestion import Document
-from src.schemas.document import DocumentResponse, ExtractRequest, ExtractResponse
+from src.schemas.document import (
+    DocumentResponse,
+    ExtractRequest,
+    ExtractResponse,
+    RawDocumentRequest,
+    RawDocumentResponse,
+)
 
 router = APIRouter(tags=["Documents"])
 
@@ -376,3 +384,48 @@ async def serve_local_download(
         raise HTTPException(status_code=404, detail="File not found on disk.")
 
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+
+
+@router.post(
+    "/v1/tenants/{tenantId}/documents/raw",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RawDocumentResponse,
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:write"]),
+        Depends(rate_limit(scope="ingest", max_requests=30)),
+    ],
+)
+async def ingest_raw_document(
+    tenantId: str,
+    payload: RawDocumentRequest,
+) -> RawDocumentResponse:
+    """Ingest raw text/markdown document directly (for Chrome Extension & Slack clippers)."""
+    clean_title = re.sub(r"[^\w\-\.]", "_", payload.title).strip("_")
+    if not clean_title:
+        clean_title = f"clip_{int(time.time())}"
+    ext = ".md" if "markdown" in payload.mime_type else ".txt"
+    if not clean_title.endswith((".md", ".txt")):
+        clean_title += ext
+
+    content_bytes = payload.content.encode("utf-8")
+    tags = list(payload.tags)
+    if payload.source_url:
+        tags.append(f"url:{payload.source_url}")
+
+    chunk_count = await ingest_file_sync(
+        tenant_id=tenantId,
+        filename=clean_title,
+        content_bytes=content_bytes,
+        mime_type=payload.mime_type,
+        tags=tags,
+    )
+
+    doc_id = str(uuid.uuid4())
+    return RawDocumentResponse(
+        document_id=doc_id,
+        filename=clean_title,
+        chunk_count=chunk_count,
+        status="PROCESSED",
+        message=f"Successfully ingested and indexed {chunk_count} vector chunks.",
+    )

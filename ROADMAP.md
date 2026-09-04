@@ -1473,15 +1473,20 @@
 
 ---
 
-### [Planned] Milestone 91: LangGraph Cyclic Agentic Orchestration & Human-in-the-Loop (HITL) State Engine (v0.76.0)
+### [Completed] Milestone 91: LangGraph Cyclic Agentic Orchestration & Human-in-the-Loop (HITL) State Engine (v0.76.0)
 
 **Objective:** Upgrade linear agent routing to stateful cyclic computation graphs with persistent checkpoints and human approval nodes.
 
-**Target Deliverables:**
-- **Stateful Cyclic Agent Graphs (`langgraph`)**: Replace linear chain execution with graph-based cyclic reasoning loops and dynamic branching.
-- **Persistent State Checkpoints (`PostgresSaver`)**: PostgreSQL & Redis state savers enabling multi-agent threads to pause, resume, and branch across client sessions.
-- **Human-in-the-Loop (HITL) Gateways**: Execution pauses before triggering high-impact external actions, emitting structured approval events to the frontend.
-- **Time-Travel Debugging Endpoint**: `GET /v1/agentic/threads/{threadId}/history` with state rollback inspection.
+**Delivered:**
+- **Stateful Cyclic Agent Graphs (`src/adapters/cognitive/langgraph_orchestrator.py`)**: Replaced linear chain execution with compiled LangGraph `StateGraph` and resilient cyclic reasoning loops (`reasoner` $\rightarrow$ `tool_executor` $\rightarrow$ `reasoner` $\rightarrow$ `synthesizer`).
+- **Persistent State Checkpoints (`SqlAgentCheckpointRepository` & `agent_checkpoints`)**: PostgreSQL JSONB state checkpointer with strict `tenant_id` isolation, enabling multi-agent threads to pause, resume, and branch across client sessions.
+- **Human-in-the-Loop (HITL) Gateways**: Execution pauses at `hitl_gate` before triggering sensitive actions (`document_delete`, `tenant_prompt_update`, `api_key_revoke`), emitting structured approval events to the frontend.
+- **Time-Travel Debugging & Rollback Endpoints**: `GET /v1/tenants/{tenantId}/agentic/threads/{threadId}/history` and `POST /v1/tenants/{tenantId}/agentic/threads/{threadId}/rollback` with forward step pruning and state restoration.
+- **Dual-Surface Frontend Studios**:
+  - **Retriever Admin Dashboard** (`/orchestration`): Live execution trace, toolbox filter, HITL intervention card, and checkpoint history scrubber.
+  - **Retriever SaaS App Studio** (`/rag/app`): Integrated "Agent Studio" tab conforming to Design System 2.0 (Azure & Noir) with `<Portal>`-safe approval modals.
+- **Operational Runbook**: Comprehensive operations and troubleshooting guide at `docs/runbooks/RUNBOOK_LANGGRAPH_AGENTIC_ORCHESTRATION.md`.
+- **Automated Verification**: Pytest suite `apps/api/tests/test_agentic_langgraph.py` asserting safe loops, HITL approval/rejection handling, time-travel rollback, multi-tenant isolation, and Hexagonal architecture boundaries.
 
 ---
 

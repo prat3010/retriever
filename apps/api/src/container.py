@@ -29,6 +29,7 @@ from src.adapters.cognitive.corrective_retrieval_adapter import (
     LLMCorrectiveRetrievalAdapter,
 )
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
+from src.adapters.cognitive.langgraph_orchestrator import LangGraphOrchestrator
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.adapters.cognitive.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
@@ -41,6 +42,9 @@ from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
 from src.adapters.cognitive.tei_reranker_adapter import TeiRerankerAdapter
 from src.adapters.cognitive.topic_clustering_adapter import TopicClusteringAdapter
 from src.adapters.database.admin_repository import SqlAdminRepository
+from src.adapters.database.agent_checkpoint_repository import (
+    SqlAgentCheckpointRepository,
+)
 from src.adapters.database.audit_repository import SqlAuditLogRepository
 from src.adapters.database.config_repository import SqlConfigRegistry
 from src.adapters.database.document_repository import SqlDocumentRepository
@@ -271,11 +275,20 @@ class Container:
         else:
             self._cache["event_publisher"] = NoOpEventPublisher()
 
-        # --- Agentic Engine ---
+        # --- Agentic Engine (Milestone 91 LangGraph & HITL) ---
         tool_reg = ToolRegistry()
-        self._cache["tool_registry"] = tool_reg
-        self._cache["agentic_engine"] = AgenticExecutionEngine(
+        checkpointer = SqlAgentCheckpointRepository()
+        orchestrator = LangGraphOrchestrator(
             llm_provider=llm,
+            tool_registry=tool_reg,
+            checkpointer=checkpointer,
+        )
+        self._cache["tool_registry"] = tool_reg
+        self._cache["agent_checkpointer"] = checkpointer
+        self._cache["agent_orchestrator"] = orchestrator
+        self._cache["agentic_engine"] = AgenticExecutionEngine(
+            graph_orchestrator=orchestrator,
+            checkpointer=checkpointer,
             tool_registry=tool_reg,
         )
 

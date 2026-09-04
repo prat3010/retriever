@@ -15,6 +15,7 @@ import {
   Database,
   Zap,
   Puzzle,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/tenants", label: "Tenants", icon: Building2 },
   { href: "/batteries", label: "Batteries & Engines", icon: Zap },
   { href: "/integrations", label: "Integrations & Plugins", icon: Puzzle },
+  { href: "/orchestration", label: "Agentic Orchestration", icon: Bot },
   { href: "/onboard", label: "Onboard Client", icon: UserPlus },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/system-data", label: "System Data", icon: Database },

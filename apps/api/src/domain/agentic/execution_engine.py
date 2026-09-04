@@ -1,7 +1,7 @@
 """Agentic Workflow Execution Engine.
 
-Orchestrates multi-step reasoning, tool call parsing, tool execution,
-and final response synthesis in a multi-turn ReAct loop.
+Orchestrates stateful cyclic computation graphs, human-in-the-loop (HITL) approval
+checkpoints, and time-travel state rollbacks conforming to Hexagonal Architecture.
 """
 
 import json
@@ -13,60 +13,117 @@ from src.domain.abstractions.inference import ChatMessage, InferenceRequest, Llm
 from src.domain.agentic.abstractions import (
     AgentExecutionRequest,
     AgentExecutionResult,
+    AgentGraphEngineProtocol,
     AgentStep,
+    HITLApprovalDecision,
+    StateCheckpointerProtocol,
+    ThreadCheckpoint,
+    ThreadHistoryResponse,
     ToolCall,
 )
 from src.domain.agentic.tool_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
-AGENTIC_SYSTEM_PROMPT = """You are an autonomous AI Agent execution engine.
-Your goal is to solve the user's task by reasoning step-by-step and invoking available tools when needed.
-
-Available Tools:
-{tools_json}
-
-INSTRUCTIONS:
-1. Break down the task into logical steps.
-2. In each turn, output a JSON object matching this exact structure:
-{{
-  "thought": "Your step-by-step reasoning or plan",
-  "tool_calls": [
-    {{
-      "tool_name": "name_of_tool",
-      "arguments": {{ ... }}
-    }}
-  ],
-  "final_answer": "Your final detailed answer when done, or leave null/empty if tools are still needed."
-}}
-3. If no more tools are needed, provide your final response in "final_answer".
-4. Output strictly valid JSON without markdown wrapping.
-"""
-
 
 class AgenticExecutionEngine:
-    """Multi-step ReAct agent execution engine."""
+    """Domain service orchestrating stateful agent graph execution and thread persistence."""
 
     def __init__(
         self,
-        llm_provider: LlmProvider,
-        tool_registry: ToolRegistry,
+        graph_orchestrator: AgentGraphEngineProtocol | None = None,
+        checkpointer: StateCheckpointerProtocol | None = None,
+        tool_registry: ToolRegistry | None = None,
+        llm_provider: LlmProvider | None = None,
     ) -> None:
+        self.graph_orchestrator = graph_orchestrator
+        self.checkpointer = checkpointer
+        self.tools = tool_registry or ToolRegistry()
         self.llm = llm_provider
-        self.tools = tool_registry
 
     async def execute_workflow(
         self, request: AgentExecutionRequest
     ) -> AgentExecutionResult:
-        """Execute a multi-step agentic workflow loop."""
+        """Execute or initiate a stateful cyclic agent graph workflow."""
+        if self.graph_orchestrator is not None:
+            logger.info(
+                f"Executing stateful agent workflow for tenant '{request.tenant_id}', thread '{request.thread_id or 'auto'}'"
+            )
+            return await self.graph_orchestrator.execute_workflow(request)
+
+        # Legacy fallback if initialized with llm_provider directly
+        return await self._execute_legacy_loop(request)
+
+    async def resume_workflow(
+        self,
+        tenant_id: str,
+        thread_id: str,
+        decision: HITLApprovalDecision,
+    ) -> AgentExecutionResult:
+        """Resume an interrupted agent thread with a human approval or rejection decision."""
+        if not self.graph_orchestrator:
+            raise NotImplementedError("Stateful graph orchestrator not configured.")
+
+        logger.info(
+            f"Resuming agent thread '{thread_id}' for tenant '{tenant_id}' with action '{decision.action_id}' ({decision.decision})"
+        )
+        return await self.graph_orchestrator.resume_workflow(
+            tenant_id=tenant_id,
+            thread_id=thread_id,
+            decision=decision,
+        )
+
+    async def get_thread_history(
+        self, tenant_id: str, thread_id: str
+    ) -> ThreadHistoryResponse:
+        """Retrieve complete audit history of state checkpoints for time-travel debugging."""
+        if not self.checkpointer:
+            return ThreadHistoryResponse(
+                thread_id=thread_id,
+                tenant_id=tenant_id,
+                total_checkpoints=0,
+                checkpoints=[],
+            )
+
+        checkpoints = await self.checkpointer.list_thread_checkpoints(
+            tenant_id=tenant_id, thread_id=thread_id
+        )
+        return ThreadHistoryResponse(
+            thread_id=thread_id,
+            tenant_id=tenant_id,
+            total_checkpoints=len(checkpoints),
+            checkpoints=checkpoints,
+        )
+
+    async def rollback_thread(
+        self, tenant_id: str, thread_id: str, checkpoint_id: str, fork: bool = False
+    ) -> ThreadCheckpoint:
+        """Roll back thread to a prior checkpoint, pruning future state steps or branching."""
+        if not self.checkpointer:
+            raise NotImplementedError("Checkpointer not configured.")
+
+        logger.info(
+            f"Rolling back thread '{thread_id}' to checkpoint '{checkpoint_id}' (fork={fork})"
+        )
+        return await self.checkpointer.rollback_to_checkpoint(
+            tenant_id=tenant_id,
+            thread_id=thread_id,
+            checkpoint_id=checkpoint_id,
+            fork=fork,
+        )
+
+    async def _execute_legacy_loop(
+        self, request: AgentExecutionRequest
+    ) -> AgentExecutionResult:
+        """Backwards-compatible lightweight ReAct tool calling execution loop."""
         start_time = time.monotonic()
         available_tools = self.tools.list_tools(request.allowed_tools)
         tools_schema_str = json.dumps(
             [t.model_dump() for t in available_tools], indent=2
         )
 
-        system_msg = AGENTIC_SYSTEM_PROMPT.format(tools_json=tools_schema_str)
-        messages: list[ChatMessage] = [
+        system_msg = f"You are an autonomous AI Agent execution engine.\nAvailable Tools:\n{tools_schema_str}\n"
+        messages = [
             ChatMessage(role="system", content=system_msg),
             ChatMessage(role="user", content=request.prompt),
         ]
@@ -74,25 +131,21 @@ class AgenticExecutionEngine:
         steps: list[AgentStep] = []
         final_answer = ""
 
+        if not self.llm:
+            raise ValueError("LlmProvider must be provided for agentic execution.")
+
         for step_idx in range(request.max_steps):
             try:
                 response = await self.llm.generate(
-                    InferenceRequest(
-                        messages=messages,
-                        temperature=0.1,
-                        max_tokens=1000,
-                    )
+                    InferenceRequest(messages=messages, temperature=0.1, max_tokens=1000)
                 )
                 raw_text = response.content.strip()
+                if raw_text.startswith("```json"):
+                    raw_text = raw_text.strip("`").removeprefix("json").strip()
+                elif raw_text.startswith("```"):
+                    raw_text = raw_text.strip("`").strip()
 
-                # Parse JSON output from LLM
                 try:
-                    # Strip markdown block if present
-                    if raw_text.startswith("```json"):
-                        raw_text = raw_text.strip("`").removeprefix("json").strip()
-                    elif raw_text.startswith("```"):
-                        raw_text = raw_text.strip("`").strip()
-
                     parsed = json.loads(raw_text)
                     thought = parsed.get("thought", raw_text)
                     parsed_calls = parsed.get("tool_calls", [])
@@ -102,7 +155,6 @@ class AgenticExecutionEngine:
                     parsed_calls = []
                     final_answer = raw_text
 
-                # Build ToolCall objects
                 tool_calls: list[ToolCall] = []
                 for pc in parsed_calls:
                     call_id = f"call_{uuid4().hex[:8]}"
@@ -114,7 +166,6 @@ class AgenticExecutionEngine:
                         )
                     )
 
-                # Execute tool calls
                 tool_results = []
                 for tc in tool_calls:
                     res = await self.tools.execute_tool(
@@ -124,25 +175,23 @@ class AgenticExecutionEngine:
                     )
                     tool_results.append(res)
 
-                step_obj = AgentStep(
-                    step_index=step_idx,
-                    thought=thought,
-                    tool_calls=tool_calls,
-                    tool_results=tool_results,
+                steps.append(
+                    AgentStep(
+                        step_index=step_idx,
+                        thought=thought,
+                        tool_calls=tool_calls,
+                        tool_results=tool_results,
+                    )
                 )
-                steps.append(step_obj)
 
-                # Check termination conditions
                 if final_answer and not tool_calls:
                     break
-
                 if not tool_calls:
                     final_answer = thought
                     break
 
-                # Prepare context for next iteration
                 messages.append(ChatMessage(role="assistant", content=raw_text))
-                tool_results_summary = json.dumps(
+                tool_summary = json.dumps(
                     [
                         {
                             "call_id": tr.call_id,
@@ -156,21 +205,17 @@ class AgenticExecutionEngine:
                 messages.append(
                     ChatMessage(
                         role="user",
-                        content=f"Tool Execution Results:\n{tool_results_summary}\n\nContinue or provide final_answer.",
+                        content=f"Tool Execution Results:\n{tool_summary}\n\nContinue or provide final_answer.",
                     )
                 )
-
             except Exception as err:
-                logger.error(
-                    f"Error in agentic step {step_idx} ({err}). Terminating loop.",
-                    exc_info=True,
-                )
                 final_answer = f"Agent workflow halted due to error: {err!s}"
                 break
 
         elapsed_ms = (time.monotonic() - start_time) * 1000
         return AgentExecutionResult(
             tenant_id=request.tenant_id,
+            thread_id=request.thread_id or f"thr_{uuid4().hex[:12]}",
             prompt=request.prompt,
             final_answer=final_answer or "Completed agent execution loop.",
             steps=steps,

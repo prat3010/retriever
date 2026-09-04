@@ -711,3 +711,28 @@ class TelemetryAnomalyDb(Base):
         Index("ix_telemetry_anomalies_risk_status", "risk_level", "status"),
     )
 
+
+class AgentCheckpointDb(Base):
+    """Persisted checkpoint for stateful LangGraph agentic threads."""
+
+    __tablename__ = "agent_checkpoints"
+
+    checkpoint_id = Column(String(128), primary_key=True)
+    thread_id = Column(String(128), nullable=False, index=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    node_name = Column(String(64), nullable=False)
+    step_index = Column(Integer, nullable=False, default=0)
+    state_snapshot = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_agent_checkpoints_tenant_thread", "tenant_id", "thread_id"),
+        Index("ix_agent_checkpoints_thread_step", "thread_id", "step_index"),
+    )
+
+

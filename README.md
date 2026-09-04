@@ -1,150 +1,169 @@
-# Retriever — Enterprise Multi-Tenant RAG Cognitive Platform
+# Retriever — The Open-Source Enterprise Cognitive Engine
 
-> **High-Performance Hybrid Vector Search, GraphRAG, Context Compression & Recursive Agentic Cognition.**
-> 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** [`../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)  
-> 📌 **Forward Deployed Engineering (FDE) Case Studies:** [`docs/engineering/FDE_PRODUCTION_CASE_STUDIES.md`](docs/engineering/FDE_PRODUCTION_CASE_STUDIES.md)  
-> 📌 **Admin Dashboard Guide:** [`ADMIN_DASHBOARD_GUIDE.md`](ADMIN_DASHBOARD_GUIDE.md)  
-> 📌 **Frontend Client Studio:** [`../Prateek_website/docs/24_RAG_App_Studio_PRD.md`](../Prateek_website/docs/24_RAG_App_Studio_PRD.md)
+<div align="center">
+
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](pyproject.toml)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
+[![Tests](https://img.shields.io/badge/tests-731%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
+[![Batteries](https://img.shields.io/badge/batteries-16%20included-ff69b4.svg)](#-the-16-platform-batteries)
+[![Serving](https://img.shields.io/badge/vLLM-Scale--to--Zero%20(A10G)-orange.svg)](deploy/)
+
+**The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
+*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, and scale-to-zero vLLM serving.*
+
+[🚀 Live Production Demo](https://rag.prateeq.in) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
+
+</div>
 
 ---
 
-## 🚀 Architectural Vision & Hexagonal Core
+## 💡 Why Retriever? The "Anti-Wrapper" Stack Killer
 
-Retriever is designed as an enterprise-grade, highly modular Retrieval-Augmented Generation (RAG) platform based on a strict **Ports and Adapters (Hexagonal)** architecture:
+Most RAG setups in 2026 are fragile glue code: developers stitch together LangChain (abstraction hell), Pinecone ($100s/mo with cross-tenant leak risks), LiteLLM, Celery, and custom OCR scripts. And when running dedicated models, teams pay $720/mo per client for idle GPUs.
+
+**Retriever replaces the entire fragmented stack with a single, clean Hexagonal engine:**
+
+| Capability | Retriever (Open-Source) | Pinecone / Qdrant | LangChain / LlamaIndex | LiteLLM Proxy | Dify / AnythingLLM |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Architecture** | **Pure Hexagonal (0-lockin)** | Proprietary Cloud | Spaghetti Wrappers | Routing Proxy | Monolith App |
+| **Multi-Tenancy** | **PostgreSQL RLS (DB-Level)** | Namespace only | Application-level filter | Virtual keys only | Basic workspace |
+| **Hybrid Search & Fusion** | **HNSW + BM25 + ColBERT MaxSim** | Dense only | Manual glue code | N/A | Dense only |
+| **Layout OCR & Tables** | **Docling Vision OCR (Built-in)** | None | Paid API integration | N/A | Basic text extract |
+| **Knowledge Graph** | **Dual GraphRAG (Neo4j / CTEs)** | None | Add-on package | N/A | None |
+| **Prompt Optimization** | **DSPy Teleprompter (M92)** | None | Manual prompt tweaking | N/A | None |
+| **Conversational Safety** | **NVIDIA NeMo Colang (M94)** | None | Basic regex | None | Keyword blocklist |
+| **Durable Asynchronous Jobs**| **Step-Memoized Checkpoints (M95)**| None | Fragile in-memory | N/A | Basic background |
+| **Dedicated GPU Serving** | **Scale-to-Zero vLLM / Modal (M96)** | N/A | None | N/A | None |
+| **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
+| **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
+
+---
+
+## ⚡ Quick Start (30-Second Dopamine)
+
+Spin up the entire platform locally with zero external API dependencies (runs 100% free with local Ollama embeddings):
+
+```bash
+# 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API)
+git clone https://github.com/prat3010/retriever.git && cd retriever
+docker compose up -d
+
+# 2. Verify health readiness (<60 seconds)
+curl http://localhost:8000/health/readiness
+# {"status":"ready","environment":"production"}
+
+# 3. Query the auto-seeded demo workspace
+curl -X POST http://localhost:8000/v1/search \
+  -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "How does hybrid search fusion work?"}'
+```
+
+- **Interactive API Documentation:** Visit [`http://localhost:8000/docs`](http://localhost:8000/docs)
+- **Control Plane & SaaS Studio:** Visit [`http://localhost:3000`](http://localhost:3000)
+
+---
+
+## 🔋 The 16 Platform Batteries
+
+Retriever ships with **16 production-grade batteries** pre-wired through Hexagonal dependency injection:
+
+| Battery # | Battery Identifier | Category | Algorithm / Foundation |
+|:---:|:---|:---|:---|
+| **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW cosine indexing with dynamic dimensionality (768, 1536, 3072) |
+| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL full-text search with English stemming & Reciprocal Rank Fusion |
+| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-level late interaction computing cross-attention similarity without latency hit |
+| **4** | `docling_ocr_parser` | Multimodal Ingestion | Document layout vision parsing, markdown table reconstruction, bounding-box citations |
+| **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model document synthesis with sandboxed Python REPL execution |
+| **6** | `graphrag_topology` | Graph Reasoning | Dual-engine GraphRAG with Neo4j Cypher and PostgreSQL recursive CTE relational traversals |
+| **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn unsupervised behavioral profiling with autonomous token-quarantine |
+| **8** | `quantile_effort_regressor` | ML Operations | Gradient boosted quantile regressors ($p10, p50, p90$) for software timeline estimation |
+| **9** | `zero_cookie_persona_clusterer`| ML Operations | Unsupervised KMeans buyer intent clustering with conversion propensity scoring |
+| **10** | `edge_token_shield` | Rate Limiting | Distributed Redis sliding-window token throttling with resilient SSE reconnections |
+| **11** | `llama_guard_safety` | LLM Safety | Llama Guard 3 prompt injection filtering and zero-trust PII redaction |
+| **12** | `longllmlingua_compressor` | Token Optimization | Perplexity-directed prompt compression removing up to 70% of filler tokens |
+| **13** | `nemo_conversational_guardrails`| Conversational Safety| NVIDIA NeMo Colang multi-turn topical moderation and jailbreak prevention |
+| **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
+| **15** | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
+| **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
+
+---
+
+## 🏛️ Architectural Topology: Pure Hexagonal Core
 
 ```text
  ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ CLIENT FRONTEND & CONTROL PLANE                                                        │
- │ • prateeq.in/rag & prateeq.in/rag/app (Next.js 16 App Router)                          │
+ │ CLIENT CONTROL PLANE & SAAS STUDIO (Next.js 16)                                        │
+ │ • Chat Studio, Documents Library, Search Inspector, Embed Configurator & Observability │
  │ • Supabase Auth PKCE Session Verification & Multi-Tenant Routing                       │
  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                             │ REST / SSE API Streams (X-User-ID / Bearer)
                                             ▼
  ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ FASTAPI APPLICATION GATEWAY (`apps/api`)                                               │
- │ • Routers: /v1/chat, /v1/search, /v1/documents, /v1/admin, /v1/auth, /v1/workflow     │
- │ • Guardrails: Llama Guard 3 Injection Filter & PII Redactor                           │
+ │ FASTAPI APPLICATION GATEWAY (`apps/api/src/routers`)                                   │
+ │ • Routers: /v1/chat, /v1/search, /v1/documents, /v1/admin, /v1/gateway, /v1/workflow   │
+ │ • Guardrails: Llama Guard 3 Injection Filter & NeMo Conversational Moderation Rails    │
  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                             │
                                             ▼
  ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ COGNITIVE DOMAIN CORE (`src/domain`)                                                   │
- │ • Hybrid Search (HNSW Dense + SPLADE/BM25 Sparse + RRF)                                │
- │ • GraphRAG Knowledge Graph Indexing & Neo4j/Pg Triples                                 │
- │ • Recursive Language Model (RLM) & Python REPL Sandbox (M47)                           │
- │ • Multi-Agent Generator-Critic Reflection Loops (M48)                                  │
- │ • LongLLMLingua Context Compression (M49) & Zero-Trust Envelope Encryption             │
+ │ COGNITIVE DOMAIN CORE (`apps/api/src/domain`)                                          │
+ │ • Pure Python abstractions (0 framework / database imports)                            │
+ │ • Hybrid Search (HNSW + BM25 + ColBERT MaxSim + RRF Fusion)                            │
+ │ • GraphRAG Knowledge Graph Indexing & Neo4j / Pg Triples                               │
+ │ • DSPy Declarative Prompt Compilation & Self-Optimization                              │
+ │ • Durable Checkpoint State Machine & Step Memoization (M95)                            │
  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                             │
                                             ▼
  ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ INFRASTRUCTURE ADAPTERS (`src/adapters`)                                               │
+ │ INFRASTRUCTURE ADAPTERS (`apps/api/src/adapters`)                                      │
  │ • Database: PostgreSQL 16 + pgvector (Row-Level Security Tenant Isolation)              │
- │ • Vector: Dynamic Partitioning (768, 1536, 3072 dims)                                  │
- │ • Storage: S3 / Cloudflare R2 presigned documents                                      │
- │ • Broker / Cache: Redis Semantic Cache & RabbitMQ Celery workers                      │
+ │ • Serving: Serverless Modal / BentoML vLLM A10G with Dynamic LoRA Tensor Swapping      │
+ │ • Broker / Cache: Redis Semantic Cache & Sliding-Window Token Shield                    │
+ │ • Async Tasks: Celery / RabbitMQ Workers & Distributed Schedulers                      │
  └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📚 Complete Technical Documentation Matrix
+## 📚 Complete Technical Documentation
 
-### 🔌 1. REST API Specifications (`docs/api/`)
-| Specification | Path & Description |
-|:---|:---|
-| [`docs/api/auth.md`](docs/api/auth.md) | Identity resolution, Supabase Auth RS256 JWKS validation & API key hashing |
-| [`docs/api/chat.md`](docs/api/chat.md) | Chat sessions, SSE token streaming, inline citations `[Source ID]` & feedback |
-| [`docs/api/search.md`](docs/api/search.md) | Parallel dense/sparse hybrid search, RRF fusion & Cross-Encoder reranking |
-| [`docs/api/document.md`](docs/api/document.md) | Multipart uploads, Docling layout OCR, chunking & signed download URLs |
-| [`docs/api/admin.md`](docs/api/admin.md) | System-wide admin control (Tenants, API keys, Prompts, Experiments, Evaluation) |
-| [`docs/api/tenant.md`](docs/api/tenant.md) | Workspace provisioning, Configuration-as-Data (CAD) & live key validation |
-| [`docs/api/payments.md`](docs/api/payments.md) | Hosted checkout sessions, Stripe/Razorpay/PhonePe webhooks & payment ledger |
-| [`docs/api/pricing.md`](docs/api/pricing.md) | Public SaaS pricing packages & dynamic operator pricing updates |
-| [`docs/api/agentic.md`](docs/api/agentic.md) | Autonomous multi-step tool-calling execution loop & tool registry |
-| [`docs/api/consensus.md`](docs/api/consensus.md) | Multi-Agent Generator vs. Critic adversarial debate & reflection loops |
-| [`docs/api/rlm.md`](docs/api/rlm.md) | Recursive Language Model document synthesis & Python REPL execution |
-| [`docs/api/security_compression.md`](docs/api/security_compression.md) | LongLLMLingua prompt token compression & AES-256 field encryption |
-| [`docs/api/workflow.md`](docs/api/workflow.md) | n8n inbound auto-ingest webhook & outbound event dispatch |
-| [`docs/api/health.md`](docs/api/health.md) | Service uptime, Kubernetes liveness/readiness probes & connection health |
-
-### 🧠 2. Cognitive Engines & AI Subsystems (`docs/cognitive/`)
-| Guide | Description |
-|:---|:---|
-| [`docs/cognitive/hybrid_search_and_fusion.md`](docs/cognitive/hybrid_search_and_fusion.md) | HNSW Dense + SPLADE/BM25 Sparse + RRF + Cross-Encoder Re-ranking + MMR |
-| [`docs/cognitive/query_intelligence.md`](docs/cognitive/query_intelligence.md) | Query Intent Classification, HyDE Rewriting, Self-Querying & CRAG Fallbacks |
-| [`docs/cognitive/chunking_and_parsing.md`](docs/cognitive/chunking_and_parsing.md) | Docling Vision OCR, Recursive Character Splitter & AST Code Chunking |
-| [`docs/cognitive/graphrag.md`](docs/cognitive/graphrag.md) | Dual-engine GraphRAG (PostgreSQL Triples & Neo4j Cypher) |
-| [`docs/cognitive/topic_clustering.md`](docs/cognitive/topic_clustering.md) | Unsupervised `HDBSCAN` + `KMeans` chunk clustering, c-TF-IDF topic labeling & knowledge gap audits |
-| [`docs/cognitive/agentic_workflows_and_repl.md`](docs/cognitive/agentic_workflows_and_repl.md) | Autonomous ReAct loops & sandboxed Python REPL execution |
-| [`docs/cognitive/consensus_and_reflection.md`](docs/cognitive/consensus_and_reflection.md) | Generator-Critic verification loops for high-stakes enterprise grounding |
-| [`docs/cognitive/context_compression.md`](docs/cognitive/context_compression.md) | LongLLMLingua perplexity-based prompt token compression |
-| [`docs/cognitive/guardrails_and_safety.md`](docs/cognitive/guardrails_and_safety.md) | Llama Guard 3 injection filter & zero-footprint PII redaction |
-| [`docs/cognitive/evaluation_and_hallucinations.md`](docs/cognitive/evaluation_and_hallucinations.md) | Online Faithfulness scoring, RAGAS & DeepEval benchmark testbeds |
-
-### 🏗️ 3. Infrastructure & Storage (`docs/infrastructure/`)
-| Guide | Description |
-|:---|:---|
-| [`docs/infrastructure/database_and_schemas.md`](docs/infrastructure/database_and_schemas.md) | PostgreSQL 16 schema, 24 relational tables, pgvector HNSW & RLS isolation |
-| [`docs/infrastructure/caching_and_performance.md`](docs/infrastructure/caching_and_performance.md) | Redis L1 Config Cache, L2 Semantic Cache & sliding-window rate limiters |
-| [`docs/infrastructure/async_workers_and_queues.md`](docs/infrastructure/async_workers_and_queues.md) | Celery worker architecture, RabbitMQ queues & Beat periodic schedules |
-| [`docs/infrastructure/storage_and_encryption.md`](docs/infrastructure/storage_and_encryption.md) | S3/R2 object storage, presigned URLs & Zero-Trust Envelope Encryption |
-| [`docs/infrastructure/telemetry_and_observability.md`](docs/infrastructure/telemetry_and_observability.md) | OpenTelemetry tracing, Prometheus `/metrics` & SHA-256 chained audit logs |
-| [`docs/infrastructure/deployments_and_rollbacks.md`](docs/infrastructure/deployments_and_rollbacks.md) | Atomic release versioning (`/opt/retriever/releases`), symlinking & 1s automated rollback |
-
-### 📦 4. Integrations & Client SDKs (`docs/integrations/`)
-| Guide | Description |
-|:---|:---|
-| [`docs/integrations/typescript_sdk.md`](docs/integrations/typescript_sdk.md) | Complete guide for `@retriever/client-js` TypeScript SDK |
-| [`docs/integrations/cloudflare_proxy_worker.md`](docs/integrations/cloudflare_proxy_worker.md) | Edge proxy deployment with JWT parsing & secret key injection |
-| [`docs/integrations/n8n_workflow_integration.md`](docs/integrations/n8n_workflow_integration.md) | Gmail, Notion & Google Drive ingestion pipelines via n8n |
-| [`docs/integrations/commercial_billing_integration.md`](docs/integrations/commercial_billing_integration.md) | Multi-gateway billing setup (Stripe, Razorpay, PhonePe) |
-
-### 📖 5. Production Operations & Runbooks (`docs/runbooks/`)
-| Runbook | Focus & Compliance Standard |
-|:---|:---|
-| [`docs/runbooks/ECOSYSTEM_PLUGINS_AND_INTEGRATIONS.md`](docs/runbooks/ECOSYSTEM_PLUGINS_AND_INTEGRATIONS.md) | Native Slack bot `/ask-retriever`, Manifest V3 Chrome Extension, 2-way Google Drive & Notion sync |
-| [`docs/runbooks/GEO_DISTRIBUTED_EDGE_ROUTING.md`](docs/runbooks/GEO_DISTRIBUTED_EDGE_ROUTING.md) | Sub-30ms global latency, Geo-IP routing, CQRS read-replica connection pooler & $0 fallback |
-| [`docs/runbooks/COMPLIANCE_AND_GDPR_ERASURE.md`](docs/runbooks/COMPLIANCE_AND_GDPR_ERASURE.md) | GDPR Article 17 Right-to-be-Forgotten, Luhn credit card validation & HMAC-SHA256 deletion certificates |
-| [`docs/runbooks/DISASTER_RECOVERY_AND_BACKUPS.md`](docs/runbooks/DISASTER_RECOVERY_AND_BACKUPS.md) | AES-256 GCM logical table streaming, S3/R2 WAL replication & zero-downtime `--dry-run` PITR recovery |
-| [`docs/runbooks/TOKEN_SHIELD_AND_RATE_LIMITING.md`](docs/runbooks/TOKEN_SHIELD_AND_RATE_LIMITING.md) | Upstash Redis sliding window, DDoS defense & resilient SSE stream reconnection (`Last-Event-ID`) |
-| [`docs/runbooks/VISITOR_PERSONA_AND_LEAD_SCORING.md`](docs/runbooks/VISITOR_PERSONA_AND_LEAD_SCORING.md) | Unsupervised `KMeans` buyer clustering, supervised conversion propensity scoring ($0.0 - 1.0$) |
-| [`docs/runbooks/ANOMALY_SENTINEL_AND_KEY_QUARANTINE.md`](docs/runbooks/ANOMALY_SENTINEL_AND_KEY_QUARANTINE.md) | Scikit-Learn `IsolationForest` behavioral profiling, autonomous API key quarantine & SRE resolution |
-
----
-
-## 🛠️ Quick Start (Local Development)
-
-```bash
-# 1. Start Postgres with pgvector, Redis & RabbitMQ
-docker compose up -d
-
-# 2. Setup Virtual Environment
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-# 3. Run Alembic Database Migrations
-alembic upgrade head
-
-# 4. Launch FastAPI Core Server
-uvicorn apps.api.src.main:app --reload --port 8000
-```
+- **[Open-Source Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md):** 10k-Star viral launch execution strategy.
+- **[REST API Reference](docs/api/):** Complete specifications for all 20+ REST/SSE endpoints.
+- **[Architecture Decision Records (ADRs)](docs/decisions/):** 18 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM).
+- **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
+- **[Project Health & Test Status](PROJECT_STATUS.md):** Continuous verification matrix across 108 test suites.
 
 ---
 
 ## 🧪 Automated Testing & Benchmark Baselines
 
 ```bash
-# 1. Run complete unit test suite (660+ unit tests across 102 test suites)
-pytest apps/api/tests/ -v
+# 1. Run complete unit & integration test suite (730+ tests across 108 suites)
+uv run pytest apps/api/tests/ -v
 
-# 2. Run linting & Hexagonal import boundaries verification
-ruff check .
-pytest apps/api/tests/test_architecture.py
+# 2. Verify strict Hexagonal import boundaries (0 framework imports in domain)
+uv run pytest apps/api/tests/test_architecture.py -v
 
-# 3. Execute Headless Multi-Tenant Load Benchmark
-python3 scripts/run_load_benchmark.py --host http://localhost:8000 --users 50 --duration 15s
+# 3. Code formatting & linting conformance
+uv run ruff check apps/api/src/ apps/api/tests/
 ```
 
+---
+
+## 👷 Author & Enterprise Architecture Discovery
+
+Retriever is engineered by **[Prateek Sharma](https://prateeq.in)**.
+
+> **Need Retriever deployed inside your enterprise VPC (AWS/GCP/Azure) with custom compliance, private fine-tuned LoRA pipelines, or proprietary ERP/CRM connectors?**  
+> 
+> 👉 **[Explore Architecture Discovery & Deployments](https://prateeq.in/scoping)**  
+> ✉️ Direct inquiries: `prateeqsharma@gmail.com`
+
+---
+
+## 📄 License
+
+Retriever is open-source software licensed under the **[Apache License 2.0](LICENSE)**.

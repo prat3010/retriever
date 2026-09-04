@@ -1,208 +1,230 @@
-# Retriever — Open-Source Launch Playbook & Pre-Flight Manual
+# Retriever — Open-Source Launch Playbook: The Viral 10k-Star Blueprint
 
-> **A Comprehensive Step-by-Step Blueprint for Decoupling, Packaging, Documenting, and Publicly Launching Retriever as an Elite Open-Source Cognitive RAG Platform.**
+> **The Definitive Playbook for Launching Retriever as an Elite, Self-Hosted Cognitive Operating System on GitHub, Hacker News, X/Twitter, and Reddit.**
 > 
-> *Target Execution:* To be executed post-milestone completion when transitioning the repository from private to public.
+> *Target Execution:* Public Open-Source Launch (v0.81.0+ / Phase L).
 
 ---
 
-## 🎯 Executive Summary & Positioning Strategy
+## 🎯 1. The Core Thesis: "The Anti-Wrapper Manifesto"
 
-Retriever's open-source release must not be perceived as "just another LangChain tutorial wrapper". The AI ecosystem is inundated with toy scripts that break in production.
+To go viral on GitHub and reach the top of Hacker News, Retriever **must not** be pitched as "another RAG wrapper" or "a LangChain tutorial project." The AI developer community is thoroughly exhausted by toy wrappers, fragile abstractions, and SaaS bills.
 
-### The Core Positioning Angle:
-> **"The Developer's Batteries-Included, Multi-Tenant Cognitive RAG Platform on PostgreSQL."**
-> 
-> *Tired of paying $100+/mo for Pinecone, struggling with cross-tenant data leaks, and stitching together 10 different SaaS tools for reranking, OCR, and rate limiting? Retriever delivers a production-grade, self-hosted RAG platform featuring PostgreSQL Row-Level Security (RLS), ColBERT MaxSim late-interaction reranking, Docling OCR layout parsing, and built-in Scikit-Learn operational intelligence (anti-abuse anomaly sentinels, project effort regression, and zero-cookie visitor clustering) — completely free with zero-cost local Ollama embeddings.*
+### The Problem Developers Are Screaming About:
+1. **Tool Fatigue & Glue Code:** Building an enterprise AI app today requires stitching together 10 different fragmented SaaS products:
+   - Vector database: Pinecone / Qdrant ($100–$500/mo)
+   - Keyword search: Elasticsearch / Meilisearch ($100/mo)
+   - LLM Gateway & virtual budgets: LiteLLM / Portkey ($50–$200/mo)
+   - PDF Layout OCR: Unstructured / LlamaParse ($0.02/page)
+   - Conversational Safety: NeMo Guardrails (complex setup)
+   - Prompt Engineering: Manual string formatting or DSPy
+   - Async Jobs & Checkpointing: Celery / Redis / Temporal
+   - Dedicated Model Serving: Always-on AWS EC2 / RunPod ($720–$900/mo)
+2. **The LangChain "Abstraction Hell":** Debugging 14 layers of nested abstractions that break with every minor library update.
+3. **The Dedicated GPU Cost Trap:** Leaving an NVIDIA A10G or A100 spinning 24/7 for dedicated tenant models, wasting 85%+ of compute cycles when traffic is idle.
+
+### The Winning One-Liner (The "Stack Killer" Positioning):
+> **"Retriever: The Open-Source Enterprise Cognitive Engine. The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery, with 16 batteries included and scale-to-zero vLLM serving."**
 
 ---
 
-## 📋 The 6-Phase Pre-Flight Checklist
+## ⚔️ The "Stack Killer" Comparison Matrix
 
-```text
-[Phase 1: Decoupling & Sanitization] ──► [Phase 2: 3-Minute Docker Test] ──► [Phase 3: Documentation Overhaul]
-                                                                                      │
-[Phase 6: Career & Consulting Hub]  ◄── [Phase 5: Launch Distribution]  ◄── [Phase 4: Licensing & Community]
+This table is the centerpiece of the public `README.md` and the initial Hacker News launch post. It proves why Retriever replaces thousands of dollars in SaaS subscriptions:
+
+| Capability | Retriever (Open-Source) | Pinecone / Qdrant | LangChain / LlamaIndex | LiteLLM Proxy | Dify / AnythingLLM |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Architecture** | **Pure Hexagonal (0-lockin)** | Proprietary DB | Spaghetti Wrappers | Routing Proxy | Monolith App |
+| **Multi-Tenancy** | **PostgreSQL RLS (DB-Level)** | Namespace only | Application-level filter | Virtual keys only | Workspace basic |
+| **Hybrid Search & Fusion** | **HNSW + BM25 + ColBERT MaxSim** | Dense only | Manual glue code | N/A | Dense only |
+| **Layout OCR & Tables** | **Docling Vision OCR (Built-in)** | None | Paid API integration | N/A | Basic text extract |
+| **Knowledge Graph** | **Dual GraphRAG (Neo4j / CTEs)** | None | Add-on package | N/A | None |
+| **Prompt Auto-Optimization** | **DSPy Teleprompter (M92)** | None | Manual prompt tweaking | N/A | None |
+| **Conversational Guardrails** | **NVIDIA NeMo Colang (M94)** | None | Basic regex | None | Keyword blocklist |
+| **Durable Asynchronous Jobs** | **Step-Memoized Checkpoints (M95)** | None | Fragile in-memory | N/A | Basic background |
+| **Dedicated GPU Serving** | **Scale-to-Zero vLLM / Modal (M96)** | N/A | None | N/A | None |
+| **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
+| **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
+
+---
+
+## ⚡ 2. The "30-Second Time-to-Dopamine" Onboarding
+
+The #1 reason great repos fail to go viral is setup friction. If a developer cannot see a working query within 60 seconds of cloning, they close the tab.
+
+### The 1-Line Drop-In Experience:
+```bash
+curl -fsSL https://get.retriever.run | bash
+```
+*Or via standard Docker Compose:*
+```bash
+git clone https://github.com/prat3010/retriever.git && cd retriever
+docker compose up -d
 ```
 
----
-
-## 🔒 Phase 1: Codebase & Architecture Decoupling
-
-Before making the repository public, every trace of private infrastructure, personal configurations, and sibling repository couplings must be eliminated.
-
-### Checklist:
-- [ ] **Zero Hardcoded Sibling Couplings:**
-  - Audit all files for relative references to `../Prateek_website` or `Prateek_Ecosystem_Vault`.
-  - Ensure `apps/api` and `apps/web` run completely standalone.
-- [ ] **Decouple Domain URLs:**
-  - Remove hardcoded `https://rag.prateeq.in` or `https://prateeq.in` defaults in source files; replace with configurable environment variables:
-    ```env
-    NEXT_PUBLIC_RETRIEVER_API_URL=http://localhost:8000
-    RETRIEVER_PUBLIC_HOST=http://localhost:3000
-    ```
-- [ ] **Run Comprehensive Secret Scan:**
-  - Execute secret audit script and verify zero credentials:
-    ```bash
-    python3 scripts/audit_secrets.py
-    ```
-  - Ensure `.env`, `*.pem`, `*.key`, `service_role_key`, and deployment server IPs (`DEPLOYMENT.md`) remain strictly in `.gitignore`.
-- [ ] **AST Boundary Verification:**
-  - Run architectural boundary tests to guarantee strict Hexagonal architecture:
-    ```bash
-    pytest apps/api/tests/test_architecture.py -v
-    ```
-- [ ] **Git History Scrub (If needed):**
-  - Verify that past commits do not contain sensitive tokens in git history using `git log -S "secret"` or `trufflehog`.
+### What Happens Automatically in 30 Seconds:
+1. **PostgreSQL 16 with pgvector** initializes and runs Alembic migrations automatically.
+2. **Local Ollama container** starts with `nomic-embed-text` pre-cached (zero API keys needed to test!).
+3. **Pre-Seeded Demo Tenant:** Initializes `tn_demo_workspace` with a sample enterprise engineering whitepaper already indexed.
+4. **Terminal CLI prints:**
+   ```text
+   ===================================================================
+   🚀 RETRIEVER COGNITIVE ENGINE IS LIVE!
+   ===================================================================
+   • REST API Gateway:      http://localhost:8000
+   • Interactive OpenAPI:   http://localhost:8000/docs
+   • SaaS Studio Workspace: http://localhost:3000
+   • Master Demo API Key:   ret_live_demo_00000000000000000000000000000000
+   
+   Try your first query right now:
+   curl -X POST http://localhost:8000/v1/search      -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000"      -H "Content-Type: application/json"      -d '{"query": "How does ColBERT late interaction work?"}'
+   ===================================================================
+   ```
 
 ---
 
-## 🐳 Phase 2: The "3-Minute Developer Test" (Zero-Friction Packaging)
+## 🔋 3. The 16 Platform Batteries Showcase
 
-Developers judge open-source tools within the first 3 minutes of cloning. If setup requires manual configuration of 5 different services, 80% of developers abandon the repo.
+Highlighting all 16 built-in batteries demonstrates that Retriever is not a toy, but an entire operating system:
 
-### Checklist:
-- [ ] **Unified `docker-compose.yml`:**
-  - A single command must spin up all necessary infrastructure:
-    1. **PostgreSQL 16** with `pgvector` pre-installed and auto-migrated.
-    2. **Redis 7** for semantic caching and rate limiting.
-    3. **Ollama** container with pre-pulled `nomic-embed-text` embedding model.
-    4. **FastAPI Core Gateway** (`apps/api`).
-    5. **Next.js Admin Studio** (`apps/web` - optional flag).
-- [ ] **Automated First-Run Seeding:**
-  - On first boot, the system must automatically create a default demo tenant (`tn_demo_workspace`) and emit a ready-to-use API key directly in the console output.
-- [ ] **One-Line Copy-Paste Test:**
-  - Test on a fresh, clean machine:
-    ```bash
-    git clone https://github.com/prat3010/retriever.git
-    cd retriever
-    docker compose up -d
-    curl http://localhost:8000/health/readiness
-    ```
-  - Verification threshold: Response `{"status":"ready"}` in under 120 seconds.
-
----
-
-## 📚 Phase 3: Documentation & User Manual Overhaul
-
-Open-source developers don't read internal roadmaps or private milestone progress trackers. Documentation must be user-centric, polished, and actionable.
-
-### Checklist:
-- [ ] **Public `README.md` Polish:**
-  - **Hero Badges:** CI/CD Build Status, Tests (617+ passing), Python 3.12, PostgreSQL 16, License (Apache 2.0), Docker Ready.
-  - **1-Sentence Punchy Pitch:** Solves multi-tenancy, cost, and retrieval accuracy.
-  - **Architecture Topology Diagram:** Clean ASCII or SVG diagram illustrating Hexagonal core, pgvector RLS, and ColBERT operator.
-  - **Comparison Matrix:**
-    | Capability | Retriever | Pinecone / Qdrant | LangChain Baseline | Dify / AnythingLLM |
-    |:---|:---:|:---:|:---:|:---:|
-    | **Self-Hosted On-Prem** | ✅ 1-Click Docker | ❌ Closed Cloud | ⚠️ Partial | ✅ Yes |
-    | **Strict DB-Level Multi-Tenancy (RLS)** | ✅ Native Postgres | ⚠️ Namespace only | ❌ App code filter | ⚠️ Basic |
-    | **ColBERT MaxSim Late-Interaction** | ✅ Built-in | ❌ Dense only | ❌ Complex setup | ❌ Cross-encoder only |
-    | **Zero-Cost Embeddings** | ✅ Local Ollama | ❌ Paid API | ❌ Paid API | ⚠️ Configurable |
-    | **Telemetry Anomaly Sentinel (M83)** | ✅ Isolation Forest | ❌ None | ❌ None | ❌ None |
-    | **Effort & Timeline Regressor (M84)** | ✅ Quantile Gradient Boost | ❌ None | ❌ None | ❌ None |
-    | **Zero-Cookie Visitor Clustering (M85)** | ✅ KMeans Intent ML | ❌ None | ❌ None | ❌ None |
-    | **Presigned Citation Downloads** | ✅ S3/R2 Presigned | ❌ None | ❌ Custom code | ⚠️ Partial |
-- [ ] **Comprehensive User Manual (`docs/USER_MANUAL.md`):**
-  - Section 1: Quickstart & First Query (curl and Python SDK examples).
-  - Section 2: Document Ingestion (PDF parsing, OCR, chunking algorithms).
-  - Section 3: Hybrid Search & ColBERT Reranking API Guide.
-  - Section 4: Multi-Tenancy & Workspace Isolation Configuration.
-  - Section 5: Streaming Chat with SSE & Clickable Citations.
-  - Section 6: Embedding the 1-Line Widget (`widget.js`) onto external websites.
-  - Section 7: Telemetry Sentinel & Anomaly Detection Administration (M83).
-  - Section 8: CPQ Software Effort & Timeline Confidence Estimator (M84).
-  - Section 9: Zero-Cookie Visitor Intent Clustering & Lead Scorer (M85).
-  - Section 10: Toggle Flags (`ENABLE_ML_MODULES=false`) for Pure-RAG Deployments.
-- [ ] **Clean Public Roadmap (`ROADMAP.md`):**
-  - Replace internal milestone logs with a forward-looking, developer-facing roadmap (e.g. GraphRAG v2, Multi-Modal Audio RAG, Kubernetes Operator Helm chart).
+| Battery # | Battery Identifier | Category | Algorithm / Core Technology |
+|:---:|:---|:---|:---|
+| **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW cosine indexing with dynamic dimensionality (768, 1536, 3072) |
+| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL full-text search with English stemming & RRF fusion |
+| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-level late interaction computing cross-attention similarity without latency degradation |
+| **4** | `docling_ocr_parser` | Multimodal Ingestion | Document layout vision parsing, markdown table reconstruction, and bounding-box citations |
+| **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model document synthesis with sandboxed Python REPL execution |
+| **6** | `graphrag_topology` | Graph Reasoning | Dual-engine GraphRAG with Neo4j Cypher and PostgreSQL recursive CTE relational traversals |
+| **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn unsupervised behavioral profiling with autonomous token-quarantine |
+| **8** | `quantile_effort_regressor` | ML Operations | Gradient boosted quantile regressors ($p10, p50, p90$) for software timeline estimation |
+| **9** | `zero_cookie_persona_clusterer`| ML Operations | Unsupervised KMeans buyer intent clustering with conversion propensity scoring |
+| **10` | `edge_token_shield` | Rate Limiting | Distributed Redis sliding-window token throttling with resilient SSE reconnections |
+| **11` | `llama_guard_safety` | LLM Safety | Llama Guard 3 prompt injection filtering and zero-trust PII redaction |
+| **12` | `longllmlingua_compressor` | Token Optimization | Perplexity-directed prompt compression removing up to 70% of filler tokens |
+| **13` | `nemo_conversational_guardrails`| Conversational Safety| NVIDIA NeMo Colang multi-turn topical moderation and jailbreak prevention |
+| **14` | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
+| **15` | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
+| **16` | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
 
 ---
 
-## ⚖️ Phase 4: Licensing & Community Standards
+## 📢 4. Coordinated Viral Launch Campaign (The 48-Hour Blitz)
 
-To ensure enterprise adoption and community contributions while protecting the core author, open-source governance must be configured.
-
-### Checklist:
-- [ ] **Adopt Apache 2.0 License:**
-  - Add `LICENSE` file containing the standard Apache License 2.0.
-  - *Rationale:* Enterprise-friendly, protects against patent litigation, allows commercial self-hosting while ensuring author credit.
-- [ ] **Create `CONTRIBUTING.md`:**
-  - Guidelines for setting up development virtual environment (`uv pip install`).
-  - Running automated tests (`pytest apps/api/tests/`).
-  - Formatting requirements (`ruff check --fix`).
-  - PR submission and commit message conventions.
-- [ ] **Create Community Templates (`.github/`):**
-  - `.github/ISSUE_TEMPLATE/bug_report.md`
-  - `.github/ISSUE_TEMPLATE/feature_request.md`
-  - `.github/PULL_REQUEST_TEMPLATE.md`
-  - `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1).
-
----
-
-## 📢 Phase 5: The Public Launch Distribution Playbook
-
-A great project dies in silence without targeted distribution. Launching requires coordinated technical storytelling across engineering communities.
-
-### Channel 1: Hacker News ("Show HN")
-- **Timing:** Tuesday or Wednesday at 8:00 AM EST (optimal front-page traction window).
-- **Title Formula:**
-  > `Show HN: Retriever – Self-hosted multi-tenant RAG platform with ColBERT, pgvector RLS & built-in ML intelligence`
+### 🌊 Channel 1: Hacker News ("Show HN")
+- **Target Launch Window:** Tuesday or Wednesday at 8:15 AM EST (optimal timing for HN front-page algorithm).
+- **HN Title:**
+  > `Show HN: Retriever – An unbloated, Hexagonal AI cognitive engine with 16 batteries and scale-to-zero vLLM`
 - **Post Copy Structure:**
-  1. *The Hook:* Why standard RAG fails in real production (tenant leakage, token costs, dense embedding blindness, lack of operational batteries).
-  2. *The Solution:* How Retriever solves it at the database engine layer (PostgreSQL RLS), token level (ColBERT MaxSim), and operational intelligence layer (Scikit-Learn).
-  3. *The Stack:* Python 3.12, FastAPI, PostgreSQL 16, pgvector, Ollama, Next.js 16.
-  4. *Live Demo Link:* `https://rag.prateeq.in` + GitHub link.
-  5. *Founder Engagement:* Stay in the comments for 6 hours answering deep technical questions about vector math, latency benchmarks, and memory usage.
+  ```text
+  Hi HN,
 
-### Channel 2: Twitter / X Technical Architecture Breakdown
-- **Format:** 6-tweet technical visual thread with architecture diagrams and animated GIFs:
-  - *Tweet 1:* The Hook + Short video/GIF showing 1-click Docker launch and streaming citation chat.
-  - *Tweet 2:* Why PostgreSQL RLS beats application-level tenant filtering (with SQL snippet).
-  - *Tweet 3:* How ColBERT MaxSim late-interaction finds exact code symbols and error IDs that cosine similarity misses.
-  - *Tweet 4:* The built-in Scikit-Learn operational intelligence (Isolation Forest anomaly sentinel, timeline effort regression, zero-cookie visitor clustering).
-  - *Tweet 5:* Benchmark stats: 631 automated tests, sublinear latency, zero OpenAI cost via local Ollama.
-  - *Tweet 6:* GitHub repo link + call for stars and contributors.
+  I spent the last 9 months building Retriever (https://github.com/prat3010/retriever).
 
-### Channel 3: Targeted Reddit Communities
-- **`r/LocalLLaMA`:** Focus on 100% private, self-hosted AI, local Ollama embeddings (`nomic-embed-text`), and zero API key requirements.
-- **`r/selfhosted`:** Focus on the clean `docker-compose.yml`, multi-tenancy, and low resource footprint.
-- **`r/Python`:** Focus on Hexagonal architecture, asyncpg, Celery queues, and clean domain abstractions.
-- **`r/MachineLearning`:** Focus on the ColBERT MaxSim operator implementation and hybrid search fusion math.
+  Like many of you, I got exhausted trying to take RAG into production with existing tools. The current ecosystem forces you to stitch together LangChain (which is an abstraction nightmare), Pinecone (which costs $100s/mo and leaks across tenants if you make one filter mistake), LiteLLM, Celery, and custom OCR scripts. And when you want to run dedicated fine-tuned models for clients, you end up paying $720/month per tenant for always-on AWS GPUs that sit idle 90% of the day.
 
-### Channel 4: Awesome-Lists & Ecosystem PRs
-- Submit pull requests adding Retriever to curated GitHub lists:
-  - `awesome-rag`
-  - `awesome-generative-ai`
-  - `awesome-python`
-  - `awesome-selfhosted`
+  Retriever is an open-source, self-hosted enterprise cognitive operating system built from scratch with strict Hexagonal architecture:
+
+  1. Strict DB-Level Multi-Tenancy: Native PostgreSQL Row-Level Security (RLS) ensures tenant data is isolated at the engine level, not in fragile application-level Python `if` statements.
+  2. 16 Batteries Included: pgvector HNSW, BM25, ColBERT MaxSim late interaction, Docling layout OCR, GraphRAG (Neo4j or Postgres CTEs), NVIDIA NeMo Guardrails, DSPy prompt compilation, and durable step-memoized workflows.
+  3. Scale-to-Zero Dedicated Serving: Using vLLM 0.6+ and Modal/BentoML, dedicated tenant models scale down to 0 instances after 300s of idle traffic, cutting dedicated GPU hosting costs from $720/mo to ~$15/mo (97.9% savings). Multi-tenant fine-tuned LoRAs hot-swap dynamically in ~20ms on a single base model without restarting containers.
+  4. Local-First & Zero-Cost: Runs fully offline on a laptop or cheap VPS using local Ollama embeddings (`nomic-embed-text`) with zero API keys required.
+
+  Everything spins up with a single `docker compose up` command.
+
+  Live demo: https://rag.prateeq.in
+  GitHub: https://github.com/prat3010/retriever
+
+  Would love your feedback on the architecture and benchmarks!
+  ```
 
 ---
 
-## 💼 Phase 6: Inbound Career & Commercial Capture Engine
-
-Open-sourcing Retriever is the ultimate professional leverage. The repository must be configured to convert GitHub traffic into high-paying opportunities.
-
-### Checklist:
-- [ ] **Author Attribution & Hiring Signal:**
-  - Header in `README.md`:
-    ```markdown
-    Built with high-agency systems engineering by **[Prateek Sharma](https://prateeq.in)**.
-    💼 *Available for Forward Deployed Engineering, AI Platform Architecture, and Enterprise Deployments.*
-    ```
-- [ ] **"Deploy with the Creator" CTA:**
-  - Add a dedicated section in `README.md`:
-    > **Need Retriever deployed in your private AWS/GCP cloud or customized for enterprise compliance?**  
-    > [Book an Architecture Discovery Call](https://prateeq.in/scoping) or reach out directly at `prateeqsharma@gmail.com`.
-- [ ] **GitHub Profile README Integration:**
-  - Pin `retriever` as the #1 showcase repository on `github.com/prat3010`.
-  - Display real-time test badge, architecture diagram, and live production demo link.
+### 🐦 Channel 2: X (Twitter) High-Impact Visual Thread
+- **Format:** 7-tweet thread packed with clean diagrams, benchmark charts, and 15-second screen recordings.
+- **Tweet 1 (The Hook):**
+  > Most RAG startups are just 50 lines of LangChain wrapped around OpenAI + Pinecone. When context windows get bigger or APIs hiccup, they break.
+  > 
+  > We spent 9 months building Retriever: An open-source, unbloated enterprise cognitive engine with 16 batteries and scale-to-zero vLLM.
+  > 
+  > Here’s why we ditched the wrapper stack 🧵👇
+- **Tweet 2 (The Architecture):**
+  - Image: Clean Hexagonal architecture diagram (`domain/` vs `adapters/`).
+  - Copy: "Why Hexagonal? Because your business logic shouldn’t care if you use OpenAI, Gemini, or a local quantized Qwen. If a new model drops tomorrow, write 1 adapter file and swap it. Zero framework lock-in."
+- **Tweet 3 (The GPU Cost Drop):**
+  - Image: Scale-to-zero cost comparison graphic ($720/mo vs $15/mo).
+  - Copy: "Running dedicated enterprise LLMs usually costs $720/mo per client on always-on A10Gs. We built scale-to-zero vLLM compute with dynamic LoRA swapping. 1 shared base model, multiple tenant LoRA weights swapped in 20ms without container reboots. 97.9% cost drop."
+- **Tweet 4 (ColBERT + Hybrid):**
+  - Short GIF: ColBERT token-level MaxSim heatmap matching code symbols that cosine similarity misses.
+- **Tweet 5 (Durable Checkpoints):**
+  - Copy: "Crashed at step 4 of a 5-step indexing job? Retriever’s durable workflow engine memoizes step outputs in Postgres. Replay takes 2ms, zero wasted embedding tokens."
+- **Tweet 6 (Open-Source Demo):**
+  - Video: 15-second screen recording of `docker compose up` ➔ typing first query ➔ streaming citations.
+- **Tweet 7 (Call to Action):**
+  - Link to GitHub repo + invitation for contributors.
 
 ---
 
-## 🏁 Post-Launch Maintenance & Community Rhythm
+### 👾 Channel 3: Subreddit Deep Dives
 
-Once public, maintaining momentum is key:
-1. **First 48 Hours:** Respond to every single GitHub issue, discussion, and tweet within 30 minutes.
-2. **Weekly Release Cadence:** Tag micro-releases (`v0.70.0`, `v0.71.0`) with automated changelogs.
-3. **Good First Issues:** Label 5–10 beginner-friendly tasks (e.g. "Add Cohere reranker adapter", "Improve Docker startup logs") with `good first issue` to invite open-source contributors.
+1. **`r/LocalLLaMA` (150k+ Members):**
+   - **Angle:** 100% private, self-hosted, local-first RAG.
+   - **Key Focus:** Zero external API calls, native Ollama embedding integration, local cross-encoders, and self-hosted vLLM recipes.
+2. **`r/selfhosted` (300k+ Members):**
+   - **Angle:** Replace Pinecone, Unstructured, and LangSmith on your home lab or VPS with a single Docker container.
+   - **Key Focus:** PostgreSQL RLS, low RAM footprint, clean configuration.
+3. **`r/MachineLearning` & `r/Python`:**
+   - **Angle:** Software engineering rigor in AI: Hexagonal domain isolation, AST boundary tests, and DSPy algorithmic prompt optimization.
+
+---
+
+## 🔒 5. Repository Sanitization & Decoupling Checklist
+
+Before switching the GitHub repository from `private` to `public`:
+
+- [ ] **Decouple Sibling Repository Links:**
+  - Audit all markdown and code files for references to `../Prateek_website` or `Prateek_Ecosystem_Vault`. Replace with relative public documentation links.
+- [ ] **Sanitize Environment Defaults:**
+  - Verify `.env.example` has clean dummy values (`http://localhost:8000`, `sk-dummy-test-key`).
+- [ ] **Run Comprehensive Security Audit:**
+  - Execute `python3 scripts/security_audit_strix.py` to guarantee zero API keys, private IPs, or internal tokens are present.
+- [ ] **Verify Clean Test Run:**
+  - Run `pytest apps/api/tests/ -v` (100% passed).
+  - Run `ruff check .` (0 lint errors).
+- [ ] **Add Open-Source Governance Files:**
+  - `LICENSE` (Apache 2.0).
+  - `CONTRIBUTING.md` (Local development setup, PR etiquette, formatting rules).
+  - `.github/PULL_REQUEST_TEMPLATE.md` & Issue templates.
+  - `CODE_OF_CONDUCT.md`.
+
+---
+
+## 💼 6. Career & Inbound Consulting Conversion Funnel
+
+Open-sourcing Retriever is the ultimate professional proof-of-work. The repository is engineered to convert stars and forks into high-ticket enterprise contracts and Forward Deployed Engineering (FDE) hiring opportunities:
+
+1. **README Author Hero Banner:**
+   ```markdown
+   ---
+   ### 👷 Architected by [Prateek Sharma](https://prateeq.in)
+   **Forward Deployed AI Engineer & Systems Architect**
+   
+   Need Retriever deployed inside your enterprise VPC (AWS/GCP/Azure) with custom compliance, 
+   private fine-tuned LoRAs, or proprietary ERP/CRM connectors?
+   
+   👉 **[Explore Enterprise Architecture Discovery & Deployment](https://prateeq.in/scoping)**  
+   📫 Reach out directly: `prateeqsharma@gmail.com`
+   ---
+   ```
+2. **"Deploy with the Creator" Badge:** Placed strategically after the Docker quickstart and at the conclusion of the README.
+3. **Commercial Dual-Licensing / Enterprise Cloud Deployment:** Provide the open-source Apache 2.0 core for community developers, with bespoke enterprise deployment and SLA support offered through `prateeq.in`.
+
+---
+
+## 🏆 7. Success Metrics & Viral Milestones
+
+| Milestone | Timeframe | Target Metric | Strategic Significance |
+|:---|:---:|:---:|:---|
+| **Launch Day (Day 1)** | 0 - 24 Hours | #1 - #3 on Hacker News, 500+ Stars | Validates the "Anti-Wrapper" positioning |
+| **Week 1** | Days 1 - 7 | 2,000+ Stars, Trending on GitHub Python | Broad community adoption, initial PRs |
+| **Month 1** | Days 7 - 30 | 5,000+ Stars, 20+ External Contributors | Solidified as the top self-hosted RAG platform |
+| **Quarter 1** | Days 30 - 90 | 10,000+ Stars, 10+ Enterprise Inbound Leads | Generates high-paying FDE & consulting retainers |

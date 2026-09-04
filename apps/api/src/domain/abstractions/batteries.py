@@ -9,6 +9,8 @@ class BatteryCategory(StrEnum):
     ML_INTELLIGENCE = "ml_intelligence"
     SAFETY_DEFENSE = "safety_defense"
     COMPUTATION_GRAPH = "computation_graph"
+    BACKGROUND_WORKFLOWS = "background_workflows"
+
 
 
 class BatteryStatus(StrEnum):

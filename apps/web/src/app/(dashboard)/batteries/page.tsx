@@ -24,7 +24,7 @@ import { useState, useMemo } from "react";
 interface PlatformBattery {
   id: string;
   name: string;
-  category: "retrieval" | "ml_intelligence" | "safety_defense" | "computation_graph";
+  category: "retrieval" | "ml_intelligence" | "safety_defense" | "computation_graph" | "background_workflows";
   status: "active" | "standby" | "disabled";
   algorithm_foundation: string;
   milestone: string;
@@ -41,7 +41,7 @@ interface PlatformBatteriesResponse {
   batteries: PlatformBattery[];
 }
 
-type FilterCategory = "all" | "retrieval" | "ml_intelligence" | "safety_defense" | "computation_graph";
+type FilterCategory = "all" | "retrieval" | "ml_intelligence" | "safety_defense" | "computation_graph" | "background_workflows";
 
 export default function BatteriesPage() {
   const [selectedCategory, setSelectedCategory] = useState<FilterCategory>("all");
@@ -65,6 +65,7 @@ export default function BatteriesPage() {
       ml_intelligence: batteries.filter((b) => b.category === "ml_intelligence").length,
       safety_defense: batteries.filter((b) => b.category === "safety_defense").length,
       computation_graph: batteries.filter((b) => b.category === "computation_graph").length,
+      background_workflows: batteries.filter((b) => b.category === "background_workflows").length,
     };
   }, [batteries]);
 
@@ -90,7 +91,7 @@ export default function BatteriesPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <div className="text-2xl font-bold font-mono text-foreground">
-                  {data?.total_batteries || 14}
+                  {data?.total_batteries || 15}
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
@@ -111,7 +112,7 @@ export default function BatteriesPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                  {data?.active_count || 13} / {data?.total_batteries || 14}
+                  {data?.active_count || 14} / {data?.total_batteries || 15}
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
@@ -201,6 +202,15 @@ export default function BatteriesPage() {
             >
               <Layers className="h-3 w-3 mr-1" />
               Computation & Graph ({categoryCounts.computation_graph})
+            </Button>
+            <Button
+              variant={selectedCategory === "background_workflows" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory("background_workflows")}
+              className="text-xs h-8"
+            >
+              <Zap className="h-3 w-3 mr-1" />
+              Background Workflows ({categoryCounts.background_workflows})
             </Button>
           </div>
 

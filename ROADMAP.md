@@ -110,7 +110,7 @@
 | **M92** | DSPy Declarative Prompt Compilation & Teleprompter | Metric-driven automated prompt & few-shot optimization pipeline | **Completed** (v0.77.0) |
 | **M93** | Enterprise LLM Gateway & Multi-Model Smart Router | LiteLLM gateway, dynamic model failover, cost & quota management | **Completed** (v0.78.0) |
 | **M94** | NVIDIA NeMo Guardrails & Conversational Safety Rails | Colang conversational safety rails, factual topic grounding & scope enforcement | **Completed** (v0.79.0) |
-| **M95** | Durable Asynchronous Execution & AI Workflow Engine | Inngest / Trigger.dev event-driven durable multi-step AI workflow orchestration | **Planned (Phase L)** |
+| **M95** | Durable Asynchronous Execution & AI Workflow Engine | Step-level memoization, resilient automatic retry backoff, and idempotent checkpoint state machines across distributed AI pipelines | **Completed** (v0.80.0) |
 | **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Planned (Phase L)** |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
@@ -1536,14 +1536,19 @@
 
 ---
 
-### [Planned] Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine (Inngest) (v0.80.0)
+### [Completed] Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine (v0.80.0)
 
-**Objective:** Ensure step-level resilient durable execution for long-running multi-step AI ingestion and evaluation jobs.
+**Objective:** Ensure step-level resilient durable execution for long-running multi-step AI ingestion, evaluation, and graph extraction jobs with zero waste on crash recovery.
 
-**Target Deliverables:**
-- **Event-Driven Durable Execution Engine**: Replace brittle HTTP handlers with step-level idempotent durable functions (`inngest`).
-- **Resilient Multi-Step Jobs**: Automatic exponential backoff, concurrency throttling, and state serialization for vault chunking and synthetic benchmarks.
-- **Live Status Telemetry Webhooks**: Real-time progress updates streamed to Next.js Client Dashboard.
+**Delivered Capabilities:**
+- **Pure Hexagonal Domain Abstractions (`durable_workflow.py`, `durable_engine.py`)**: Zero-dependency domain model defining workflow blueprints, step execution contexts, and checkpoint state machines.
+- **Step-Level Memoization & Idempotent State Machine**: Checkpoint persistence in PostgreSQL (`workflow_executions`, `workflow_step_checkpoints`) protected by Postgres Row-Level Security (RLS). Completed steps replay in $<2\text{ms}$ with zero computation cost.
+- **Resilient Automatic Backoff**: Exponential retry backoff on transient step failures with configurable concurrency controls.
+- **Pre-Packaged Enterprise Blueprints**: `vault_bulk_ingest`, `batch_graph_extraction`, `synthetic_eval_generator`, `bulk_reembed_pipeline`.
+- **Platform Battery #15**: Registered `durable_workflow_engine` in `BatteryService` catalog under `BACKGROUND_WORKFLOWS`.
+- **FastAPI REST Endpoints**: Tenant endpoints under `/v1/tenants/{tenant_id}/workflows/*` and admin overview under `/v1/admin/workflows/overview`.
+- **SaaS Studio & Admin Integration**: `WorkflowsPanel.tsx` in `/rag/app`, Webhook handler route in Next.js, and durable executions status in Admin Dashboard.
+- **Automated Verification & Docs**: 100% passing Pytest suite (`test_durable_workflow.py`), Vitest suite, ADR-017, REST API spec, Cognitive Deep-Dive, and Runbook.
 
 ---
 

@@ -188,7 +188,20 @@ class BatteryService:
                 active_parameters={"mode": "full_conversational", "competitor_shield": True, "grounding_threshold": 0.70},
                 health_check_endpoint="/v1/guardrails/overview",
             ),
+            PlatformBatteryDTO(
+                id="durable_workflow_engine",
+                name="Durable Asynchronous Workflow Execution Engine",
+                category=BatteryCategory.BACKGROUND_WORKFLOWS,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Event-Driven Step Memoization & Resilient Directed Acyclic Graph (DAG) Checkpointing",
+                milestone="M95 (v0.80.0)",
+                latency_profile="~12ms",
+                description="Guarantees resilient multi-step execution for vault chunking, graph synthesis, and benchmarks with step-level memoization and automatic backoff.",
+                active_parameters={"max_concurrent_per_tenant": 3, "default_retries": 3, "backoff_factor": 2.0, "checkpoint_store": "PostgreSQL+Redis"},
+                health_check_endpoint="/v1/admin/workflows/overview",
+            ),
         ]
+
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:
         resolved = [b.model_copy() for b in self._batteries]

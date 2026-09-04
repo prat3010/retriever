@@ -81,6 +81,57 @@ export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
           </pre>
         </CardContent>
       </Card>
+
+      {/* Durable Background AI Workflows & Checkpoint Engine (Milestone 95) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span>⚡</span> Durable Background AI Workflows & Checkpoint Engine
+              </CardTitle>
+              <CardDescription>
+                Step-level memoization, resilient automatic retry backoff, and idempotent checkpoint state machines (Platform Battery #15).
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-300">
+              Battery #15 Active
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="p-3 border rounded-lg bg-card">
+              <div className="text-xs text-muted-foreground uppercase font-semibold">Engine Status</div>
+              <div className="text-lg font-bold font-mono text-emerald-600">Active & Serving</div>
+              <div className="text-xs text-muted-foreground mt-1">Tenant-isolated via Postgres RLS</div>
+            </div>
+            <div className="p-3 border rounded-lg bg-card">
+              <div className="text-xs text-muted-foreground uppercase font-semibold">Checkpoint Backend</div>
+              <div className="text-lg font-bold font-mono">PostgreSQL 16</div>
+              <div className="text-xs text-muted-foreground mt-1">Step memoization enabled</div>
+            </div>
+            <div className="p-3 border rounded-lg bg-card">
+              <div className="text-xs text-muted-foreground uppercase font-semibold">Blueprints In Stock</div>
+              <div className="text-lg font-bold font-mono">4 Blueprints</div>
+              <div className="text-xs text-muted-foreground mt-1">Ingest, Graph, Eval, Re-embed</div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground uppercase">Tenant REST API Endpoints</div>
+            <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1 overflow-x-auto">
+              <div><span className="text-blue-500 font-bold">GET</span>  /v1/tenants/{tenantId}/workflows/blueprints</div>
+              <div><span className="text-emerald-600 font-bold">POST</span> /v1/tenants/{tenantId}/workflows/:workflow_name/run</div>
+              <div><span className="text-blue-500 font-bold">GET</span>  /v1/tenants/{tenantId}/workflows/executions</div>
+              <div><span className="text-blue-500 font-bold">GET</span>  /v1/tenants/{tenantId}/workflows/executions/:id</div>
+              <div><span className="text-amber-500 font-bold">POST</span> /v1/tenants/{tenantId}/workflows/executions/:id/retry</div>
+              <div><span className="text-red-500 font-bold">POST</span> /v1/tenants/{tenantId}/workflows/executions/:id/cancel</div>
+              <div><span className="text-purple-500 font-bold">POST</span> /v1/tenants/{tenantId}/workflows/events</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

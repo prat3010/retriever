@@ -771,4 +771,75 @@ class CompiledPromptProgramDb(Base):
     )
 
 
+class WorkflowExecutionDb(Base):
+    """Persisted state, status, and metadata for durable asynchronous workflow executions."""
+
+    __tablename__ = "workflow_executions"
+
+    execution_id = Column(String(128), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    workflow_name = Column(String(128), nullable=False, index=True)
+    status = Column(String(32), nullable=False, default="queued", index=True)
+    trigger_event = Column(String(128), nullable=True)
+    idempotency_key = Column(String(128), nullable=True, index=True)
+    input_payload = Column(JSONB, nullable=False, default=dict)
+    output_payload = Column(JSONB, nullable=False, default=dict)
+    total_steps = Column(Integer, nullable=False, default=0)
+    completed_steps = Column(Integer, nullable=False, default=0)
+    current_step_name = Column(String(128), nullable=True)
+    error_message = Column(Text, nullable=True)
+    webhook_url = Column(String(512), nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+
+    __table_args__ = (
+        Index("ix_workflow_executions_tenant_status", "tenant_id", "status"),
+        Index("ix_workflow_executions_tenant_name", "tenant_id", "workflow_name"),
+        Index("ix_workflow_executions_tenant_idemp", "tenant_id", "idempotency_key"),
+    )
+
+
+class WorkflowStepCheckpointDb(Base):
+    """Persisted step-level checkpoint and memoized output for zero-loss recovery."""
+
+    __tablename__ = "workflow_step_checkpoints"
+
+    step_id = Column(String(256), primary_key=True)  # {execution_id}:{step_name}
+    execution_id = Column(
+        String(128),
+        ForeignKey("workflow_executions.execution_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    step_name = Column(String(128), nullable=False)
+    step_index = Column(Integer, nullable=False, default=0)
+    status = Column(String(32), nullable=False, default="pending")
+    attempts = Column(Integer, nullable=False, default=0)
+    max_attempts = Column(Integer, nullable=False, default=3)
+    memoized_output = Column(JSONB, nullable=False, default=dict)
+    error_details = Column(Text, nullable=True)
+    execution_time_ms = Column(Float, nullable=False, default=0.0)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_workflow_steps_exec_step", "execution_id", "step_name"),
+        Index("ix_workflow_steps_tenant_status", "tenant_id", "status"),
+    )
+
+
+
 

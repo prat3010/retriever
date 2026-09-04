@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 14 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 15 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 14
-    assert resp.active_count >= 11
-    assert len(resp.batteries) == 14
+    assert resp.total_batteries == 15
+    assert resp.active_count >= 12
+    assert len(resp.batteries) == 15
 
     # Check key expected battery IDs
     expected_ids = {
@@ -37,6 +37,7 @@ def test_platform_batteries_inventory_completeness():
         "llama_guard_safety_rails",
         "longllmlingua_compression",
         "nemo_conversational_guardrails",
+        "durable_workflow_engine",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -52,13 +53,14 @@ def test_platform_batteries_inventory_completeness():
 
 
 def test_battery_categories_coverage():
-    """Verify that all four architectural categories are populated."""
+    """Verify that all five architectural categories are populated."""
     resp = battery_service.get_platform_batteries()
     categories_present = {b.category for b in resp.batteries}
     assert BatteryCategory.RETRIEVAL in categories_present
     assert BatteryCategory.ML_INTELLIGENCE in categories_present
     assert BatteryCategory.SAFETY_DEFENSE in categories_present
     assert BatteryCategory.COMPUTATION_GRAPH in categories_present
+    assert BatteryCategory.BACKGROUND_WORKFLOWS in categories_present
 
 
 def test_admin_batteries_endpoint():
@@ -70,9 +72,10 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 14
-        assert data["active_count"] >= 11
-        assert len(data["batteries"]) == 14
+        assert data["total_batteries"] == 15
+        assert data["active_count"] >= 12
+        assert len(data["batteries"]) == 15
+
 
 
 def test_neo4j_cypher_graph_battery():

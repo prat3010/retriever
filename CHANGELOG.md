@@ -18,6 +18,40 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Added comprehensive automated test coverage in `tests/test_batteries.py` verifying battery metadata, latency profile (<5ms), algorithm foundation, and active hyperparameters.
 
 
+## [0.80.0] - 2026-09-04 - Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine
+
+### Added
+- **Pure Hexagonal Domain Abstractions & Ports** (`apps/api/src/domain/abstractions/durable_workflow.py`):
+  - Pure domain models: `WorkflowStatus`, `StepStatus`, `WorkflowStepRecord`, `WorkflowExecution`, `WorkflowStepDefinition`, `WorkflowDefinition`, `IWorkflowRepository`, `IDurableWorkflowAdapter`.
+- **Durable Workflow Engine & Pre-Packaged Blueprints** (`apps/api/src/domain/workflow/durable_engine.py`):
+  - 4 production-grade blueprints: `vault_bulk_ingest`, `batch_graph_extraction`, `synthetic_eval_generator`, `bulk_reembed_pipeline`.
+  - Concurrency enforcement, event-based workflow triggers, and step dependency validation.
+- **PostgreSQL Checkpoint State Repository** (`apps/api/src/adapters/database/workflow_repository.py`, `models.py`, `setup.py`):
+  - `WorkflowExecutionDb` and `WorkflowStepCheckpointDb` tables with automatic Postgres Row-Level Security (RLS) enforcement scoped by `tenant_id`.
+  - Idempotent execution retrieval by `idempotency_key`.
+- **Durable Workflow Adapter & Step Memoization** (`apps/api/src/adapters/workflow/durable_workflow_adapter.py`):
+  - Background `asyncio` execution with step-level memoization. Completed steps replay in $<2\text{ms}$ with zero computation cost.
+  - Automatic exponential backoff retries on transient errors.
+  - Outbound signed HMAC SHA-256 webhook delivery to client endpoints on job completion/failure.
+- **Platform Battery #15 Registration** (`apps/api/src/domain/batteries/battery_service.py`, `abstractions/batteries.py`):
+  - Registered `durable_workflow_engine` under `BACKGROUND_WORKFLOWS` category (catalog now tracking 15 platform batteries).
+- **FastAPI REST Routers** (`apps/api/src/routers/durable_workflow.py`):
+  - `/v1/tenants/{tenant_id}/workflows/blueprints`
+  - `/v1/tenants/{tenant_id}/workflows/{workflow_name}/run`
+  - `/v1/tenants/{tenant_id}/workflows/executions`
+  - `/v1/tenants/{tenant_id}/workflows/executions/{execution_id}`
+  - `/v1/tenants/{tenant_id}/workflows/executions/{execution_id}/retry`
+  - `/v1/tenants/{tenant_id}/workflows/executions/{execution_id}/cancel`
+  - `/v1/tenants/{tenant_id}/workflows/events`
+  - `/v1/admin/workflows/overview`
+- **Comprehensive Pytest Suite** (`apps/api/tests/test_durable_workflow.py`):
+  - 10 unit & integration tests verifying step memoization, retries, replay, idempotency, tenant RLS isolation, Battery #15, and REST endpoints.
+- **Comprehensive Documentation**:
+  - Detailed REST API specification (`docs/api/DURABLE_WORKFLOWS_REST_API.md`).
+  - Feature architecture deep-dive (`docs/features/durable-asynchronous-execution.md`).
+  - Operational runbook (`docs/runbooks/RUNBOOK_DURABLE_WORKFLOWS.md`).
+  - Architecture Decision Record (`docs/decisions/017-durable-asynchronous-execution.md`).
+
 ## [0.79.0] - 2026-09-04 - Milestone 94: NVIDIA NeMo Guardrails & Multi-Turn Conversational Safety Rails
 
 ### Added

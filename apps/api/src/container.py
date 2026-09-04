@@ -70,6 +70,7 @@ from src.adapters.database.quota_repository import SqlQuotaRepository
 from src.adapters.database.semantic_cache import PgSemanticCacheAdapter
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
+from src.adapters.database.workflow_repository import SqlWorkflowRepository
 from src.adapters.graph.neo4j_repository import Neo4jGraphRepository
 from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
 from src.adapters.guardrails.nemo_guardrails_adapter import NeMoGuardrailsAdapter
@@ -92,6 +93,7 @@ from src.adapters.telemetry.setup import get_metrics
 from src.adapters.vector.keyword_repository import PgKeywordSearchAdapter
 from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
+from src.adapters.workflow.durable_workflow_adapter import DurableWorkflowAdapter
 from src.config import InfraCapabilities, settings
 from src.domain.abstractions.batteries import BatteryStatus
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
@@ -112,6 +114,7 @@ from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
 from src.domain.rlm.engine import RlmExecutionEngine
+from src.domain.workflow.durable_engine import DurableWorkflowEngine
 
 
 class Container:
@@ -493,6 +496,18 @@ class Container:
         self._cache["nemo_guardrails_adapter"] = nemo_adapter
         self._cache["nemo_guardrail_service"] = NeMoGuardrailService(adapter=nemo_adapter)
 
+        # --- Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine ---
+        wf_repo = SqlWorkflowRepository()
+        dur_engine = DurableWorkflowEngine()
+        dur_adapter = DurableWorkflowAdapter(
+            repository=wf_repo,
+            engine=dur_engine,
+        )
+        self._cache["workflow_repository"] = wf_repo
+        self._cache["durable_engine"] = dur_engine
+        self._cache["durable_workflow_adapter"] = dur_adapter
+
+
 
     def reset(self) -> None:
         self._cache.clear()
@@ -575,3 +590,7 @@ gateway_router = container.gateway_router
 budget_repo = container.budget_repo
 nemo_guardrails_adapter = container.nemo_guardrails_adapter
 nemo_guardrail_service = container.nemo_guardrail_service
+workflow_repository = container.workflow_repository
+durable_engine = container.durable_engine
+durable_workflow_adapter = container.durable_workflow_adapter
+

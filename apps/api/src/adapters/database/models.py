@@ -100,6 +100,26 @@ class TenantLoraAdapterDb(Base):
     )
 
 
+class CustomPluginDb(Base):
+    __tablename__ = "custom_plugins"
+
+    plugin_id = Column(String(100), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    display_name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    version = Column(String(32), nullable=False, default="1.0.0")
+    persona = Column(String(32), nullable=False, default="fde_engineer")
+    manifest = Column(JSONB, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+
+
 class ApiKeyDb(Base):
     __tablename__ = "api_keys"
 
@@ -845,6 +865,54 @@ class WorkflowStepCheckpointDb(Base):
         Index("ix_workflow_steps_exec_step", "execution_id", "step_name"),
         Index("ix_workflow_steps_tenant_status", "tenant_id", "status"),
     )
+
+
+class EdgeNodeDb(Base):
+    """Registered edge node device metadata for Sovereign Edge distribution (M98)."""
+
+    __tablename__ = "edge_nodes"
+
+    node_id = Column(String(128), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    device_name = Column(String(255), nullable=False)
+    platform = Column(String(64), nullable=False, default="darwin_arm64")
+    last_synced_seq = Column(Integer, nullable=False, default=0)
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    status = Column(String(32), nullable=False, default="online")
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_edge_nodes_tenant_status", "tenant_id", "status"),
+    )
+
+
+class EdgeSyncCheckpointDb(Base):
+    """Persisted synchronization checkpoint sequence and integrity manifest (M98)."""
+
+    __tablename__ = "edge_sync_checkpoints"
+
+    checkpoint_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    node_id = Column(String(128), nullable=False, index=True)
+    sequence_num = Column(Integer, nullable=False, default=0)
+    checksum_sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_edge_sync_checkpoints_tenant_seq", "tenant_id", "sequence_num"),
+    )
+
 
 
 

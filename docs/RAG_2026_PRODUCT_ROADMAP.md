@@ -114,7 +114,7 @@ ROADMAP EXECUTION HORIZONS:
 └────────────────────────┬─────────────────────────┘
                          │
 ┌────────────────────────▼─────────────────────────┐
-│ PHASE L: FORWARD DEPLOYED AGENTIC STACK (M91-M97) │ ── LangGraph, DSPy, LiteLLM, NeMo Rails, Inngest Workflows (M91–M95 Complete, M96 Next)
+│ PHASE L: FORWARD DEPLOYED AGENTIC STACK (M91-M97) │ ── LangGraph, DSPy, LiteLLM, NeMo Rails, Inngest Workflows, Serverless GPU, Metaprogrammer (Completed)
 └──────────────────────────────────────────────────┘
 ```
 

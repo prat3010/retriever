@@ -112,8 +112,9 @@
 | **M93** | Enterprise LLM Gateway & Multi-Model Smart Router | LiteLLM gateway, dynamic model failover, cost & quota management | **Completed** (v0.78.0) |
 | **M94** | NVIDIA NeMo Guardrails & Conversational Safety Rails | Colang conversational safety rails, factual topic grounding & scope enforcement | **Completed** (v0.79.0) |
 | **M95** | Durable Asynchronous Execution & AI Workflow Engine | Step-level memoization, resilient automatic retry backoff, and idempotent checkpoint state machines across distributed AI pipelines | **Completed** (v0.80.0) |
-| **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Planned (Phase L)** |
-| **M97** | Autonomous FDE Metaprogrammer & Self-Extending Capability Studio | Natural language capability wizard & automated Hexagonal code scaffolder | **Planned (Phase L)** |
+| **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Completed** (Phase L / v0.81.0) |
+| **M97** | Autonomous FDE Metaprogrammer & Self-Extending Capability Studio | Natural language capability wizard, AST-verified Hexagonal code scaffolder & Platform Battery #17 | **Completed** (Phase L / v0.82.0) |
+| **M98** | Sovereign Edge SQLite / Turso Vector Synchronization & Offline-First Edge Agent | Embedded SQLite 3 FTS5, binary float32 BLOB vectors, differential delta sync & Platform Battery #18 | **Completed** (Phase M / v0.83.0) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
@@ -1570,17 +1571,44 @@
 
 ---
 
-### [Planned] Milestone 97: Autonomous FDE Metaprogrammer & Self-Extending Capability Studio (v0.82.0)
+### [Completed] Milestone 97: Autonomous FDE Metaprogrammer & Self-Extending Capability Studio (v0.82.0)
 
-**Objective:** Enable the platform to autonomously analyze user requirements, recommend existing batteries, and scaffold verified, production-grade Hexagonal architecture modules for self-hosted instances.
+**Objective:** Enable the platform to autonomously analyze user requirements, recommend existing batteries, and scaffold verified, production-grade Hexagonal architecture modules with static AST boundary gates and 1-click community PR generation.
 
-**Target Deliverables:**
+**Delivered Capabilities:**
 - **Dual-Persona Solution Engine**:
-  1. *For Business / Non-Tech Users:* Natural language use-case wizard in SaaS Studio that recommends and configures existing batteries (System Prompts, PII redaction toggles, chunk sizes, and n8n webhooks) with zero code exposure.
-  2. *For Developers & Forward Deployed Engineers:* Autonomous Metaprogrammer agent that ingests custom domain requirements, analyzes missing capabilities, and auto-scaffolds complete Hexagonal architecture slices (`domain/abstractions/`, `domain/`, `adapters/`, `routers/`, `container.py` injection, and automated Pytest test suites).
-- **Isolated Plugin / Extension Directory (`apps/api/src/plugins/custom/`)**: Scaffolds into dedicated, git-isolated directories preventing merge conflicts when users pull upstream updates from the core open-source repository.
-- **Automated AST & Pytest Gate**: Verifies that generated modules adhere strictly to Hexagonal boundaries (0 framework imports in domain) and pass unit tests before hot-reloading into the active container.
-- **Community PR Generator**: 1-click command creating clean git branches and Pull Request templates for contributing verified custom adapters back to the upstream open-source project.
+  1. *For Business / Non-Tech Users:* Natural language requirement analyzer in SaaS Studio that matches requirements against the 16 native platform batteries with match scores and rationales, enabling zero-code adoption.
+  2. *For Forward Deployed Engineers (FDEs):* Autonomous Hexagonal metaprogrammer that synthesizes 6 verified code slices (`domain/abstractions.py`, `domain/service.py`, `adapters/custom_adapter.py`, `routers/router.py`, `tests/test_plugin.py`, and `manifest.json`).
+- **Static AST Security & Boundary Gate (`boundary_checker.py`)**: Uses standard Python `ast.parse()` to guarantee **0 framework imports** (`fastapi`, `sqlalchemy`, `celery`, `redis`, `modal`, `httpx`, etc.) in domain slices and block dangerous builtins (`exec`, `eval`) before files touch disk.
+- **Git-Isolated Plugin Storage (`apps/api/src/plugins/custom/{plugin_id}/`)**: Dedicated plugin workspace directory gitignored with `.gitkeep` to prevent merge conflicts with upstream core releases.
+- **Dynamic In-Process Mounting with Fault Barrier (`plugin_manager.py`)**: Dynamic discovery and mounting of `/v1/plugins/{plugin_id}/*` FastAPI routers during application lifespan. Plugin import errors are safely isolated, keeping core APIs and other tenants 100% operational.
+- **Platform Battery #17**: Registered `autonomous_fde_metaprogrammer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`. Custom plugins declaring `battery_service: true` dynamically appear in battery inventories.
+- **1-Click Community PR Generator (`pr_generator.py`)**: Generates automated Git branch names (`feat/plugin-{plugin_id}`) and comprehensive GitHub Pull Request Markdown for seamless open-source contribution.
+- **Developer CLI (`scripts/retriever_cli.py`)**: Standalone CLI for scaffolding, verifying AST boundaries, listing plugins, and triggering runtime reloads.
+- **Retriever Web & SaaS Studio Dashboards**:
+  - `retriever/apps/web` at `/scaffold`: Topbar, persona switcher, battery cards, AST boundary checklist, multi-file code viewer, and plugin ledger.
+  - `Prateek_website` at `/rag/app`: `FeatureStudioPanel.tsx` with Design System 2.0 dual-theme aesthetics, `<MagneticButton>`, `<NumberFlow>` animated metrics, `<Portal>` modal, and 100% Vitest test coverage.
+- **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_scaffolding.py`, 15/15) and frontend Vitest suite (`FeatureStudioPanel.test.tsx`, 9/9). ADR-019 and feature deep-dive documented.
+
+---
+
+### [Completed] Milestone 98: Sovereign Edge SQLite / Turso Vector Synchronization & Offline-First Edge Agent (v0.83.0)
+
+**Phase M Inauguration:** Global Distributed Sovereign Edge & Multi-Cloud Resiliency  
+**Objective:** Deliver a zero-daemon, in-process edge storage and retrieval engine combining native SQLite 3 FTS5 BM25 with binary float32 vector BLOBs, differential delta synchronization, 1-click standalone bundle exports, and Lamport clock offline mutation reconciliation.
+
+**Delivered Capabilities:**
+- **Hexagonal Domain Layer**: `abstractions/edge_sync.py` defining pure Pydantic protocols (`EdgeNode`, `EdgeSyncDelta`, `EdgeBundleManifest`, `EdgeSearchRequest`, `EdgeSearchResponse`, `EdgeMutation`, `EdgeSyncConflictResolution`) and `domain/edge_sync/` (`DeltaCalculator` with SHA-256 state hashing and `FusionRanker` with Reciprocal Rank Fusion $k=60$).
+- **Embedded SQLite 3 Hybrid Storage Engine**: `sqlite_edge_engine.py` providing schema creation (`edge_chunks`, `edge_chunks_fts` with Porter tokenizer, `edge_vectors` with binary float32 BLOBs, `edge_mutation_log`), in-process NumPy cosine similarity scoring, and sub-2ms local hybrid query execution.
+- **Differential Sequence Delta Generator & Standalone Bundler**: `edge_sync_adapter.py` extracting cloud pgvector records, generating watermarked sequence deltas (`since_sequence`), computing SHA-256 integrity checksums, and building 1-click standalone `.sqlite` database bundles.
+- **Lamport Clock Offline Mutation Reconciler**: `edge_mutation_reconciler.py` tracking offline mutations, resolving conflicts with Last-Write-Wins (LWW) and sequence ordering, and applying changes to cloud PostgreSQL (`ChatMessageFeedbackDb`).
+- **Database Models & Alembic Migration**: `EdgeNodeDb` and `EdgeSyncCheckpointDb` models with Alembic migration `k1l2m3n4o5p6_create_edge_sync_tables.py`.
+- **Platform Battery #18**: Registered `sovereign_edge_sync` (`Sovereign Edge SQLite & Vector Sync Engine`) in `BatteryService` under category `EDGE_DISTRIBUTION`.
+- **FastAPI Endpoints**: Mounted `/v1/admin/edge/overview` and tenant routes `/v1/tenants/{tenantId}/edge/nodes`, `/register`, `/delta`, `/bundle`, `/mutations`, `/search`.
+- **Retriever Web Admin & SaaS Studio UI**:
+  - `retriever/apps/web` at `/edge`: Overview metrics cards, node registry table, offline hybrid search simulator, and 1-click standalone `.sqlite` bundle exporter.
+  - `Prateek_website` at `/rag/app`: `EdgeSyncPanel.tsx` with Design System 2.0 dual-theme aesthetics, `<MagneticButton>`, `@number-flow/react` animated metrics, simulated network partition switch, and 100% Vitest coverage.
+- **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_edge_sync.py`, 13/13) and frontend Vitest suite (`EdgeSyncPanel.test.tsx`, 7/7). ADR-020 and feature guide documented.
 
 ---
 

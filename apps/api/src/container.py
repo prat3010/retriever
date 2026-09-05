@@ -73,6 +73,9 @@ from src.adapters.database.tenant_lora_repository import SqlTenantLoraRepository
 from src.adapters.database.tenant_repository import SqlTenantRegistry
 from src.adapters.database.user_repository import SqlUserRepository
 from src.adapters.database.workflow_repository import SqlWorkflowRepository
+from src.adapters.edge_sync.edge_mutation_reconciler import EdgeMutationReconciler
+from src.adapters.edge_sync.edge_sync_adapter import EdgeSyncAdapter
+from src.adapters.edge_sync.sqlite_edge_engine import SqliteEdgeEngine
 from src.adapters.graph.neo4j_repository import Neo4jGraphRepository
 from src.adapters.guardrails.llm_safety_guard import apply_llm_safety_guard
 from src.adapters.guardrails.nemo_guardrails_adapter import NeMoGuardrailsAdapter
@@ -88,6 +91,8 @@ from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.adapters.sandbox.python_sandbox_adapter import (
     RestrictedPythonSandboxAdapter,
 )
+from src.adapters.scaffolding.code_scaffolder_adapter import CodeScaffolderAdapter
+from src.adapters.scaffolding.plugin_manager import PluginManager
 from src.adapters.security.encryption_adapter import Aes256FieldEncryptor
 from src.adapters.storage.local_storage import LocalStorage
 from src.adapters.storage.s3_storage import S3Storage
@@ -97,7 +102,10 @@ from src.adapters.vector.splade_sparse_adapter import SpladeSparseSearchAdapter
 from src.adapters.vector.vector_repository import PgVectorSearchAdapter
 from src.adapters.workflow.durable_workflow_adapter import DurableWorkflowAdapter
 from src.config import InfraCapabilities, settings
-from src.domain.abstractions.batteries import BatteryStatus
+from src.domain.abstractions.batteries import (
+    BatteryStatus,
+    PlatformBatteryDTO,
+)
 from src.domain.agentic.execution_engine import AgenticExecutionEngine
 from src.domain.agentic.tool_registry import ToolRegistry
 from src.domain.backup.backup_service import BackupService
@@ -105,6 +113,8 @@ from src.domain.batteries.battery_service import BatteryService
 from src.domain.clustering.persona_service import PersonaIntelligenceService
 from src.domain.config.config_service import ConfigurationService
 from src.domain.consensus.reflection_loop import MultiAgentConsensusEngine
+from src.domain.edge_sync.delta_calculator import EdgeDeltaCalculator
+from src.domain.edge_sync.fusion_ranker import EdgeFusionRanker
 from src.domain.estimation.effort_estimation_service import EffortEstimationService
 from src.domain.evaluation.evaluator import EvalRunService
 from src.domain.guardrails.nemo_guardrail_service import NeMoGuardrailService
@@ -116,6 +126,10 @@ from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
 from src.domain.rlm.engine import RlmExecutionEngine
+from src.domain.scaffolding.boundary_checker import AstBoundaryValidator
+from src.domain.scaffolding.metaprogrammer import AutonomousMetaprogrammer
+from src.domain.scaffolding.pr_generator import PullRequestGenerator
+from src.domain.scaffolding.requirement_analyzer import RequirementAnalyzer
 from src.domain.workflow.durable_engine import DurableWorkflowEngine
 
 
@@ -479,7 +493,29 @@ class Container:
 
             return statuses
 
-        self._cache["battery_service"] = BatteryService(status_resolver=_resolve_battery_statuses)
+        def _resolve_custom_batteries() -> list[PlatformBatteryDTO]:
+            mgr = self._cache.get("plugin_manager")
+            if not mgr:
+                return []
+            return [
+                PlatformBatteryDTO(
+                    id=m.id,
+                    name=m.name,
+                    category=m.category,
+                    status=BatteryStatus.ACTIVE,
+                    algorithm_foundation=m.algorithm_foundation,
+                    milestone=f"{m.id} ({m.version})",
+                    latency_profile=m.latency_profile,
+                    description=m.description,
+                    health_check_endpoint=f"/v1/plugins/{m.id}/health",
+                )
+                for m in mgr.get_active_custom_manifests()
+            ]
+
+        self._cache["battery_service"] = BatteryService(
+            status_resolver=_resolve_battery_statuses,
+            custom_batteries_provider=_resolve_custom_batteries,
+        )
 
         cloud_backup = CloudBackupAdapter(storage=self._cache.get("s3_storage"))
         cloud_restore = CloudRestoreAdapter(storage=self._cache.get("s3_storage"))
@@ -526,6 +562,34 @@ class Container:
         self._cache["workflow_repository"] = wf_repo
         self._cache["durable_engine"] = dur_engine
         self._cache["durable_workflow_adapter"] = dur_adapter
+
+        # --- Milestone 97: Autonomous FDE Metaprogrammer & Self-Extending Capability Studio ---
+        ast_checker = AstBoundaryValidator()
+        req_analyzer = RequirementAnalyzer()
+        metaprog = AutonomousMetaprogrammer(analyzer=req_analyzer, validator=ast_checker)
+        pr_gen = PullRequestGenerator()
+        code_scaff = CodeScaffolderAdapter()
+        plugin_mgr = PluginManager(validator=ast_checker)
+
+        self._cache["boundary_checker"] = ast_checker
+        self._cache["requirement_analyzer"] = req_analyzer
+        self._cache["metaprogrammer"] = metaprog
+        self._cache["pr_generator"] = pr_gen
+        self._cache["code_scaffolder"] = code_scaff
+        self._cache["plugin_manager"] = plugin_mgr
+
+        # --- Milestone 98: Sovereign Edge SQLite / Turso Vector Synchronization & Offline-First Edge Agent ---
+        edge_delta_calc = EdgeDeltaCalculator()
+        edge_ranker = EdgeFusionRanker()
+        sqlite_engine = SqliteEdgeEngine(ranker=edge_ranker)
+        edge_sync = EdgeSyncAdapter(delta_calculator=edge_delta_calc, edge_engine=sqlite_engine)
+        edge_reconciler = EdgeMutationReconciler()
+
+        self._cache["edge_delta_calculator"] = edge_delta_calc
+        self._cache["edge_fusion_ranker"] = edge_ranker
+        self._cache["sqlite_edge_engine"] = sqlite_engine
+        self._cache["edge_sync_adapter"] = edge_sync
+        self._cache["edge_mutation_reconciler"] = edge_reconciler
 
 
 
@@ -615,4 +679,15 @@ durable_engine = container.durable_engine
 durable_workflow_adapter = container.durable_workflow_adapter
 serverless_gpu_client = container.serverless_gpu_client
 tenant_lora_repository = container.tenant_lora_repository
+boundary_checker = container.boundary_checker
+requirement_analyzer = container.requirement_analyzer
+metaprogrammer = container.metaprogrammer
+pr_generator = container.pr_generator
+code_scaffolder = container.code_scaffolder
+plugin_manager = container.plugin_manager
+edge_delta_calculator = container.edge_delta_calculator
+edge_fusion_ranker = container.edge_fusion_ranker
+sqlite_edge_engine = container.sqlite_edge_engine
+edge_sync_adapter = container.edge_sync_adapter
+edge_mutation_reconciler = container.edge_mutation_reconciler
 

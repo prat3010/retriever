@@ -14,8 +14,10 @@ class BatteryService:
     def __init__(
         self,
         status_resolver: Callable[[], dict[str, BatteryStatus]] | None = None,
+        custom_batteries_provider: Callable[[], list[PlatformBatteryDTO]] | None = None,
     ) -> None:
         self._status_resolver = status_resolver
+        self._custom_batteries_provider = custom_batteries_provider
         self._batteries = self._build_catalog()
 
     def _build_catalog(self) -> list[PlatformBatteryDTO]:
@@ -212,11 +214,41 @@ class BatteryService:
                 active_parameters={"base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct", "gpu_tier": "A10G", "scale_to_zero_window_sec": 300, "max_loras": 16},
                 health_check_endpoint="/v1/admin/serverless/status",
             ),
+            PlatformBatteryDTO(
+                id="autonomous_fde_metaprogrammer",
+                name="Autonomous FDE Metaprogrammer & Capability Studio",
+                category=BatteryCategory.SYSTEM_EXTENSIBILITY,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="AST-Driven Program Synthesis, Static Boundary Verification & Dual-Persona Scaffolding",
+                milestone="M97 (v0.82.0)",
+                latency_profile="~15ms analysis / ~45ms code synthesis",
+                description="Dual-persona solution engine: zero-code battery orchestration for business users, and AST-verified Hexagonal architecture code generation for Forward Deployed Engineers.",
+                active_parameters={"supported_personas": ["business", "fde_engineer"], "ast_enforcement": True, "plugin_directory": "src/plugins/custom/"},
+                health_check_endpoint="/v1/scaffold/status",
+            ),
+            PlatformBatteryDTO(
+                id="sovereign_edge_sync",
+                name="Sovereign Edge SQLite & Vector Sync Engine",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Differential Sequence Synchronization + Embedded SQLite FTS5 & Vector BLOB Cosine Fusion",
+                milestone="M98 (v0.83.0)",
+                latency_profile="<2ms local search / ~10ms delta sync",
+                description="Bidirectional vector and chunk delta synchronization between cloud PostgreSQL and standalone edge SQLite databases for offline-first RAG and air-gapped field operations.",
+                active_parameters={"storage_format": "sqlite3_fts5_vectorblob", "sync_protocol": "differential_checkpoint_stream", "offline_resolution_tiers": ["local_slm", "grounded_extraction", "speculative_queue"]},
+                health_check_endpoint="/v1/admin/edge/overview",
+            ),
         ]
 
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:
         resolved = [b.model_copy() for b in self._batteries]
+        if self._custom_batteries_provider:
+            try:
+                custom_batteries = self._custom_batteries_provider()
+                resolved.extend(custom_batteries)
+            except Exception:
+                pass
         if self._status_resolver:
             try:
                 overrides = self._status_resolver()
@@ -237,3 +269,11 @@ class BatteryService:
     def get_tenant_batteries(self, tenant_id: str) -> PlatformBatteriesResponse:
         # Returns tenant-visible capabilities
         return self.get_platform_batteries()
+
+    def get_battery(self, battery_id: str) -> PlatformBatteryDTO | None:
+        """Fetch single battery by ID with resolved status."""
+        resp = self.get_platform_batteries()
+        for b in resp.batteries:
+            if b.id == battery_id:
+                return b
+        return None

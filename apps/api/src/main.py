@@ -51,6 +51,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"Failed to warm up database connection pool: {e}")
 
+    try:
+        from src.container import plugin_manager
+        plugin_manager.discover_and_mount_all(app)
+    except Exception as e:
+        logger.warning(f"PluginManager startup discovery warning: {e}")
+
     if settings.SENTRY_DSN:
         sentry_sdk.init(
             dsn=settings.SENTRY_DSN,
@@ -175,12 +181,10 @@ from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
 from src.routers.consensus import router as consensus_router
 from src.routers.document import router as document_router
-from src.routers.durable_workflow import (
-    admin_router as durable_workflow_admin_router,
-)
-from src.routers.durable_workflow import (
-    router as durable_workflow_router,
-)
+from src.routers.durable_workflow import admin_router as durable_workflow_admin_router
+from src.routers.durable_workflow import router as durable_workflow_router
+from src.routers.edge import admin_router as edge_admin_router
+from src.routers.edge import tenant_router as edge_tenant_router
 from src.routers.estimation import router as estimation_router
 from src.routers.gateway import router as gateway_router
 from src.routers.gateway import tenant_router as gateway_tenant_router
@@ -193,6 +197,7 @@ from src.routers.persona import router as persona_router
 from src.routers.pricing import router as pricing_router
 from src.routers.prompts import router as prompts_router
 from src.routers.rlm import router as rlm_router
+from src.routers.scaffold import router as scaffold_router
 from src.routers.search import router as search_router
 from src.routers.security_compression import router as security_compression_router
 from src.routers.serverless_gpu import admin_router as serverless_admin_router
@@ -226,6 +231,9 @@ app.include_router(guardrails_router)
 app.include_router(guardrails_tenant_router)
 app.include_router(serverless_admin_router)
 app.include_router(serverless_tenant_router)
+app.include_router(scaffold_router)
+app.include_router(edge_admin_router)
+app.include_router(edge_tenant_router)
 
 
 

@@ -10,6 +10,8 @@ class BatteryCategory(StrEnum):
     SAFETY_DEFENSE = "safety_defense"
     COMPUTATION_GRAPH = "computation_graph"
     BACKGROUND_WORKFLOWS = "background_workflows"
+    SYSTEM_EXTENSIBILITY = "system_extensibility"
+    EDGE_DISTRIBUTION = "edge_distribution"
 
 
 

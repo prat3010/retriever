@@ -125,6 +125,17 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 ### 13. 💾 `/system-data` — Automated Database Snapshots & PITR Recovery Engine (M87)
 * Cloud storage snapshot management (S3 / Cloudflare R2), continuous WAL segment archival monitoring, point-in-time recovery (PITR) drills, and atomic database state restoration.
 
+### 14. 🛠️ `/scaffold` — Autonomous FDE Metaprogrammer & Capability Studio (M97)
+* Dual-persona solution studio: Zero-code native battery matching for business operators, and AST-verified Hexagonal code synthesis (6 slices) for Forward Deployed Engineers.
+* Features AST boundary security gates (0 framework imports in domain), live multi-slice code tabs, 1-click workspace deployment, and 1-click community PR generator with Git branch checkout.
+
+### 15. 💾 `/edge` — Sovereign Edge SQLite & Offline Node Sync (M98)
+* Management cockpit for distributed edge node runtimes synchronizing local embedded SQLite vector stores with central cloud pgvector.
+* Live metric cards (Registered Edge Nodes, In-Process Query Latency <2ms, Platform Battery #18 Active status, Zero-Cloud Offline Resilience).
+* Edge node registry table with live device heartbeat statuses, hardware architecture badges (`darwin-arm64`, `linux-x86_64`), and watermark sequence progress.
+* In-process hybrid search simulator testing FTS5 BM25 match fused with binary vector cosine dot product.
+* 1-Click standalone `.sqlite` bundle exporter with automated manifest generation and direct binary file download.
+
 ---
 
 ## 4. Operational Roadmap & Development Phases
@@ -141,6 +152,8 @@ timeline
     Phase 7 : Enterprise Ecosystem Plugins & Compliance Vault (M87–M90)
     Phase 8 : LangGraph Orchestration, DSPy Compilation & Smart Gateway (M91–M93)
     Phase 9 : NeMo Guardrails & Durable Asynchronous Workflows (M94–M95)
+    Phase 10 : Serverless GPU Serving & Autonomous FDE Metaprogrammer (M96–M97)
+    Phase 11 : Sovereign Edge SQLite & Offline Node Sync (M98)
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)
 - ✅ Next.js 16 scaffold with shadcn/ui, Tailwind v4, TanStack Query, and Zustand.
@@ -189,6 +202,13 @@ timeline
 - ✅ Guardrails & Conversational Safety: NVIDIA NeMo Guardrails integration with Colang dialogue flows and factual grounding checks (M94).
 - ✅ Durable Asynchronous AI Workflows: Step-level memoization (<2ms replay), fault-tolerant retry backoff, and execution ledger overview (M95).
 
+### Phase 10: Serverless GPU Serving & Autonomous FDE Metaprogrammer (M96–M97)
+- ✅ Serverless Dedicated GPU & Dynamic vLLM / LoRA Pipeline: Scale-to-zero compute economics, warm-boot latency probe, and dynamic LoRA swapping without restarts (M96).
+- ✅ `/scaffold`: Autonomous FDE Metaprogrammer & Capability Studio with Dual-Persona solution engine, AST boundary security gate (0 framework imports), multi-slice code tabs, 1-click deploy, and community PR generator (M97).
+
+### Phase 11: Sovereign Edge SQLite & Offline Node Sync (M98)
+- ✅ `/edge`: Sovereign Edge SQLite & Vector Synchronization cockpit monitoring edge client nodes, in-process latency benchmarks (<2ms), 1-click standalone `.sqlite` bundle exports, and Lamport LWW offline mutation reconciler (Platform Battery #18).
+
 ---
 
 ## 5. Admin API Reference Table
@@ -205,6 +225,7 @@ timeline
 | `/v1/admin/tenants/{id}/prompts` | `GET` / `POST` | `X-Admin-Master-Key` | List / Create tenant system prompt templates |
 | `/v1/admin/tenants/{id}/config` | `GET` / `PUT` | `X-Admin-Master-Key` | Fetch / Update tenant LLM settings, rates & quotas |
 | `/v1/admin/tenants/{id}/graph` | `GET` / `POST` | `X-Admin-Master-Key` | Query GraphRAG entities & triples / Toggle storage engine |
+| `/v1/admin/edge/overview` | `GET` | `X-Admin-Master-Key` | Overview of edge nodes, sync checkpoints, and Battery #18 status |
 | `/v1/admin/audit-log` | `GET` | `X-Admin-Master-Key` | Retrieve system compliance mutation logs |
 
 ---

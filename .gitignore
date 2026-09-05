@@ -72,3 +72,7 @@ DEPLOYMENT.md
 ORACLE_DEPLOYMENT_REFERENCE.md
 
 storage/
+
+# Custom plugins (Milestone 97 isolated extension directory)
+apps/api/src/plugins/custom/*
+!apps/api/src/plugins/custom/.gitkeep

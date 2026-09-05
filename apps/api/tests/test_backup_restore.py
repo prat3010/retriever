@@ -163,8 +163,12 @@ def test_backup_admin_api_endpoints():
 def test_hexagonal_architecture_boundaries():
     """Ensure pure domain abstractions and services never import infrastructure or framework adapters."""
     domain_files = [
-        Path("apps/api/src/domain/abstractions/backup.py"),
-        Path("apps/api/src/domain/backup/backup_service.py"),
+        Path("src/domain/abstractions/backup.py")
+        if Path("src/domain/abstractions/backup.py").exists()
+        else Path("apps/api/src/domain/abstractions/backup.py"),
+        Path("src/domain/backup/backup_service.py")
+        if Path("src/domain/backup/backup_service.py").exists()
+        else Path("apps/api/src/domain/backup/backup_service.py"),
     ]
 
     forbidden_imports = [

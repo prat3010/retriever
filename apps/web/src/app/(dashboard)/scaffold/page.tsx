@@ -444,7 +444,7 @@ export default function ScaffoldPage() {
                       {p.hooks?.api_router && (
                         <div className="flex items-center gap-2 mt-2">
                           <code className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-mono">
-                            Route: /v1/plugins/{p.plugin_id}/*
+                            Route: /v1/plugins/{p.plugin_id}/{"*"}
                           </code>
                         </div>
                       )}

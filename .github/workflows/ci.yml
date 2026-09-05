@@ -54,7 +54,6 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        working-directory: apps/web
         run: npm ci
 
       - name: Next.js lint

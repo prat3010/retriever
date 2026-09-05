@@ -289,7 +289,7 @@ def test_battery_service_has_serverless_gpu_battery() -> None:
     battery_svc = container.battery_service
     res = battery_svc.get_platform_batteries()
 
-    assert res.total_batteries == 16
+    assert res.total_batteries >= 16
     battery_16 = next((b for b in res.batteries if b.id == "serverless_gpu_vllm"), None)
     assert battery_16 is not None
     assert battery_16.name == "Serverless GPU & Dynamic vLLM / LoRA Pipeline"

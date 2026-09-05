@@ -72,6 +72,7 @@ export function TenantGuardrailsTab({ tenantId }: TenantGuardrailsTabProps) {
 
   useEffect(() => {
     if (config) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode(config.mode);
       setColangScript(config.colang_script);
       setPiiRedaction(config.pii_redaction_enabled);

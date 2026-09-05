@@ -194,10 +194,15 @@ def test_hexagonal_architecture_compliance():
     """Ensure compliance domain layer imports zero infrastructure or web frameworks."""
     forbidden = ["fastapi", "sqlalchemy", "requests", "httpx", "aiohttp", "boto3"]
     domain_files = [
-        Path("apps/api/src/domain/abstractions/compliance.py"),
-        Path("apps/api/src/domain/compliance/pii_anonymizer.py"),
-        Path("apps/api/src/domain/compliance/certificate_service.py"),
-        Path("apps/api/src/domain/compliance/purge_service.py"),
+        Path(f"src/domain/{rel}")
+        if Path(f"src/domain/{rel}").exists()
+        else Path(f"apps/api/src/domain/{rel}")
+        for rel in [
+            "abstractions/compliance.py",
+            "compliance/pii_anonymizer.py",
+            "compliance/certificate_service.py",
+            "compliance/purge_service.py",
+        ]
     ]
 
     for p in domain_files:

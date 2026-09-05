@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 from src.adapters.vector.filter_builder import build_filter_clause
+from src.container import container
 from src.domain.abstractions.config import TenantConfiguration
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatSessionInfo
@@ -140,6 +141,7 @@ def test_search_documents_passes_collection_id(
 # ── 5. Chat Router Collection Scoped Message Inference ────────────────────────
 
 
+@patch.object(container, "nemo_guardrail_service", None)
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.routers.chat.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.routers.chat.quota_service.check_inference_quota", new_callable=AsyncMock)
@@ -169,7 +171,9 @@ def test_chat_message_passes_collection_id(
         user_id=user_id,
         created_at="2026-07-31T00:00:00Z",
     )
-    mock_get_config.return_value = TenantConfiguration()
+    cfg = TenantConfiguration()
+    cfg.corrective_retrieval_settings.enable_corrective_retrieval = False
+    mock_get_config.return_value = cfg
     mock_check_quota.return_value = None
     mock_search.return_value = MagicMock(results=[])
     mock_generate.return_value = MagicMock(

@@ -95,5 +95,35 @@ To achieve complete parity between the backend capability layer and the Admin Da
 8. **Tab 8: Configuration** (12 Providers, Safety Guardrails, Consensus, RLM & Compression controls)
 9. **Tab 9: 📈 Hallucinations & Quality (M50)** (Faithfulness analytics, unfaithful response diff inspector)
 10. **Tab 10: 🛡️ Compliance & Sovereignty (M51)** (PII rules, GDPR Hard Purge trigger, retention SLA scheduler)
-11. **Tab 11: 💳 Billing & Payment Ledger (M52)** (Transaction log, active quota meters, Checkout Link Generator)
-12. **Tab 12: ⚡ n8n & Workflow Automation (M53)** (Outbound webhook config, Ping test, n8n OpenAPI spec viewer)
+11: **Tab 11: 💳 Billing & Payment Ledger (M52)** (Transaction log, active quota meters, Checkout Link Generator)
+12: **Tab 12: ⚡ n8n & Workflow Automation (M53)** (Outbound webhook config, Ping test, n8n OpenAPI spec viewer)
+
+---
+
+## 4. Platform Batteries Matrix (21 Registered Batteries — v0.86.0)
+
+Every battery in [`BatteryService`](../apps/api/src/domain/batteries/battery_service.py) is documented with an architectural feature guide:
+
+| # | Battery ID | Battery Name | Category | Milestone | Dedicated Feature Guide |
+|---|---|---|---|---|---|
+| **1** | `bm25_sparse_retrieval` | Sublinear BM25 Keyword Search | `RETRIEVAL` | M12 (v0.12.0) | [`features/bm25-sparse-retrieval.md`](features/bm25-sparse-retrieval.md) |
+| **2** | `pgvector_hnsw_dense` | pgvector HNSW Dense Embeddings | `RETRIEVAL` | M1 (v0.1.0) | [`features/pgvector-hnsw-dense.md`](features/pgvector-hnsw-dense.md) |
+| **3** | `colbert_maxsim_reranker` | ColBERT MaxSim Late-Interaction Reranker | `RETRIEVAL` | M80 (v0.65.0) | [`features/colbert-maxsim-reranker.md`](features/colbert-maxsim-reranker.md) |
+| **4** | `docling_layout_ocr` | Docling Layout-Aware OCR & Table Parser | `RETRIEVAL` | M72 (v0.58.0) | [`features/docling-layout-ocr.md`](features/docling-layout-ocr.md) |
+| **5** | `rlm_python_repl` | RLM Python REPL Execution Sandbox | `COMPUTATION_GRAPH` | M48/M56 (v0.45.0) | [`features/rlm-python-repl-sandbox.md`](features/rlm-python-repl-sandbox.md) |
+| **6** | `graphrag_hdbscan_clustering` | GraphRAG HDBSCAN Community Clustering | `COMPUTATION_GRAPH` | M81 (v0.66.0) | [`features/graphrag-hdbscan-clustering.md`](features/graphrag-hdbscan-clustering.md) |
+| **7** | `neo4j_cypher_graph` | Neo4j Cypher Property Graph Engine | `COMPUTATION_GRAPH` | M37/M44 (v0.35.0) | [`features/neo4j-cypher-property-graph.md`](features/neo4j-cypher-property-graph.md) |
+| **8** | `isolation_forest_sentinel` | Telemetry Anomaly Sentinel | `ML_INTELLIGENCE` | M83 (v0.68.0) | [`features/isolation-forest-sentinel.md`](features/isolation-forest-sentinel.md) |
+| **9** | `quantile_effort_regressor` | Project Effort & Timeline Regressor | `ML_INTELLIGENCE` | M84 (v0.69.0) | [`features/quantile-effort-regressor.md`](features/quantile-effort-regressor.md) |
+| **10** | `kmeans_persona_classifier` | Zero-Cookie Visitor & Lead Scorer | `ML_INTELLIGENCE` | M85 (v0.70.0) | [`features/kmeans-persona-classifier.md`](features/kmeans-persona-classifier.md) |
+| **11** | `token_shield_rate_limiter` | Edge AI Token Shield & Rate Limiter | `SAFETY_DEFENSE` | M86 (v0.71.0) | [`features/token-shield-rate-limiter.md`](features/token-shield-rate-limiter.md) |
+| **12** | `llama_guard_safety_rails` | Structured LlamaGuard 3 Safety Rails | `SAFETY_DEFENSE` | M85.1 (v0.70.1) | [`features/llama-guard-safety-rails.md`](features/llama-guard-safety-rails.md) |
+| **13** | `longllmlingua_compression` | LongLLMLingua Context Compression | `SAFETY_DEFENSE` | M85.2 (v0.70.2) | [`features/longllmlingua-context-compression.md`](features/longllmlingua-context-compression.md) |
+| **14** | `nemo_conversational_guardrails` | NVIDIA NeMo Conversational Safety Rails | `SAFETY_DEFENSE` | M94 (v0.79.0) | [`features/nemo-conversational-guardrails.md`](features/nemo-conversational-guardrails.md) |
+| **15** | `durable_workflow_engine` | Durable Asynchronous Workflow Engine | `BACKGROUND_WORKFLOWS` | M95 (v0.80.0) | [`features/durable-asynchronous-execution.md`](features/durable-asynchronous-execution.md) |
+| **16** | `serverless_gpu_vllm` | Serverless Dedicated GPU & Multi-LoRA | `ML_INTELLIGENCE` | M96 (v0.81.0) | [`features/serverless-gpu-vllm-lora.md`](features/serverless-gpu-vllm-lora.md) |
+| **17** | `autonomous_fde_metaprogrammer` | Autonomous FDE Metaprogrammer Studio | `SYSTEM_EXTENSIBILITY` | M97 (v0.82.0) | [`features/scaffolding-metaprogrammer.md`](features/scaffolding-metaprogrammer.md) |
+| **18** | `sovereign_edge_sync` | Sovereign Edge SQLite & Vector Sync | `EDGE_DISTRIBUTION` | M98 (v0.83.0) | [`features/sovereign-edge-sync.md`](features/sovereign-edge-sync.md) |
+| **19** | `multicloud_failover_libsql` | Multi-Cloud Failover & LibSQL Replicas | `EDGE_DISTRIBUTION` | M99 (v0.84.0) | [`features/multicloud-failover-libsql.md`](features/multicloud-failover-libsql.md) |
+| **20** | `sovereign_edge_voice` | Sovereign Edge Voice & Whisper WebRTC | `EDGE_DISTRIBUTION` | M100 (v0.85.0) | [`features/sovereign-edge-voice.md`](features/sovereign-edge-voice.md) |
+| **21** | `zero_trust_micro_enclave` | Zero-Trust Micro-Enclave KMS & Attestation | `SAFETY_DEFENSE` | M101 (v0.86.0) | [`features/confidential-micro-enclave.md`](features/confidential-micro-enclave.md) |

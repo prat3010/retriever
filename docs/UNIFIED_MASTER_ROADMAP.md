@@ -1,5 +1,5 @@
-# Unified Master Product & Architectural Roadmap (2026)
+# Retriever Product & Architectural Roadmap
 
-> **Canonical Document Location:** [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
-
-Please refer to the primary unified master roadmap document located at `Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` for the complete single-source-of-truth timeline (M1 through M85) spanning both **Prateek_website** and **retriever**.
+> 📌 **Retriever Platform Roadmap:** See [`../ROADMAP.md`](../ROADMAP.md) for the active open-source product roadmap and 20-battery readiness matrix.
+> 
+> 📜 **Granular Milestone History (M1–M102):** See [`engineering/MILESTONES_HISTORY.md`](engineering/MILESTONES_HISTORY.md) for the complete engineering record spanning core retrieval, graph reasoning, and edge serving.

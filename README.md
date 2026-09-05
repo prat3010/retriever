@@ -140,10 +140,12 @@ Retriever ships with **20 production-grade batteries** pre-wired through Hexagon
 ## 📚 Complete Technical Documentation
 
 - **[Open-Source Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md):** 10k-Star viral launch execution strategy.
+- **[Enterprise Security Whitepaper](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md):** PostgreSQL RLS isolation, AES-256 envelope encryption, and zero PII retention.
 - **[REST API Reference](docs/api/):** Complete specifications for all 25+ REST/SSE endpoints.
 - **[Architecture Decision Records (ADRs)](docs/decisions/):** 22 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice).
 - **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
-- **[Project Health & Test Status](PROJECT_STATUS.md):** Continuous verification matrix across 112 test suites.
+- **[Project Health & Test Status](docs/operations/PROJECT_STATUS.md):** Continuous verification matrix across 112 test suites.
+- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 20 production batteries overview.
 
 ---
 

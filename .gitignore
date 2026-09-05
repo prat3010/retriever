@@ -68,8 +68,8 @@ apps/api/storage/
 *.tsbuildinfo
 
 # Deployment guides (contain secrets, local reference only)
-DEPLOYMENT.md
-ORACLE_DEPLOYMENT_REFERENCE.md
+docs/infrastructure/DEPLOYMENT.md
+docs/infrastructure/ORACLE_DEPLOYMENT_REFERENCE.md
 
 storage/
 

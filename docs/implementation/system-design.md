@@ -1226,7 +1226,7 @@ PHASE 5: Operational Hardening
 
 ## **Related Architecture & Cross-References**
 
-- [System Architecture Blueprint](architecture.md)
-- [Engineering Constitution](constitution/master-vision.md)
-- [Core Platform Features](features/core-platform.md)
-- [RAG Audit Report](engineering/rag-audit-report.md)
+- [System Architecture Blueprint](../architecture.md)
+- [Engineering Constitution](../constitution/master-vision.md)
+- [Core Platform Features](../features/core-platform.md)
+- [RAG Audit Report](../engineering/rag-audit-report.md)

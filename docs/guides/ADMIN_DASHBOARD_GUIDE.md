@@ -176,7 +176,7 @@ If you add an endpoint to `apps/api/src/main.py` under the admin route prefix, a
 
 ## **Related Architecture & Cross-References**
 
-- [Admin Dashboard Architecture Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)
+- [Admin Dashboard Architecture Roadmap](../ADMIN_DASHBOARD_ROADMAP.md)
 - [Tenant Onboarding Workflow](ONBOARDING_WORKFLOW.md)
-- [Client SaaS Studio Specification](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)
-- [Backend Engine Roadmap](ROADMAP.md)
+- [Open-Source Product Roadmap](../../ROADMAP.md)
+- [Milestone History & Verification Matrix](../engineering/MILESTONES_HISTORY.md)

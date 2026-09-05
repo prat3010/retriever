@@ -2,7 +2,7 @@
 **System:** Retriever RAG Engine — Control Panel (`apps/web`)  
 **Deployment URL:** `https://admin.rag.prateeq.in`  
 **Target Audience:** Platform Administrator (Prateek Sharma)  
-**Cross-Reference:** Linked directly with the **[Client Dashboard & SaaS Studio Ecosystem Roadmap](../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)** in `Prateek_website`.
+**Control Plane Reference:** Connects with the Client Workspace & SaaS Studio on `https://prateeq.in/rag/app`.
 
 ---
 
@@ -251,7 +251,6 @@ timeline
 
 ## **Related Architecture & Cross-References**
 
-- [Admin Dashboard User Guide](ADMIN_DASHBOARD_GUIDE.md)
-- [Client Dashboard Specification](../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)
-- [Retriever Backend Roadmap](../ROADMAP.md)
-- [Unified Master Roadmap (SSoT)](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
+- [Admin Dashboard User Guide](guides/ADMIN_DASHBOARD_GUIDE.md)
+- [Retriever Product Roadmap](../ROADMAP.md)
+- [Milestone History & Architecture](engineering/MILESTONES_HISTORY.md)

@@ -217,7 +217,7 @@ Content-Type: application/json
 
 ## 5. Verification & Test Suite
 
-The test suite in [`apps/api/tests/test_enclave.py`](file:///Users/prateeksharma/Developer/retriever/apps/api/tests/test_enclave.py) executes 8 comprehensive automated scenarios:
+The test suite in [`apps/api/tests/test_enclave.py`](../../apps/api/tests/test_enclave.py) executes 8 comprehensive automated scenarios:
 1. Domain layer purity (zero forbidden frameworks).
 2. Challenge nonce generation, 300s expiration, and anti-replay invalidation.
 3. Hardware attestation evidence generation and signature verification.

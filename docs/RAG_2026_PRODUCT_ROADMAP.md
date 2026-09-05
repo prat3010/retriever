@@ -1,6 +1,7 @@
 # Retriever RAG Platform — 2026 Architecture & Engine Specification
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the active sequential timeline (M1 to M96) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Retriever Platform Roadmap:** For active open-source product milestones and battery status, see [`../ROADMAP.md`](../ROADMAP.md).
+> 📜 **Granular Engineering History:** For detailed M1–M102 milestone logs, see [`engineering/MILESTONES_HISTORY.md`](engineering/MILESTONES_HISTORY.md).
 
 **System:** Retriever Enterprise RAG Platform  
 **Repository:** `retriever`  
@@ -411,8 +412,9 @@ ROADMAP EXECUTION HORIZONS:
 
 ## **Related Architecture & Cross-References**
 
-- [Unified Master Roadmap (SSoT)](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)
-- [RAG App Studio PRD](../../Prateek_website/docs/24_RAG_App_Studio_PRD.md)
-- [Scoping Dogfooding Tenant (`prateeq_scoping`)](../../Prateek_website/docs/25_SOTA_Scoping_Engine_PRD.md)
+- [Open-Source Roadmap](../ROADMAP.md)
+- [Enterprise Security Whitepaper](security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md)
+- [Sovereign Edge Swarm Handbook](cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md)
+- [Client Scoping Tenant Specification (Public)](https://prateeq.in/scoping)
 - [Logical Architecture Blueprint](architecture.md)
 - [Physical System Design](implementation/system-design.md)

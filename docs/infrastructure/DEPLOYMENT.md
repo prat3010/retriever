@@ -294,4 +294,4 @@ Old Render-specific files in this repo (`deploy/start.py`) have already been rem
 
 - [Oracle Ampere Deployment Reference](ORACLE_DEPLOYMENT_REFERENCE.md)
 - [Oracle Ampere VM Provisioning Guide](ORACLE_AMPERE_CLAIM_GUIDE.md)
-- [System Status & Production Hardening](PROJECT_STATUS.md)
+- [System Status & Production Hardening](../operations/PROJECT_STATUS.md)

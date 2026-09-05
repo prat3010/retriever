@@ -128,7 +128,7 @@ USING (
 );
 ```
 
-During a database transaction, the application context manager (`tenant_session` inside [connection.py](apps/api/src/adapters/database/connection.py)) runs a session-local config query before executing actual queries:
+During a database transaction, the application context manager (`tenant_session` inside [connection.py](../../apps/api/src/adapters/database/connection.py)) runs a session-local config query before executing actual queries:
 ```python
 async with AsyncSessionLocal() as session:
     async with session.begin():

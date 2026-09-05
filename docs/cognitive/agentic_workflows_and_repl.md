@@ -114,5 +114,5 @@ Following Retriever's strict Hexagonal boundaries:
 ## 🔗 Related Architecture & Cross-References
 - [Operational Runbook: LangGraph Orchestration](../runbooks/RUNBOOK_LANGGRAPH_AGENTIC_ORCHESTRATION.md)
 - [Agentic API Specification](../api/agentic.md)
-- [RLM API Specification](rlm.md)
+- [RLM API Specification](../api/rlm.md)
 - [Hybrid Search & Fusion](hybrid_search_and_fusion.md)

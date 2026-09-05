@@ -28,7 +28,7 @@ A self-referencing RAG system represents a closed-loop cognitive loop: the syste
 In Retriever's multi-tenant architecture, this is realized by establishing a dedicated system tenant (e.g., `tenant_id = '00000000-0000-0000-0000-000000000000'`) specifically configured for development and operations queries.
 - **Cognitive Engine:** The core domain services (`HybridSearchService`, `Orchestrator`) remain unchanged.
 - **Knowledge Core:** The `vector_records` and `document_chunks` tables are populated with chunks representing the codebase's Abstract Syntax Trees (AST), configuration parameters, database schemas, and documentation.
-- **Row-Level Security (RLS) Isolation:** Row-Level Security (applied via `tenant_isolation_policy` in [setup.py](apps/api/src/adapters/database/setup.py)) ensures the system codebase chunks are isolated from standard client tenants. Only authorized developer sessions can query the system tenant.
+- **Row-Level Security (RLS) Isolation:** Row-Level Security (applied via `tenant_isolation_policy` in [setup.py](../../apps/api/src/adapters/database/setup.py)) ensures the system codebase chunks are isolated from standard client tenants. Only authorized developer sessions can query the system tenant.
 
 ```
        +-------------------------------------------------------------------+
@@ -69,10 +69,10 @@ In Retriever's multi-tenant architecture, this is realized by establishing a ded
 ### 1.2 Development Workflow Use-Cases
 Integrating codebase knowledge into the RAG pipeline unlocks four primary capabilities:
 
-1. **Context-Aware Feature Expansion (Adaptive Adapters):** When adding a new cognitive model provider (e.g., Gemini) or a new vector store provider, the system searches its codebase for existing abstractions and adapters (e.g., [vector_repository.py](apps/api/src/adapters/vector/vector_repository.py) or `src/adapters/cognitive/`). The RAG uses these patterns to generate fully functional, syntax-correct, and compliant Python adapter modules that drop seamlessly into the project.
-2. **Self-Debugging & Root Cause Analysis:** By exposing API stack traces, Celery task failure logs, or database migration errors to the system-meta tenant, Retriever can retrieve its database model configurations ([models.py](apps/api/src/adapters/database/models.py)) and connection parameters to diagnose the precise line causing the exception and suggest fixes.
+1. **Context-Aware Feature Expansion (Adaptive Adapters):** When adding a new cognitive model provider (e.g., Gemini) or a new vector store provider, the system searches its codebase for existing abstractions and adapters (e.g., [vector_repository.py](../../apps/api/src/adapters/vector/vector_repository.py) or `src/adapters/cognitive/`). The RAG uses these patterns to generate fully functional, syntax-correct, and compliant Python adapter modules that drop seamlessly into the project.
+2. **Self-Debugging & Root Cause Analysis:** By exposing API stack traces, Celery task failure logs, or database migration errors to the system-meta tenant, Retriever can retrieve its database model configurations ([models.py](../../apps/api/src/adapters/database/models.py)) and connection parameters to diagnose the precise line causing the exception and suggest fixes.
 3. **Automated Architectural Conformance Auditing:** When an agent is writing code, it can semantic-search the domain files to verify that no infrastructure dependencies are being imported directly into the domain layer. This enforces the project's strict **Ports and Adapters** architecture rules automatically.
-4. **Autonomous Technical Debt Profiling:** The RAG can run regular semantic queries comparing its active codebase against [TECH_DEBT.md](TECH_DEBT.md) and [ROADMAP.md](ROADMAP.md) to generate reports detailing which debt items are resolved and which new areas violate coding standards.
+4. **Autonomous Technical Debt Profiling:** The RAG can run regular semantic queries comparing its active codebase against [TECH_DEBT.md](../operations/TECH_DEBT.md) and [ROADMAP.md](../../ROADMAP.md) to generate reports detailing which debt items are resolved and which new areas violate coding standards.
 
 ---
 
@@ -224,7 +224,7 @@ During a developer chat session or autonomous execution session, the system quer
 [6. Sandbox Execution]     ──> Optional: Writes code draft, runs linter/pytest inside docker container
 ```
 
-1. **Query Intent Classification:** The query intent classifier (as used in [search_service.py](apps/api/src/domain/retrieval/search_service.py)) detects if a query is technical or operational. If true, it automatically switches the session's active `tenant_id` to the system meta tenant.
+1. **Query Intent Classification:** The query intent classifier (as used in [search_service.py](../../apps/api/src/domain/retrieval/search_service.py)) detects if a query is technical or operational. If true, it automatically switches the session's active `tenant_id` to the system meta tenant.
 2. **Metadata Filtering:** If the query refers to a specific module (e.g., "Why is Postgres connection pooling failing?"), the query parser sets filters targeting `file_path` containing `adapters/database` and `data_type` = `source_code`.
 3. **Hybrid Search:** Performs parallel pgvector cosine similarity search (`1 - (vr.embedding <=> :query_vec)`) and sparse web-style keyword search (`ts_rank_cd`), merging outcomes via **Reciprocal Rank Fusion (RRF)**.
 4. **Context Graph Expansion:** When a search result matches a function in a class, the system queries for its dependencies (e.g., if it finds `PgVectorSearchAdapter`, it automatically queries the DB for the abstract class definition `VectorSearchProvider` in `domain/abstractions/retrieval.py`).
@@ -436,6 +436,6 @@ gantt
 
 ## **Related Architecture & Cross-References**
 
-- [2026 Cognitive Engine Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)
-- [System Architecture Blueprint](docs/architecture.md)
-- [Technical Debt Profiling](TECH_DEBT.md)
+- [2026 Cognitive Engine Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)
+- [System Architecture Blueprint](../architecture.md)
+- [Technical Debt Profiling](../operations/TECH_DEBT.md)

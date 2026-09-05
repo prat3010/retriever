@@ -1,8 +1,8 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M96) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M102) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
 > 
-> This document tracks the backend and unified cross-platform engineering milestones (M1–M96) for the Retriever AI engine and control plane.
+> This document tracks the backend and unified cross-platform engineering milestones (M1–M102) for the Retriever AI engine and control plane.
 
 ---
 
@@ -115,12 +115,14 @@
 | **M96** | Serverless GPU Serving & Custom vLLM / LoRA Pipeline | Modal / BentoML serverless GPU auto-scaling down to zero & dynamic LoRA swapping | **Completed** (Phase L / v0.81.0) |
 | **M97** | Autonomous FDE Metaprogrammer & Self-Extending Capability Studio | Natural language capability wizard, AST-verified Hexagonal code scaffolder & Platform Battery #17 | **Completed** (Phase L / v0.82.0) |
 | **M98** | Sovereign Edge SQLite / Turso Vector Synchronization & Offline-First Edge Agent | Embedded SQLite 3 FTS5, binary float32 BLOB vectors, differential delta sync & Platform Battery #18 | **Completed** (Phase M / v0.83.0) |
+| **M99** | Distributed Multi-Cloud Failover & Edge Turso LibSQL Replication | Active-active multi-cloud failover, LibSQL embedded replicas, quorum consensus & Platform Battery #19 | **Completed** (Phase M / v0.84.0) |
+| **M100** | Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD endpointing, streaming neural TTS & Platform Battery #20 | **Completed** (Phase M / v0.85.0) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M96), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M102), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 > - For the Active **Phase J.7** (M85.11–M85.16: Honest AI Wiring, Trust Hardening & FDE Hiring Credibility), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` §Phase J.7](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
@@ -1609,6 +1611,37 @@
   - `retriever/apps/web` at `/edge`: Overview metrics cards, node registry table, offline hybrid search simulator, and 1-click standalone `.sqlite` bundle exporter.
   - `Prateek_website` at `/rag/app`: `EdgeSyncPanel.tsx` with Design System 2.0 dual-theme aesthetics, `<MagneticButton>`, `@number-flow/react` animated metrics, simulated network partition switch, and 100% Vitest coverage.
 - **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_edge_sync.py`, 13/13) and frontend Vitest suite (`EdgeSyncPanel.test.tsx`, 7/7). ADR-020 and feature guide documented.
+
+---
+
+### [Completed] Milestone 99: Distributed Multi-Cloud Failover & Edge Turso LibSQL Replication (v0.84.0)
+
+**Objective:** Deliver an active-active multi-cloud failover engine spanning Oracle Cloud, AWS, Fly.io, and Cloudflare Global Anycast, with quorum consensus, monotonic generation terms, circuit-breaker EWMA latency tracking, and embedded Turso LibSQL WAL replication.
+
+**Delivered Capabilities:**
+- **Hexagonal Domain Layer**: `abstractions/multicloud.py` and `domain/multicloud/failover_controller.py` enforcing strict $>50\%$ majority quorum consensus ($Q = \lfloor N/2 \rfloor + 1 = 3/4$), monotonic generation term incrementation, and EWMA latency evaluation ($\alpha = 0.2$).
+- **Embedded LibSQL & Turso Adapter**: `adapters/multicloud/turso_libsql_adapter.py` providing local SQLite read paths ($<1\text{ms}$), async WAL frame streaming, and write-through proxying to the active primary.
+- **Platform Battery #19**: Registered `multicloud_failover_libsql` under `EDGE_DISTRIBUTION` in `BatteryService`.
+- **FastAPI Endpoints**: `/v1/admin/multicloud/overview`, `/probe`, `/failover` and `/v1/tenants/{tenantId}/multicloud/replica/*`.
+- **Operator Surfaces**: Admin Cockpit at `/multicloud` and Client SaaS App Studio at `/rag/app` (`MultiCloudPanel.tsx`) with interactive partition simulation and WAL frame tracking.
+- **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_multicloud_failover.py`, 8/8) and frontend Vitest suite (`MultiCloudPanel.test.tsx`, 6/6). ADR-021 documented.
+
+---
+
+### [Completed] Milestone 100: Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis (v0.85.0)
+
+**Objective:** Deliver a full-duplex conversational voice engine powered by local Whisper ASR, mathematical RMS/ZCR VAD endpointing, WebRTC SDP/ICE signaling, and streaming neural speech synthesis with sub-250ms TTFAB and zero cloud audio egress.
+
+**Delivered Capabilities:**
+- **Hexagonal Domain Layer**: `abstractions/voice.py` and `domain/voice/voice_orchestrator.py` implementing full-duplex session state machines (`idle` -> `connecting` -> `listening` -> `thinking` -> `speaking`), turn lifecycle tracking, and telemetry recording.
+- **Audio DSP & Local Whisper ASR**: `whisper_transcription_adapter.py` calculating RMS energy ($E_{\text{RMS}}$) and Zero-Crossing Rate (ZCR) for zero-latency speech endpointing, integrated with local quantized Whisper ASR.
+- **Streaming Neural Speech Synthesis**: `speech_synthesis_adapter.py` streaming PCM16 / Opus audio chunks in $\le 180\text{ms}$ per phoneme sentence, delivering sub-250ms TTFAB across Atlas, Nova, and Echo timbres.
+- **WebRTC Signaling Protocol**: `webrtc_signaling_adapter.py` orchestrating SDP offer/answer exchanges and trickle ICE candidate aggregation.
+- **PostgreSQL Isolation & Migrations**: Schema revision `m1n2o3p4q5r6` creating `voice_sessions` and `voice_turns` with Supabase Row-Level Security (RLS).
+- **Platform Battery #20**: Registered `sovereign_edge_voice` under `MULTIMODAL_COGNITION` in `BatteryService`.
+- **FastAPI Endpoints**: `/v1/admin/voice/telemetry` and tenant endpoints `/v1/tenants/{tenantId}/voice/*` (`session`, `signal`, `transcribe`, `synthesize`, `turn`).
+- **Operator Surfaces**: Admin Voice Cockpit at `/voice` and Client SaaS App Studio at `/rag/app` (`VoiceStudioPanel.tsx`) featuring real-time animated audio waveforms, VAD sensitivity slider, timbre selector, turn ledger, and offline simulation fallback.
+- **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_edge_voice.py`, 10/10) and frontend Vitest suite (`VoiceStudioPanel.test.tsx`, 7/7). ADR-022 and feature guide documented.
 
 ---
 

@@ -914,6 +914,118 @@ class EdgeSyncCheckpointDb(Base):
     )
 
 
+class MultiCloudClusterNodeDb(Base):
+    """Registered multi-cloud cluster region nodes and health telemetry (M99)."""
+
+    __tablename__ = "multicloud_cluster_nodes"
+
+    node_id = Column(String(128), primary_key=True)
+    cloud_provider = Column(String(64), nullable=False, default="oracle")
+    region = Column(String(64), nullable=False, index=True)
+    endpoint_url = Column(String(512), nullable=False)
+    role = Column(String(32), nullable=False, default="standby_replica")
+    is_voting_member = Column(Boolean, nullable=False, default=True)
+    priority_weight = Column(Integer, nullable=False, default=100)
+    latency_ms = Column(Float, nullable=False, default=12.0)
+    consecutive_failures = Column(Integer, nullable=False, default=0)
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_multicloud_nodes_region_role", "region", "role"),
+    )
+
+
+class MultiCloudFailoverEventDb(Base):
+    """Immutable audit ledger of multi-cloud quorum leader transitions (M99)."""
+
+    __tablename__ = "multicloud_failover_events"
+
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    old_leader = Column(String(64), nullable=False)
+    new_leader = Column(String(64), nullable=False)
+    generation_term = Column(Integer, nullable=False)
+    trigger_type = Column(String(64), nullable=False, default="manual_operator_override")
+    reason = Column(Text, nullable=False)
+    quorum_votes_acquired = Column(Integer, nullable=False)
+    total_voting_nodes = Column(Integer, nullable=False)
+    duration_ms = Column(Float, nullable=False, default=0.0)
+    operator_id = Column(String(128), nullable=False, default="admin")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    __table_args__ = (
+        Index("ix_multicloud_events_term", "generation_term", "created_at"),
+    )
+
+
+class VoiceSessionDb(Base):
+    """Sovereign edge WebRTC voice session entity (M100)."""
+
+    __tablename__ = "voice_sessions"
+
+    session_id = Column(String(128), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(String(128), nullable=False, default="usr_anonymous")
+    state = Column(String(32), nullable=False, default="initializing")
+    sample_rate_hz = Column(Integer, nullable=False, default=16000)
+    channels = Column(Integer, nullable=False, default=1)
+    vad_sensitivity = Column(Float, nullable=False, default=0.65)
+    selected_voice = Column(String(64), nullable=False, default="neural_natural")
+    audio_codec = Column(String(32), nullable=False, default="pcm16")
+    total_turns = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    connected_at = Column(DateTime(timezone=True), nullable=True)
+    last_ping_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+
+    tenant = relationship("TenantDb")
+
+    __table_args__ = (
+        Index("ix_voice_sessions_tenant_state", "tenant_id", "state"),
+    )
+
+
+class VoiceTurnDb(Base):
+    """Conversational voice turn with latency telemetry (M100)."""
+
+    __tablename__ = "voice_turns"
+
+    turn_id = Column(String(128), primary_key=True)
+    session_id = Column(
+        String(128),
+        ForeignKey("voice_sessions.session_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_transcript = Column(Text, nullable=False)
+    agent_response_text = Column(Text, nullable=False)
+    time_to_transcribe_ms = Column(Float, nullable=False, default=0.0)
+    time_to_first_audio_byte_ms = Column(Float, nullable=False, default=0.0)
+    total_turn_duration_ms = Column(Float, nullable=False, default=0.0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    session = relationship("VoiceSessionDb")
+    tenant = relationship("TenantDb")
+
+    __table_args__ = (
+        Index("ix_voice_turns_session_created", "session_id", "created_at"),
+    )
+
+
+
+
 
 
 

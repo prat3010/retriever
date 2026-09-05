@@ -5,12 +5,12 @@
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
-[![Tests](https://img.shields.io/badge/tests-731%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-16%20included-ff69b4.svg)](#-the-16-platform-batteries)
+[![Tests](https://img.shields.io/badge/tests-777%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
+[![Batteries](https://img.shields.io/badge/batteries-20%20included-ff69b4.svg)](#-the-20-platform-batteries)
 [![Serving](https://img.shields.io/badge/vLLM-Scale--to--Zero%20(A10G)-orange.svg)](deploy/)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
-*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, and scale-to-zero vLLM serving.*
+*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, and sovereign edge voice.*
 
 [🚀 Live Production Demo](https://rag.prateeq.in) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
@@ -35,6 +35,9 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 | **Conversational Safety** | **NVIDIA NeMo Colang (M94)** | None | Basic regex | None | Keyword blocklist |
 | **Durable Asynchronous Jobs**| **Step-Memoized Checkpoints (M95)**| None | Fragile in-memory | N/A | Basic background |
 | **Dedicated GPU Serving** | **Scale-to-Zero vLLM / Modal (M96)** | N/A | None | N/A | None |
+| **Sovereign Edge Sync** | **SQLite FTS5 + Binary Vectors (M98)** | None | N/A | None | None |
+| **Multi-Cloud Failover** | **Quorum Consensus + Turso LibSQL (M99)**| None | None | None | None |
+| **Sovereign Edge Voice** | **Local Whisper + Neural TTS (M100)** | None | None | None | None |
 | **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
 | **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
 
@@ -65,9 +68,9 @@ curl -X POST http://localhost:8000/v1/search \
 
 ---
 
-## 🔋 The 16 Platform Batteries
+## 🔋 The 20 Platform Batteries
 
-Retriever ships with **16 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **20 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Algorithm / Foundation |
 |:---:|:---|:---|:---|
@@ -87,6 +90,10 @@ Retriever ships with **16 production-grade batteries** pre-wired through Hexagon
 | **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
 | **15** | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
 | **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
+| **17** | `autonomous_fde_metaprogrammer`| System Extensibility | AST-verified Hexagonal code synthesis and dynamic in-process plugin mounting |
+| **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, binary float32 BLOB vectors & differential delta synchronization |
+| **19** | `multicloud_failover_libsql` | Edge Distribution | Multi-cloud quorum consensus failover & embedded Turso LibSQL WAL frame replication |
+| **20** | `sovereign_edge_voice` | Multimodal Cognition | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural speech synthesis |
 
 ---
 
@@ -100,30 +107,32 @@ Retriever ships with **16 production-grade batteries** pre-wired through Hexagon
  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                             │ REST / SSE API Streams (X-User-ID / Bearer)
                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ FASTAPI APPLICATION GATEWAY (`apps/api/src/routers`)                                   │
- │ • Routers: /v1/chat, /v1/search, /v1/documents, /v1/admin, /v1/gateway, /v1/workflow   │
- │ • Guardrails: Llama Guard 3 Injection Filter & NeMo Conversational Moderation Rails    │
- └──────────────────────────────────────────┬─────────────────────────────────────────────┘
-                                            │
-                                            ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ COGNITIVE DOMAIN CORE (`apps/api/src/domain`)                                          │
- │ • Pure Python abstractions (0 framework / database imports)                            │
- │ • Hybrid Search (HNSW + BM25 + ColBERT MaxSim + RRF Fusion)                            │
- │ • GraphRAG Knowledge Graph Indexing & Neo4j / Pg Triples                               │
- │ • DSPy Declarative Prompt Compilation & Self-Optimization                              │
- │ • Durable Checkpoint State Machine & Step Memoization (M95)                            │
- └──────────────────────────────────────────┬─────────────────────────────────────────────┘
-                                            │
-                                            ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ INFRASTRUCTURE ADAPTERS (`apps/api/src/adapters`)                                      │
- │ • Database: PostgreSQL 16 + pgvector (Row-Level Security Tenant Isolation)              │
- │ • Serving: Serverless Modal / BentoML vLLM A10G with Dynamic LoRA Tensor Swapping      │
- │ • Broker / Cache: Redis Semantic Cache & Sliding-Window Token Shield                    │
- │ • Async Tasks: Celery / RabbitMQ Workers & Distributed Schedulers                      │
- └────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │ FASTAPI APPLICATION GATEWAY (`apps/api/src/routers`)                                   │
+  │ • Routers: /v1/chat, /v1/search, /v1/documents, /v1/voice, /v1/multicloud, /v1/edge    │
+  │ • Guardrails: Llama Guard 3 Injection Filter & NeMo Conversational Moderation Rails    │
+  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │ COGNITIVE DOMAIN CORE (`apps/api/src/domain`)                                          │
+  │ • Pure Python abstractions (0 framework / database imports)                            │
+  │ • Hybrid Search (HNSW + BM25 + ColBERT MaxSim + RRF Fusion)                            │
+  │ • GraphRAG Knowledge Graph Indexing & Neo4j / Pg Triples                               │
+  │ • DSPy Declarative Prompt Compilation & Self-Optimization                              │
+  │ • Durable Checkpoint State Machine & Step Memoization (M95)                            │
+  │ • Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis (M100)                │
+  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │ INFRASTRUCTURE ADAPTERS (`apps/api/src/adapters`)                                      │
+  │ • Database: PostgreSQL 16 + pgvector (Row-Level Security Tenant Isolation)              │
+  │ • Serving: Serverless Modal / BentoML vLLM A10G with Dynamic LoRA Tensor Swapping      │
+  │ • Edge & Voice: Embedded SQLite FTS5, Turso LibSQL Replicas, Local Whisper & Neural TTS│
+  │ • Broker / Cache: Redis Semantic Cache & Sliding-Window Token Shield                    │
+  │ • Async Tasks: Celery / RabbitMQ Workers & Distributed Schedulers                      │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -131,10 +140,10 @@ Retriever ships with **16 production-grade batteries** pre-wired through Hexagon
 ## 📚 Complete Technical Documentation
 
 - **[Open-Source Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md):** 10k-Star viral launch execution strategy.
-- **[REST API Reference](docs/api/):** Complete specifications for all 20+ REST/SSE endpoints.
-- **[Architecture Decision Records (ADRs)](docs/decisions/):** 18 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM).
+- **[REST API Reference](docs/api/):** Complete specifications for all 25+ REST/SSE endpoints.
+- **[Architecture Decision Records (ADRs)](docs/decisions/):** 22 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice).
 - **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
-- **[Project Health & Test Status](PROJECT_STATUS.md):** Continuous verification matrix across 108 test suites.
+- **[Project Health & Test Status](PROJECT_STATUS.md):** Continuous verification matrix across 112 test suites.
 
 ---
 

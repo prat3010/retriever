@@ -136,6 +136,19 @@ The Admin Dashboard provides **100% administrative control** through 7 main rout
 * In-process hybrid search simulator testing FTS5 BM25 match fused with binary vector cosine dot product.
 * 1-Click standalone `.sqlite` bundle exporter with automated manifest generation and direct binary file download.
 
+### 16. 🌐 `/multicloud` — Distributed Multi-Cloud Failover & Turso LibSQL Quorum (M99)
+* Operational command cockpit for heterogeneous multi-cloud clusters spanning Oracle Cloud (Mumbai), AWS (us-east-1), Fly.io (Frankfurt), and Cloudflare Global Anycast.
+* Real-time quorum status ($Q = \lfloor N/2 \rfloor + 1 = 3/4$), monotonic generation term monitoring, and dynamic EWMA latency circuit-breaker indicators.
+* Live health probing and manual failover control with safe leader step-down enforcement.
+* Embedded Turso LibSQL replica synchronization tracking WAL frame progress and local sub-1ms read latency.
+
+### 17. 🎙️ `/voice` — Sovereign Edge Voice & Local Whisper / WebRTC Synthesis (M100)
+* Multimodal voice cockpit managing full-duplex WebRTC bidirectional audio sessions with zero third-party cloud audio egress.
+* Live audio telemetry (active sessions, average turn latency, audio frames processed, and VAD speech events).
+* Real-time animated 16-bar audio frequency visualizer responding to mic input and streaming agent speech.
+* Configurable VAD energy sensitivity slider ($E_{\text{RMS}}$ threshold) and neural speech timbre selector (Atlas, Nova, Echo).
+* In-cockpit streaming neural speech synthesis tester with sub-250ms TTFAB validation.
+
 ---
 
 ## 4. Operational Roadmap & Development Phases
@@ -154,6 +167,9 @@ timeline
     Phase 9 : NeMo Guardrails & Durable Asynchronous Workflows (M94–M95)
     Phase 10 : Serverless GPU Serving & Autonomous FDE Metaprogrammer (M96–M97)
     Phase 11 : Sovereign Edge SQLite & Offline Node Sync (M98)
+    Phase 12 : Distributed Multi-Cloud Failover & LibSQL Quorum (M99)
+    Phase 13 : Sovereign Edge Voice & Local Whisper Synthesis (M100)
+```
 
 ### Phase 1: Completed Baseline Dashboard (Current State - M10)
 - ✅ Next.js 16 scaffold with shadcn/ui, Tailwind v4, TanStack Query, and Zustand.

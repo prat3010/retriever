@@ -87,6 +87,10 @@ from src.adapters.ml.scikit_persona_classifier import (
     ScikitLeadPropensityScorer,
     ScikitPersonaClusterer,
 )
+from src.adapters.multicloud.health_probe_adapter import (
+    HttpMultiCloudHealthProbeAdapter,
+)
+from src.adapters.multicloud.libsql_replica_adapter import LibsqlReplicaAdapter
 from src.adapters.notification.logging_adapter import LoggingNotificationAdapter
 from src.adapters.sandbox.python_sandbox_adapter import (
     RestrictedPythonSandboxAdapter,
@@ -122,6 +126,8 @@ from src.domain.inference.citation_validator import CitationValidator
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.inference.prompt_builder import PromptBuilder
 from src.domain.integrations.slack_service import SlackService
+from src.domain.multicloud.failover_controller import FailoverController
+from src.domain.multicloud.libsql_replication_service import LibsqlReplicationService
 from src.domain.quota.quota_service import QuotaService
 from src.domain.retrieval.corrective_retrieval_service import CorrectiveRetrievalService
 from src.domain.retrieval.search_service import HybridSearchService
@@ -591,6 +597,39 @@ class Container:
         self._cache["edge_sync_adapter"] = edge_sync
         self._cache["edge_mutation_reconciler"] = edge_reconciler
 
+        # --- Milestone 99: Distributed Multi-Cloud Failover & Edge Turso LibSQL Replication ---
+        multicloud_controller = FailoverController()
+        multicloud_probe = HttpMultiCloudHealthProbeAdapter()
+        libsql_service = LibsqlReplicationService()
+        libsql_adapter = LibsqlReplicaAdapter(service=libsql_service)
+
+        self._cache["multicloud_failover_controller"] = multicloud_controller
+        self._cache["multicloud_health_probe_adapter"] = multicloud_probe
+        self._cache["libsql_replication_service"] = libsql_service
+        self._cache["libsql_replica_adapter"] = libsql_adapter
+
+        # --- Milestone 100: Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis ---
+        from src.adapters.voice.speech_synthesis_adapter import SpeechSynthesisAdapter
+        from src.adapters.voice.webrtc_signaling_adapter import WebRtcSignalingAdapter
+        from src.adapters.voice.whisper_transcription_adapter import (
+            WhisperTranscriptionAdapter,
+        )
+        from src.domain.voice.voice_orchestrator import VoiceOrchestrator
+
+        whisper_adapter = WhisperTranscriptionAdapter()
+        speech_synth_adapter = SpeechSynthesisAdapter()
+        webrtc_signal_adapter = WebRtcSignalingAdapter()
+        voice_orch = VoiceOrchestrator(
+            transcription_adapter=whisper_adapter,
+            synthesis_adapter=speech_synth_adapter,
+            signaling_adapter=webrtc_signal_adapter,
+        )
+
+        self._cache["whisper_transcription_adapter"] = whisper_adapter
+        self._cache["speech_synthesis_adapter"] = speech_synth_adapter
+        self._cache["webrtc_signaling_adapter"] = webrtc_signal_adapter
+        self._cache["voice_orchestrator"] = voice_orch
+
 
 
     def reset(self) -> None:
@@ -690,4 +729,12 @@ edge_fusion_ranker = container.edge_fusion_ranker
 sqlite_edge_engine = container.sqlite_edge_engine
 edge_sync_adapter = container.edge_sync_adapter
 edge_mutation_reconciler = container.edge_mutation_reconciler
+multicloud_failover_controller = container.multicloud_failover_controller
+multicloud_health_probe_adapter = container.multicloud_health_probe_adapter
+libsql_replication_service = container.libsql_replication_service
+libsql_replica_adapter = container.libsql_replica_adapter
+whisper_transcription_adapter = container.whisper_transcription_adapter
+speech_synthesis_adapter = container.speech_synthesis_adapter
+webrtc_signaling_adapter = container.webrtc_signaling_adapter
+voice_orchestrator = container.voice_orchestrator
 

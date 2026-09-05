@@ -192,6 +192,8 @@ from src.routers.guardrails import router as guardrails_router
 from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
 from src.routers.integrations import router as integrations_router
+from src.routers.multicloud import admin_router as multicloud_admin_router
+from src.routers.multicloud import tenant_router as multicloud_tenant_router
 from src.routers.payments import router as payments_router
 from src.routers.persona import router as persona_router
 from src.routers.pricing import router as pricing_router
@@ -203,6 +205,8 @@ from src.routers.security_compression import router as security_compression_rout
 from src.routers.serverless_gpu import admin_router as serverless_admin_router
 from src.routers.serverless_gpu import tenant_router as serverless_tenant_router
 from src.routers.tenant import router as tenant_router
+from src.routers.voice import admin_router as voice_admin_router
+from src.routers.voice import tenant_router as voice_tenant_router
 from src.routers.workflow import router as workflow_router
 
 app.include_router(health_router)
@@ -234,6 +238,10 @@ app.include_router(serverless_tenant_router)
 app.include_router(scaffold_router)
 app.include_router(edge_admin_router)
 app.include_router(edge_tenant_router)
+app.include_router(multicloud_admin_router)
+app.include_router(multicloud_tenant_router)
+app.include_router(voice_admin_router)
+app.include_router(voice_tenant_router)
 
 
 

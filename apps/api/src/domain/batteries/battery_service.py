@@ -238,6 +238,30 @@ class BatteryService:
                 active_parameters={"storage_format": "sqlite3_fts5_vectorblob", "sync_protocol": "differential_checkpoint_stream", "offline_resolution_tiers": ["local_slm", "grounded_extraction", "speculative_queue"]},
                 health_check_endpoint="/v1/admin/edge/overview",
             ),
+            PlatformBatteryDTO(
+                id="multicloud_failover_libsql",
+                name="Distributed Multi-Cloud Failover & Edge Turso LibSQL Replication",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Active-Active Quorum Consensus + LibSQL Embedded WAL Replication & Automatic Failover",
+                milestone="M99 (v0.84.0)",
+                latency_profile="<1ms local replica reads / <800ms failover quorum",
+                description="Multi-cloud edge active-active replication using Turso LibSQL embedded replicas with automatic multi-cloud failover, cross-region read replicas, and distributed quorum election.",
+                active_parameters={"replication_engine": "libsql_embedded_wal", "quorum_threshold": 0.67, "probe_interval_seconds": 10, "supported_clouds": ["oracle", "aws", "fly_io", "cloudflare"]},
+                health_check_endpoint="/v1/admin/multicloud/clusters",
+            ),
+            PlatformBatteryDTO(
+                id="sovereign_edge_voice",
+                name="Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Local Whisper STT + Continuous VAD Energy Endpointing + WebRTC Full-Duplex Streaming TTS",
+                milestone="M100 (v0.85.0)",
+                latency_profile="<250ms TTFAB (Time-to-First-Audio-Byte)",
+                description="Zero-cloud audio egress sovereign voice conversational interface with on-device Whisper speech recognition, VAD turn endpointing, and streaming WebRTC speech synthesis.",
+                active_parameters={"stt_engine": "whisper_cpp_embedded", "vad_endpoint_ms": 400, "sample_rate_hz": 16000, "signaling": "webrtc_sdp_ice"},
+                health_check_endpoint="/v1/admin/voice/telemetry",
+            ),
         ]
 
 

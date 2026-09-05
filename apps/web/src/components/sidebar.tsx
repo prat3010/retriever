@@ -21,6 +21,8 @@ import {
   ShieldAlert,
   Code2,
   HardDrive,
+  Globe,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
@@ -36,6 +38,8 @@ const navItems = [
   { href: "/batteries", label: "Batteries & Engines", icon: Zap },
   { href: "/scaffold", label: "Capability Studio", icon: Code2 },
   { href: "/edge", label: "Sovereign Edge Sync", icon: HardDrive },
+  { href: "/multicloud", label: "Multi-Cloud & Turso", icon: Globe },
+  { href: "/voice", label: "Sovereign Voice", icon: Mic },
   { href: "/integrations", label: "Integrations & Plugins", icon: Puzzle },
   { href: "/orchestration", label: "Agentic Orchestration", icon: Bot },
   { href: "/onboard", label: "Onboard Client", icon: UserPlus },

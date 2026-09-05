@@ -25,7 +25,7 @@ jobs:
 
       - name: pytest
         working-directory: apps/api
-        run: uv run python -m pytest tests/ -q -m "not integration"
+        run: uv run python -m pytest tests/ -q -m "not integration" -n auto
 
   background-workers:
     runs-on: ubuntu-latest

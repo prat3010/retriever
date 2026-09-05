@@ -29,3 +29,14 @@ def reset_rate_limit_state():
         TenantRateLimiterMiddleware.reset_all()
     except Exception:
         pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    try:
+        from src.adapters.telemetry.setup import _tracer
+
+        if _tracer is not None:
+            _tracer.shutdown()
+    except Exception:
+        pass
+

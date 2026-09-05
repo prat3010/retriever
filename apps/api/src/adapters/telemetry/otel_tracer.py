@@ -4,6 +4,7 @@ Implements the Tracer port using OpenTelemetry SDK with OTLP export,
 W3C traceparent context propagation, and request lifecycle instrumentation.
 """
 
+import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
@@ -38,8 +39,8 @@ class OTelTracer(Tracer):
         })
         provider = TracerProvider(resource=resource)
 
-        # Always log spans to console in development
-        if environment == "development":
+        # Always log spans to console in development (skip under pytest to prevent unclosed background workers)
+        if environment == "development" and "pytest" not in sys.modules:
             provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
         # Send spans via OTLP when an endpoint is configured
@@ -115,4 +116,10 @@ class OTelTracer(Tracer):
             flags = format(ctx.trace_flags, "02x")
             return f"00-{trace_id}-{span_id}-{flags}"
         return "00-" + "0" * 32 + "-" + "0" * 16 + "-01"
+
+    def shutdown(self) -> None:
+        """Shut down the tracer provider to flush and stop all span processors."""
+        if hasattr(self, "_provider") and self._provider is not None:
+            self._provider.shutdown()
+
 

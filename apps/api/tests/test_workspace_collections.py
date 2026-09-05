@@ -53,6 +53,7 @@ def test_query_builder_propagates_collection_id() -> None:
 # ── 3. Document Router Collection Upload & List ──────────────────────────────
 
 
+@patch("src.routers.document.celery_app.send_task")
 @patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock)
@@ -66,6 +67,7 @@ def test_upload_document_with_collection_id(
     mock_check_quota,
     mock_get_config,
     mock_validate,
+    mock_send_task,
 ) -> None:
     """Verify document upload respects collectionId query parameter."""
     coll_id = str(uuid.uuid4())

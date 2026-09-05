@@ -210,6 +210,7 @@ class Settings(BaseSettings):
     # Session JWT signing secret. Development-only default; production requires a
     # secure random value (enforced by validate_production_secrets).
     SECRET_KEY: str = "dev-retriever-jwt-secret-change-me"
+    ENCLAVE_ROOT_SEED: str | None = None
 
     # Cognitive Provider Keys
     COHERE_API_KEY: str = ""

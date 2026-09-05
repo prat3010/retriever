@@ -46,8 +46,8 @@ export default function VoiceDashboardPage() {
     queryKey: ["voice-telemetry"],
     queryFn: async () => {
       try {
-        const res = await api.get("/v1/admin/voice/telemetry");
-        return res.data;
+        const res = await api.get<any>("/v1/admin/voice/telemetry");
+        return res.data || res;
       } catch {
         return {
           active_sessions_count: 3,
@@ -65,12 +65,12 @@ export default function VoiceDashboardPage() {
   const synthesizeMutation = useMutation({
     mutationFn: async (text: string) => {
       try {
-        const res = await api.post("/v1/tenants/tn_demo/voice/synthesize", {
+        const res = await api.post<any>("/v1/tenants/tn_demo/voice/synthesize", {
           text,
           selected_voice: selectedTimbre,
           speed: 1.0,
         });
-        return res.data;
+        return res.data || res;
       } catch {
         return {
           text,

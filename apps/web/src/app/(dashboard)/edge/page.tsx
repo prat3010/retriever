@@ -21,6 +21,11 @@ import {
   Layers,
   Sparkles,
   Zap,
+  ShieldCheck,
+  Lock,
+  Unlock,
+  KeyRound,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -78,11 +83,72 @@ export default function SovereignEdgePage() {
   const [simQuery, setSimQuery] = useState("Sovereign edge offline agent SQLite");
   const [isGeneratingBundle, setIsGeneratingBundle] = useState(false);
 
+  // Milestone 101: Enclave Sealing State
+  const [sealInput, setSealInput] = useState("Confidential tenant vector record #4096");
+  const [sealedPayload, setSealedPayload] = useState<any | null>(null);
+  const [unsealedText, setUnsealedText] = useState<string | null>(null);
+
   // 1. Fetch Edge Overview
   const { data: overview, isLoading, refetch } = useQuery<EdgeOverview>({
     queryKey: ["admin", "edge", "overview"],
     queryFn: () => api.get<EdgeOverview>("/v1/admin/edge/overview"),
     refetchInterval: 15000,
+  });
+
+  // Fetch Hardware Enclave Attestation Report (M101)
+  const {
+    data: attestationReport,
+    isLoading: isAttestationLoading,
+    refetch: refetchAttestation,
+  } = useQuery({
+    queryKey: ["admin", "edge", "attestation", "report"],
+    queryFn: () => api.get<any>("/v1/admin/edge/attestation/report"),
+    refetchInterval: 30000,
+  });
+
+  // Sealing Mutation (M101)
+  const sealMutation = useMutation({
+    mutationFn: (text: string) =>
+      api.post<any>(`/v1/tenants/${selectedTenantId}/edge/seal`, {
+        tenant_id: selectedTenantId,
+        plaintext: text,
+        aad: "confidential_edge_payload",
+      }),
+    onSuccess: (data) => {
+      setSealedPayload(data);
+      setUnsealedText(null);
+      toast.success("Payload cryptographically sealed with AES-256-GCM!");
+    },
+    onError: (err: any) => {
+      toast.error(`Sealing failed: ${err.message}`);
+    },
+  });
+
+  // Unsealing Mutation (M101)
+  const unsealMutation = useMutation({
+    mutationFn: (payload: any) =>
+      api.post<any>(`/v1/tenants/${selectedTenantId}/edge/unseal`, {
+        tenant_id: selectedTenantId,
+        sealed_payload: payload,
+      }),
+    onSuccess: (data) => {
+      setUnsealedText(data.plaintext);
+      toast.success("Payload verified & unsealed successfully!");
+    },
+    onError: (err: any) => {
+      toast.error(`Unsealing failed: ${err.message}`);
+    },
+  });
+
+  // Emergency Key Purge Mutation (M101)
+  const purgeMutation = useMutation({
+    mutationFn: () => api.post<any>("/v1/admin/edge/enclave/purge-keys", {}),
+    onSuccess: (data) => {
+      toast.success(`Sanitized volatile keys from RAM (${data.purged_keys} purged)!`);
+    },
+    onError: (err: any) => {
+      toast.error(`Purge failed: ${err.message}`);
+    },
   });
 
   // 2. Simulated Edge Search Mutation
@@ -344,6 +410,153 @@ export default function SovereignEdgePage() {
                         <p className="text-foreground line-clamp-2">{item.content}</p>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Zero-Trust Micro-Enclave & Hardware Attestation (M101) */}
+          <Card className="flex flex-col">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                  Confidential Micro-Enclave & Attestation
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/30 text-emerald-500 bg-emerald-500/10 font-mono text-[10px]"
+                >
+                  {attestationReport?.trust_level?.toUpperCase() || "HARDWARE_ROOTED"}
+                </Badge>
+              </div>
+              <CardDescription>
+                Hardware-rooted confidential computing (Apple Secure Enclave, Intel SGX, Nitro) with anti-replay challenge nonces.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 flex-1">
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-lg border p-3 bg-muted/20">
+                  <span className="text-muted-foreground block text-[11px]">Hardware Platform</span>
+                  <span className="font-semibold text-foreground font-mono">
+                    {attestationReport?.platform || "apple_secure_enclave"}
+                  </span>
+                </div>
+                <div className="rounded-lg border p-3 bg-muted/20">
+                  <span className="text-muted-foreground block text-[11px]">Attestation Status</span>
+                  <span className="font-semibold text-emerald-500">
+                    {attestationReport?.is_valid ? "✓ Cryptographically Verified" : "Verification Pending"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 rounded-lg border p-3 bg-muted/10 text-xs">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>Platform PCR0 Measurement (MRENCLAVE):</span>
+                  <span className="font-mono text-primary font-medium">
+                    {attestationReport?.pcr_measurement
+                      ? `${attestationReport.pcr_measurement.slice(0, 20)}...`
+                      : "Calculating..."}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>Signer Identity Fingerprint:</span>
+                  <span className="font-mono text-foreground">
+                    {attestationReport?.signer_identity || "ed25519_node_root"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchAttestation()}
+                  disabled={isAttestationLoading}
+                  className="gap-2 text-xs"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isAttestationLoading ? "animate-spin" : ""}`} />
+                  Verify Hardware Attestation
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => purgeMutation.mutate()}
+                  disabled={purgeMutation.isPending}
+                  className="gap-2 text-xs"
+                >
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  {purgeMutation.isPending ? "Purging..." : "Emergency Memory Wipe"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AES-256-GCM Memory Sealing Playground (M101) */}
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                Hardware-Rooted Memory Sealing
+              </CardTitle>
+              <CardDescription>
+                Tenant-scoped authenticated AES-256-GCM sealing bound to enclave PCR0 measurements and ephemeral key zeroing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 flex-1">
+              <div className="flex gap-2">
+                <Input
+                  value={sealInput}
+                  onChange={(e) => setSealInput(e.target.value)}
+                  placeholder="Enter text or vector BLOB to seal..."
+                  className="flex-1 text-xs"
+                />
+                <Button
+                  onClick={() => sealMutation.mutate(sealInput)}
+                  disabled={sealMutation.isPending}
+                  className="gap-2 text-xs"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  {sealMutation.isPending ? "Sealing..." : "Seal (AES-256-GCM)"}
+                </Button>
+              </div>
+
+              {sealedPayload && (
+                <div className="space-y-3 rounded-lg border p-3.5 bg-muted/20 text-xs">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <KeyRound className="h-3.5 w-3.5 text-primary" />
+                      Sealed Payload ({sealedPayload.cipher_suite?.toUpperCase()})
+                    </span>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      IV: {sealedPayload.nonce_iv?.slice(0, 10)}...
+                    </Badge>
+                  </div>
+                  <div className="font-mono text-[11px] text-muted-foreground break-all p-2 rounded bg-background border">
+                    Ciphertext: {sealedPayload.ciphertext?.slice(0, 48)}...
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Auth Tag: <code className="font-mono text-foreground">{sealedPayload.auth_tag?.slice(0, 16)}...</code></span>
+                    <span>PCR Bound: <code className="font-mono text-foreground">{sealedPayload.pcr_binding?.slice(0, 10)}...</code></span>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => unsealMutation.mutate(sealedPayload)}
+                      disabled={unsealMutation.isPending}
+                      className="gap-1.5 text-xs"
+                    >
+                      <Unlock className="h-3.5 w-3.5" />
+                      {unsealMutation.isPending ? "Unsealing..." : "Unseal & Verify"}
+                    </Button>
+                    {unsealedText && (
+                      <span className="text-xs text-emerald-500 font-medium">
+                        ✓ Decrypted: &ldquo;{unsealedText}&rdquo;
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

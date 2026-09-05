@@ -185,6 +185,8 @@ from src.routers.durable_workflow import admin_router as durable_workflow_admin_
 from src.routers.durable_workflow import router as durable_workflow_router
 from src.routers.edge import admin_router as edge_admin_router
 from src.routers.edge import tenant_router as edge_tenant_router
+from src.routers.enclave import admin_router as enclave_admin_router
+from src.routers.enclave import tenant_router as enclave_tenant_router
 from src.routers.estimation import router as estimation_router
 from src.routers.gateway import router as gateway_router
 from src.routers.gateway import tenant_router as gateway_tenant_router
@@ -242,6 +244,8 @@ app.include_router(multicloud_admin_router)
 app.include_router(multicloud_tenant_router)
 app.include_router(voice_admin_router)
 app.include_router(voice_tenant_router)
+app.include_router(enclave_admin_router)
+app.include_router(enclave_tenant_router)
 
 
 

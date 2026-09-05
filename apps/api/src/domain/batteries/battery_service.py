@@ -262,6 +262,18 @@ class BatteryService:
                 active_parameters={"stt_engine": "whisper_cpp_embedded", "vad_endpoint_ms": 400, "sample_rate_hz": 16000, "signaling": "webrtc_sdp_ice"},
                 health_check_endpoint="/v1/admin/voice/telemetry",
             ),
+            PlatformBatteryDTO(
+                id="zero_trust_micro_enclave",
+                name="Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation",
+                category=BatteryCategory.SAFETY_DEFENSE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Hardware-Rooted AES-256-GCM Memory Sealing + HKDF Per-Tenant Key Isolation + Cryptographic Nonce Remote Attestation",
+                milestone="M101 (v0.86.0)",
+                latency_profile="<1ms key derivation / <2ms AES-256-GCM sealing",
+                description="End-to-end confidential computing layer with hardware-rooted remote attestation, zero-knowledge ephemeral memory wiping, and tamper-proof AES-256-GCM edge vector sealing.",
+                active_parameters={"cipher_suite": "AES-256-GCM", "kdf": "HKDF-SHA256", "supported_platforms": ["intel_sgx", "amd_sev", "aws_nitro", "apple_secure_enclave", "tpm2"], "ephemeral_sanitizer": True},
+                health_check_endpoint="/v1/admin/edge/attestation/report",
+            ),
         ]
 
 

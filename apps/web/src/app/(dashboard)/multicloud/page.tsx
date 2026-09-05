@@ -78,18 +78,18 @@ export default function MultiCloudPage() {
 
   const { data, isLoading, refetch } = useQuery<MultiCloudOverview>({
     queryKey: ["multicloud-clusters"],
-    queryFn: () => api.get("/v1/admin/multicloud/clusters"),
+    queryFn: () => api.get<any>("/v1/admin/multicloud/clusters"),
     refetchInterval: 5000,
   });
 
   const { data: replStats } = useQuery({
     queryKey: ["multicloud-replication-status"],
-    queryFn: () => api.get("/v1/admin/multicloud/replication-status"),
+    queryFn: () => api.get<any>("/v1/admin/multicloud/replication-status"),
     refetchInterval: 5000,
   });
 
   const probeMutation = useMutation({
-    mutationFn: () => api.post("/v1/admin/multicloud/probe", {}),
+    mutationFn: () => api.post<any[]>("/v1/admin/multicloud/probe", {}),
     onSuccess: (probes: any[]) => {
       toast.success(`Probed ${probes.length} cloud regions successfully.`);
       queryClient.invalidateQueries({ queryKey: ["multicloud-clusters"] });
@@ -297,7 +297,7 @@ export default function MultiCloudPage() {
                 <label className="text-xs font-medium">Target Failover Region</label>
                 <select
                   value={targetFailoverRegion}
-                  onChange={(e) => setTargetFailoverRegion(e.target_region || e.target.value)}
+                  onChange={(e) => setTargetFailoverRegion(e.target.value)}
                   className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm font-mono"
                 >
                   <option value="aws-iad">aws-iad (AWS US-East Northern Virginia)</option>

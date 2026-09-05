@@ -630,6 +630,17 @@ class Container:
         self._cache["webrtc_signaling_adapter"] = webrtc_signal_adapter
         self._cache["voice_orchestrator"] = voice_orch
 
+        # --- Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation ---
+        from src.adapters.security.enclave_adapter import HardwareEnclaveAdapter
+        from src.adapters.security.memory_sanitizer import EphemeralMemorySanitizer
+
+        mem_sanitizer = EphemeralMemorySanitizer(register_signals=True)
+        enclave_seed = settings.ENCLAVE_ROOT_SEED.encode() if getattr(settings, "ENCLAVE_ROOT_SEED", None) else None
+        enclave_adp = HardwareEnclaveAdapter(master_seed=enclave_seed, memory_sanitizer=mem_sanitizer)
+
+        self._cache["memory_sanitizer"] = mem_sanitizer
+        self._cache["enclave_adapter"] = enclave_adp
+
 
 
     def reset(self) -> None:
@@ -737,4 +748,6 @@ whisper_transcription_adapter = container.whisper_transcription_adapter
 speech_synthesis_adapter = container.speech_synthesis_adapter
 webrtc_signaling_adapter = container.webrtc_signaling_adapter
 voice_orchestrator = container.voice_orchestrator
+memory_sanitizer = container.memory_sanitizer
+enclave_adapter = container.enclave_adapter
 

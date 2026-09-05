@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 15 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 21 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 15
-    assert resp.active_count >= 12
-    assert len(resp.batteries) == 15
+    assert resp.total_batteries == 21
+    assert resp.active_count >= 18
+    assert len(resp.batteries) == 21
 
     # Check key expected battery IDs
     expected_ids = {
@@ -38,6 +38,12 @@ def test_platform_batteries_inventory_completeness():
         "longllmlingua_compression",
         "nemo_conversational_guardrails",
         "durable_workflow_engine",
+        "serverless_gpu_vllm",
+        "autonomous_fde_metaprogrammer",
+        "sovereign_edge_sync",
+        "multicloud_failover_libsql",
+        "sovereign_edge_voice",
+        "zero_trust_micro_enclave",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -72,9 +78,9 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 15
-        assert data["active_count"] >= 12
-        assert len(data["batteries"]) == 15
+        assert data["total_batteries"] == 21
+        assert data["active_count"] >= 18
+        assert len(data["batteries"]) == 21
 
 
 

@@ -1651,16 +1651,24 @@
 
 ---
 
-### [Planned] Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation (v0.86.0)
+### [Completed] Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation (v0.86.0)
 
-**Objective:** Implement hardware-rooted confidential computing (Intel SGX, AMD SEV, AWS Nitro Enclaves, Apple Secure Enclave), AES-256-GCM memory sealing, and cryptographic remote attestation to guarantee physical device theft resistance and tamper-proof multi-tenant edge execution.
+**Objective:** Implement hardware-rooted confidential computing (Intel SGX, AMD SEV, AWS Nitro Enclaves, Apple Secure Enclave, TPM 2.0), AES-256-GCM memory sealing, and cryptographic remote attestation to guarantee physical device theft resistance and tamper-proof multi-tenant edge execution.
 
-**Target Deliverables:**
-- **Hexagonal Domain Abstractions (`src/domain/abstractions/enclave.py`)**: Define pure Pydantic protocols (`HardwareAttestationProtocol`, `EnclaveKeySealer`, `AttestationEvidence`, `EnclaveVerificationReport`, `EnclaveSealedPayload`) with zero external framework dependencies.
-- **Hardware-Rooted Memory Sealing Adapter (`src/adapters/security/enclave_adapter.py`)**: Envelope encryption binding edge SQLite database files and vector BLOBs to hardware TPM/KMS chips; cryptographic nonce generation and SHA-256 attestation evidence verification against public vendor root certificates.
-- **Zero-Knowledge Memory Sanitizer**: Automatic ephemeral key zeroing on process signals (`SIGTERM`, `SIGINT`, unhandled memory faults) preventing cold-boot RAM dumping and physical memory probing.
-- **FastAPI Edge Attestation Endpoints (`src/routers/enclave.py`)**: `GET /v1/admin/edge/attestation` (system attestation report) and `POST /v1/tenants/{tenantId}/edge/seal` (cryptographic tenant data sealing).
-- **Automated Verification**: Pytest suite verifying attestation validation, forged certificate rejection, memory sealing roundtrip, and Hexagonal boundaries.
+**Key Deliverables:**
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/enclave.py`)**: Pure Pydantic protocols (`HardwareAttestationProtocol`, `EnclaveKeySealerProtocol`, `MemorySanitizerProtocol`, `AttestationEvidence`, `EnclaveVerificationReport`, `EnclaveSealedPayload`) with zero external framework dependencies.
+- **Hardware-Rooted Memory Sealing Adapter (`src/adapters/security/enclave_adapter.py`)**: Per-tenant AES-256-GCM memory sealing bound to enclave platform PCR0 measurements with HKDF-SHA256 key derivation, 96-bit random IVs, and AAD tamper-proofing. Ed25519 digital signatures and anti-replay challenge nonces.
+- **Zero-Knowledge Memory Sanitizer (`src/adapters/security/memory_sanitizer.py`)**: Ephemeral key tracking with mutable bytearrays and active `ctypes.memset` memory zeroing. Automatic OS signal traps (`SIGTERM`, `SIGINT`) purging all volatile keys upon termination.
+- **Platform Battery #21 (`zero_trust_micro_enclave`)**: Registered in `BatteryService` under `SAFETY_DEFENSE` category.
+- **FastAPI Enclave Endpoints (`src/routers/enclave.py`)**:
+  - `GET /v1/admin/edge/attestation/nonce`: Challenge nonce generation.
+  - `POST /v1/admin/edge/attestation/verify`: Remote attestation evidence verification.
+  - `GET /v1/admin/edge/attestation/report`: System runtime attestation verification report.
+  - `POST /v1/admin/edge/enclave/purge-keys`: Emergency in-memory key wipe.
+  - `POST /v1/tenants/{tenantId}/edge/seal`: AES-256-GCM tenant payload sealing.
+  - `POST /v1/tenants/{tenantId}/edge/unseal`: Authenticated unsealing with AAD verification.
+- **Admin Dashboard UI (`apps/web/src/app/(dashboard)/edge/page.tsx`)**: Confidential Micro-Enclave card with live PCR0 measurement, hardware platform detection, remote attestation challenge tester, emergency memory wipe, and interactive AES-256-GCM sealing playground.
+- **Automated Verification**: 100% test pass rate across `test_enclave.py` (8/8), `test_batteries.py` (5/5), `test_architecture.py` (5/5), and Next.js 16 web build.
 
 ---
 

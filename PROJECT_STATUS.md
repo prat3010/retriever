@@ -14,7 +14,9 @@ Operational overview of the Retriever platform's current engineering status.
 - **Developer Console Build**: Passing (Next.js 16, compiles successfully)
 - **Reference Client Build**: Passing
 - **Integration Tests**: 4/4 passing (adapter-level, requires `INTEGRATION_TEST=1`)
-- **Next Recommended Milestone**: Milestone 101: Enterprise Multi-Modal Real-Time Video & Vision-Language Agentic Cognition (v0.86.0)
+- **Next Recommended Milestone**: Phase M — **Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation (v0.86.0)**
+
+
 
 
 

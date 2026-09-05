@@ -117,12 +117,18 @@
 | **M98** | Sovereign Edge SQLite / Turso Vector Synchronization & Offline-First Edge Agent | Embedded SQLite 3 FTS5, binary float32 BLOB vectors, differential delta sync & Platform Battery #18 | **Completed** (Phase M / v0.83.0) |
 | **M99** | Distributed Multi-Cloud Failover & Edge Turso LibSQL Replication | Active-active multi-cloud failover, LibSQL embedded replicas, quorum consensus & Platform Battery #19 | **Completed** (Phase M / v0.84.0) |
 | **M100** | Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD endpointing, streaming neural TTS & Platform Battery #20 | **Completed** (Phase M / v0.85.0) |
+| **M101** | Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation | Hardware-rooted confidential computing (SGX/Nitro/TPM), AES-256-GCM memory sealing & attestation | **Planned** (Phase M / v0.86.0) |
+| **M102** | Autonomous Edge Fleet Swarm Mesh & P2P Gossip Replication | Decentralized P2P cluster discovery, epidemic anti-entropy replication & partition-healing | **Planned** (Phase M / v0.87.0) |
+| **M103** | Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry | Expose all 20 batteries as JSON-RPC 2.0 MCP tools (SSE/Stdio) for external frontier models & IDEs | **Planned** (Phase N / v0.88.0) |
+| **M104** | Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Runtime | Dynamic cyclic Reason-Act-Observe loop, trace memory, self-correction on tool exceptions & cycle breakers | **Planned** (Phase N / v0.89.0) |
+| **M105** | Smart Tool Gateway & Multi-Model Economic Orchestrator | Hybrid routing: mid-tier LLMs for routine tool calls, dynamic escalation to frontier models (GPT-6/Claude 3.7) | **Planned** (Phase N / v0.90.0) |
+| **M106** | Studio Tool Surface Cockpit & MCP Interactive Playbuilder | SaaS Studio & Admin command center, live ReAct trace visualizer, 1-click Claude/Cursor snippets | **Planned** (Phase N / v0.91.0) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](docs/RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](docs/ADMIN_DASHBOARD_ROADMAP.md)**.  
 > - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M102), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
+> - For the Master Unified Cross-Platform Roadmap (M1–M106), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 > - For the Active **Phase J.7** (M85.11–M85.16: Honest AI Wiring, Trust Hardening & FDE Hiring Credibility), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` §Phase J.7](../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md)**.
 
 ---
@@ -1642,6 +1648,97 @@
 - **FastAPI Endpoints**: `/v1/admin/voice/telemetry` and tenant endpoints `/v1/tenants/{tenantId}/voice/*` (`session`, `signal`, `transcribe`, `synthesize`, `turn`).
 - **Operator Surfaces**: Admin Voice Cockpit at `/voice` and Client SaaS App Studio at `/rag/app` (`VoiceStudioPanel.tsx`) featuring real-time animated audio waveforms, VAD sensitivity slider, timbre selector, turn ledger, and offline simulation fallback.
 - **Comprehensive Verification**: 100% test pass rate across backend Pytest suite (`test_edge_voice.py`, 10/10) and frontend Vitest suite (`VoiceStudioPanel.test.tsx`, 7/7). ADR-022 and feature guide documented.
+
+---
+
+### [Planned] Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation (v0.86.0)
+
+**Objective:** Implement hardware-rooted confidential computing (Intel SGX, AMD SEV, AWS Nitro Enclaves, Apple Secure Enclave), AES-256-GCM memory sealing, and cryptographic remote attestation to guarantee physical device theft resistance and tamper-proof multi-tenant edge execution.
+
+**Target Deliverables:**
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/enclave.py`)**: Define pure Pydantic protocols (`HardwareAttestationProtocol`, `EnclaveKeySealer`, `AttestationEvidence`, `EnclaveVerificationReport`, `EnclaveSealedPayload`) with zero external framework dependencies.
+- **Hardware-Rooted Memory Sealing Adapter (`src/adapters/security/enclave_adapter.py`)**: Envelope encryption binding edge SQLite database files and vector BLOBs to hardware TPM/KMS chips; cryptographic nonce generation and SHA-256 attestation evidence verification against public vendor root certificates.
+- **Zero-Knowledge Memory Sanitizer**: Automatic ephemeral key zeroing on process signals (`SIGTERM`, `SIGINT`, unhandled memory faults) preventing cold-boot RAM dumping and physical memory probing.
+- **FastAPI Edge Attestation Endpoints (`src/routers/enclave.py`)**: `GET /v1/admin/edge/attestation` (system attestation report) and `POST /v1/tenants/{tenantId}/edge/seal` (cryptographic tenant data sealing).
+- **Automated Verification**: Pytest suite verifying attestation validation, forged certificate rejection, memory sealing roundtrip, and Hexagonal boundaries.
+
+---
+
+### [Planned] Milestone 102: Autonomous Edge Fleet Swarm Mesh & P2P Gossip Replication (v0.87.0)
+
+**Objective:** Deliver decentralized peer-to-peer (P2P) cluster discovery, SWIM failure detection, and anti-entropy epidemic gossip replication across sovereign edge nodes, eliminating single-point-of-failure cloud masters during wide-area network blackouts.
+
+**Target Deliverables:**
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/swarm.py`)**: Define pure protocols (`SwarmNode`, `GossipMessage`, `SwarmTopology`, `AntiEntropyProtocol`, `VectorClock`) with Lamport logical timestamp ordering.
+- **P2P Epidemic Gossip Mesh Adapter (`src/adapters/swarm/gossip_mesh_adapter.py`)**: Peer discovery over UDP/mDNS, periodic push-pull anti-entropy exchange of differential SQLite/vector delta frames, and SWIM protocol heartbeat failure detection.
+- **Split-Brain Partition Reconciliation**: Automatic cluster merging when partitioned edge subgroups reconnect, using vector clocks to reconcile divergent document feedback and mutation logs without data loss.
+- **FastAPI Swarm Mesh Endpoints (`src/routers/swarm.py`)**: `GET /v1/admin/swarm/topology`, `POST /v1/admin/swarm/join`, `POST /v1/admin/swarm/leave`, `POST /v1/admin/swarm/sync`.
+- **Automated Verification**: Pytest suite simulating 5-node swarm mesh, network partition splits, anti-entropy state convergence, and Hexagonal boundaries.
+
+---
+
+### [Planned] Milestone 103: Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry (v0.88.0)
+
+**Phase N Inauguration:** Autonomous Agentic Tool Surfaces & Universal MCP Integration  
+**Objective:** Expose all 20 Retriever Platform Batteries as standardized, type-safe JSON-RPC 2.0 MCP tools over Server-Sent Events (`/v1/mcp/sse`) and Stdio transport, turning Retriever into a universal peripheral brain for any external AI agent (Cursor, Claude Desktop, OpenAI GPT-6 Astra, Windsurf, LangChain, CrewAI).
+
+**Target Deliverables:**
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/mcp.py`)**: Define pure Pydantic contracts (`McpToolDefinition`, `McpToolParameter`, `McpToolCallRequest`, `McpToolExecutionResult`, `McpServerProtocol`, `McpSessionContext`) with zero external framework imports.
+- **Battery-to-Tool Adapter (`src/adapters/mcp/battery_mcp_adapter.py`)**: Dynamically introspect the `BatteryService` catalog and map all 20 platform batteries into typed JSON Schema tool declarations:
+  - `retriever_search_hybrid`: Dense pgvector HNSW + BM25 reciprocal rank fusion ($k=60$).
+  - `retriever_colbert_rerank`: Token-level MaxSim candidate reranking.
+  - `retriever_query_graph`: GraphRAG entity-relationship traversal & Leiden community clustering.
+  - `retriever_run_python_sandbox`: Isolated Python REPL execution for mathematical analysis and CPQ calculations.
+  - `retriever_voice_synthesize`: Streaming local neural TTS speech synthesis.
+  - `retriever_durable_workflow`: Asynchronous distributed pipeline execution with step memoization.
+  - `retriever_compliance_check`: Presidio PII inspection & cryptographic wipe verification.
+- **Multi-Tenant Security & Permission Gate**: Authenticate MCP sessions via tenant API keys (`Authorization: Bearer ret_live_...`) with granular tool authorization bitmasks (`allow_write`, `allow_code_exec`, `allow_graph`, `allow_voice`). Destructive or execution tools require explicit tenant opt-in.
+- **FastAPI MCP Transport Endpoints (`src/routers/mcp.py`)**:
+  - `GET /v1/mcp/sse`: Server-Sent Events transport establishing persistent JSON-RPC bidirectional stream.
+  - `POST /v1/mcp/messages`: Inbound JSON-RPC 2.0 tool execution requests (`tools/list`, `tools/call`).
+  - `GET /v1/mcp/config`: Dynamic configuration snippet generator for Claude Desktop (`claude_desktop_config.json`) and Cursor.
+- **Automated Verification**: Pytest suite asserting JSON-RPC 2.0 compliance, tool parameter validation, tenant RLS isolation, and Hexagonal architecture boundaries.
+
+---
+
+### [Planned] Milestone 104: Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Runtime (v0.89.0)
+
+**Objective:** Upgrade Retriever from single-shot intent classification to a dynamic multi-turn ReAct (Reason $\to$ Act $\to$ Observe $\to$ Repeat) autonomous execution engine with intermediate state inspection, self-correction on tool failures, and cycle-breaker safety gates.
+
+**Target Deliverables:**
+- **Hexagonal Domain Engine (`src/domain/agentic/react_engine.py`)**: Cyclic state machine managing lifecycle states (`REASONING` $\to$ `SELECTING_TOOL` $\to$ `EXECUTING_BATTERY` $\to$ `OBSERVING_RESULT` $\to$ `EVALUATING_COMPLETION`). Maintains immutable execution trace ledger (`TurnStep`, `Thought`, `ToolAction`, `Observation`, `ConfidenceScore`) with strict execution caps ($\le 8$ turns, $30\text{s}$ timeout, max token budget).
+- **Self-Healing Error Recovery & Trace Feedback**: When a tool raises an exception (e.g. Python syntax error, empty vector search, invalid Cypher syntax), structured trace and error diagnostics are fed back into the model context as an `Observation`, enabling autonomous query reformulation and code debugging without session termination.
+- **Cycle-Breaker & Anti-Loop Circuit Breaker**: Mathematical tool call signature and parameter hashing preventing infinite ping-pong loops between identical tool calls ($>2$ identical invocations trip circuit breaker).
+- **Streaming Progress SSE Protocol**: Real-time SSE event frames (`agent_thought`, `tool_call_start`, `tool_call_done`, `agent_reflection`, `final_answer`) enabling live visual execution scrubbing in client frontends.
+- **Automated Verification**: Pytest suite asserting cyclic state transitions, self-healing recovery loops, anti-loop tripwires, and timeout boundaries.
+
+---
+
+### [Planned] Milestone 105: Smart Tool Gateway & Multi-Model Economic Orchestrator (v0.90.0)
+
+**Objective:** Dynamically orchestrate tool execution between fast, cost-effective mid-level LLMs (Llama 3.3 70B, Gemini 2.0 Flash, Claude 3.5 Haiku) and frontier reasoning models (GPT-6 Astra, Claude 3.7 Sonnet, OpenAI o3), slashing production token spend by $\sim 85\%$ while preserving peak reasoning on complex multi-battery tasks.
+
+**Target Deliverables:**
+- **Dynamic Complexity Classifier (`src/domain/agentic/smart_tool_router.py`)**: Heuristic and dependency depth analyzer routing single-step and two-step routine tasks (e.g. `search_documents` $\to$ summary) to mid-tier models (sub-second, $1/50\text{th}$ cost), reserving frontier models for multi-hop code generation, forensic reconciliation, or high-risk governance actions.
+- **Dynamic Mid-Flight Escalation Protocol**: Seamless execution handoff from mid-tier to frontier model if a tool call encounters an error, exceeds 3 iterative steps, or exhibits low confidence scores, preserving complete thread context with zero user interruption.
+- **Virtual Token & Cost Ledger Attribution**: Track real-time cost per tool turn in `InferenceLogDb`, empirically benchmarking hybrid savings against theoretical pure-frontier deployment.
+- **Automated Verification**: Pytest suite validating routing heuristics, mid-flight thread handoffs, and cost calculation accuracy.
+
+---
+
+### [Planned] Milestone 106: Studio Tool Surface Cockpit & MCP Interactive Playbuilder (v0.91.0)
+
+**Objective:** Productize the MCP tool surface and autonomous ReAct engine into dedicated, high-aesthetic operator interfaces in the SaaS App Studio (`/rag/app`) and Admin Dashboard (`/mcp`).
+
+**Target Deliverables:**
+- **SaaS Studio Tool Surface Tab (`ToolsPanel.tsx` in `Prateek_website/src/components/rag/`)**:
+  - Live 20-battery tool status pills with active latency benchmarks and capability tags.
+  - Granular per-tool tenant toggle matrix (Enable/Disable specific batteries per client API key).
+  - Interactive ReAct Trace Inspector: Expandable step-by-step visual cards (`Thought` $\to$ `Tool: retriever_search` $\to$ `Observation` $\to$ `Tool: retriever_python` $\to$ `Final Synthesis`).
+  - 1-Click Universal MCP Setup Modal: Pre-configured JSON snippet generators for Claude Desktop, Cursor, and VS Code with 1-click clipboard copy.
+  - Live Economic Efficiency Gauge: `@number-flow/react` animated counter tracking token savings and mid-tier vs frontier model distribution.
+- **Admin Dashboard Global Tool Center (`retriever/apps/web` at `/mcp`)**: Fleet-wide MCP active session monitor, tool call frequency heatmap, error rate breakdown, and latency waterfall.
+- **Design System 2.0 Parity & Verification**: Full Azure (print graphic novel) and Noir (cyber-monospace) styling, `<MagneticButton>`, `<TiltCard>`, `<Portal>` modal safety, and 100% Vitest coverage.
 
 ---
 

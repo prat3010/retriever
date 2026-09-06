@@ -207,9 +207,9 @@ class AlertService(BaseAlertService):
 
         for alert in raw_alerts:
             dedup_key = f"{tenant_id}:{alert.rule_name}:{alert.severity}"
-            last_time = self._last_alert_timestamps.get(dedup_key, 0.0)
+            last_time = self._last_alert_timestamps.get(dedup_key)
 
-            if now - last_time >= debounce_secs:
+            if last_time is None or (now - last_time >= debounce_secs):
                 self._last_alert_timestamps[dedup_key] = now
                 self._alert_history.append(alert)
                 dispatched.append(alert)

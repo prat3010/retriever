@@ -166,14 +166,14 @@ def main():
         results.append(("Search & Retrieval Execution", False, f"HTTP {status}"))
 
     # Probe 6: Universal MCP Protocol Handshake
-    print("6. Probing Universal MCP SSE Endpoint (/mcp/sse)...", end=" ", flush=True)
-    status, lat, body, hdrs = probe_http(f"{target}/mcp/sse")
-    if status in (200, 400):  # 400 without proper SSE client headers is normal for raw probe
-        print(f"✅ PASSED (Endpoint listening, {lat}ms)")
-        results.append(("Universal MCP SSE Protocol", True, f"Active ({lat}ms)"))
+    print("6. Probing Universal MCP SSE Endpoint (/v1/mcp/sse)...", end=" ", flush=True)
+    status, lat, body, hdrs = probe_http(f"{target}/v1/mcp/sse")
+    if status in (200, 400, 401):  # 401 confirms endpoint is active and enforcing security
+        print(f"✅ PASSED (Endpoint listening & auth enforced, {lat}ms)")
+        results.append(("Universal MCP SSE Protocol", True, f"Active & Protected ({lat}ms)"))
     elif status == 404:
-        print("⚠️ 404 NOT FOUND (Commit f26dae9 not yet deployed on VPS)")
-        results.append(("Universal MCP SSE Protocol", False, "HTTP 404: Run deploy_release.sh on VPS"))
+        print("⚠️ 404 NOT FOUND (Universal MCP router not mounted)")
+        results.append(("Universal MCP SSE Protocol", False, "HTTP 404: Endpoint not found"))
     else:
         print(f"❌ FAILED (HTTP {status})")
         results.append(("Universal MCP SSE Protocol", False, f"HTTP {status}"))

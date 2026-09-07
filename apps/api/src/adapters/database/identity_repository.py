@@ -31,28 +31,36 @@ class SqlIdentityProvider(IdentityProvider):
         # Query requires bypassing RLS since tenant is not yet resolved
         async with tenant_session(bypass_rls=True) as session:
             stmt = (
-                select(ApiKeyDb)
+                select(ApiKeyDb, TenantDb.status.label("tenant_status"))
                 .join(TenantDb, ApiKeyDb.tenant_id == TenantDb.tenant_id)
                 .where(ApiKeyDb.key_hash == key_hash)
             )
             result = await session.execute(stmt)
-            db_key = result.scalar_one_or_none() if hasattr(result, "scalar_one_or_none") else None
-            if db_key is None and hasattr(result, "first"):
-                row = result.first()
-                if row:
-                    db_key = row[0] if isinstance(row, tuple | list) else row
+            row = result.first() if hasattr(result, "first") else None
+            if not row and hasattr(result, "scalar_one_or_none"):
+                val = result.scalar_one_or_none()
+                if val:
+                    row = (val, getattr(val, "tenant_status", "active"))
 
-            if not db_key:
+            if not row:
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")
 
+            db_key = row[0] if isinstance(row, tuple | list) else row
+            tenant_status = (
+                row[1]
+                if isinstance(row, tuple | list) and len(row) > 1
+                else getattr(db_key, "tenant_status", "active")
+            )
+
             if getattr(db_key, "status", None) == "quarantined":
-                raise AuthenticationError("API key token is quarantined due to anomalous activity. Contact platform administrator.")
+                raise AuthenticationError(
+                    "API key token is quarantined due to anomalous activity. Contact platform administrator."
+                )
 
             if getattr(db_key, "status", None) != "active":
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")
 
-            tenant = getattr(db_key, "tenant", None)
-            if tenant and getattr(tenant, "status", "active") != "active":
+            if tenant_status != "active":
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")
 
 

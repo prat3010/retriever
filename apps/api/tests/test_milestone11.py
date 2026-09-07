@@ -216,8 +216,8 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
     mock_limiter = AsyncMock()
     mock_limiter.acquire.return_value = RateLimitResult(
         allowed=True,
-        limit=120,
-        remaining=119,
+        limit=1000,
+        remaining=999,
         reset_after=30
     )
     mock_get_limiter.return_value = mock_limiter
@@ -229,6 +229,6 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
         headers=headers
     )
     assert response.status_code == 200
-    assert response.headers["X-RateLimit-Limit"] == "120"
+    assert response.headers["X-RateLimit-Limit"] == "1000"
     assert int(response.headers["X-RateLimit-Remaining"]) >= 0
     assert response.headers["X-RateLimit-Reset"] == "30"

@@ -151,7 +151,7 @@ def main():
         method="POST",
         headers=search_headers,
         payload=search_payload,
-        timeout=15.0,
+        timeout=60.0,
     )
     if status == 200 and isinstance(body, dict) and "results" in body:
         hit_count = len(body.get("results", []))

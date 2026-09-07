@@ -23,9 +23,18 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
         return self._client
 
     async def embed_text(self, text: str) -> list[float]:
-        response = await self.client.post(f"{self._base_url}/api/embeddings", json={"model": self._model, "prompt": text})
-        response.raise_for_status()
-        return response.json()["embedding"]
+        try:
+            response = await self.client.post(
+                f"{self._base_url}/api/embeddings",
+                json={"model": self._model, "prompt": text},
+            )
+            response.raise_for_status()
+            return response.json()["embedding"]
+        except httpx.ConnectError as e:
+            raise RuntimeError(
+                f"Ollama server is not reachable at {self._base_url}. "
+                "Ensure 'ollama serve' is running and model is pulled: 'ollama pull nomic-embed-text'."
+            ) from e
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         results: list[list[float]] = []

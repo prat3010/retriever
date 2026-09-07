@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "title": "Retriever Engine Empirical Load & Latency Benchmark",
+    "generated_at": "2026-09-07 18:41:05Z",
+    "target_url": "https://rag.prateeq.in",
+    "system_specs": {
+      "environment": "Oracle Cloud Infrastructure (VPS 130.210.35.134) + Vercel Edge Control Plane",
+      "compute": "4 OCPU ARM Ampere A1, 24 GB RAM",
+      "storage_engine": "PostgreSQL 16 + pgvector (HNSW Indexing) + Local Redis Cache",
+      "backend_framework": "FastAPI (ASGI) + Uvicorn Workers + Hexagonal Architecture",
+      "quality_gates": "Gate 10 AST Zero-Toy Static Verification Passed (0 mocks, 0 synthetic math)"
+    }
+  },
+  "sweeps": {
+    "5": {
+      "name": "Aggregated (5 VUs)",
+      "total_requests": 30,
+      "success_count": 30,
+      "failure_count": 0,
+      "error_rate_pct": 0.0,
+      "min_ms": 257.54,
+      "p50_ms": 2291.64,
+      "p90_ms": 3794.81,
+      "p95_ms": 3932.33,
+      "p99_ms": 4002.6,
+      "max_ms": 4004.52,
+      "avg_ms": 2121.99,
+      "qps": 2.3,
+      "total_duration_sec": 13.04,
+      "concurrency": 5,
+      "endpoints": {
+        "health_readiness": {
+          "name": "PostgreSQL & Pool Readiness",
+          "total_requests": 10,
+          "success_count": 10,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 2150.36,
+          "p50_ms": 2291.64,
+          "p90_ms": 2458.91,
+          "p95_ms": 2506.88,
+          "p99_ms": 2545.26,
+          "max_ms": 2554.85,
+          "avg_ms": 2314.14
+        },
+        "health_liveness": {
+          "name": "ASGI Gateway & Nginx Routing",
+          "total_requests": 10,
+          "success_count": 10,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 257.54,
+          "p50_ms": 281.68,
+          "p90_ms": 337.7,
+          "p95_ms": 340.85,
+          "p99_ms": 343.37,
+          "max_ms": 344.0,
+          "avg_ms": 294.53
+        },
+        "admin_tenants": {
+          "name": "Multi-Tenant Control Plane",
+          "total_requests": 10,
+          "success_count": 10,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 3569.22,
+          "p50_ms": 3679.79,
+          "p90_ms": 3998.55,
+          "p95_ms": 4001.54,
+          "p99_ms": 4003.92,
+          "max_ms": 4004.52,
+          "avg_ms": 3757.3
+        }
+      }
+    },
+    "10": {
+      "name": "Aggregated (10 VUs)",
+      "total_requests": 60,
+      "success_count": 60,
+      "failure_count": 0,
+      "error_rate_pct": 0.0,
+      "min_ms": 269.63,
+      "p50_ms": 2340.37,
+      "p90_ms": 3750.19,
+      "p95_ms": 3862.63,
+      "p99_ms": 3931.95,
+      "max_ms": 3974.55,
+      "avg_ms": 2172.17,
+      "qps": 4.4,
+      "total_duration_sec": 13.64,
+      "concurrency": 10,
+      "endpoints": {
+        "health_readiness": {
+          "name": "PostgreSQL & Pool Readiness",
+          "total_requests": 20,
+          "success_count": 20,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 2250.7,
+          "p50_ms": 2340.37,
+          "p90_ms": 2465.43,
+          "p95_ms": 2476.68,
+          "p99_ms": 2497.82,
+          "max_ms": 2503.11,
+          "avg_ms": 2330.22
+        },
+        "health_liveness": {
+          "name": "ASGI Gateway & Nginx Routing",
+          "total_requests": 20,
+          "success_count": 20,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 269.63,
+          "p50_ms": 403.43,
+          "p90_ms": 523.76,
+          "p95_ms": 523.87,
+          "p99_ms": 524.15,
+          "max_ms": 524.22,
+          "avg_ms": 438.69
+        },
+        "admin_tenants": {
+          "name": "Multi-Tenant Control Plane",
+          "total_requests": 20,
+          "success_count": 20,
+          "failure_count": 0,
+          "error_rate_pct": 0.0,
+          "min_ms": 3587.45,
+          "p50_ms": 3748.69,
+          "p90_ms": 3879.81,
+          "p95_ms": 3905.96,
+          "p99_ms": 3960.83,
+          "max_ms": 3974.55,
+          "avg_ms": 3747.6
+        }
+      }
+    },
+    "20": {
+      "name": "Aggregated (20 VUs)",
+      "total_requests": 120,
+      "success_count": 29,
+      "failure_count": 91,
+      "error_rate_pct": 75.83,
+      "min_ms": 2238.31,
+      "p50_ms": 2340.73,
+      "p90_ms": 2710.32,
+      "p95_ms": 3180.5,
+      "p99_ms": 3316.79,
+      "max_ms": 3356.58,
+      "avg_ms": 2470.26,
+      "qps": 13.7,
+      "total_duration_sec": 8.78,
+      "concurrency": 20,
+      "endpoints": {
+        "health_readiness": {
+          "name": "PostgreSQL & Pool Readiness",
+          "total_requests": 40,
+          "success_count": 29,
+          "failure_count": 11,
+          "error_rate_pct": 27.5,
+          "min_ms": 2238.31,
+          "p50_ms": 2340.73,
+          "p90_ms": 2710.32,
+          "p95_ms": 3180.5,
+          "p99_ms": 3316.79,
+          "max_ms": 3356.58,
+          "avg_ms": 2470.26
+        },
+        "health_liveness": {
+          "name": "ASGI Gateway & Nginx Routing",
+          "total_requests": 40,
+          "success_count": 0,
+          "failure_count": 40,
+          "error_rate_pct": 100.0,
+          "min_ms": 0.0,
+          "p50_ms": 0.0,
+          "p90_ms": 0.0,
+          "p95_ms": 0.0,
+          "p99_ms": 0.0,
+          "max_ms": 0.0,
+          "avg_ms": 0.0
+        },
+        "admin_tenants": {
+          "name": "Multi-Tenant Control Plane",
+          "total_requests": 40,
+          "success_count": 0,
+          "failure_count": 40,
+          "error_rate_pct": 100.0,
+          "min_ms": 0.0,
+          "p50_ms": 0.0,
+          "p90_ms": 0.0,
+          "p95_ms": 0.0,
+          "p99_ms": 0.0,
+          "max_ms": 0.0,
+          "avg_ms": 0.0
+        }
+      }
+    }
+  }
+}

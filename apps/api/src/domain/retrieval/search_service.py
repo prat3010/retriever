@@ -137,10 +137,21 @@ class HybridSearchService:
         if rewritten_list:
             embed_query = rewritten_list[0]
             if embed_query != query.query:
-                query_embedding = await self.embedder.embed_text(embed_query)
+                try:
+                    query_embedding = await self.embedder.embed_text(embed_query)
+                except Exception as exc:
+                    logger.warning(f"HyDE rewritten query embedding failed: {exc}")
+                    query_embedding = raw_embedding
 
         if not query_embedding:
-            query_embedding = await self.embedder.embed_text(query.query)
+            try:
+                query_embedding = await self.embedder.embed_text(query.query)
+            except Exception as exc:
+                logger.error(
+                    f"Query embedding failed for '{query.query[:50]}': {exc}. "
+                    "Gracefully degrading to BM25 keyword retrieval."
+                )
+                query_embedding = []
 
         # 2b. Optional LoRA residual domain calibration
         if query.enable_lora_adapter and query_embedding:

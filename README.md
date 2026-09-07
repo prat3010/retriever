@@ -12,7 +12,7 @@
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
 *Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, and sovereign edge voice.*
 
-[🚀 Live Production Demo](https://rag.prateeq.in) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
+[🚀 Live Production Demo](https://rag.prateeq.in) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
 </div>
 

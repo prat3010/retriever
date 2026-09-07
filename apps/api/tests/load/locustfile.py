@@ -9,9 +9,9 @@ import random
 
 from locust import HttpUser, between, task
 
-DEMO_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "00000000-0000-0000-0000-000000000000")
-DEMO_API_KEY = os.getenv("LOAD_TEST_API_KEY", "load_test_mock_key")
-DEMO_USER_ID = os.getenv("LOAD_TEST_USER_ID", "00000000-0000-0000-0000-000000000001")
+DEMO_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4")
+DEMO_API_KEY = os.getenv("LOAD_TEST_API_KEY", "ret_live_hUQ-4muveDE.w9aBPR9iJBMbWeaUapCwUR-_T9IlwmXh")
+DEMO_USER_ID = os.getenv("LOAD_TEST_USER_ID", "36e62429-419e-48ef-af92-533afca9e028")
 
 SAMPLE_QUERIES = [
     "What are the payment terms and refund policies?",
@@ -56,7 +56,7 @@ class TenantSearchUser(HttpUser):
             catch_response=True,
             name="/v1/tenants/[id]/search",
         ) as response:
-            if response.status_code in (200, 404):
+            if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"Search failed with status {response.status_code}")
@@ -76,7 +76,7 @@ class TenantSearchUser(HttpUser):
             catch_response=True,
             name="/v1/tenants/[id]/search (Cache Probe)",
         ) as response:
-            if response.status_code in (200, 404):
+            if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"Cache probe failed with status {response.status_code}")
@@ -111,7 +111,7 @@ class TenantChatUser(HttpUser):
             catch_response=True,
             name="/v1/tenants/[id]/chat",
         ) as response:
-            if response.status_code in (200, 404):
+            if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"Chat failed with status {response.status_code}")
@@ -137,7 +137,7 @@ class TenantDocumentUser(HttpUser):
             catch_response=True,
             name="/v1/tenants/[id]/documents",
         ) as response:
-            if response.status_code in (200, 404):
+            if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"List docs failed with status {response.status_code}")

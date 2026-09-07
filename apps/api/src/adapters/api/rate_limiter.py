@@ -59,7 +59,12 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip health check & options preflight
-        if request.url.path in ["/health", "/v1/health", "/docs", "/openapi.json"] or request.method == "OPTIONS":
+        if (
+            request.url.path.startswith("/health")
+            or request.url.path.startswith("/v1/health")
+            or request.url.path in ["/", "/health", "/v1/health", "/docs", "/openapi.json"]
+            or request.method == "OPTIONS"
+        ):
             return await call_next(request)
 
         key = self._get_key(request)

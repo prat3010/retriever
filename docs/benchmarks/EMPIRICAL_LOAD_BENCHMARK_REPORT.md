@@ -1,6 +1,6 @@
 # ⚡ Retriever Engine Empirical Load & Latency Benchmark Report
 
-> **Generated at:** `2026-09-07 18:41:05Z`  
+> **Generated at:** `2026-09-07 19:38:57Z`  
 > **Target System:** `https://rag.prateeq.in`  
 > **Environment:** Oracle Cloud ARM Ampere (4 OCPU, 24GB RAM) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  
 > **Verification Gate:** Gate 10 Zero-Toy Static AST Verified (100% Genuine Network Packets, Zero Mocks, Zero Synthetic Score Padding)
@@ -11,9 +11,9 @@
 
 | Concurrency (VUs) | Total Req | Throughput (QPS) | $P_{50}$ Median | $P_{90}$ Latency | $P_{95}$ Latency | $P_{99}$ Latency | Error Rate |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **5 VUs** | 30 | **2.3 req/s** | 2291.64 ms | 3794.81 ms | 3932.33 ms | 4002.6 ms | 0.0% |
-| **10 VUs** | 60 | **4.4 req/s** | 2340.37 ms | 3750.19 ms | 3862.63 ms | 3931.95 ms | 0.0% |
-| **20 VUs** | 120 | **13.7 req/s** | 2340.73 ms | 2710.32 ms | 3180.5 ms | 3316.79 ms | 75.83% |
+| **5 VUs** | 30 | **2.0 req/s** | 2973.92 ms | 4021.39 ms | 4054.75 ms | 4171.28 ms | 0.0% |
+| **10 VUs** | 60 | **3.7 req/s** | 2474.62 ms | 4204.35 ms | 4451.1 ms | 4478.88 ms | 0.0% |
+| **20 VUs** | 120 | **13.4 req/s** | 2608.84 ms | 3135.09 ms | 3266.15 ms | 3346.86 ms | 75.83% |
 
 ---
 
@@ -21,7 +21,7 @@
 
 | Endpoint / Surface | Method | Total Calls | Avg (ms) | $P_{50}$ (ms) | $P_{95}$ (ms) | $P_{99}$ (ms) | Error Rate |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **PostgreSQL & Pool Readiness** | `GET` | 40 | 2470.26 ms | 2340.73 ms | 3180.5 ms | 3316.79 ms | 27.5% |
+| **PostgreSQL & Pool Readiness** | `GET` | 40 | 2683.1 ms | 2608.84 ms | 3266.15 ms | 3346.86 ms | 27.5% |
 | **ASGI Gateway & Nginx Routing** | `GET` | 40 | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | 100.0% |
 | **Multi-Tenant Control Plane** | `GET` | 40 | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | 100.0% |
 

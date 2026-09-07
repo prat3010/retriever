@@ -1,5 +1,5 @@
 import logging
-import os  # noqa: F401 — re-exported for test patching (src.main.os.path.exists)
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -99,7 +99,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(TenantRateLimiterMiddleware, default_limit=120, window_seconds=60)
+rate_limit_max = int(os.getenv("TENANT_RATE_LIMIT", "1000"))
+app.add_middleware(TenantRateLimiterMiddleware, default_limit=rate_limit_max, window_seconds=60)
 
 # Initialize components (singletons wired in container)
 

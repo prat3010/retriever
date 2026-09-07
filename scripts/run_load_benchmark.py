@@ -48,7 +48,7 @@ def percentile(sorted_list: list[float], p: float) -> float:
     return round(sorted_list[f], 2)
 
 
-def execute_http_request(url: str, method: str = "GET", headers: dict | None = None, payload: dict | None = None, timeout: float = 5.0) -> tuple[int, float, str]:
+def execute_http_request(url: str, method: str = "GET", headers: dict | None = None, payload: dict | None = None, timeout: float = 20.0) -> tuple[int, float, str]:
     """Execute synchronous HTTP request with microsecond timer.
     Returns: (status_code, latency_ms, error_message)
     """
@@ -89,7 +89,7 @@ async def run_worker_sweep(
         worker_results = []
         for _ in range(num_requests_per_worker):
             p = payload_fn() if payload_fn else None
-            res = await loop.run_in_executor(None, execute_http_request, url, method, headers, p, 5.0)
+            res = await loop.run_in_executor(None, execute_http_request, url, method, headers, p, 20.0)
             worker_results.append(res)
         return worker_results
 

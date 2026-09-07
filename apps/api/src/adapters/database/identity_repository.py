@@ -45,10 +45,10 @@ class SqlIdentityProvider(IdentityProvider):
             if not row:
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")
 
-            db_key = row[0] if isinstance(row, tuple | list) else row
+            db_key = row[0] if hasattr(row, "__getitem__") else row
             tenant_status = (
                 row[1]
-                if isinstance(row, tuple | list) and len(row) > 1
+                if hasattr(row, "__getitem__") and len(row) > 1
                 else getattr(db_key, "tenant_status", "active")
             )
 

@@ -21,6 +21,9 @@
   2. **Zero Mock Data Returns:** All endpoints must query real database models, execute genuine vector operations, and emit verified telemetry. Never return static synthetic mock data in production routers.
   3. **Pragmatic Production Value:** Prioritize core platform reliability (safe blue/green releases, atomic symlinks, rollback gates, concurrent load testing benchmarks, and unsupervised GraphRAG clustering) over cosmetic features.
   4. **Strict Conformance:** Every endpoint and adapter must be verified by automated Pytest suites with genuine database and memory integration.
+  5. **Automated Zero-Toy Linter Gate & Fail-Fast Mandate:**
+     - Always run `python3 scripts/audit_zero_toy.py` and `pytest apps/api/tests/test_zero_toy_invariants.py` before finishing any task. It must report 0 violations.
+     - Never fake missing integrations or unconfigured credentials. If an external service is not yet implemented or missing keys, throw `NotImplementedError` or return `HTTP 501 / 400` with an honest descriptive error. Never return synthetic fake data, simulated 200 OK facades, or dummy frame fallbacks.
 
 ## Code Style & Formatting Rules
 - **Always run `ruff check --fix` on modified Python files** before making commits or finishing tasks to ensure imports and formatting conform to project CI standards.

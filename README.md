@@ -152,13 +152,19 @@ Retriever ships with **20 production-grade batteries** pre-wired through Hexagon
 ## 🧪 Automated Testing & Benchmark Baselines
 
 ```bash
-# 1. Run complete unit & integration test suite (730+ tests across 108 suites)
+# 1. Zero-Toy & Anti-Mock Static Analysis Linter (ensures 0 mock classes, faked scores, or dummy frames)
+python3 scripts/audit_zero_toy.py
+
+# 2. Run Zero-Toy Invariant regression test
+uv run pytest apps/api/tests/test_zero_toy_invariants.py -v
+
+# 3. Run complete unit & integration test suite (730+ tests across 108 suites)
 uv run pytest apps/api/tests/ -v
 
-# 2. Verify strict Hexagonal import boundaries (0 framework imports in domain)
+# 4. Verify strict Hexagonal import boundaries (0 framework imports in domain)
 uv run pytest apps/api/tests/test_architecture.py -v
 
-# 3. Code formatting & linting conformance
+# 5. Code formatting & linting conformance
 uv run ruff check apps/api/src/ apps/api/tests/
 ```
 

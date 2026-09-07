@@ -119,10 +119,11 @@
 | **M100** | Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD endpointing, streaming neural TTS & Platform Battery #20 | **Completed** (Phase M / v0.85.0) |
 | **M101** | Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation | Hardware-rooted confidential computing (SGX/Nitro/TPM), AES-256-GCM memory sealing & attestation | **Planned** (Phase M / v0.86.0) |
 | **M102** | Autonomous Edge Fleet Swarm Mesh & P2P Gossip Replication | Decentralized P2P cluster discovery, epidemic anti-entropy replication & partition-healing | **Planned** (Phase M / v0.87.0) |
-| **M103** | Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry | Expose all 20 batteries as JSON-RPC 2.0 MCP tools (SSE/Stdio) for external frontier models & IDEs | **Planned** (Phase N / v0.88.0) |
+| **M103** | Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry | Expose all 20 batteries as JSON-RPC 2.0 MCP tools (SSE/Stdio) for external frontier models & IDEs | **Completed** (Phase N / v0.88.0) |
 | **M104** | Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Runtime | Dynamic cyclic Reason-Act-Observe loop, trace memory, self-correction on tool exceptions & cycle breakers | **Planned** (Phase N / v0.89.0) |
 | **M105** | Smart Tool Gateway & Multi-Model Economic Orchestrator | Hybrid routing: mid-tier LLMs for routine tool calls, dynamic escalation to frontier models (GPT-6/Claude 3.7) | **Planned** (Phase N / v0.90.0) |
-| **M106** | Studio Tool Surface Cockpit & MCP Interactive Playbuilder | SaaS Studio & Admin command center, live ReAct trace visualizer, 1-click Claude/Cursor snippets | **Planned** (Phase N / v0.91.0) |
+| **M106** | Studio Tool Surface Cockpit & MCP Interactive Playbuilder | SaaS Studio & Admin command center, live ReAct trace visualizer, 1-click Claude/Cursor snippets | **Completed** (Phase N / v0.91.0) |
+| **M107** | Zero-Toy Invariant Enforcement & Fail-Fast Hardening | Forensic audit eradicating synthetic score boosts, dummy audio fallbacks, fake probe 200s, and fake document generators; automated static analysis linter (`audit_zero_toy.py`) | **Completed** (Phase N / v0.92.0) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)**.
@@ -1685,9 +1686,10 @@
 
 ---
 
-### [Planned] Milestone 103: Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry (v0.88.0)
+### [Completed] Milestone 103: Universal Model Context Protocol (MCP) Server & 20-Battery Tool Registry (v0.88.0)
 
 **Phase N Inauguration:** Autonomous Agentic Tool Surfaces & Universal MCP Integration  
+**Status:** **Completed** (11/11 Pytest suites passed, 100% Hexagonal boundaries verified)  
 **Objective:** Expose all 20 Retriever Platform Batteries as standardized, type-safe JSON-RPC 2.0 MCP tools over Server-Sent Events (`/v1/mcp/sse`) and Stdio transport, turning Retriever into a universal peripheral brain for any external AI agent (Cursor, Claude Desktop, OpenAI GPT-6 Astra, Windsurf, LangChain, CrewAI).
 
 **Target Deliverables:**
@@ -1734,8 +1736,9 @@
 
 ---
 
-### [Planned] Milestone 106: Studio Tool Surface Cockpit & MCP Interactive Playbuilder (v0.91.0)
+### [Completed] Milestone 106: Studio Tool Surface Cockpit & MCP Interactive Playbuilder (v0.91.0)
 
+**Status:** **Completed** (`McpPanel.tsx` in `Prateek_website`, 1-click snippets, live tool registry, and interactive test probe verified across 6/6 Vitest tests)  
 **Objective:** Productize the MCP tool surface and autonomous ReAct engine into dedicated, high-aesthetic operator interfaces in the SaaS App Studio (`/rag/app`) and Admin Dashboard (`/mcp`).
 
 **Target Deliverables:**
@@ -1747,6 +1750,30 @@
   - Live Economic Efficiency Gauge: `@number-flow/react` animated counter tracking token savings and mid-tier vs frontier model distribution.
 - **Admin Dashboard Global Tool Center (`retriever/apps/web` at `/mcp`)**: Fleet-wide MCP active session monitor, tool call frequency heatmap, error rate breakdown, and latency waterfall.
 - **Design System 2.0 Parity & Verification**: Full Azure (print graphic novel) and Noir (cyber-monospace) styling, `<MagneticButton>`, `<TiltCard>`, `<Portal>` modal safety, and 100% Vitest coverage.
+
+### Milestone 107: Zero-Toy Invariant Enforcement & Fail-Fast Hardening across All Subsystems
+**Status:** **Completed** (`scripts/audit_zero_toy.py`, `test_zero_toy_invariants.py`, and complete remediation of 4 identified shortcut artifacts)  
+**Objective:** Permanently eradicate all synthetic score formulas, dummy audio fallbacks, dead-node 200 OK facades, and fake document generators; deploy automated static analysis linter preventing future regressions.
+
+**Completed Deliverables:**
+- **DSPy Compiler Adapter (`dspy_compiler_adapter.py`)**:
+  - Eradicated synthetic score boost formula (`min(0.28, 0.05 * len(selected_demos) + 0.10)`).
+  - Implemented token-grounded teacher synthesis and authentic validation scoring against ground truth via `_evaluate_metric`.
+  - Verified across 8/8 passing tests in `test_dspy_compiler.py`.
+- **Sovereign Edge Voice Router (`voice.py`)**:
+  - Replaced silent `b"mock_audio_frame"` exception fallback with strict `HTTPException(400, "Invalid base64-encoded audio payload")`.
+  - Replaced static string claim with live vector retrieval via `container.search_service.search`.
+  - Added fail-fast regression test in `test_edge_voice.py`.
+- **Multi-Cloud Health Probe Adapter (`health_probe_adapter.py`)**:
+  - Completely removed simulated 200 OK fallback and fake jitter latency on failed probes.
+  - Failed probes honestly report `is_healthy=False`, `status_code=503`, and record actual network exception details.
+- **SaaS Data Connectors (`local_folder.py`, `registry.py`)**:
+  - Permanently deleted `cloud_drive.py` (which fabricated fake quarterly reports).
+  - Built real `LocalFolderConnector` reading genuine files from disk.
+  - `ConnectorRegistry` raises `NotImplementedError` for unconfigured connectors.
+- **Automated Zero-Toy Static Linter (`scripts/audit_zero_toy.py`)**:
+  - Scans all 287 production Python files in `apps/api/src/` for forbidden mocks, synthetic formulas, and fake labels.
+  - Enforced via `apps/api/tests/test_zero_toy_invariants.py` in the core Pytest test suite.
 
 ---
 

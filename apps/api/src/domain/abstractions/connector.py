@@ -15,7 +15,7 @@ class DiscoveredDocument(BaseModel):
 class ConnectorConfig(BaseModel):
     id: str
     name: str
-    connector_type: Literal["web_crawler", "cloud_drive", "google_drive", "notion", "slack", "s3"] = "web_crawler"
+    connector_type: Literal["web_crawler", "cloud_drive", "google_drive", "notion", "slack", "s3", "local_folder"] = "web_crawler"
     status: Literal["idle", "syncing", "failed", "disabled"] = "idle"
     sync_interval_minutes: int = 1440
     configuration: dict[str, Any] = Field(default_factory=dict)

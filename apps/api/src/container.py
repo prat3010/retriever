@@ -641,6 +641,11 @@ class Container:
         self._cache["memory_sanitizer"] = mem_sanitizer
         self._cache["enclave_adapter"] = enclave_adp
 
+        # --- Milestone 102: Universal Model Context Protocol (MCP) Server ---
+        from src.adapters.mcp.battery_mcp_adapter import BatteryMcpAdapter
+
+        self._cache["battery_mcp_adapter"] = BatteryMcpAdapter(self)
+
 
 
     def reset(self) -> None:
@@ -750,4 +755,5 @@ webrtc_signaling_adapter = container.webrtc_signaling_adapter
 voice_orchestrator = container.voice_orchestrator
 memory_sanitizer = container.memory_sanitizer
 enclave_adapter = container.enclave_adapter
+battery_mcp_adapter = container.battery_mcp_adapter
 

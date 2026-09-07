@@ -179,12 +179,31 @@ async def process_conversational_turn(
     if request.audio_base64:
         try:
             audio_bytes = base64.b64decode(request.audio_base64)
-        except Exception:
-            audio_bytes = b"mock_audio_frame"
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid base64-encoded audio payload: {e}",
+            ) from e
 
     async def rag_copilot_response(user_query: str) -> str:
-        # Default sovereign edge grounding response
-        return f"Sovereign edge audio received: {user_query}. Retrieval executed in sub-1ms against local LibSQL replica."
+        from src.domain.abstractions.retrieval import SearchQuery
+
+        try:
+            search_res = await container.search_service.search(
+                SearchQuery(
+                    query=user_query,
+                    tenant_id=tenantId,
+                    top_k=2,
+                    enable_hybrid=True,
+                )
+            )
+            if search_res and search_res.results:
+                chunks_text = " ".join(c.content[:200].strip() for c in search_res.results[:2])
+                return f"Grounded response for '{user_query}': {chunks_text}"
+        except Exception as exc:
+            logger.warning("Voice turn search failed for tenant %s: %s", tenantId, exc)
+
+        return f"Voice query received: '{user_query}'. No grounded knowledge matches found for tenant {tenantId}."
 
     generator = request.text_override if request.text_override else rag_copilot_response
 

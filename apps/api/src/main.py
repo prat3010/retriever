@@ -194,6 +194,7 @@ from src.routers.guardrails import router as guardrails_router
 from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
 from src.routers.integrations import router as integrations_router
+from src.routers.mcp import router as mcp_router
 from src.routers.multicloud import admin_router as multicloud_admin_router
 from src.routers.multicloud import tenant_router as multicloud_tenant_router
 from src.routers.payments import router as payments_router
@@ -213,6 +214,7 @@ from src.routers.workflow import router as workflow_router
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(mcp_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

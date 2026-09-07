@@ -240,3 +240,16 @@ async def test_voice_rest_endpoints():
         )
         assert telemetry_res.status_code == 200
         assert "whisper_engine" in telemetry_res.json()
+
+        # 8. Fail-Fast check: Invalid base64 must return 400 Bad Request, not swallowed
+        bad_turn_res = await client.post(
+            "/v1/tenants/tn_rest_voice/voice/turn",
+            headers=admin_headers,
+            json={
+                "session_id": session_id,
+                "audio_base64": "!!!not-valid-base64!!!",
+                "selected_voice": "neural_natural",
+            },
+        )
+        assert bad_turn_res.status_code == 400
+        assert "Invalid base64-encoded audio payload" in bad_turn_res.json()["detail"]

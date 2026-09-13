@@ -5,12 +5,12 @@
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
-[![Tests](https://img.shields.io/badge/tests-777%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-20%20included-ff69b4.svg)](#-the-20-platform-batteries)
+[![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
+[![Batteries](https://img.shields.io/badge/batteries-24%20included-ff69b4.svg)](#-the-24-platform-batteries)
 [![Serving](https://img.shields.io/badge/vLLM-Scale--to--Zero%20(A10G)-orange.svg)](deploy/)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
-*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, and sovereign edge voice.*
+*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, and multi-model economic orchestration.*
 
 [🚀 Live Production Demo](https://rag.prateeq.in) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
@@ -38,6 +38,8 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 | **Sovereign Edge Sync** | **SQLite FTS5 + Binary Vectors (M98)** | None | N/A | None | None |
 | **Multi-Cloud Failover** | **Quorum Consensus + Turso LibSQL (M99)**| None | None | None | None |
 | **Sovereign Edge Voice** | **Local Whisper + Neural TTS (M100)** | None | None | None | None |
+| **Autonomous ReAct Loop**| **Cyclic State Machine & Anti-Loop (M104)**| None | Fragile wrappers | N/A | Simple chains |
+| **Multi-Model Orchestrator**| **Dynamic Escalation & Savings Ledger (M105)**| None | None | Basic fallback | None |
 | **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
 | **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
 
@@ -68,9 +70,9 @@ curl -X POST http://localhost:8000/v1/search \
 
 ---
 
-## 🔋 The 20 Platform Batteries
+## 🔋 The 24 Platform Batteries
 
-Retriever ships with **20 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **24 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Algorithm / Foundation |
 |:---:|:---|:---|:---|
@@ -94,6 +96,10 @@ Retriever ships with **20 production-grade batteries** pre-wired through Hexagon
 | **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, binary float32 BLOB vectors & differential delta synchronization |
 | **19** | `multicloud_failover_libsql` | Edge Distribution | Multi-cloud quorum consensus failover & embedded Turso LibSQL WAL frame replication |
 | **20** | `sovereign_edge_voice` | Multimodal Cognition | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural speech synthesis |
+| **21** | `micro_enclave_attestation` | Security & KMS | Zero-trust AES-256-GCM enclave sealing & hardware TPM/KMS remote attestation |
+| **22** | `autonomous_swarm_mesh` | P2P Edge Swarm | SWIM gossip failure detection, vector clock causality & partition healing |
+| **23** | `autonomous_react_loop` | Agentic Execution | Cyclic ReAct tool loop, self-healing diagnostic recovery & loop circuit-breaker |
+| **24** | `smart_tool_gateway` | Model Orchestration | Complexity pre-classification, mid-flight escalation & counterfactual savings math |
 
 ---
 

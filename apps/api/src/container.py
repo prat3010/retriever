@@ -651,6 +651,21 @@ class Container:
 
         self._cache["battery_mcp_adapter"] = BatteryMcpAdapter(self)
 
+        # --- Milestone 105: Smart Tool Gateway & Multi-Model Economic Orchestrator ---
+        from src.domain.agentic.smart_tool_router import SmartToolRouter
+
+        smart_tool_router = SmartToolRouter()
+        self._cache["smart_tool_router"] = smart_tool_router
+
+        # --- Milestone 104: Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Execution Engine ---
+        from src.domain.agentic.react_engine import ReActExecutionEngine
+
+        self._cache["react_engine"] = ReActExecutionEngine(
+            llm_provider=llm,
+            tool_registry=self._cache["tool_registry"],
+            orchestrator=smart_tool_router,
+        )
+
 
 
     def reset(self) -> None:
@@ -762,4 +777,6 @@ memory_sanitizer = container.memory_sanitizer
 enclave_adapter = container.enclave_adapter
 battery_mcp_adapter = container.battery_mcp_adapter
 swarm_mesh_adapter = container.swarm_mesh_adapter
+react_engine = container.react_engine
+smart_tool_router = container.smart_tool_router
 

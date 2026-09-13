@@ -1714,28 +1714,34 @@
 
 ---
 
-### [Planned] Milestone 104: Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Runtime (v0.89.0)
+### [Completed] Milestone 104: Autonomous Multi-Turn ReAct Tool Loop & Self-Healing Runtime (v0.89.0)
 
+**Status:** **Completed** (`react_engine.py`, `react.py`, `POST /v1/tenants/{tenantId}/agentic/stream`, 8/8 Pytest tests passed in `test_react_engine.py`, Vitest integration verified in `ChatPanelAgentic.test.tsx`)  
 **Objective:** Upgrade Retriever from single-shot intent classification to a dynamic multi-turn ReAct (Reason $\to$ Act $\to$ Observe $\to$ Repeat) autonomous execution engine with intermediate state inspection, self-correction on tool failures, and cycle-breaker safety gates.
 
 **Target Deliverables:**
-- **Hexagonal Domain Engine (`src/domain/agentic/react_engine.py`)**: Cyclic state machine managing lifecycle states (`REASONING` $\to$ `SELECTING_TOOL` $\to$ `EXECUTING_BATTERY` $\to$ `OBSERVING_RESULT` $\to$ `EVALUATING_COMPLETION`). Maintains immutable execution trace ledger (`TurnStep`, `Thought`, `ToolAction`, `Observation`, `ConfidenceScore`) with strict execution caps ($\le 8$ turns, $30\text{s}$ timeout, max token budget).
+- **Hexagonal Domain Engine (`src/domain/agentic/react_engine.py`, `src/domain/abstractions/react.py`)**: Cyclic state machine managing lifecycle states (`REASONING` $\to$ `SELECTING_TOOL` $\to$ `EXECUTING_BATTERY` $\to$ `OBSERVING_RESULT` $\to$ `EVALUATING_COMPLETION`). Maintains immutable execution trace ledger (`TurnStep`, `Thought`, `ToolAction`, `Observation`, `ConfidenceScore`) with strict execution caps ($\le 8$ turns, $30\text{s}$ timeout, max token budget). Pure Pydantic domain models with 0 framework imports (asserted by AST test).
 - **Self-Healing Error Recovery & Trace Feedback**: When a tool raises an exception (e.g. Python syntax error, empty vector search, invalid Cypher syntax), structured trace and error diagnostics are fed back into the model context as an `Observation`, enabling autonomous query reformulation and code debugging without session termination.
-- **Cycle-Breaker & Anti-Loop Circuit Breaker**: Mathematical tool call signature and parameter hashing preventing infinite ping-pong loops between identical tool calls ($>2$ identical invocations trip circuit breaker).
-- **Streaming Progress SSE Protocol**: Real-time SSE event frames (`agent_thought`, `tool_call_start`, `tool_call_done`, `agent_reflection`, `final_answer`) enabling live visual execution scrubbing in client frontends.
-- **Automated Verification**: Pytest suite asserting cyclic state transitions, self-healing recovery loops, anti-loop tripwires, and timeout boundaries.
+- **Cycle-Breaker & Anti-Loop Circuit Breaker**: Mathematical tool call signature and parameter SHA-256 hashing preventing infinite ping-pong loops between identical tool calls ($\ge 2$ identical invocations trip circuit breaker).
+- **Streaming Progress SSE Protocol**: Real-time SSE event frames (`thought`, `tool_start`, `tool_done`, `self_healing`, `circuit_breaker`, `final_answer`) enabling live visual execution scrubbing in client frontends with `verify_tenant_or_admin` auth.
+- **Frontend Studio Integration (`ChatPanel.tsx`)**: Toggle mode ("💬 Direct RAG" vs "⚡ ReAct Agent"), live collapsible trace accordion with thought bubbles, tool executions, self-healing badges, and loop breaker notices.
+- **Automated Verification**: Pytest suite (8/8) asserting cyclic state transitions, self-healing recovery loops, anti-loop tripwires, and timeout boundaries; Vitest suite (2/2) in website.
 
 ---
 
-### [Planned] Milestone 105: Smart Tool Gateway & Multi-Model Economic Orchestrator (v0.90.0)
+### [Completed] Milestone 105: Smart Tool Gateway & Multi-Model Economic Orchestrator (v0.90.0)
 
-**Objective:** Dynamically orchestrate tool execution between fast, cost-effective mid-level LLMs (Llama 3.3 70B, Gemini 2.0 Flash, Claude 3.5 Haiku) and frontier reasoning models (GPT-6 Astra, Claude 3.7 Sonnet, OpenAI o3), slashing production token spend by $\sim 85\%$ while preserving peak reasoning on complex multi-battery tasks.
+**Status:** **Completed** (`smart_tool_router.py`, `economic_orchestrator.py`, `GET /v1/tenants/{tenantId}/agentic/gateway/ledger`, `POST /v1/tenants/{tenantId}/agentic/gateway/classify`, 8/8 Pytest tests passed in `test_smart_tool_router.py`, Vitest integration verified in `GatewayPanelEconomic.test.tsx`)  
+**Objective:** Dynamically orchestrate tool execution between fast, cost-effective mid-level LLMs (Gemini 2.5 Flash, GPT-4o-mini) and frontier reasoning models (Claude 3.5 Sonnet, GPT-4o), slashing production token spend by $\sim 85\%$ while preserving peak reasoning on complex multi-battery tasks.
 
 **Target Deliverables:**
-- **Dynamic Complexity Classifier (`src/domain/agentic/smart_tool_router.py`)**: Heuristic and dependency depth analyzer routing single-step and two-step routine tasks (e.g. `search_documents` $\to$ summary) to mid-tier models (sub-second, $1/50\text{th}$ cost), reserving frontier models for multi-hop code generation, forensic reconciliation, or high-risk governance actions.
-- **Dynamic Mid-Flight Escalation Protocol**: Seamless execution handoff from mid-tier to frontier model if a tool call encounters an error, exceeds 3 iterative steps, or exhibits low confidence scores, preserving complete thread context with zero user interruption.
-- **Virtual Token & Cost Ledger Attribution**: Track real-time cost per tool turn in `InferenceLogDb`, empirically benchmarking hybrid savings against theoretical pure-frontier deployment.
-- **Automated Verification**: Pytest suite validating routing heuristics, mid-flight thread handoffs, and cost calculation accuracy.
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/economic_orchestrator.py`)**: Pure Pydantic domain models (`ModelTier`, `TaskComplexity`, `EscalationReason`, `EconomicLedgerRecord`, `EconomicLedgerSummary`) and abstract port `EconomicOrchestratorProtocol` with zero database or framework imports (asserted by AST test).
+- **Dynamic Complexity Classifier (`src/domain/agentic/smart_tool_router.py`)**: Static heuristic and indicator analyzer evaluating context length, code execution requirements, multi-hop reasoning, and mathematical synthesis to assign normalized complexity score ($0.0 \dots 1.0$) and starting tier ($\le 0.65 \implies \text{MID\_TIER}, > 0.65 \implies \text{FRONTIER}$).
+- **Dynamic Mid-Flight Escalation Decider**: Automatic execution handoff from mid-tier to frontier model upon iteration threshold ($\ge 3$ steps), circuit-breaker loop warnings, or persistent tool errors after self-healing diagnostics.
+- **Counterfactual Economic Ledger Accounting**: In-memory ring buffer tracking actual spend vs counterfactual frontier baseline, computing net savings and percent reduction with per-tenant isolation.
+- **FastAPI Endpoints (`src/routers/agentic.py`)**: `GET /v1/tenants/{tenantId}/agentic/gateway/ledger` and `POST /v1/tenants/{tenantId}/agentic/gateway/classify`.
+- **Frontend Studio Integration (`GatewayPanel.tsx`, `ChatPanel.tsx`)**: Live `@number-flow/react` savings counters, 4-stat metrics grid, interactive Complexity Lab, recent transactions ledger table, and streaming `⚡ Escalated to Frontier` trace badges.
+- **Automated Verification**: Pytest suite (8/8) in retriever, Vitest suite (2/2) in website, 10/10 verify.sh quality gates green, ADR-0026 documented.
 
 ---
 

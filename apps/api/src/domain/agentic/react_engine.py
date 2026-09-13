@@ -22,6 +22,10 @@ from src.domain.abstractions.economic_orchestrator import (
     ModelTier,
 )
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest, LlmProvider
+from src.domain.abstractions.memory import (
+    CognitiveMemoryProtocol,
+    ConsolidationRequest,
+)
 from src.domain.abstractions.react import (
     ReActEvent,
     ReActEventType,
@@ -77,10 +81,12 @@ class ReActExecutionEngine(ReActLoopProtocol):
         llm_provider: LlmProvider,
         tool_registry: ToolRegistry | None = None,
         orchestrator: EconomicOrchestratorProtocol | None = None,
+        memory_engine: CognitiveMemoryProtocol | None = None,
     ) -> None:
         self.llm = llm_provider
         self.tools = tool_registry or ToolRegistry()
         self.orchestrator = orchestrator
+        self.memory_engine = memory_engine
 
     async def run_loop_stream(
         self,
@@ -98,6 +104,15 @@ class ReActExecutionEngine(ReActLoopProtocol):
         available_tools = self.tools.list_tools(cfg.allowed_tools)
         tools_schema_str = json.dumps([t.model_dump() for t in available_tools], indent=2)
         system_msg = REACT_SYSTEM_PROMPT.format(tools_schema=tools_schema_str)
+
+        # Experience Distillation: retrieve relevant past memories (M108)
+        if self.memory_engine:
+            try:
+                guidance = await self.memory_engine.retrieve_guidance(tenant_id, query)
+                if guidance.guidance_prompt:
+                    system_msg += f"\n\n{guidance.guidance_prompt}"
+            except Exception as mem_err:
+                logger.debug("Cognitive memory guidance retrieval skipped: %s", mem_err)
 
         messages = [
             ChatMessage(role="system", content=system_msg),
@@ -117,6 +132,7 @@ class ReActExecutionEngine(ReActLoopProtocol):
         frontier_tokens = 0
         last_step_had_error = False
         last_step_self_healing = False
+        turn_summaries: list[dict[str, Any]] = []
 
         if self.orchestrator:
             complexity = self.orchestrator.classify_complexity(query, cfg.allowed_tools)
@@ -388,6 +404,14 @@ class ReActExecutionEngine(ReActLoopProtocol):
                 )
             )
 
+            # Record turn for cognitive memory consolidation (M108)
+            turn_summaries.append({
+                "step_index": step_idx,
+                "thought": thought,
+                "tools_called": [c.get("tool_name", "") for c in tool_calls_raw if isinstance(c, dict)],
+                "observation": json.dumps(observations, default=str),
+            })
+
         # Fallback if loop ended without explicit final_answer
         if not final_answer:
             final_answer = (
@@ -413,6 +437,21 @@ class ReActExecutionEngine(ReActLoopProtocol):
                 escalated=escalated,
                 escalation_reason=escalation_reason,
             )
+
+        # Cognitive Memory Experience Consolidation (M108)
+        if self.memory_engine and turn_summaries:
+            try:
+                consolidation_req = ConsolidationRequest(
+                    tenant_id=tenant_id,
+                    session_id=t_id,
+                    query=query,
+                    turns=turn_summaries,
+                    final_answer=final_answer,
+                    success=bool(final_answer and not circuit_breaker_active),
+                )
+                await self.memory_engine.consolidate_trace(tenant_id, consolidation_req)
+            except Exception as cons_err:
+                logger.debug("Cognitive memory trace consolidation skipped: %s", cons_err)
 
         yield ReActEvent(
             event_id=f"ev_{uuid4().hex[:8]}",

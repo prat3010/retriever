@@ -651,6 +651,12 @@ class Container:
 
         self._cache["battery_mcp_adapter"] = BatteryMcpAdapter(self)
 
+        # --- Milestone 108: Cognitive Agent Memory Consolidation & Experience Distillation ---
+        from src.domain.memory.engine import CognitiveMemoryEngine
+
+        cognitive_memory = CognitiveMemoryEngine()
+        self._cache["cognitive_memory"] = cognitive_memory
+
         # --- Milestone 105: Smart Tool Gateway & Multi-Model Economic Orchestrator ---
         from src.domain.agentic.smart_tool_router import SmartToolRouter
 
@@ -664,6 +670,7 @@ class Container:
             llm_provider=llm,
             tool_registry=self._cache["tool_registry"],
             orchestrator=smart_tool_router,
+            memory_engine=cognitive_memory,
         )
 
 
@@ -779,4 +786,5 @@ battery_mcp_adapter = container.battery_mcp_adapter
 swarm_mesh_adapter = container.swarm_mesh_adapter
 react_engine = container.react_engine
 smart_tool_router = container.smart_tool_router
+cognitive_memory = container.cognitive_memory
 

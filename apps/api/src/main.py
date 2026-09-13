@@ -196,6 +196,7 @@ from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
 from src.routers.integrations import router as integrations_router
 from src.routers.mcp import router as mcp_router
+from src.routers.memory import router as memory_router
 from src.routers.multicloud import admin_router as multicloud_admin_router
 from src.routers.multicloud import tenant_router as multicloud_tenant_router
 from src.routers.payments import router as payments_router
@@ -225,6 +226,7 @@ app.include_router(durable_workflow_router)
 app.include_router(durable_workflow_admin_router)
 app.include_router(admin_router)
 app.include_router(agentic_router)
+app.include_router(memory_router)
 app.include_router(consensus_router)
 app.include_router(rlm_router)
 app.include_router(security_compression_router)

@@ -201,6 +201,39 @@ class BatteryMcpAdapter:
                 category="system_extensibility",
                 risk_level="low",
             ),
+            McpToolDefinition(
+                name="swarm_topology",
+                description="Inspect decentralized edge swarm mesh cluster membership, SWIM failure states, and vector clocks.",
+                inputSchema=McpToolInputSchema(
+                    type="object",
+                    properties={},
+                    required=[],
+                ),
+                category="edge_distribution",
+                risk_level="low",
+                battery_id="autonomous_swarm_mesh",
+            ),
+            McpToolDefinition(
+                name="swarm_sync",
+                description="Trigger push-pull anti-entropy sequence exchange and synchronization across edge peers.",
+                inputSchema=McpToolInputSchema(
+                    type="object",
+                    properties={
+                        "sender_id": {
+                            "type": "string",
+                            "description": "Originating peer node ID.",
+                        },
+                        "target_id": {
+                            "type": "string",
+                            "description": "Destination peer node ID.",
+                        },
+                    },
+                    required=["sender_id", "target_id"],
+                ),
+                category="edge_distribution",
+                risk_level="low",
+                battery_id="autonomous_swarm_mesh",
+            ),
         ]
         return tools
 
@@ -427,6 +460,33 @@ class BatteryMcpAdapter:
 
                 return McpToolExecutionResult(
                     content=[McpContentItem(text=out_str)],
+                    is_error=False,
+                )
+
+            if tool_name == "swarm_topology":
+                topology = self._container.swarm_mesh_adapter.get_topology(tenant_id)
+                return McpToolExecutionResult(
+                    content=[McpContentItem(text=json.dumps(topology.model_dump(), indent=2, default=str))],
+                    is_error=False,
+                )
+
+            if tool_name == "swarm_sync":
+                from src.domain.abstractions.swarm import AntiEntropyDigest
+                sender_id = str(arguments.get("sender_id", "node_a"))
+                target_id = str(arguments.get("target_id", "node_b"))
+                digest = AntiEntropyDigest(
+                    sender_id=sender_id,
+                    tenant_id=tenant_id,
+                    highest_sequence=int(arguments.get("highest_sequence", 0)),
+                )
+                res = self._container.swarm_mesh_adapter.sync_anti_entropy(
+                    tenant_id=tenant_id,
+                    sender_id=sender_id,
+                    target_id=target_id,
+                    digest=digest,
+                )
+                return McpToolExecutionResult(
+                    content=[McpContentItem(text=json.dumps(res.model_dump(), indent=2, default=str))],
                     is_error=False,
                 )
 

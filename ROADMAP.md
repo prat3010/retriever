@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 20 Platform Batteries Matrix
+## 🔋 The 22 Platform Batteries Matrix
 
-All 20 batteries are wired through strict Hexagonal dependency injection:
+All 22 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -40,6 +40,8 @@ All 20 batteries are wired through strict Hexagonal dependency injection:
 | **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, binary float32 BLOB vectors & differential delta CRDT | ✅ Production |
 | **19** | `multicloud_failover_libsql` | Edge Distribution | Multi-cloud quorum consensus failover & embedded Turso LibSQL replication | ✅ Production |
 | **20** | `sovereign_edge_voice` | Multimodal Voice | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural TTS | ✅ Production |
+| **21** | `zero_trust_micro_enclave` | Safety & Defense | Hardware-rooted AES-256-GCM memory sealing & remote attestation | ✅ Production |
+| **22** | `autonomous_swarm_mesh` | Edge Distribution | SWIM failure detection, epidemic P2P gossip & vector clock reconciliation | ✅ Production |
 
 ---
 

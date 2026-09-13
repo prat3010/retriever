@@ -274,6 +274,18 @@ class BatteryService:
                 active_parameters={"cipher_suite": "AES-256-GCM", "kdf": "HKDF-SHA256", "supported_platforms": ["intel_sgx", "amd_sev", "aws_nitro", "apple_secure_enclave", "tpm2"], "ephemeral_sanitizer": True},
                 health_check_endpoint="/v1/admin/edge/attestation/report",
             ),
+            PlatformBatteryDTO(
+                id="autonomous_swarm_mesh",
+                name="Autonomous Edge Fleet Swarm Mesh & P2P Gossip Replication",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="SWIM Failure Detection + Epidemic Gossip Protocol + Lamport Vector Clocks & Anti-Entropy Sync",
+                milestone="M102 (v0.87.0)",
+                latency_profile="<5ms gossip dissemination / <50ms anti-entropy sync",
+                description="Decentralized peer-to-peer edge coordination mesh providing leaderless discovery, gossip-disseminated membership, causal vector clock conflict resolution, and partition-healing delta replication.",
+                active_parameters={"protocol": "SWIM_P2P", "anti_entropy": "push_pull", "failure_detector": "ping_req_indirect", "vector_clock_causality": True},
+                health_check_endpoint="/v1/admin/swarm/topology",
+            ),
         ]
 
 

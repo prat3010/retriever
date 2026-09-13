@@ -641,7 +641,12 @@ class Container:
         self._cache["memory_sanitizer"] = mem_sanitizer
         self._cache["enclave_adapter"] = enclave_adp
 
-        # --- Milestone 102: Universal Model Context Protocol (MCP) Server ---
+        # --- Milestone 102: Autonomous Edge Fleet Swarm Mesh & P2P Gossip Replication ---
+        from src.adapters.swarm.gossip_mesh_adapter import GossipMeshAdapter
+
+        self._cache["swarm_mesh_adapter"] = GossipMeshAdapter()
+
+        # --- Milestone 103: Universal Model Context Protocol (MCP) Server ---
         from src.adapters.mcp.battery_mcp_adapter import BatteryMcpAdapter
 
         self._cache["battery_mcp_adapter"] = BatteryMcpAdapter(self)
@@ -756,4 +761,5 @@ voice_orchestrator = container.voice_orchestrator
 memory_sanitizer = container.memory_sanitizer
 enclave_adapter = container.enclave_adapter
 battery_mcp_adapter = container.battery_mcp_adapter
+swarm_mesh_adapter = container.swarm_mesh_adapter
 

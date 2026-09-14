@@ -1817,6 +1817,33 @@
 
 ---
 
+### [Completed] Milestone 109: Multi-Agent Swarm Quorum & Dynamic Debate Consensus Engine (v0.93.0)
+
+**Objective:** Implement Platform Battery #26: Multi-Agent Swarm Quorum & Dynamic Debate Consensus Engine, orchestrating specialized agent topologies (Planner, Forensic Auditor, Code Synthesizer, Skeptic/Critic) over a directed debate DAG, multi-round dialectic cross-examinations, weighted quorum voting, and automatic hallucination pruning.
+
+**Deliverables:**
+- **Hexagonal Domain Abstractions (`src/domain/abstractions/agent_swarm.py`)**:
+  - Pure Pydantic models for `SwarmAgentRole`, `DebateStance`, `CandidateClaim`, `DebateTurn`, `DebateRound`, `AgentBallot`, `CandidateResolution`, `QuorumConsensusResult`, and `SwarmDebateProtocol` with 0 framework imports.
+- **Debate DAG & Quorum Engine (`src/domain/agentic/swarm/engine.py`)**:
+  - Topological `networkx.DiGraph` connecting participating agent personas along review edges.
+  - 3-stage dialectic debate protocol (Opening Theses, Cross-Examination & Audit, Rebuttal & Quorum Voting).
+  - Role-weighted quorum consensus mathematics:
+    $$V(A_k) = \frac{\sum_i w_i \cdot c_{i,k} \cdot \mathbf{1}(\text{agree})}{\sum_i w_i}$$
+  - Automated hallucination pruning quarantining claims failing forensic verification.
+  - Cognitive memory integration (M108): pre-loop guidance lookup & post-loop trace consolidation.
+- **FastAPI Endpoints (`src/routers/agent_swarm.py`)**:
+  - `POST /v1/tenants/{tenantId}/agentic/swarm/debate`: Synchronous execution.
+  - `POST /v1/tenants/{tenantId}/agentic/swarm/debate/stream`: Real-time SSE streaming.
+  - `GET /v1/tenants/{tenantId}/agentic/swarm/roles`: Lists registered role profiles.
+  - `GET /v1/tenants/{tenantId}/agentic/swarm/stats`: Operational telemetry.
+- **Frontend SaaS Studio Integration (`Prateek_website`)**:
+  - `SwarmPanel.tsx` & `SwarmPanel.module.css` mounted in `/rag/app`.
+  - 4-stat metrics grid (`@number-flow/react`), persona cards, dialectic debate timeline, and hallucination pruning ledger.
+- **Automated Verification**:
+  - 7/7 Pytest tests in `test_swarm_quorum.py`, 7/7 Vitest tests in `SwarmPanel.test.tsx`, ADR-0028 documented.
+
+---
+
 ## 7. Cross-Cutting Engineering Invariants
 
 These are tracked across all milestones and are not individual deliverables:

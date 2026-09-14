@@ -177,6 +177,7 @@ async def handle_budget_exceeded_error(request, exc: BudgetExceededError):
 # --- Router Includes ---
 
 from src.routers.admin import router as admin_router
+from src.routers.agent_swarm import router as agent_swarm_router
 from src.routers.agentic import router as agentic_router
 from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
@@ -227,6 +228,7 @@ app.include_router(durable_workflow_admin_router)
 app.include_router(admin_router)
 app.include_router(agentic_router)
 app.include_router(memory_router)
+app.include_router(agent_swarm_router)
 app.include_router(consensus_router)
 app.include_router(rlm_router)
 app.include_router(security_compression_router)

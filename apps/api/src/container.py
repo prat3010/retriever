@@ -673,6 +673,16 @@ class Container:
             memory_engine=cognitive_memory,
         )
 
+        # --- Milestone 109: Multi-Agent Swarm Quorum & Dynamic Debate Consensus Engine ---
+        from src.domain.agentic.swarm.engine import MultiAgentSwarmQuorumEngine
+
+        swarm_quorum_engine = MultiAgentSwarmQuorumEngine(
+            llm_provider=llm,
+            memory_engine=cognitive_memory,
+            tool_registry=self._cache.get("tool_registry"),
+        )
+        self._cache["swarm_quorum_engine"] = swarm_quorum_engine
+
 
 
     def reset(self) -> None:
@@ -787,4 +797,5 @@ swarm_mesh_adapter = container.swarm_mesh_adapter
 react_engine = container.react_engine
 smart_tool_router = container.smart_tool_router
 cognitive_memory = container.cognitive_memory
+swarm_quorum_engine = container.swarm_quorum_engine
 

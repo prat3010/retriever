@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 22 Platform Batteries Matrix
+## 🔋 The 26 Platform Batteries Matrix
 
-All 22 batteries are wired through strict Hexagonal dependency injection:
+All 26 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -42,6 +42,10 @@ All 22 batteries are wired through strict Hexagonal dependency injection:
 | **20** | `sovereign_edge_voice` | Multimodal Voice | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural TTS | ✅ Production |
 | **21** | `zero_trust_micro_enclave` | Safety & Defense | Hardware-rooted AES-256-GCM memory sealing & remote attestation | ✅ Production |
 | **22** | `autonomous_swarm_mesh` | Edge Distribution | SWIM failure detection, epidemic P2P gossip & vector clock reconciliation | ✅ Production |
+| **23** | `universal_mcp_server` | Tool Protocols | JSON-RPC 2.0 & SSE Model Context Protocol server exposing all platform batteries | ✅ Production |
+| **24** | `react_execution_loop` | Agentic Workflows | Autonomous multi-turn ReAct reasoning loop with self-healing error recovery | ✅ Production |
+| **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation | ✅ Production |
+| **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning | ✅ Production |
 
 ---
 

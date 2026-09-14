@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 29 Platform Batteries Matrix
+## 🔋 The 30 Platform Batteries Matrix
 
-All 29 batteries are wired through strict Hexagonal dependency injection:
+All 30 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -49,6 +49,7 @@ All 29 batteries are wired through strict Hexagonal dependency injection:
 | **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack | ✅ Production |
 | **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 | ✅ Production |
 | **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural schematic parsing, normalized bounding-box coordinates & cross-modal GraphRAG | ✅ Production |
+| **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology, HMAC-SHA256 trust envelopes & federated ReAct delegation | ✅ Production |
 
 ---
 
@@ -92,9 +93,13 @@ All 29 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled Client SDKs Updated:** Exported `createVoiceStream` and full event typing (`onSessionReady`, `onVadState`, `onTranscript`, `onAgentAudioChunk`, `onInterrupted`, `onTurnComplete`) in `@prat3010/retriever-client` and `retriever-python`.
 - [x] **Control Plane Voice Studio Upgrade:** Integrated genuine Web Audio API `AudioContext` + `AnalyserNode` frequency spectrum visualization in `VoiceStudioPanel.tsx` and purged all fake `Math.random()` bars and timer mocks.
 
-### Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation (Next Target)
-- [ ] **Decentralized MCP Tool Mesh:** Multi-cluster tool discovery, distributed peer-to-peer tool execution with mutual TLS, and dynamic capability advertisement.
-- [ ] **Cross-Cluster Agent Federation:** Distributed ReAct cognitive loops delegating sub-queries across sovereign tenant clusters with cryptographic trust proofs.
+### Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation (v1.5.0-alpha1) — **Completed**
+- [x] **Platform Battery #30 Registration:** Cataloged `distributed_mcp_mesh` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Decentralized MCP Tool Mesh:** Multi-cluster tool discovery, dynamic capability advertisement, heartbeat leasing (120s eviction), and latency-weighted peer routing.
+- [x] **Cryptographic Trust Envelopes:** Inter-cluster tool execution and delegation signed via HMAC-SHA256 with 60-second sliding-window nonce replay protection.
+- [x] **Cross-Cluster Agent Federation:** Distributed ReAct cognitive loop allowing agents to delegate sub-goals to specialist agents on remote sovereign clusters with strict circular loop breakers (`FederationLoopError`).
+- [x] **Decoupled API Client SDKs Extended:** Added full mesh and federation API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated 3-tab segmented controller in `McpPanel.tsx` with decentralized node topology visualizer and cross-cluster agent delegation cockpit under Design System 2.0.
 
 ---
 

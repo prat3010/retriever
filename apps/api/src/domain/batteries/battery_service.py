@@ -398,6 +398,24 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/graph/multimodal/status",
             ),
+            PlatformBatteryDTO(
+                id="distributed_mcp_mesh",
+                name="Distributed Model Context Protocol (MCP) Mesh & Agent Federation",
+                category=BatteryCategory.SYSTEM_EXTENSIBILITY,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Decentralized P2P MCP Mesh Topology + HMAC-SHA256 Trust Envelope + Federated ReAct Sub-Agent Delegation",
+                milestone="M115 (v1.5.0-alpha1)",
+                latency_profile="<5ms local mesh dispatch, ~35ms cross-cluster federated RPC",
+                description="Federates sovereign tenant clusters and edge nodes into a decentralized MCP tool mesh with dynamic capability advertisement, lowest-latency peer routing, HMAC-SHA256 mutual trust verification, and recursive cross-cluster ReAct agent delegation with circular loop breakers.",
+                active_parameters={
+                    "protocol": "mcp_mesh_v1",
+                    "trust_envelope": "hmac_sha256",
+                    "max_delegation_depth": 3,
+                    "nonce_ttl_seconds": 60,
+                    "routing_algorithm": "latency_weighted_mesh",
+                },
+                health_check_endpoint="/v1/mesh/status",
+            ),
         ]
 
 

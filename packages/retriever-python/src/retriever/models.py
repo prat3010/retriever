@@ -210,3 +210,42 @@ class VoiceStreamEventDTO(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+# ── Distributed MCP Mesh & Agent Federation (Battery #30 / Milestone 115) ─────
+
+
+class MeshPeerNodeDTO(BaseModel):
+    node_id: str
+    cluster_id: str
+    endpoint_url: str
+    role: str = "sovereign_node"
+    status: str = "online"
+    advertised_tools: list[dict[str, Any]] = Field(default_factory=list)
+    latency_ms: float = 10.0
+    last_heartbeat: float = 0.0
+    public_key_fingerprint: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MeshStatusSummaryDTO(BaseModel):
+    battery_id: str = "distributed_mcp_mesh"
+    status: str = "active"
+    total_nodes: int
+    active_nodes: int
+    total_mesh_tools: int
+    routing_policy: str = "local_first"
+    nodes: list[MeshPeerNodeDTO] = Field(default_factory=list)
+
+
+class FederatedDelegationResponseDTO(BaseModel):
+    delegation_id: str
+    status: str
+    source_cluster_id: str
+    target_cluster_id: str
+    tenant_id: str
+    synthesis: str
+    tool_trace_summary: list[dict[str, Any]] = Field(default_factory=list)
+    execution_latency_ms: float = 0.0
+    signature: str = ""
+    error_message: str | None = None
+
+

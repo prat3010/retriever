@@ -705,4 +705,119 @@ export class RetrieverClient {
       },
     };
   }
+
+  // ── Distributed Model Context Protocol (MCP) Mesh & Agent Federation (Battery #30) ────
+
+  async getMeshStatus(): Promise<MeshStatusSummary> {
+    return this.request<MeshStatusSummary>("/v1/mesh/status");
+  }
+
+  async listMeshNodes(statusFilter?: MeshNodeStatus): Promise<MeshPeerNode[]> {
+    const query = statusFilter ? `?status=${statusFilter}` : "";
+    return this.request<MeshPeerNode[]>(`/v1/mesh/nodes${query}`);
+  }
+
+  async registerMeshNode(node: Partial<MeshPeerNode> & { node_id: string; cluster_id: string; endpoint_url: string }): Promise<MeshPeerNode> {
+    return this.request<MeshPeerNode>("/v1/mesh/nodes/register", {
+      method: "POST",
+      body: JSON.stringify(node),
+    });
+  }
+
+  async sendMeshHeartbeat(nodeId: string, latencyMs?: number): Promise<MeshPeerNode> {
+    return this.request<MeshPeerNode>("/v1/mesh/nodes/heartbeat", {
+      method: "POST",
+      body: JSON.stringify({ node_id: nodeId, latency_ms: latencyMs }),
+    });
+  }
+
+  async listMeshTools(): Promise<any[]> {
+    return this.request<any[]>("/v1/mesh/tools");
+  }
+
+  async executeMeshTool(
+    toolName: string,
+    args: Record<string, any> = {},
+    targetClusterId: string = "cluster_local",
+    policy: MeshRoutingPolicy = "local_first"
+  ): Promise<any> {
+    return this.request<any>(`/v1/mesh/tools/execute?policy=${policy}`, {
+      method: "POST",
+      body: JSON.stringify({
+        call_id: `call_${Math.random().toString(36).slice(2, 10)}`,
+        tool_name: toolName,
+        arguments: args,
+        tenant_id: this.tenantId,
+        source_cluster_id: "cluster_client_sdk",
+        target_cluster_id: targetClusterId,
+      }),
+    });
+  }
+
+  async delegateFederatedTask(request: {
+    target_cluster_id: string;
+    intent: string;
+    target_agent_role?: string;
+    context_scope?: Record<string, any>;
+    max_depth?: number;
+    visited_clusters?: string[];
+  }): Promise<FederatedDelegationResponse> {
+    return this.request<FederatedDelegationResponse>("/v1/mesh/federation/delegate", {
+      method: "POST",
+      body: JSON.stringify({
+        target_cluster_id: request.target_cluster_id,
+        tenant_id: this.tenantId,
+        intent: request.intent,
+        target_agent_role: request.target_agent_role ?? "forensic_auditor",
+        context_scope: request.context_scope ?? {},
+        max_depth: request.max_depth ?? 2,
+        visited_clusters: request.visited_clusters ?? [],
+      }),
+    });
+  }
+
+  async getFederatedTaskStatus(delegationId: string): Promise<FederatedDelegationResponse> {
+    return this.request<FederatedDelegationResponse>(`/v1/mesh/federation/tasks/${delegationId}`);
+  }
+}
+
+export type MeshNodeRole = "seed_gateway" | "sovereign_node" | "edge_enclave" | "remote_peer";
+export type MeshNodeStatus = "online" | "degraded" | "standby" | "unreachable";
+export type MeshRoutingPolicy = "local_first" | "lowest_latency" | "round_robin" | "failover";
+export type FederatedTaskStatus = "pending" | "executing" | "completed" | "failed" | "rejected";
+
+export interface MeshPeerNode {
+  node_id: string;
+  cluster_id: string;
+  endpoint_url: string;
+  role: MeshNodeRole;
+  status: MeshNodeStatus;
+  advertised_tools: any[];
+  latency_ms: number;
+  last_heartbeat: number;
+  public_key_fingerprint?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MeshStatusSummary {
+  battery_id: string;
+  status: string;
+  total_nodes: number;
+  active_nodes: number;
+  total_mesh_tools: number;
+  routing_policy: MeshRoutingPolicy;
+  nodes: MeshPeerNode[];
+}
+
+export interface FederatedDelegationResponse {
+  delegation_id: string;
+  status: FederatedTaskStatus;
+  source_cluster_id: string;
+  target_cluster_id: string;
+  tenant_id: string;
+  synthesis: string;
+  tool_trace_summary: Record<string, any>[];
+  execution_latency_ms: number;
+  signature: string;
+  error_message?: string | null;
 }

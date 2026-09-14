@@ -66,3 +66,21 @@ class QuotaExceededError(DomainError):
 class ProviderUnavailableError(ConnectionError):
     """Exception raised when an LLM provider returns a retryable error (timeout, 5xx, rate limit)."""
     pass
+
+
+class FederationLoopError(DomainError):
+    """Exception raised when a circular agent delegation loop is detected."""
+
+    pass
+
+
+class TrustVerificationError(DomainError):
+    """Exception raised when inter-cluster cryptographic trust signature fails validation."""
+
+    pass
+
+
+class MeshNodeUnreachableError(DomainError):
+    """Exception raised when a remote MCP mesh peer cannot be reached."""
+
+    pass

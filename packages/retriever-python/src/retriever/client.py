@@ -21,7 +21,10 @@ from retriever.models import (
     ConnectorSyncResponseDTO,
     DocumentResponse,
     EnclaveEvidence,
+    FederatedDelegationResponseDTO,
     McpToolDefinition,
+    MeshPeerNodeDTO,
+    MeshStatusSummaryDTO,
     MultimodalGraphResponseDTO,
     ReActEvent,
     SchematicDiagramDTO,
@@ -333,6 +336,70 @@ class RetrieverClient:
             f"?token={self.api_key}&sensitivity={sensitivity}&silence_threshold_ms={silence_threshold_ms}&voice={voice}&speed={speed}"
         )
 
+    # ── Distributed MCP Mesh & Agent Federation (Battery #30 / M115) ──────────
+
+    def get_mesh_status(self) -> MeshStatusSummaryDTO:
+        resp = self._client.get("/v1/mesh/status")
+        _handle_error(resp)
+        return MeshStatusSummaryDTO.model_validate(resp.json())
+
+    def list_mesh_nodes(self, status_filter: str | None = None) -> list[MeshPeerNodeDTO]:
+        params = {"status": status_filter} if status_filter else {}
+        resp = self._client.get("/v1/mesh/nodes", params=params)
+        _handle_error(resp)
+        return [MeshPeerNodeDTO.model_validate(n) for n in resp.json()]
+
+    def list_mesh_tools(self) -> list[dict[str, Any]]:
+        resp = self._client.get("/v1/mesh/tools")
+        _handle_error(resp)
+        return resp.json()
+
+    def execute_mesh_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None = None,
+        target_cluster_id: str = "cluster_local",
+        policy: str = "local_first",
+    ) -> dict[str, Any]:
+        payload = {
+            "call_id": "call_py_client",
+            "tool_name": tool_name,
+            "arguments": arguments or {},
+            "tenant_id": self.tenant_id,
+            "source_cluster_id": "cluster_python_sdk",
+            "target_cluster_id": target_cluster_id,
+        }
+        resp = self._client.post(f"/v1/mesh/tools/execute?policy={policy}", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    def delegate_federated_task(
+        self,
+        target_cluster_id: str,
+        intent: str,
+        target_agent_role: str = "forensic_auditor",
+        context_scope: dict[str, Any] | None = None,
+        max_depth: int = 2,
+        visited_clusters: list[str] | None = None,
+    ) -> FederatedDelegationResponseDTO:
+        payload = {
+            "target_cluster_id": target_cluster_id,
+            "tenant_id": self.tenant_id,
+            "intent": intent,
+            "target_agent_role": target_agent_role,
+            "context_scope": context_scope or {},
+            "max_depth": max_depth,
+            "visited_clusters": visited_clusters or [],
+        }
+        resp = self._client.post("/v1/mesh/federation/delegate", json=payload)
+        _handle_error(resp)
+        return FederatedDelegationResponseDTO.model_validate(resp.json())
+
+    def get_federated_task_status(self, delegation_id: str) -> FederatedDelegationResponseDTO:
+        resp = self._client.get(f"/v1/mesh/federation/tasks/{delegation_id}")
+        _handle_error(resp)
+        return FederatedDelegationResponseDTO.model_validate(resp.json())
+
 
 class AsyncRetrieverClient:
     """Asynchronous Client for Retriever Cognitive Engine."""
@@ -560,5 +627,69 @@ class AsyncRetrieverClient:
             f"{ws_proto}://{host}/v1/tenants/{self.tenant_id}/voice/stream/{session_id}"
             f"?token={self.api_key}&sensitivity={sensitivity}&silence_threshold_ms={silence_threshold_ms}&voice={voice}&speed={speed}"
         )
+
+    # ── Distributed MCP Mesh & Agent Federation (Battery #30 / M115) ──────────
+
+    async def get_mesh_status(self) -> MeshStatusSummaryDTO:
+        resp = await self._client.get("/v1/mesh/status")
+        _handle_error(resp)
+        return MeshStatusSummaryDTO.model_validate(resp.json())
+
+    async def list_mesh_nodes(self, status_filter: str | None = None) -> list[MeshPeerNodeDTO]:
+        params = {"status": status_filter} if status_filter else {}
+        resp = await self._client.get("/v1/mesh/nodes", params=params)
+        _handle_error(resp)
+        return [MeshPeerNodeDTO.model_validate(n) for n in resp.json()]
+
+    async def list_mesh_tools(self) -> list[dict[str, Any]]:
+        resp = await self._client.get("/v1/mesh/tools")
+        _handle_error(resp)
+        return resp.json()
+
+    async def execute_mesh_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None = None,
+        target_cluster_id: str = "cluster_local",
+        policy: str = "local_first",
+    ) -> dict[str, Any]:
+        payload = {
+            "call_id": "call_py_async_client",
+            "tool_name": tool_name,
+            "arguments": arguments or {},
+            "tenant_id": self.tenant_id,
+            "source_cluster_id": "cluster_python_sdk",
+            "target_cluster_id": target_cluster_id,
+        }
+        resp = await self._client.post(f"/v1/mesh/tools/execute?policy={policy}", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def delegate_federated_task(
+        self,
+        target_cluster_id: str,
+        intent: str,
+        target_agent_role: str = "forensic_auditor",
+        context_scope: dict[str, Any] | None = None,
+        max_depth: int = 2,
+        visited_clusters: list[str] | None = None,
+    ) -> FederatedDelegationResponseDTO:
+        payload = {
+            "target_cluster_id": target_cluster_id,
+            "tenant_id": self.tenant_id,
+            "intent": intent,
+            "target_agent_role": target_agent_role,
+            "context_scope": context_scope or {},
+            "max_depth": max_depth,
+            "visited_clusters": visited_clusters or [],
+        }
+        resp = await self._client.post("/v1/mesh/federation/delegate", json=payload)
+        _handle_error(resp)
+        return FederatedDelegationResponseDTO.model_validate(resp.json())
+
+    async def get_federated_task_status(self, delegation_id: str) -> FederatedDelegationResponseDTO:
+        resp = await self._client.get(f"/v1/mesh/federation/tasks/{delegation_id}")
+        _handle_error(resp)
+        return FederatedDelegationResponseDTO.model_validate(resp.json())
 
 

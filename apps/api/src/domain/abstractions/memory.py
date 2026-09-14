@@ -13,13 +13,13 @@ from __future__ import annotations
 
 import time
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class MemoryType(str, Enum):
+class MemoryType(StrEnum):
     """Classification of cognitive memory representations."""
 
     EPISODIC = "episodic"  # Specific task resolution trace, situation & outcome

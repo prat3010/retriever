@@ -5,11 +5,11 @@
 
 ---
 
-## ⚡ Current Status: Enterprise Production Ready (v0.85+)
+## ⚡ Current Status: Enterprise Production Ready (v0.93.0+)
 
-Retriever has completed **102 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 112 automated test suites.
+Retriever has completed **109 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 118 automated test suites.
 
-👉 **Looking for granular historical milestone logs (M1–M102)?**  
+👉 **Looking for granular historical milestone logs (M1–M109)?**  
 See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTONES_HISTORY.md`](docs/engineering/MILESTONES_HISTORY.md).
 
 ---
@@ -51,23 +51,23 @@ All 26 batteries are wired through strict Hexagonal dependency injection:
 
 ## 🚀 Upcoming Open-Source Roadmap (2026+)
 
-### Milestone 103: Public Open-Source Launch (v1.0.0-rc1)
+### Milestone 110: Public Open-Source Launch (v1.0.0-rc1)
 - [ ] **1-Line Quickstart Script:** `curl -fsSL https://get.retriever.run | bash` for automated environment sensing and Docker launch.
 - [ ] **Decoupled API Client SDK:** Publish standalone `@prat3010/retriever-client` npm and `retriever-python` PyPI packages.
 - [ ] **Hacker News & X Launch:** Execute community launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
 
-### Milestone 104: Community Connectors Ecosystem
+### Milestone 111: Community Connectors Ecosystem
 - [ ] **Enterprise Data Connectors:**
   - PostgreSQL / MySQL change-data-capture (CDC) sync via Debezium.
   - S3 / Google Cloud Storage / Azure Blob auto-indexing watcher.
   - Notion, GitHub Issues / PRs, and Google Drive OAuth connectors.
 - [ ] **Custom Ingestion Pipeline SDK:** Standardized interface for community-authored file parsers.
 
-### Milestone 105: Kubernetes Native Operator & Helm Charts
+### Milestone 112: Kubernetes Native Operator & Helm Charts
 - [ ] **Official Helm Chart:** Production-ready Helm template for multi-replica FastAPI pods, partitioned pgvector storage, and Redis Sentinel.
 - [ ] **Kubernetes Operator:** Custom Resource Definition (`kind: RetrieverCluster`) managing automated database backups, rolling schema migrations, and GPU worker autoscaling.
 
-### Milestone 106: Multimodal Vision GraphRAG
+### Milestone 113: Multimodal Vision GraphRAG
 - [ ] **Direct Image & Video Chunking:** Embedding and indexing technical schematics, architectural blueprints, and slide decks alongside extracted text.
 - [ ] **Visual Graph Traversal:** Interleaved image-text entity extraction linking diagram components to tabular data and explanatory prose.
 

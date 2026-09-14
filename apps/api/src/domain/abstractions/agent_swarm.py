@@ -14,13 +14,13 @@ from __future__ import annotations
 import time
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class SwarmAgentRole(str, Enum):
+class SwarmAgentRole(StrEnum):
     """Specialized cognitive roles in the collaborative agent swarm."""
 
     PLANNER = "planner"
@@ -29,7 +29,7 @@ class SwarmAgentRole(str, Enum):
     SKEPTIC_CRITIC = "skeptic_critic"
 
 
-class DebateStance(str, Enum):
+class DebateStance(StrEnum):
     """Dialectic stance adopted by an agent during a debate turn."""
 
     PROPOSAL = "proposal"

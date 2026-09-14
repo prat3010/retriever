@@ -109,5 +109,6 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 - 🔌 **REST & SSE API Reference:** [`docs/api/`](docs/api/) (28 endpoints)
 - 🔒 **Enterprise Security Whitepaper:** [`docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md`](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md)
 - 🛡️ **Sovereign Edge Swarm Handbook:** [`docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md`](docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md)
+- 🕸️ **Distributed MCP Mesh & Federation Handbook:** [`docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md`](docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

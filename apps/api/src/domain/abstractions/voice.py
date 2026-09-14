@@ -10,6 +10,7 @@ Defines pure domain entities, enums, data models, and abstract protocols for:
 Strictly Hexagonal: Zero database, ORM, or web framework imports.
 """
 
+import time
 import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -211,3 +212,71 @@ class WebRtcSignalingProtocol(Protocol):
     async def list_active_sessions(self, tenant_id: str) -> list[VoiceSession]:
         """Lists active voice sessions for a tenant."""
         ...
+
+
+# ── Milestone 114: Real-time Audio Streaming & Low-Latency Full-Duplex WebRTC ──
+
+
+class VoiceStreamEventType(StrEnum):
+    """Event types exchanged over the real-time voice WebSocket stream."""
+
+    SESSION_READY = "session_ready"
+    VAD_STATE = "vad_state"
+    TRANSCRIPT_PARTIAL = "transcript_partial"
+    TRANSCRIPT_FINAL = "transcript_final"
+    AGENT_THINKING = "agent_thinking"
+    AGENT_TEXT_DELTA = "agent_text_delta"
+    AGENT_AUDIO_CHUNK = "agent_audio_chunk"
+    INTERRUPTED = "interrupted"
+    TURN_COMPLETE = "turn_complete"
+    ERROR = "error"
+    PING = "ping"
+    PONG = "pong"
+
+
+class VoiceStreamControlMessage(BaseModel):
+    """Control payload exchanged over bidirectional voice WebSocket."""
+
+    event_type: VoiceStreamEventType
+    session_id: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    timestamp: float = Field(default_factory=time.time)
+
+
+class VoiceInterruptionEvent(BaseModel):
+    """Details of a user barge-in event interrupting active agent speech."""
+
+    session_id: str
+    interrupted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    reason: str = Field(default="user_barge_in")
+    cancelled_turn_id: str | None = None
+    frames_buffered_count: int = Field(default=0)
+
+
+class VoiceStreamServiceProtocol(Protocol):
+    """Abstract port for managing real-time bidirectional audio streaming & VAD barge-in."""
+
+    async def register_stream(self, session_id: str) -> None:
+        """Initializes state tracking for a live audio stream."""
+        ...
+
+    async def unregister_stream(self, session_id: str) -> None:
+        """Cleans up resources for a disconnected stream."""
+        ...
+
+    async def ingest_audio_frame(
+        self,
+        session_id: str,
+        frame_bytes: bytes,
+    ) -> list[VoiceStreamControlMessage]:
+        """Ingests a 20ms audio frame, evaluates VAD, and handles endpointing / barge-in."""
+        ...
+
+    async def interrupt(
+        self,
+        session_id: str,
+        reason: str = "user_barge_in",
+    ) -> VoiceInterruptionEvent:
+        """Cancels any active speech generation or synthesis task immediately."""
+        ...
+

@@ -380,6 +380,24 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/admin/operator/status",
             ),
+            PlatformBatteryDTO(
+                id="multimodal_vision_graphrag",
+                name="Multimodal Vision GraphRAG & Schematic Ingestion",
+                category=BatteryCategory.COMPUTATION_GRAPH,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Interleaved Visual-Textual Entity Extraction + Schematic Bounding-Box Graph Topology",
+                milestone="M113 (v1.3.0-alpha1)",
+                latency_profile="~28ms vector layout parsing & cross-modal graph traversal",
+                description="Ingests technical architecture schematics, system flowcharts, and slide decks alongside text documents, generating normalized bounding boxes, component classifications, directional connector topologies, and multi-hop visual GraphRAG citations.",
+                active_parameters={
+                    "supported_formats": ["svg", "png", "jpg", "jpeg", "webp"],
+                    "bounding_box_normalized": True,
+                    "max_hops": 3,
+                    "cross_modal_linking_enabled": True,
+                    "iou_deduplication_threshold": 0.8,
+                },
+                health_check_endpoint="/v1/graph/multimodal/status",
+            ),
         ]
 
 

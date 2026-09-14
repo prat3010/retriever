@@ -213,7 +213,9 @@ from src.routers.serverless_gpu import tenant_router as serverless_tenant_router
 from src.routers.swarm import admin_router as swarm_admin_router
 from src.routers.swarm import tenant_router as swarm_tenant_router
 from src.routers.tenant import router as tenant_router
+from src.routers.vision import router as vision_router
 from src.routers.voice import admin_router as voice_admin_router
+from src.routers.voice import stream_router as voice_stream_router
 from src.routers.voice import tenant_router as voice_tenant_router
 from src.routers.workflow import router as workflow_router
 
@@ -253,10 +255,12 @@ app.include_router(multicloud_admin_router)
 app.include_router(multicloud_tenant_router)
 app.include_router(voice_admin_router)
 app.include_router(voice_tenant_router)
+app.include_router(voice_stream_router)
 app.include_router(enclave_admin_router)
 app.include_router(enclave_tenant_router)
 app.include_router(swarm_admin_router)
 app.include_router(swarm_tenant_router)
+app.include_router(vision_router)
 
 
 

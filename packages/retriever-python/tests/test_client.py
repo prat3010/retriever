@@ -128,3 +128,92 @@ def test_connector_manifests_sdk(monkeypatch):
     assert manifests[0].connector_type == "database_cdc"
     assert manifests[0].supports_incremental is True
     client.close()
+
+
+def test_extract_schematic_and_vision_methods(monkeypatch):
+    """Verify synchronous vision methods on RetrieverClient."""
+    def mock_post(url, json=None, **kwargs):
+        u = str(url)
+        if "schematic/extract-text" in u:
+            return httpx.Response(
+                status_code=200,
+                json={
+                    "diagram_id": "diag_test_123",
+                    "filename": "arch.svg",
+                    "width": 1920.0,
+                    "height": 1080.0,
+                    "elements": [
+                        {
+                            "element_id": "elem_1",
+                            "label": "API Gateway",
+                            "element_type": "gateway",
+                            "bounding_box": {"ymin": 0.1, "xmin": 0.1, "ymax": 0.3, "xmax": 0.4, "confidence": 0.95},
+                            "confidence": 0.95,
+                        }
+                    ],
+                    "connectors": [],
+                    "summary": "Test architecture summary.",
+                },
+            )
+        if "vision/graph/query" in u:
+            return httpx.Response(
+                status_code=200,
+                json={
+                    "root_entity": "API Gateway",
+                    "nodes": [
+                        {
+                            "id": "api_gateway",
+                            "label": "API Gateway",
+                            "node_type": "visual_component",
+                            "bounding_box": {"ymin": 0.1, "xmin": 0.1, "ymax": 0.3, "xmax": 0.4, "confidence": 0.95},
+                        }
+                    ],
+                    "edges": [],
+                    "cross_modal_links_count": 0,
+                    "triples_count": 1,
+                },
+            )
+        return httpx.Response(status_code=404, text="Not Found")
+
+    client = RetrieverClient(
+        api_key="ret_live_test_key",
+        base_url="http://localhost:8000",
+        tenant_id="00000000-0000-0000-0000-000000000001",
+    )
+    monkeypatch.setattr(client._client, "post", mock_post)
+
+    diag = client.extract_schematic_text("<svg>...</svg>", "arch.svg")
+    assert diag.diagram_id == "diag_test_123"
+    assert len(diag.elements) == 1
+    assert diag.elements[0].label == "API Gateway"
+    assert diag.elements[0].bounding_box.ymin == 0.1
+
+    graph = client.query_multimodal_graph("API Gateway")
+    assert graph.root_entity == "API Gateway"
+    assert len(graph.nodes) == 1
+    client.close()
+
+
+def test_voice_streaming_url_formatting():
+    """Verify WebSocket URL generation for voice streaming."""
+    client = RetrieverClient(
+        api_key="ret_live_secret",
+        base_url="https://rag.prateeq.in",
+        tenant_id="tn_test_voice",
+    )
+    url = client.get_voice_stream_url(
+        session_id="vcs_12345",
+        sensitivity=0.75,
+        silence_threshold_ms=300,
+        voice="warm_conversational",
+        speed=1.1,
+    )
+    assert url.startswith("wss://rag.prateeq.in/v1/tenants/tn_test_voice/voice/stream/vcs_12345")
+    assert "token=ret_live_secret" in url
+    assert "sensitivity=0.75" in url
+    assert "silence_threshold_ms=300" in url
+    assert "voice=warm_conversational" in url
+    assert "speed=1.1" in url
+    client.close()
+
+

@@ -117,3 +117,96 @@ class ConnectorSyncResponseDTO(BaseModel):
     message: str
 
     model_config = {"populate_by_name": True}
+
+
+# ── Multimodal Vision GraphRAG (Battery #29) ─────────────────────────────────
+
+class VisionBoundingBoxDTO(BaseModel):
+    ymin: float
+    xmin: float
+    ymax: float
+    xmax: float
+    confidence: float = 1.0
+
+
+class VisualElementDTO(BaseModel):
+    element_id: str
+    label: str
+    element_type: str = "unknown"
+    bounding_box: VisionBoundingBoxDTO
+    confidence: float = 1.0
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class VisualConnectorDTO(BaseModel):
+    connector_id: str
+    source_element_id: str
+    target_element_id: str
+    label: str = ""
+    directionality: str = "directed"
+    protocol: str | None = None
+    confidence: float = 1.0
+
+
+class SchematicDiagramDTO(BaseModel):
+    diagram_id: str
+    filename: str
+    document_id: str | None = None
+    page_number: int = 1
+    width: float = 1920.0
+    height: float = 1080.0
+    elements: list[VisualElementDTO] = Field(default_factory=list)
+    connectors: list[VisualConnectorDTO] = Field(default_factory=list)
+    summary: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MultimodalGraphNodeDTO(BaseModel):
+    id: str
+    label: str
+    node_type: str
+    element_type: str | None = None
+    bounding_box: VisionBoundingBoxDTO | None = None
+    diagram_id: str | None = None
+    document_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MultimodalGraphEdgeDTO(BaseModel):
+    source: str
+    target: str
+    relation: str
+    protocol: str | None = None
+    is_cross_modal: bool = False
+    confidence: float = 1.0
+
+
+class MultimodalGraphResponseDTO(BaseModel):
+    root_entity: str
+    nodes: list[MultimodalGraphNodeDTO] = Field(default_factory=list)
+    edges: list[MultimodalGraphEdgeDTO] = Field(default_factory=list)
+    cross_modal_links_count: int = 0
+    triples_count: int = 0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ── Voice Streaming & Barge-In (Battery #30 / Milestone 114) ─────────────────
+
+
+class VoiceStreamSessionConfigDTO(BaseModel):
+    session_id: str
+    tenant_id: str
+    selected_voice: str = "neural_natural"
+    sample_rate_hz: int = 16000
+    channels: int = 1
+    sensitivity: float = 0.65
+    silence_threshold_ms: int = 400
+    speed: float = 1.0
+
+
+class VoiceStreamEventDTO(BaseModel):
+    event_type: str
+    session_id: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+

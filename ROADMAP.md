@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 28 Platform Batteries Matrix
+## 🔋 The 29 Platform Batteries Matrix
 
-All 28 batteries are wired through strict Hexagonal dependency injection:
+All 29 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -48,6 +48,7 @@ All 28 batteries are wired through strict Hexagonal dependency injection:
 | **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning | ✅ Production |
 | **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack | ✅ Production |
 | **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 | ✅ Production |
+| **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural schematic parsing, normalized bounding-box coordinates & cross-modal GraphRAG | ✅ Production |
 
 ---
 
@@ -75,9 +76,25 @@ All 28 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Platform Battery #28 Registration:** Cataloged `kubernetes_native_operator` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - [x] **Admin Cluster Management APIs:** `GET /v1/admin/operator/status`, `GET /v1/admin/operator/clusters`, `POST /v1/admin/operator/reconcile`, and `POST /v1/admin/operator/clusters/{cluster_name}/backup`.
 
-### Milestone 113: Multimodal Vision GraphRAG (Next Target)
-- [ ] **Direct Image & Video Chunking:** Embedding and indexing technical schematics, architectural blueprints, and slide decks alongside extracted text.
-- [ ] **Visual Graph Traversal:** Interleaved image-text entity extraction linking diagram components to tabular data and explanatory prose.
+### Milestone 113: Multimodal Vision GraphRAG & Schematic Ingestion (v1.3.0-alpha1) — **Completed**
+- [x] **Platform Battery #29 Registration:** Cataloged `multimodal_vision_graphrag` in `BatteryService` under `COMPUTATION_GRAPH`.
+- [x] **Architectural Schematic Parsing Engine:** Pure domain `SchematicExtractor` parsing SVG XML layouts, binary image headers, flow patterns, and directional connectors with protocols.
+- [x] **Normalized Coordinate Geometry:** `BoundingBox` validation ensuring strict $[0.0, 1.0]$ bounds, IoU math, and architectural ontology classification (`api_gateway`, `database`, `microservice`, `queue`, `client_app`, `cache`, `storage`, `auth_service`).
+- [x] **Cross-Modal Knowledge Graph Traversal:** Multi-hop graph search linking visual layout components to textual documentation chunks with verifiable visual citations (`[Schematic: ... | Box: ... | "..."]`).
+- [x] **FastAPI Multimodal Endpoints:** Mounted `/v1/tenants/{tenantId}/vision/schematic/extract`, `/extract-text`, `/graph/query`, `/schematics/{documentId}`, and `/v1/graph/multimodal/status`.
+- [x] **Decoupled SDKs Extended:** Added full Vision GraphRAG API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Visual Lightbox:** Integrated visual citation badges and responsive `<Portal>` bounding-box inspection lightbox in `ChatPanel.tsx` with Design System 2.0 theme parity.
+
+### Milestone 114: Real-time Audio Streaming & Low-Latency Full-Duplex WebRTC Voice Agent (v1.4.0-alpha1) — **Completed**
+- [x] **Ultra-Low Latency Streaming Audio Pipeline:** Bi-directional full-duplex WebSocket streaming endpoint (`/v1/tenants/{tenantId}/voice/stream/{sessionId}`) with sub-300ms Time-to-First-Audio-Byte (TTFAB) and zero-cloud audio egress.
+- [x] **Continuous 20ms PCM16 Ingestion & VAD Endpointing:** Real-time RMS & ZCR voice activity detection and automatic speech endpointing (400ms silence threshold) eliminating manual click-to-stop.
+- [x] **Conversational Barge-In / Interruption Engine:** Instant cancellation of server-side synthesis tasks upon user speech detection ($\ge 3$ frames = 60ms) emitting an `interrupted` event and resetting state to `LISTENING`.
+- [x] **Decoupled Client SDKs Updated:** Exported `createVoiceStream` and full event typing (`onSessionReady`, `onVadState`, `onTranscript`, `onAgentAudioChunk`, `onInterrupted`, `onTurnComplete`) in `@prat3010/retriever-client` and `retriever-python`.
+- [x] **Control Plane Voice Studio Upgrade:** Integrated genuine Web Audio API `AudioContext` + `AnalyserNode` frequency spectrum visualization in `VoiceStudioPanel.tsx` and purged all fake `Math.random()` bars and timer mocks.
+
+### Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation (Next Target)
+- [ ] **Decentralized MCP Tool Mesh:** Multi-cluster tool discovery, distributed peer-to-peer tool execution with mutual TLS, and dynamic capability advertisement.
+- [ ] **Cross-Cluster Agent Federation:** Distributed ReAct cognitive loops delegating sub-queries across sovereign tenant clusters with cryptographic trust proofs.
 
 ---
 

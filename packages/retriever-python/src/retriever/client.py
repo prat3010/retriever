@@ -22,7 +22,9 @@ from retriever.models import (
     DocumentResponse,
     EnclaveEvidence,
     McpToolDefinition,
+    MultimodalGraphResponseDTO,
     ReActEvent,
+    SchematicDiagramDTO,
     SearchResponse,
     SearchResultItem,
     SwarmDebateResult,
@@ -271,6 +273,66 @@ class RetrieverClient:
         _handle_error(resp)
         return ConnectorSyncResponseDTO.model_validate(resp.json())
 
+    # ── Multimodal Vision GraphRAG & Schematic Ingestion (Battery #29) ─────────
+
+    def extract_schematic_text(
+        self,
+        content: str,
+        filename: str = "architecture.svg",
+        document_id: str | None = None,
+    ) -> SchematicDiagramDTO:
+        payload = {"content": content, "filename": filename, "document_id": document_id}
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/vision/schematic/extract-text",
+            json=payload,
+        )
+        _handle_error(resp)
+        return SchematicDiagramDTO.model_validate(resp.json())
+
+    def query_multimodal_graph(
+        self,
+        entity_query: str,
+        max_hops: int = 2,
+    ) -> MultimodalGraphResponseDTO:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "entity_query": entity_query,
+            "max_hops": max_hops,
+            "include_visual_boxes": True,
+        }
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/vision/graph/query",
+            json=payload,
+        )
+        _handle_error(resp)
+        return MultimodalGraphResponseDTO.model_validate(resp.json())
+
+    def get_document_schematics(self, document_id: str) -> dict[str, Any]:
+        resp = self._client.get(f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}")
+        _handle_error(resp)
+        return resp.json()
+
+    def get_multimodal_vision_status(self) -> dict[str, Any]:
+        resp = self._client.get("/v1/graph/multimodal/status")
+        _handle_error(resp)
+        return resp.json()
+
+    def get_voice_stream_url(
+        self,
+        session_id: str,
+        sensitivity: float = 0.65,
+        silence_threshold_ms: int = 400,
+        voice: str = "neural_natural",
+        speed: float = 1.0,
+    ) -> str:
+        """Returns the full WebSocket URL for full-duplex real-time voice streaming."""
+        ws_proto = "wss" if self.base_url.startswith("https") else "ws"
+        host = self.base_url.split("://")[-1].rstrip("/")
+        return (
+            f"{ws_proto}://{host}/v1/tenants/{self.tenant_id}/voice/stream/{session_id}"
+            f"?token={self.api_key}&sensitivity={sensitivity}&silence_threshold_ms={silence_threshold_ms}&voice={voice}&speed={speed}"
+        )
+
 
 class AsyncRetrieverClient:
     """Asynchronous Client for Retriever Cognitive Engine."""
@@ -438,3 +500,65 @@ class AsyncRetrieverClient:
         )
         _handle_error(resp)
         return ConnectorSyncResponseDTO.model_validate(resp.json())
+
+    # ── Multimodal Vision GraphRAG & Schematic Ingestion (Battery #29) ─────────
+
+    async def extract_schematic_text(
+        self,
+        content: str,
+        filename: str = "architecture.svg",
+        document_id: str | None = None,
+    ) -> SchematicDiagramDTO:
+        payload = {"content": content, "filename": filename, "document_id": document_id}
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/vision/schematic/extract-text",
+            json=payload,
+        )
+        _handle_error(resp)
+        return SchematicDiagramDTO.model_validate(resp.json())
+
+    async def query_multimodal_graph(
+        self,
+        entity_query: str,
+        max_hops: int = 2,
+    ) -> MultimodalGraphResponseDTO:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "entity_query": entity_query,
+            "max_hops": max_hops,
+            "include_visual_boxes": True,
+        }
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/vision/graph/query",
+            json=payload,
+        )
+        _handle_error(resp)
+        return MultimodalGraphResponseDTO.model_validate(resp.json())
+
+    async def get_document_schematics(self, document_id: str) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}")
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_multimodal_vision_status(self) -> dict[str, Any]:
+        resp = await self._client.get("/v1/graph/multimodal/status")
+        _handle_error(resp)
+        return resp.json()
+
+    def get_voice_stream_url(
+        self,
+        session_id: str,
+        sensitivity: float = 0.65,
+        silence_threshold_ms: int = 400,
+        voice: str = "neural_natural",
+        speed: float = 1.0,
+    ) -> str:
+        """Returns the full WebSocket URL for full-duplex real-time voice streaming."""
+        ws_proto = "wss" if self.base_url.startswith("https") else "ws"
+        host = self.base_url.split("://")[-1].rstrip("/")
+        return (
+            f"{ws_proto}://{host}/v1/tenants/{self.tenant_id}/voice/stream/{session_id}"
+            f"?token={self.api_key}&sensitivity={sensitivity}&silence_threshold_ms={silence_threshold_ms}&voice={voice}&speed={speed}"
+        )
+
+

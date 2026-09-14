@@ -38,6 +38,8 @@ export default function VoiceDashboardPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>("vcs_demo_edge");
 
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+
   const {
     data: telemetry,
     isLoading,
@@ -45,60 +47,50 @@ export default function VoiceDashboardPage() {
   } = useQuery<VoiceSessionTelemetry>({
     queryKey: ["voice-telemetry"],
     queryFn: async () => {
-      try {
-        const res = await api.get<any>("/v1/admin/voice/telemetry");
-        return res.data || res;
-      } catch {
-        return {
-          active_sessions_count: 3,
-          average_turn_latency_ms: 184.5,
-          audio_frames_processed: 14280,
-          vad_speech_events_count: 312,
-          whisper_engine: "whisper_cpp_sovereign_edge",
-          synthesis_engine: "edge_neural_tts_streamer",
-        };
-      }
+      const res = await api.get<any>("/v1/admin/voice/telemetry");
+      return res.data || res;
     },
     refetchInterval: 5000,
   });
 
   const synthesizeMutation = useMutation({
     mutationFn: async (text: string) => {
-      try {
-        const res = await api.post<any>("/v1/tenants/tn_demo/voice/synthesize", {
-          text,
-          selected_voice: selectedTimbre,
-          speed: 1.0,
-        });
-        return res.data || res;
-      } catch {
-        return {
-          text,
-          chunks_count: 4,
-          total_bytes: 38400,
-          sample_rate_hz: 16000,
-          format: "pcm16",
-        };
-      }
+      const res = await api.post<any>("/v1/tenants/default/voice/synthesize", {
+        text,
+        selected_voice: selectedTimbre,
+        speed: 1.0,
+      });
+      return res.data || res;
     },
     onSuccess: (data) => {
-      toast.success(`Synthesized ${data.chunks_count} audio chunks in sub-250ms TTFAB!`);
+      toast.success(`Synthesized ${data.chunks_count} audio chunks with sub-250ms TTFAB!`);
     },
     onError: (err: any) => {
       toast.error(err.message || "Synthesis failed");
     },
   });
 
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     if (!isRecording) {
-      setIsRecording(true);
-      toast.info("Microphone stream activated. VAD listening...");
-      setTimeout(() => {
-        setIsRecording(false);
-        toast.success("Voice activity endpointed: Transcribed via local Whisper in 24ms.");
-      }, 3500);
+      try {
+        if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+          toast.error("Microphone access is not supported in this browser environment");
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMediaStream(stream);
+        setIsRecording(true);
+        toast.info("Microphone stream connected. Real-time VAD listening...");
+      } catch (err: any) {
+        toast.error(`Microphone access error: ${err.message || err}`);
+      }
     } else {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        setMediaStream(null);
+      }
       setIsRecording(false);
+      toast.success("Voice capture stopped.");
     }
   };
 

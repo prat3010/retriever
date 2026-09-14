@@ -625,10 +625,19 @@ class Container:
             signaling_adapter=webrtc_signal_adapter,
         )
 
+        from src.domain.voice.voice_stream_service import VoiceStreamService
+
+        voice_stream_svc = VoiceStreamService(
+            transcription_adapter=whisper_adapter,
+            synthesis_adapter=speech_synth_adapter,
+            signaling_adapter=webrtc_signal_adapter,
+        )
+
         self._cache["whisper_transcription_adapter"] = whisper_adapter
         self._cache["speech_synthesis_adapter"] = speech_synth_adapter
         self._cache["webrtc_signaling_adapter"] = webrtc_signal_adapter
         self._cache["voice_orchestrator"] = voice_orch
+        self._cache["voice_stream_service"] = voice_stream_svc
 
         # --- Milestone 101: Zero-Trust Micro-Enclave Encryption & Hardware KMS Remote Attestation ---
         from src.adapters.security.enclave_adapter import HardwareEnclaveAdapter
@@ -693,6 +702,17 @@ class Container:
         operator_reconciler = ClusterReconciler(client=operator_client)
         self._cache["operator_client"] = operator_client
         self._cache["operator_reconciler"] = operator_reconciler
+
+        # --- Milestone 113: Multimodal Vision GraphRAG & Schematic Ingestion ---
+        from src.adapters.cognitive.vision_parser_adapter import VisionParserAdapter
+        from src.domain.vision.multimodal_graph_service import MultimodalGraphService
+        from src.domain.vision.schematic_extractor import DomainSchematicExtractor
+
+        schematic_extractor_engine = DomainSchematicExtractor()
+        schematic_extractor = VisionParserAdapter(extractor=schematic_extractor_engine)
+        multimodal_graph_service = MultimodalGraphService(graph_repository=self._cache.get("graph_repository"))
+        self._cache["schematic_extractor"] = schematic_extractor
+        self._cache["multimodal_graph_service"] = multimodal_graph_service
 
 
 
@@ -811,4 +831,7 @@ cognitive_memory = container.cognitive_memory
 swarm_quorum_engine = container.swarm_quorum_engine
 operator_client = container.operator_client
 operator_reconciler = container.operator_reconciler
+schematic_extractor = container.schematic_extractor
+multimodal_graph_service = container.multimodal_graph_service
+voice_stream_service = container.voice_stream_service
 

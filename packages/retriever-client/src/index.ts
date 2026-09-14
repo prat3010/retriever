@@ -153,6 +153,117 @@ export interface ConnectorSyncResponse {
   message: string;
 }
 
+// ── Multimodal Vision GraphRAG Types (Battery #29) ──────────────────────────
+
+export interface VisionBoundingBox {
+  ymin: number;
+  xmin: number;
+  ymax: number;
+  xmax: number;
+  confidence?: number;
+}
+
+export interface VisualElement {
+  element_id: string;
+  label: string;
+  element_type: string;
+  bounding_box: VisionBoundingBox;
+  confidence: number;
+  properties?: Record<string, any>;
+}
+
+export interface VisualConnector {
+  connector_id: string;
+  source_element_id: string;
+  target_element_id: string;
+  label: string;
+  directionality: string;
+  protocol?: string;
+  confidence: number;
+}
+
+export interface SchematicDiagram {
+  diagram_id: string;
+  filename: string;
+  document_id?: string;
+  page_number: number;
+  width: number;
+  height: number;
+  elements: VisualElement[];
+  connectors: VisualConnector[];
+  summary: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MultimodalGraphNode {
+  id: string;
+  label: string;
+  node_type: string;
+  element_type?: string;
+  bounding_box?: VisionBoundingBox;
+  diagram_id?: string;
+  document_id?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MultimodalGraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+  protocol?: string;
+  is_cross_modal: boolean;
+  confidence: number;
+}
+
+export interface MultimodalGraphResponse {
+  root_entity: string;
+  nodes: MultimodalGraphNode[];
+  edges: MultimodalGraphEdge[];
+  cross_modal_links_count: number;
+  triples_count: number;
+  metadata?: Record<string, any>;
+}
+
+// ── Voice Streaming & Barge-In (Battery #30 / Milestone 114) ─────────────────
+
+export interface VoiceStreamEvent {
+  event_type:
+    | "session_ready"
+    | "vad_state"
+    | "transcript_partial"
+    | "transcript_final"
+    | "agent_thinking"
+    | "agent_text_delta"
+    | "interrupted"
+    | "turn_complete"
+    | "error"
+    | "ping"
+    | "pong";
+  session_id: string;
+  payload: Record<string, any>;
+}
+
+export interface VoiceStreamCallbacks {
+  onSessionReady?: (payload: { codec: string; sample_rate_hz: number; channels: number }) => void;
+  onVadState?: (state: "speech_detected" | "endpoint_detected", payload: Record<string, any>) => void;
+  onTranscript?: (transcript: { text: string; confidence: number; is_final: boolean; latency_ms?: number }) => void;
+  onAgentThinking?: (payload: Record<string, any>) => void;
+  onAgentTextDelta?: (delta: string) => void;
+  onAgentAudioChunk?: (audioChunk: Uint8Array) => void;
+  onInterrupted?: (event: { reason: string; cancelled_turn_id?: string; speech_frames?: number }) => void;
+  onTurnComplete?: (turn: Record<string, any>) => void;
+  onError?: (error: Error | string) => void;
+  onClose?: () => void;
+}
+
+export interface VoiceStreamSession {
+  sendAudioFrame: (frameBytes: Uint8Array | ArrayBuffer) => void;
+  sendTextInput: (text: string) => void;
+  interrupt: (reason?: string) => void;
+  ping: () => void;
+  close: () => void;
+}
+
 export class RetrieverClient {
   public readonly apiKey: string;
   public readonly baseUrl: string;
@@ -436,5 +547,162 @@ export class RetrieverClient {
         method: "POST",
       }
     );
+  }
+
+  // ── Multimodal Vision GraphRAG & Schematic Ingestion (Battery #29) ─────────
+
+  async extractSchematicText(
+    content: string,
+    filename: string = "architecture.svg",
+    documentId?: string
+  ): Promise<SchematicDiagram> {
+    return this.request<SchematicDiagram>(
+      `/v1/tenants/${this.tenantId}/vision/schematic/extract-text`,
+      {
+        method: "POST",
+        body: JSON.stringify({ content, filename, document_id: documentId }),
+      }
+    );
+  }
+
+  async queryMultimodalGraph(
+    entityQuery: string,
+    maxHops: number = 2
+  ): Promise<MultimodalGraphResponse> {
+    return this.request<MultimodalGraphResponse>(
+      `/v1/tenants/${this.tenantId}/vision/graph/query`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          tenant_id: this.tenantId,
+          entity_query: entityQuery,
+          max_hops: maxHops,
+          include_visual_boxes: true,
+        }),
+      }
+    );
+  }
+
+  async getDocumentSchematics(documentId: string): Promise<{ document_id: string; total_triples: number; triples: any[] }> {
+    return this.request<{ document_id: string; total_triples: number; triples: any[] }>(
+      `/v1/tenants/${this.tenantId}/vision/schematics/${documentId}`
+    );
+  }
+
+  async getMultimodalVisionStatus(): Promise<{ battery_id: string; status: string; version: string; milestone: string }> {
+    return this.request<{ battery_id: string; status: string; version: string; milestone: string }>(
+      "/v1/graph/multimodal/status"
+    );
+  }
+
+  // ── Voice Streaming & Real-Time Audio (Battery #30 / Milestone 114) ────────
+
+  createVoiceStream(
+    sessionId: string,
+    callbacks: VoiceStreamCallbacks,
+    options?: {
+      sensitivity?: number;
+      silenceThresholdMs?: number;
+      voice?: string;
+      speed?: number;
+    }
+  ): VoiceStreamSession {
+    const wsProto = this.baseUrl.startsWith("https") ? "wss" : "ws";
+    const host = this.baseUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    const params = new URLSearchParams({
+      token: this.apiKey,
+      sensitivity: String(options?.sensitivity ?? 0.65),
+      silence_threshold_ms: String(options?.silenceThresholdMs ?? 400),
+      voice: options?.voice ?? "neural_natural",
+      speed: String(options?.speed ?? 1.0),
+    });
+    const url = `${wsProto}://${host}/v1/tenants/${this.tenantId}/voice/stream/${sessionId}?${params.toString()}`;
+
+    const WebSocketImpl = typeof WebSocket !== "undefined" ? WebSocket : (globalThis as any).WebSocket;
+    if (!WebSocketImpl) {
+      throw new Error("WebSocket implementation not found in global scope");
+    }
+
+    const ws = new WebSocketImpl(url);
+    ws.binaryType = "arraybuffer";
+
+    ws.onmessage = (event: any) => {
+      if (typeof event.data === "string") {
+        try {
+          const msg: VoiceStreamEvent = JSON.parse(event.data);
+          switch (msg.event_type) {
+            case "session_ready":
+              callbacks.onSessionReady?.(msg.payload as any);
+              break;
+            case "vad_state":
+              callbacks.onVadState?.(msg.payload?.state, msg.payload);
+              break;
+            case "transcript_partial":
+            case "transcript_final":
+              callbacks.onTranscript?.({
+                text: msg.payload?.text,
+                confidence: msg.payload?.confidence,
+                is_final: msg.event_type === "transcript_final",
+                latency_ms: msg.payload?.latency_ms,
+              });
+              break;
+            case "agent_thinking":
+              callbacks.onAgentThinking?.(msg.payload);
+              break;
+            case "agent_text_delta":
+              callbacks.onAgentTextDelta?.(msg.payload?.delta || "");
+              break;
+            case "interrupted":
+              callbacks.onInterrupted?.(msg.payload as any);
+              break;
+            case "turn_complete":
+              callbacks.onTurnComplete?.(msg.payload?.turn);
+              break;
+            case "error":
+              callbacks.onError?.(msg.payload?.error || "Unknown stream error");
+              break;
+          }
+        } catch (e: any) {
+          callbacks.onError?.(e);
+        }
+      } else if (event.data instanceof ArrayBuffer || ArrayBuffer.isView(event.data)) {
+        const chunk = event.data instanceof ArrayBuffer ? new Uint8Array(event.data) : new Uint8Array(event.data.buffer);
+        callbacks.onAgentAudioChunk?.(chunk);
+      }
+    };
+
+    ws.onerror = (err: any) => {
+      callbacks.onError?.(err);
+    };
+
+    ws.onclose = () => {
+      callbacks.onClose?.();
+    };
+
+    return {
+      sendAudioFrame: (frameBytes: Uint8Array | ArrayBuffer) => {
+        if (ws.readyState === (ws.OPEN ?? 1)) {
+          ws.send(frameBytes);
+        }
+      },
+      sendTextInput: (text: string) => {
+        if (ws.readyState === (ws.OPEN ?? 1)) {
+          ws.send(JSON.stringify({ event_type: "text_input", text }));
+        }
+      },
+      interrupt: (reason: string = "client_interrupt") => {
+        if (ws.readyState === (ws.OPEN ?? 1)) {
+          ws.send(JSON.stringify({ event_type: "interrupt", reason }));
+        }
+      },
+      ping: () => {
+        if (ws.readyState === (ws.OPEN ?? 1)) {
+          ws.send(JSON.stringify({ event_type: "ping" }));
+        }
+      },
+      close: () => {
+        ws.close();
+      },
+    };
   }
 }

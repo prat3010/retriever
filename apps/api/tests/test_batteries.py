@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 28 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 29 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 28
-    assert resp.active_count >= 22
-    assert len(resp.batteries) == 28
+    assert resp.total_batteries == 29
+    assert resp.active_count >= 23
+    assert len(resp.batteries) == 29
 
     # Check key expected battery IDs
     expected_ids = {
@@ -51,6 +51,7 @@ def test_platform_batteries_inventory_completeness():
         "multi_agent_swarm_quorum",
         "cdc_community_connectors",
         "kubernetes_native_operator",
+        "multimodal_vision_graphrag",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -85,9 +86,21 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 28
-        assert data["active_count"] >= 22
-        assert len(data["batteries"]) == 28
+        assert data["total_batteries"] == 29
+        assert data["active_count"] >= 23
+        assert len(data["batteries"]) == 29
+
+
+def test_multimodal_vision_graphrag_battery():
+    """Verify Battery #29: Multimodal Vision GraphRAG & Schematic Ingestion properties."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "multimodal_vision_graphrag"), None)
+    assert battery is not None
+    assert battery.name == "Multimodal Vision GraphRAG & Schematic Ingestion"
+    assert battery.category == BatteryCategory.COMPUTATION_GRAPH
+    assert battery.status == BatteryStatus.ACTIVE
+    assert "M113" in battery.milestone
+    assert battery.active_parameters["bounding_box_normalized"] is True
 
 
 def test_kubernetes_native_operator_battery():

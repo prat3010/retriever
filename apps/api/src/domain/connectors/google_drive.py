@@ -7,6 +7,7 @@ import httpx
 from src.domain.abstractions.connector import (
     BaseConnector,
     ConnectorConfig,
+    ConnectorManifest,
     DiscoveredDocument,
 )
 
@@ -25,6 +26,17 @@ class GoogleDriveConnector(BaseConnector):
     """
 
     DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
+
+    def get_manifest(self) -> ConnectorManifest:
+        return ConnectorManifest(
+            connector_type="google_drive",
+            name="Google Drive & Docs",
+            description="Extracts documents, presentations, and folders from Google Drive with export conversion.",
+            icon="drive",
+            supports_incremental=True,
+            required_parameters=["folder_id"],
+            optional_parameters={"access_token": "", "api_key": ""},
+        )
 
     def _get_headers(self, config: ConnectorConfig) -> dict[str, str]:
         auth_token = config.configuration.get("access_token") or config.configuration.get("api_key", "")

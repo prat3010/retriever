@@ -1,0 +1,31 @@
+Thank you for installing Retriever ({{ .Chart.Version }})!
+
+Your release is named {{ .Release.Name }}.
+
+To verify that your installation is working:
+
+1. Check pod status:
+   kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}" -n {{ .Release.Namespace }}
+
+2. Access the Retriever API:
+{{- if .Values.ingress.enabled }}
+   Retriever API endpoint: https://{{ (index .Values.ingress.hosts 0).host }}
+   API Docs: https://{{ (index .Values.ingress.hosts 0).host }}/docs
+{{- else }}
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "retriever.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=api" -o jsonpath="{.items[0].metadata.name}")
+   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8000:8000
+   echo "Visit http://127.0.0.1:8000/docs to use the API"
+{{- end }}
+
+{{- if .Values.web.enabled }}
+3. Access the Web Studio:
+{{- if .Values.ingress.enabled }}
+   Retriever Web Studio: https://{{ (index .Values.ingress.hosts 1).host }}
+{{- else }}
+   export WEB_POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "retriever.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=web" -o jsonpath="{.items[0].metadata.name}")
+   kubectl --namespace {{ .Release.Namespace }} port-forward $WEB_POD_NAME 3000:3000
+   echo "Visit http://127.0.0.1:3000 to use the Studio"
+{{- end }}
+{{- end }}
+
+For more information, see: https://github.com/prat3010/retriever

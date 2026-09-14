@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 26 Platform Batteries Matrix
+## 🔋 The 28 Platform Batteries Matrix
 
-All 26 batteries are wired through strict Hexagonal dependency injection:
+All 28 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -46,28 +46,36 @@ All 26 batteries are wired through strict Hexagonal dependency injection:
 | **24** | `react_execution_loop` | Agentic Workflows | Autonomous multi-turn ReAct reasoning loop with self-healing error recovery | ✅ Production |
 | **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation | ✅ Production |
 | **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning | ✅ Production |
+| **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack | ✅ Production |
+| **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 | ✅ Production |
 
 ---
 
-## 🚀 Upcoming Open-Source Roadmap (2026+)
+## 🚀 Active Open-Source Releases & Roadmap (2026+)
 
-### Milestone 110: Public Open-Source Launch (v1.0.0-rc1)
-- [ ] **1-Line Quickstart Script:** `curl -fsSL https://get.retriever.run | bash` for automated environment sensing and Docker launch.
-- [ ] **Decoupled API Client SDK:** Publish standalone `@prat3010/retriever-client` npm and `retriever-python` PyPI packages.
-- [ ] **Hacker News & X Launch:** Execute community launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
+### Milestone 110: Public Open-Source Launch (v1.0.0-rc1) — **Completed**
+- [x] **1-Line Quickstart Script:** `curl -fsSL https://get.retriever.run | bash` with automated environment sensing (Apple Silicon MPS / NVIDIA CUDA / CPU) and 1-click Docker Compose launch.
+- [x] **Decoupled API Client SDKs:** Standalone `@prat3010/retriever-client` on npm (TypeScript/ESM/CJS) and `retriever-python` on PyPI (Sync/Async) covering all 26 batteries.
+- [x] **Hacker News & X Launch:** Reconciled 26-battery launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
 
-### Milestone 111: Community Connectors Ecosystem
-- [ ] **Enterprise Data Connectors:**
-  - PostgreSQL / MySQL change-data-capture (CDC) sync via Debezium.
-  - S3 / Google Cloud Storage / Azure Blob auto-indexing watcher.
-  - Notion, GitHub Issues / PRs, and Google Drive OAuth connectors.
-- [ ] **Custom Ingestion Pipeline SDK:** Standardized interface for community-authored file parsers.
+### Milestone 111: Community Connectors Ecosystem (v1.1.0-alpha1) — **Completed**
+- [x] **Enterprise Data Connectors:**
+  - PostgreSQL & MySQL high-watermark Change-Data-Capture (CDC) connector with chronological watermark cursor tracking (`DatabaseCdcConnector`).
+  - S3-compatible cloud object storage watcher for AWS S3, Cloudflare R2, MinIO, and GCS with ETag differential change detection (`S3StorageConnector`).
+  - GitHub repository markdown docs, issues, and pull request sync with `since` cursor tracking (`GitHubConnector`).
+  - Slack channel history and thread aggregation connector with timestamp cursor tracking (`SlackConnector`).
+- [x] **Custom Ingestion Pipeline SDK:** Standardized `BaseConnector` lifecycle, `BaseDocumentParser`, `@register_connector` decorator for dynamic third-party extensions, and `GET /v1/admin/connectors/manifests`.
+- [x] **Platform Battery #27 Registration:** Cataloged `cdc_community_connectors` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Decoupled Client SDKs Updated:** Added connector management methods to `@prat3010/retriever-client` and `retriever-python`.
 
-### Milestone 112: Kubernetes Native Operator & Helm Charts
-- [ ] **Official Helm Chart:** Production-ready Helm template for multi-replica FastAPI pods, partitioned pgvector storage, and Redis Sentinel.
-- [ ] **Kubernetes Operator:** Custom Resource Definition (`kind: RetrieverCluster`) managing automated database backups, rolling schema migrations, and GPU worker autoscaling.
+### Milestone 112: Kubernetes Native Operator & Helm Charts (v1.2.0-alpha1) — **Completed**
+- [x] **Official Production Helm 3 Chart:** Highly configurable Helm chart in `deploy/helm/retriever/` orchestrating multi-replica FastAPI pods, Next.js Web Studio, HPA v2, Ingress with cert-manager TLS, PostgreSQL 16 + pgvector StatefulSet, and Redis 7.
+- [x] **Kubernetes Custom Resource Definition (CRD):** `RetrieverCluster` (`retriever.run/v1alpha1`) with comprehensive OpenAPI v3 schema validation, subresources (`status`, `scale`), and `kubectl get rc` printer columns.
+- [x] **Level-Triggered Cluster Reconciler:** Hexagonal reconciler managing state transitions (`Pending` $\rightarrow$ `Provisioning` $\rightarrow$ `Running`), rolling upgrades on image tag changes, GPU accelerator node affinity/tolerations, and automated database backup jobs.
+- [x] **Platform Battery #28 Registration:** Cataloged `kubernetes_native_operator` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Admin Cluster Management APIs:** `GET /v1/admin/operator/status`, `GET /v1/admin/operator/clusters`, `POST /v1/admin/operator/reconcile`, and `POST /v1/admin/operator/clusters/{cluster_name}/backup`.
 
-### Milestone 113: Multimodal Vision GraphRAG
+### Milestone 113: Multimodal Vision GraphRAG (Next Target)
 - [ ] **Direct Image & Video Chunking:** Embedding and indexing technical schematics, architectural blueprints, and slide decks alongside extracted text.
 - [ ] **Visual Graph Traversal:** Interleaved image-text entity extraction linking diagram components to tabular data and explanatory prose.
 

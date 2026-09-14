@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 22 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 28 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 22
-    assert resp.active_count >= 18
-    assert len(resp.batteries) == 22
+    assert resp.total_batteries == 28
+    assert resp.active_count >= 22
+    assert len(resp.batteries) == 28
 
     # Check key expected battery IDs
     expected_ids = {
@@ -45,6 +45,12 @@ def test_platform_batteries_inventory_completeness():
         "sovereign_edge_voice",
         "zero_trust_micro_enclave",
         "autonomous_swarm_mesh",
+        "universal_mcp_server",
+        "react_execution_loop",
+        "cognitive_agent_memory",
+        "multi_agent_swarm_quorum",
+        "cdc_community_connectors",
+        "kubernetes_native_operator",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -79,10 +85,35 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 22
-        assert data["active_count"] >= 18
-        assert len(data["batteries"]) == 22
+        assert data["total_batteries"] == 28
+        assert data["active_count"] >= 22
+        assert len(data["batteries"]) == 28
 
+
+def test_kubernetes_native_operator_battery():
+    """Verify Battery #28: Kubernetes Native Operator & Helm Cluster Orchestrator properties."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "kubernetes_native_operator"), None)
+    assert battery is not None
+    assert battery.name == "Kubernetes Native Operator & Helm Cluster Orchestrator"
+    assert battery.category == BatteryCategory.SYSTEM_EXTENSIBILITY
+    assert battery.milestone == "M112 (v1.2.0-alpha1)"
+    assert battery.active_parameters["crd_group"] == "retriever.run"
+    assert battery.active_parameters["crd_version"] == "v1alpha1"
+    assert battery.active_parameters["helm_chart_version"] == "1.2.0-alpha1"
+    assert battery.health_check_endpoint == "/v1/admin/operator/status"
+
+
+def test_cdc_community_connectors_battery():
+    """Verify Battery #27: Enterprise CDC & Community Connectors Ecosystem properties."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "cdc_community_connectors"), None)
+    assert battery is not None
+    assert battery.name == "Enterprise CDC & Community Connectors Ecosystem"
+    assert battery.category == BatteryCategory.SYSTEM_EXTENSIBILITY
+    assert battery.latency_profile == "<15ms polling & discovery overhead"
+    assert "postgres_cdc" in battery.active_parameters["supported_connectors"]
+    assert battery.health_check_endpoint == "/v1/admin/connectors/manifests"
 
 
 def test_neo4j_cypher_graph_battery():

@@ -2,15 +2,16 @@
 
 <div align="center">
 
+[![Release](https://img.shields.io/badge/release-v1.0.0--rc1-blueviolet.svg)](https://github.com/prat3010/retriever/releases)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
 [![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
 [![Batteries](https://img.shields.io/badge/batteries-26%20included-ff69b4.svg)](#-the-26-platform-batteries)
-[![Serving](https://img.shields.io/badge/vLLM-Scale--to--Zero%20(A10G)-orange.svg)](deploy/)
+[![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
-*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, and multi-model economic orchestration.*
+*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, multi-agent swarm quorum debate, and cognitive long-horizon memory.*
 
 [🚀 Live Production Demo](https://rag.prateeq.in) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
@@ -40,6 +41,8 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 | **Sovereign Edge Voice** | **Local Whisper + Neural TTS (M100)** | None | None | None | None |
 | **Autonomous ReAct Loop**| **Cyclic State Machine & Anti-Loop (M104)**| None | Fragile wrappers | N/A | Simple chains |
 | **Multi-Model Orchestrator**| **Dynamic Escalation & Savings Ledger (M105)**| None | None | Basic fallback | None |
+| **Cognitive Agent Memory**| **Ebbinghaus Retention Decay (M108)**| None | None | None | None |
+| **Multi-Agent Swarm Quorum**| **Dialectic Debate Consensus (M109)**| None | Complex graph DAGs | None | None |
 | **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
 | **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
 
@@ -49,8 +52,14 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 
 Spin up the entire platform locally with zero external API dependencies (runs 100% free with local Ollama embeddings):
 
+### Option A: The 1-Line Drop-In (Recommended)
 ```bash
-# 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API)
+curl -fsSL https://get.retriever.run | bash
+```
+
+### Option B: Docker Compose
+```bash
+# 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API, Web Studio)
 git clone https://github.com/prat3010/retriever.git && cd retriever
 docker compose up -d
 
@@ -62,7 +71,7 @@ curl http://localhost:8000/health/readiness
 curl -X POST http://localhost:8000/v1/search \
   -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
   -H "Content-Type: application/json" \
-  -d '{"query": "How does hybrid search fusion work?"}'
+  -d '{"query": "How does ColBERT late interaction work?"}'
 ```
 
 - **Interactive API Documentation:** Visit [`http://localhost:8000/docs`](http://localhost:8000/docs)
@@ -70,9 +79,61 @@ curl -X POST http://localhost:8000/v1/search \
 
 ---
 
-## 🔋 The 26 Platform Batteries
+## 📦 Decoupled Client SDKs
 
-Retriever ships with **26 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Integrate Retriever natively into your applications with our official client SDKs:
+
+### TypeScript / JavaScript (Node, Browser & Next.js)
+```bash
+npm install @prat3010/retriever-client
+```
+```typescript
+import { RetrieverClient } from "@prat3010/retriever-client";
+
+const client = new RetrieverClient({
+  baseUrl: "http://localhost:8000",
+  apiKey: "ret_live_demo_00000000000000000000000000000000",
+  tenantId: "00000000-0000-0000-0000-000000000001",
+});
+
+const results = await client.search("How does hybrid search fusion work?");
+console.log(results);
+```
+
+### Python (Sync & Async)
+```bash
+pip install retriever-python
+```
+```python
+from retriever import RetrieverClient
+
+client = RetrieverClient(
+    base_url="http://localhost:8000",
+    api_key="ret_live_demo_00000000000000000000000000000000",
+    tenant_id="00000000-0000-0000-0000-000000000001",
+)
+
+results = client.search("How does hybrid search fusion work?")
+print(results.results[0].content)
+```
+
+### ☸️ Enterprise Kubernetes (Helm 3 & Native Operator)
+Deploy high-availability multi-replica clusters with HorizontalPodAutoscaler v2, cert-manager TLS, pgvector, and Redis:
+```bash
+helm install retriever ./deploy/helm/retriever --namespace retriever --create-namespace
+```
+Or manage clusters declaratively via the Kubernetes Operator:
+```bash
+kubectl apply -f deploy/operator/crds/retrieverclusters.retriever.run.crd.yaml
+kubectl apply -f deploy/operator/samples/retriever_cluster_production.yaml
+```
+See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Operator Guide](deploy/operator/README.md).
+
+---
+
+## 🔋 The 28 Platform Batteries
+
+Retriever ships with **28 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Algorithm / Foundation |
 |:---:|:---|:---|:---|
@@ -102,6 +163,8 @@ Retriever ships with **26 production-grade batteries** pre-wired through Hexagon
 | **24** | `smart_tool_gateway` | Model Orchestration | Complexity pre-classification, mid-flight escalation & counterfactual savings math |
 | **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation |
 | **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning |
+| **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack |
+| **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 |
 
 ---
 

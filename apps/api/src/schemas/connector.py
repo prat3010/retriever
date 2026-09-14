@@ -2,12 +2,30 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from src.domain.abstractions.connector import ConnectorManifest
+
+
+class ConnectorManifestResponse(BaseModel):
+    manifests: list[ConnectorManifest]
+    total: int
+
 
 class CreateConnectorRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Name of the data connector.")
-    connector_type: Literal["web_crawler", "cloud_drive", "google_drive", "notion", "slack", "s3", "local_folder"] = Field(
-        ..., description="Data connector source type."
-    )
+    connector_type: Literal[
+        "web_crawler",
+        "cloud_drive",
+        "google_drive",
+        "notion",
+        "slack",
+        "s3",
+        "gcs",
+        "local_folder",
+        "postgres_cdc",
+        "mysql_cdc",
+        "database_cdc",
+        "github",
+    ] = Field(..., description="Data connector source type.")
     sync_interval_minutes: int = Field(default=1440, ge=15, le=43200, description="Sync frequency in minutes.")
     configuration: dict[str, Any] = Field(default_factory=dict, description="Connector credentials/parameters.")
 

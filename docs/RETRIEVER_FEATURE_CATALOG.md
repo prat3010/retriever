@@ -100,7 +100,7 @@ To achieve complete parity between the backend capability layer and the Admin Da
 
 ---
 
-## 4. Platform Batteries Matrix (21 Registered Batteries — v0.86.0)
+## 4. Platform Batteries Matrix (28 Registered Batteries — v1.2.0-alpha1)
 
 Every battery in [`BatteryService`](../apps/api/src/domain/batteries/battery_service.py) is documented with an architectural feature guide:
 
@@ -127,3 +127,10 @@ Every battery in [`BatteryService`](../apps/api/src/domain/batteries/battery_ser
 | **19** | `multicloud_failover_libsql` | Multi-Cloud Failover & LibSQL Replicas | `EDGE_DISTRIBUTION` | M99 (v0.84.0) | [`features/multicloud-failover-libsql.md`](features/multicloud-failover-libsql.md) |
 | **20** | `sovereign_edge_voice` | Sovereign Edge Voice & Whisper WebRTC | `EDGE_DISTRIBUTION` | M100 (v0.85.0) | [`features/sovereign-edge-voice.md`](features/sovereign-edge-voice.md) |
 | **21** | `zero_trust_micro_enclave` | Zero-Trust Micro-Enclave KMS & Attestation | `SAFETY_DEFENSE` | M101 (v0.86.0) | [`features/confidential-micro-enclave.md`](features/confidential-micro-enclave.md) |
+| **22** | `autonomous_swarm_mesh` | Autonomous Swarm Mesh & P2P Gossip | `EDGE_DISTRIBUTION` | M102 (v0.87.0) | [`features/autonomous-swarm-mesh.md`](features/autonomous-swarm-mesh.md) |
+| **23** | `universal_mcp_server` | Universal Model Context Protocol (MCP) Tool Server | `SYSTEM_EXTENSIBILITY` | M103 (v0.88.0) | [`features/universal-mcp-server.md`](features/universal-mcp-server.md) |
+| **24** | `react_execution_loop` | Autonomous Multi-Turn ReAct Reasoning Engine | `BACKGROUND_WORKFLOWS` | M104 (v0.89.0) | [`features/autonomous-react-loop.md`](features/autonomous-react-loop.md) |
+| **25** | `cognitive_agent_memory` | Cognitive Agent Memory Consolidation | `ML_INTELLIGENCE` | M108 (v0.93.0) | [`features/cognitive-agent-memory.md`](features/cognitive-agent-memory.md) |
+| **26** | `multi_agent_swarm_quorum` | Multi-Agent Swarm Quorum & Dialectic Debate | `ML_INTELLIGENCE` | M109 (v0.94.0) | [`features/multi-agent-swarm-quorum.md`](features/multi-agent-swarm-quorum.md) |
+| **27** | `cdc_community_connectors` | Enterprise CDC & Community Connectors Ecosystem | `SYSTEM_EXTENSIBILITY` | M111 (v1.1.0-alpha1) | [`features/cdc-community-connectors.md`](features/cdc-community-connectors.md) |
+| **28** | `kubernetes_native_operator` | Kubernetes Native Operator & Helm Cluster Orchestrator | `SYSTEM_EXTENSIBILITY` | M112 (v1.2.0-alpha1) | [`features/kubernetes-native-operator.md`](features/kubernetes-native-operator.md) |

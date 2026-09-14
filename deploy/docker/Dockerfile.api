@@ -1,0 +1,66 @@
+# ==============================================================================
+# Retriever API — Multi-Stage Production Dockerfile
+# ==============================================================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast, reliable dependency resolution
+RUN pip install --no-cache-dir uv
+
+# Copy shared packages
+COPY packages/processing-core /app/packages/processing-core
+RUN cd /app/packages/processing-core && uv pip install --system -e .
+
+# Copy API dependencies and install
+COPY apps/api/pyproject.toml /app/apps/api/pyproject.toml
+RUN cd /app/apps/api && uv pip install --system -e .
+
+# Final runtime image
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/root/.local/bin:${PATH}" \
+    PYTHONPATH="/app/apps/api:/app/packages/processing-core/src"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed python site-packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy packages and application source
+COPY packages/processing-core /app/packages/processing-core
+COPY apps/api /app/apps/api
+COPY scripts /app/scripts
+
+# Setup entrypoint script
+RUN chmod +x /app/scripts/docker-entrypoint.sh 2>/dev/null || true
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/health/readiness || exit 1
+
+WORKDIR /app/apps/api
+
+ENTRYPOINT ["/bin/bash", "/app/scripts/docker-entrypoint.sh"]

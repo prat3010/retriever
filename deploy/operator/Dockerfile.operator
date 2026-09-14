@@ -1,0 +1,21 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt pyproject.toml ./
+RUN pip install --no-cache-dir -e .
+
+COPY apps/api/src/ apps/api/src/
+COPY deploy/operator/ deploy/operator/
+
+USER 10001
+
+ENTRYPOINT ["python", "-m", "apps.api.src.adapters.operator.cluster_reconciler"]

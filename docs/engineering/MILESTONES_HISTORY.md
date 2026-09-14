@@ -1,8 +1,8 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M109) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M112) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md).
 > 
-> This document tracks the backend and unified cross-platform engineering milestones (M1–M109) for the Retriever AI engine and control plane.
+> This document tracks the backend and unified cross-platform engineering milestones (M1–M112) for the Retriever AI engine and control plane.
 
 ---
 
@@ -126,6 +126,9 @@
 | **M107** | Zero-Toy Invariant Enforcement & Fail-Fast Hardening | Forensic audit eradicating synthetic score boosts, dummy audio fallbacks, fake probe 200s, and fake document generators; automated static analysis linter (`audit_zero_toy.py`) | **Completed** (Phase N / v0.91.5) |
 | **M108** | Cognitive Agent Memory Consolidation & Long-Horizon Experience Distillation | Ebbinghaus decay retention, episodic/procedural memory synthesis, ReAct guidance injection & Battery #25 | **Completed** (Phase N / v0.92.0) |
 | **M109** | Multi-Agent Swarm Quorum & Dynamic Debate Consensus Engine | Dialectic debate DAG, weighted quorum voting, hallucination pruning & Battery #26 | **Completed** (Phase N / v0.93.0) |
+| **M110** | Public Open-Source Launch & Decoupled SDKs | 1-line quickstart script, Docker Compose stack, @prat3010/retriever-client (npm) & retriever-python (PyPI) | **Completed** (Phase O / v1.0.0-rc1) |
+| **M111** | Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline | Relational DB CDC (PostgreSQL/MySQL), S3/R2 object storage watcher, GitHub/Slack connectors & Battery #27 | **Completed** (Phase O / v1.1.0-alpha1) |
+| **M112** | Kubernetes Native Operator & Production Helm Charts | Official Production Helm 3 chart, RetrieverCluster CRD, level-triggered reconciler & Battery #28 | **Completed** (Phase O / v1.2.0-alpha1) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)**.
@@ -1843,6 +1846,76 @@
   - 4-stat metrics grid (`@number-flow/react`), persona cards, dialectic debate timeline, and hallucination pruning ledger.
 - **Automated Verification**:
   - 7/7 Pytest tests in `test_swarm_quorum.py`, 7/7 Vitest tests in `SwarmPanel.test.tsx`, ADR-0028 documented.
+
+---
+
+### [Completed] Milestone 110: Public Open-Source Launch (`v1.0.0-rc1`) & Decoupled SDKs
+
+**Objective:** Release Retriever as an elite, production-ready, self-hosted open-source cognitive operating system with a 1-line zero-config installer, multi-stage Docker Compose stack, pre-seeded local Ollama embeddings ($0 external API cost), and standalone decoupled client SDKs on npm and PyPI.
+
+**Deliverables:**
+- **1-Line Quickstart Drop-In (`install.sh` & `scripts/quickstart.sh`)**:
+  - Automated host hardware sensing: Detects Darwin vs Linux, ARM64 vs x86_64, and GPU acceleration (NVIDIA CUDA via `nvidia-smi`, Apple Silicon Metal MPS, or CPU fallback).
+  - Validates Docker daemon and compose availability; probes port collisions (`8000`, `3000`, `5432`, `6379`, `11434`).
+  - Automated `.env` initialization from `.env.docker.example` and detached container launch (`docker compose up -d`).
+  - Readiness polling loop and automated live search query verification against `http://localhost:8000/v1/search` ("30-Second Time-to-Dopamine").
+- **Production Containerization & Docker Compose (`docker-compose.yml`)**:
+  - Orchestrates PostgreSQL 16 with pgvector (`pgvector/pgvector:pg16`), Redis 7 Alpine, local Ollama with `nomic-embed-text` auto-pull, FastAPI backend, and Next.js Admin Dashboard.
+  - Multi-stage Dockerfiles: `deploy/docker/Dockerfile.api` (FastAPI with non-root security runner and healthcheck) and `deploy/docker/Dockerfile.web` (Next.js 16 standalone).
+  - Automated entrypoint `scripts/docker-entrypoint.sh` executing Alembic migrations and `scripts/seed_demo_tenant.py` (provisions `tn_demo_workspace`, master demo key `ret_live_demo_00000000000000000000000000000000`, and indexes sample whitepaper chunks).
+- **Decoupled TypeScript Client SDK (`@prat3010/retriever-client` v1.0.0)**:
+  - Packaged in `packages/retriever-client/` with ESM/CJS exports and complete TypeScript declarations.
+  - Native coverage across all 26 batteries: Hybrid search, streaming ReAct reasoning traces (`streamReActChat`), cognitive memory consolidation (`queryCognitiveMemory`), multi-agent swarm quorum debate (`executeSwarmDebate`), Universal MCP tools (`listMcpTools`), and hardware micro-enclaves.
+  - Node test suite: 3/3 tests passing.
+- **Decoupled Python Client SDK (`retriever-python` v1.0.0)**:
+  - Packaged in `packages/retriever-python/` with `hatchling` and `py.typed` marker for PyPI.
+  - Synchronous `RetrieverClient` and asynchronous `AsyncRetrieverClient` built on `httpx` and `pydantic`.
+  - SSE streaming generators yielding typed `ReActEvent` objects.
+  - Pytest test suite: 4/4 tests passing.
+- **Launch Collateral Reconciled (`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md` & `README.md`)**:
+  - Upgraded from legacy 16-battery baseline to the full **26 Platform Batteries Matrix**.
+  - Finalized "Show HN" copy, 7-tweet visual launch thread, and sub-10ms ColBERT benchmarks.
+
+### Milestone 111: Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline (v1.1.0-alpha1) — **Completed**
+- **Relational Database Change-Data-Capture (CDC) Connector (`apps/api/src/domain/connectors/database_cdc.py`)**:
+  - High-watermark chronological replication for PostgreSQL and MySQL.
+  - Automatically queries mutated table records where `updated_at > watermark`, formats rows into structured Markdown documents with attributes tables, and updates high-watermarks.
+- **Cloud Object Storage Auto-Indexing Watcher (`apps/api/src/domain/connectors/cloud_storage.py`)**:
+  - Multi-cloud object crawler supporting AWS S3, Cloudflare R2, MinIO, and Google Cloud Storage.
+  - Compares object `ETag` checksums and `LastModified` timestamps against `seen_etags` to skip redundant downloads and only index new/modified files.
+- **Developer Workspace Connectors (`apps/api/src/domain/connectors/github.py`, `slack.py`)**:
+  - GitHub Connector extracting documentation, issues, and pull requests with metadata and `since` cursor tracking.
+  - Slack Connector synchronizing conversations and threaded discussions with user handles, formatted timestamps, and `ts` watermark cursors.
+- **Custom Ingestion Pipeline SDK (`apps/api/src/domain/abstractions/connector.py`, `registry.py`)**:
+  - Standardized `BaseConnector` lifecycle, `BaseDocumentParser`, `@register_connector` decorator, and `GET /v1/admin/connectors/manifests` catalog endpoint.
+- **Platform Battery #27 Registration (`apps/api/src/domain/batteries/battery_service.py`)**:
+  - Registered `cdc_community_connectors` under `SYSTEM_EXTENSIBILITY` (27 platform batteries active).
+- **Client SDKs Updated**:
+  - Added connector management methods to `@prat3010/retriever-client` and `retriever-python`.
+
+### Milestone 112: Kubernetes Native Operator & Production Helm Charts (v1.2.0-alpha1) — **Completed**
+- **Official Production Helm 3 Chart (`deploy/helm/retriever/`)**:
+  - Full cluster orchestration with multi-replica FastAPI pods (`api-deployment.yaml`, `api-service.yaml`) and Next.js Web Studio (`web-deployment.yaml`, `web-service.yaml`).
+  - Native Kubernetes HorizontalPodAutoscaler v2 (`hpa.yaml`) scaling API replicas dynamically based on CPU and memory utilization targets.
+  - Production Ingress (`ingress.yaml`) with cert-manager Let's Encrypt TLS annotations and dual hosts for API and Web Studio.
+  - StatefulSet manifests for pgvector PostgreSQL 16 (`pgvector-statefulset.yaml`, `pgvector-service.yaml`) and Redis 7 Alpine (`redis-statefulset.yaml`, `redis-service.yaml`) with dynamic PVC storage provisioning.
+  - Pre-install and pre-upgrade Alembic database migration hook Job (`migration-job.yaml`).
+  - Centralized ConfigMap and Secret templates.
+- **RetrieverCluster Custom Resource Definition (CRD) (`deploy/operator/crds/retrieverclusters.retriever.run.crd.yaml`)**:
+  - Custom API group `retriever.run/v1alpha1` with `kind: RetrieverCluster`.
+  - Comprehensive OpenAPI v3 schema validation for `spec` (`replicas`, `webReplicas`, `imageTag`, `postgresPvcSize`, `gpu`, `backupPolicy`) and `status` (`phase`, `readyReplicas`, `desiredReplicas`, `databaseHealthy`, `conditions`).
+  - Native subresources (`status`, `scale`) and `kubectl get rc` printer columns (Phase, Desired, Ready, Version, Age).
+- **Hexagonal Domain Abstractions & Level-Triggered Reconciler (`apps/api/src/domain/abstractions/operator.py`, `apps/api/src/adapters/operator/cluster_reconciler.py`)**:
+  - Pure domain models (`RetrieverClusterSpec`, `RetrieverClusterStatus`, `ClusterCondition`, `IKubernetesClient`).
+  - Level-triggered state machine managing phase transitions (`Pending` $\rightarrow$ `Provisioning` $\rightarrow$ `Running`), detecting image tag divergence for zero-downtime rolling upgrades, replica autoscaling, GPU worker node assignments, and automated S3 backup dispatches.
+  - In-memory Kubernetes client (`InMemoryKubernetesClient`) supporting standalone operations and testing without live cluster dependencies.
+- **Admin Cluster Management APIs (`apps/api/src/routers/admin.py`)**:
+  - `GET /v1/admin/operator/status`: Controller health, CRD group, and registered cluster count.
+  - `GET /v1/admin/operator/clusters`: List all managed custom resources across namespaces.
+  - `POST /v1/admin/operator/reconcile`: Trigger programmatic reconciliation cycle.
+  - `POST /v1/admin/operator/clusters/{cluster_name}/backup`: Dispatch on-demand database & vector backup jobs.
+- **Platform Battery #28 Registration (`apps/api/src/domain/batteries/battery_service.py`)**:
+  - Registered `kubernetes_native_operator` under `SYSTEM_EXTENSIBILITY` (now 28 platform batteries).
 
 ---
 

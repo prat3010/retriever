@@ -1,0 +1,30 @@
+apiVersion: retriever.run/v1alpha1
+kind: RetrieverCluster
+metadata:
+  name: retriever-prod
+  namespace: retriever-system
+spec:
+  replicas: 3
+  webReplicas: 2
+  imageTag: "v1.2.0-alpha1"
+  postgresPvcSize: "50Gi"
+  postgresStorageClass: "gp3"
+  gpu:
+    enabled: true
+    gpuType: "nvidia.com/gpu"
+    gpuCount: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: nvidia-l4
+    tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+  backupPolicy:
+    enabled: true
+    schedule: "0 2 * * *"
+    retentionDays: 60
+    s3Bucket: "enterprise-retriever-backups"
+    s3Prefix: "prod-us-east-1"
+  environmentVariables:
+    LOG_LEVEL: "info"
+    EMBEDDING_PROVIDER: "ollama"

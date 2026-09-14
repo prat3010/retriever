@@ -64,7 +64,10 @@ from src.domain.abstractions.compliance import (
     PiiRedactionRequest,
 )
 from src.domain.abstractions.config import TenantConfiguration
-from src.domain.abstractions.connector import ConnectorConfig
+from src.domain.abstractions.connector import (
+    ConnectorConfig,
+    ConnectorSyncState,
+)
 from src.domain.abstractions.edge_router import (
     EdgeRoutingDecision,
     MultiRegionClusterStatus,
@@ -74,6 +77,10 @@ from src.domain.abstractions.exceptions import PromptTemplateNotFoundError
 from src.domain.abstractions.experiment import ExperimentConfig
 from src.domain.abstractions.inference import PromptTemplate
 from src.domain.abstractions.ingestion import Document
+from src.domain.abstractions.operator import (
+    RetrieverClusterSpec,
+    RetrieverClusterStatus,
+)
 from src.domain.connectors.registry import ConnectorRegistry
 from src.domain.ingestion.chunker_factory import ChunkerFactory
 from src.schemas.admin import (
@@ -90,6 +97,7 @@ from src.schemas.chunking import (
     ChunkPreviewResponse,
 )
 from src.schemas.connector import (
+    ConnectorManifestResponse,
     ConnectorSyncResponse,
     CreateConnectorRequest,
     UpdateConnectorRequest,
@@ -1458,6 +1466,18 @@ async def admin_get_experiment_metrics(
 
 
 @router.get(
+    "/connectors/manifests",
+    status_code=status.HTTP_200_OK,
+    response_model=ConnectorManifestResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_list_connector_manifests() -> ConnectorManifestResponse:
+    """Return catalog of all registered connector manifests and schemas."""
+    manifests = ConnectorRegistry.list_manifests()
+    return ConnectorManifestResponse(manifests=manifests, total=len(manifests))
+
+
+@router.get(
     "/tenants/{tenantId}/connectors",
     status_code=status.HTTP_200_OK,
     response_model=list[ConnectorConfig],
@@ -1596,16 +1616,25 @@ async def admin_trigger_connector_sync(
 
     try:
         connector = ConnectorRegistry.get_connector(target.connector_type)
-        discovered = await connector.fetch_documents(target)
+        existing_sync_state = target.configuration.get("_sync_state")
+        sync_state = (
+            ConnectorSyncState(**existing_sync_state)
+            if isinstance(existing_sync_state, dict)
+            else ConnectorSyncState()
+        )
+        discovered, new_sync_state = await connector.fetch_incremental(target, sync_state)
+        target.configuration["_sync_state"] = new_sync_state.model_dump()
 
         ingested_count = 0
         for doc in discovered:
+            if doc.is_deleted:
+                continue
             await ingest_file_sync(
                 tenant_id=tenantId,
                 filename=doc.filename,
                 content_bytes=doc.content.encode("utf-8"),
                 mime_type=doc.mime_type,
-                tags=["connector", target.connector_type],
+                tags=["connector", target.connector_type, target.id],
             )
             ingested_count += 1
 
@@ -2567,3 +2596,82 @@ async def preview_edge_routing(
     """Preview the Geo-IP dynamic routing decision and estimated latency reduction."""
     from src.container import edge_router_service
     return edge_router_service.resolve_region(country)
+
+
+# ---------------------------------------------------------------------------
+# Milestone 112: Kubernetes Native Operator & Production Helm Orchestration
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/operator/status",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def get_operator_status() -> dict[str, Any]:
+    """Retrieve Kubernetes operator controller status and CRD capabilities."""
+    from src.container import operator_client
+    clusters = await operator_client.list_clusters()
+    return {
+        "status": "healthy",
+        "crd_group": "retriever.run",
+        "crd_version": "v1alpha1",
+        "crd_kind": "RetrieverCluster",
+        "helm_chart_version": "1.2.0-alpha1",
+        "active_clusters_count": len(clusters),
+        "in_memory_reconciler_active": True,
+    }
+
+
+@router.get(
+    "/operator/clusters",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def list_operator_clusters(
+    namespace: str | None = Query(None, description="Filter by namespace"),
+) -> list[dict[str, Any]]:
+    """List all managed RetrieverCluster custom resources."""
+    from src.container import operator_client
+    return await operator_client.list_clusters(namespace=namespace)
+
+
+@router.post(
+    "/operator/reconcile",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def reconcile_operator_cluster(
+    spec: RetrieverClusterSpec,
+) -> RetrieverClusterStatus:
+    """Trigger a level-triggered reconciliation cycle for a RetrieverCluster."""
+    from src.container import operator_client, operator_reconciler
+    existing = await operator_client.get_cluster(spec.name, spec.namespace)
+    current_status = None
+    if existing and "status" in existing:
+        current_status = RetrieverClusterStatus(**existing["status"])
+    return await operator_reconciler.reconcile(spec, current_status=current_status)
+
+
+@router.post(
+    "/operator/clusters/{cluster_name}/backup",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def trigger_operator_cluster_backup(
+    cluster_name: str,
+    namespace: str = Query("default", description="Namespace of the cluster"),
+) -> dict[str, Any]:
+    """Trigger an on-demand database & vector WAL backup job."""
+    from src.container import operator_client, operator_reconciler
+    cluster_manifest = await operator_client.get_cluster(cluster_name, namespace)
+    if not cluster_manifest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"RetrieverCluster '{cluster_name}' in namespace '{namespace}' not found",
+        )
+    spec_dict = cluster_manifest.get("spec", {})
+    spec_dict["name"] = cluster_name
+    spec_dict["namespace"] = namespace
+    spec = RetrieverClusterSpec(**spec_dict)
+    job_id = await operator_reconciler.trigger_manual_backup(spec)
+    return {"status": "Accepted", "job_id": job_id, "cluster": cluster_name, "namespace": namespace}

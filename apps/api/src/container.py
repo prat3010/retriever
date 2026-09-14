@@ -683,6 +683,17 @@ class Container:
         )
         self._cache["swarm_quorum_engine"] = swarm_quorum_engine
 
+        # --- Milestone 112: Kubernetes Native Operator & Production Helm Charts ---
+        from src.adapters.operator.cluster_reconciler import (
+            ClusterReconciler,
+            InMemoryKubernetesClient,
+        )
+
+        operator_client = InMemoryKubernetesClient()
+        operator_reconciler = ClusterReconciler(client=operator_client)
+        self._cache["operator_client"] = operator_client
+        self._cache["operator_reconciler"] = operator_reconciler
+
 
 
     def reset(self) -> None:
@@ -798,4 +809,6 @@ react_engine = container.react_engine
 smart_tool_router = container.smart_tool_router
 cognitive_memory = container.cognitive_memory
 swarm_quorum_engine = container.swarm_quorum_engine
+operator_client = container.operator_client
+operator_reconciler = container.operator_reconciler
 

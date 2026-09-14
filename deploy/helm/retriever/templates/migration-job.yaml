@@ -1,0 +1,35 @@
+{{- if .Values.migrations.runOnDeploy }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "retriever.fullname" . }}-migration
+  labels:
+    {{- include "retriever.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "0"
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "retriever.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: alembic-upgrade
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command:
+            - alembic
+            - upgrade
+            - head
+          envFrom:
+            - configMapRef:
+                name: {{ include "retriever.fullname" . }}-config
+            - secretRef:
+                name: {{ include "retriever.fullname" . }}-secret
+{{- end }}

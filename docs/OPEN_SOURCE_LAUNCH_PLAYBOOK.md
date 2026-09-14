@@ -83,9 +83,9 @@ docker compose up -d
 
 ---
 
-## 🔋 3. The 16 Platform Batteries Showcase
+## 🔋 3. The 26 Platform Batteries Showcase
 
-Highlighting all 16 built-in batteries demonstrates that Retriever is not a toy, but an entire operating system:
+Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy wrapper, but an entire self-hosted operating system:
 
 | Battery # | Battery Identifier | Category | Algorithm / Core Technology |
 |:---:|:---|:---|:---|
@@ -98,13 +98,23 @@ Highlighting all 16 built-in batteries demonstrates that Retriever is not a toy,
 | **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn unsupervised behavioral profiling with autonomous token-quarantine |
 | **8** | `quantile_effort_regressor` | ML Operations | Gradient boosted quantile regressors ($p10, p50, p90$) for software timeline estimation |
 | **9** | `zero_cookie_persona_clusterer`| ML Operations | Unsupervised KMeans buyer intent clustering with conversion propensity scoring |
-| **10` | `edge_token_shield` | Rate Limiting | Distributed Redis sliding-window token throttling with resilient SSE reconnections |
-| **11` | `llama_guard_safety` | LLM Safety | Llama Guard 3 prompt injection filtering and zero-trust PII redaction |
-| **12` | `longllmlingua_compressor` | Token Optimization | Perplexity-directed prompt compression removing up to 70% of filler tokens |
-| **13` | `nemo_conversational_guardrails`| Conversational Safety| NVIDIA NeMo Colang multi-turn topical moderation and jailbreak prevention |
-| **14` | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
-| **15` | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
-| **16` | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
+| **10** | `edge_token_shield` | Rate Limiting | Distributed Redis sliding-window token throttling with resilient SSE reconnections |
+| **11** | `llama_guard_safety` | LLM Safety | Llama Guard 3 prompt injection filtering and zero-trust PII redaction |
+| **12** | `longllmlingua_compressor` | Token Optimization | Perplexity-directed prompt compression removing up to 70% of filler tokens |
+| **13** | `nemo_conversational_guardrails`| Conversational Safety| NVIDIA NeMo Colang multi-turn topical moderation and jailbreak prevention |
+| **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
+| **15** | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
+| **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
+| **17** | `autonomous_fde_metaprogrammer`| System Extensibility | AST-verified Hexagonal code synthesis and dynamic in-process plugin mounting |
+| **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, binary float32 BLOB vectors & differential delta synchronization |
+| **19** | `multicloud_failover_libsql` | Edge Distribution | Multi-cloud quorum consensus failover & embedded Turso LibSQL WAL frame replication |
+| **20** | `sovereign_edge_voice` | Multimodal Cognition | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural speech synthesis |
+| **21** | `micro_enclave_attestation` | Security & KMS | Zero-trust AES-256-GCM enclave sealing & hardware TPM/KMS remote attestation |
+| **22** | `autonomous_swarm_mesh` | P2P Edge Swarm | SWIM gossip failure detection, vector clock causality & partition healing |
+| **23** | `universal_mcp_server` | Tool Protocols | JSON-RPC 2.0 & SSE Model Context Protocol server exposing all platform batteries |
+| **24** | `react_execution_loop` | Agentic Workflows | Autonomous multi-turn ReAct reasoning loop with self-healing error recovery |
+| **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation |
+| **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning |
 
 ---
 
@@ -113,7 +123,7 @@ Highlighting all 16 built-in batteries demonstrates that Retriever is not a toy,
 ### 🌊 Channel 1: Hacker News ("Show HN")
 - **Target Launch Window:** Tuesday or Wednesday at 8:15 AM EST (optimal timing for HN front-page algorithm).
 - **HN Title:**
-  > `Show HN: Retriever – An unbloated, Hexagonal AI cognitive engine with 16 batteries and scale-to-zero vLLM`
+  > `Show HN: Retriever – An unbloated, Hexagonal AI cognitive engine with 26 batteries and scale-to-zero vLLM`
 - **Post Copy Structure:**
   ```text
   Hi HN,
@@ -125,11 +135,11 @@ Highlighting all 16 built-in batteries demonstrates that Retriever is not a toy,
   Retriever is an open-source, self-hosted enterprise cognitive operating system built from scratch with strict Hexagonal architecture:
 
   1. Strict DB-Level Multi-Tenancy: Native PostgreSQL Row-Level Security (RLS) ensures tenant data is isolated at the engine level, not in fragile application-level Python `if` statements.
-  2. 16 Batteries Included: pgvector HNSW, BM25, ColBERT MaxSim late interaction, Docling layout OCR, GraphRAG (Neo4j or Postgres CTEs), NVIDIA NeMo Guardrails, DSPy prompt compilation, and durable step-memoized workflows.
+  2. 26 Batteries Included: pgvector HNSW, BM25, ColBERT MaxSim late interaction, Docling layout OCR, GraphRAG (Neo4j or Postgres CTEs), NVIDIA NeMo Guardrails, DSPy prompt compilation, durable step-memoized workflows, Universal MCP server, autonomous ReAct loops, cognitive long-horizon memory, and multi-agent swarm quorum debate.
   3. Scale-to-Zero Dedicated Serving: Using vLLM 0.6+ and Modal/BentoML, dedicated tenant models scale down to 0 instances after 300s of idle traffic, cutting dedicated GPU hosting costs from $720/mo to ~$15/mo (97.9% savings). Multi-tenant fine-tuned LoRAs hot-swap dynamically in ~20ms on a single base model without restarting containers.
   4. Local-First & Zero-Cost: Runs fully offline on a laptop or cheap VPS using local Ollama embeddings (`nomic-embed-text`) with zero API keys required.
 
-  Everything spins up with a single `docker compose up` command.
+  Everything spins up with a single `curl -fsSL https://get.retriever.run | bash` or `docker compose up` command.
 
   Live demo: https://rag.prateeq.in
   GitHub: https://github.com/prat3010/retriever

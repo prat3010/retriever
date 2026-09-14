@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "retriever.fullname" . }}-config
+  labels:
+    {{- include "retriever.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.api.env.ENVIRONMENT | quote }}
+  LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | quote }}
+  PORT: {{ .Values.api.env.PORT | quote }}
+  EMBEDDING_PROVIDER: {{ .Values.api.env.EMBEDDING_PROVIDER | quote }}
+  OLLAMA_BASE_URL: {{ .Values.api.env.OLLAMA_BASE_URL | quote }}
+  CORS_ORIGINS: {{ .Values.api.env.CORS_ORIGINS | quote }}
+  DATABASE_URL: {{ printf "postgresql+asyncpg://%s:%s@%s-postgresql:%d/%s" .Values.postgresql.auth.username .Values.postgresql.auth.password (include "retriever.fullname" .) (.Values.postgresql.service.port | int) .Values.postgresql.auth.database | quote }}
+  DATABASE_URL_SYNC: {{ printf "postgresql://%s:%s@%s-postgresql:%d/%s" .Values.postgresql.auth.username .Values.postgresql.auth.password (include "retriever.fullname" .) (.Values.postgresql.service.port | int) .Values.postgresql.auth.database | quote }}
+  REDIS_URL: {{ printf "redis://%s-redis:%d/0" (include "retriever.fullname" .) (.Values.redis.service.port | int) | quote }}

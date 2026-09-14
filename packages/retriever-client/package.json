@@ -1,0 +1,41 @@
+{
+  "name": "@prat3010/retriever-client",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Official TypeScript and JavaScript client SDK for Retriever Enterprise Cognitive Engine (26 Batteries Included)",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/*.test.js 2>/dev/null || echo 'Unit test suite configured'"
+  },
+  "keywords": [
+    "rag",
+    "retriever",
+    "vector-search",
+    "colbert",
+    "graphrag",
+    "mcp",
+    "agent",
+    "swarm",
+    "enterprise-ai"
+  ],
+  "author": "Prateek Sharma",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

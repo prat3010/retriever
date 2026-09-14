@@ -6,12 +6,24 @@ from pathlib import Path
 from src.domain.abstractions.connector import (
     BaseConnector,
     ConnectorConfig,
+    ConnectorManifest,
     DiscoveredDocument,
 )
 
 
 class LocalFolderConnector(BaseConnector):
     """Local filesystem directory connector that ingests real documents from a path."""
+
+    def get_manifest(self) -> ConnectorManifest:
+        return ConnectorManifest(
+            connector_type="local_folder",
+            name="Local File System Directory",
+            description="Ingests plain text, markdown, and code files from a local directory.",
+            icon="folder",
+            supports_incremental=False,
+            required_parameters=["folder_path"],
+            optional_parameters={"allowed_extensions": [".txt", ".md", ".json", ".csv"]},
+        )
 
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
         folder_path = config.configuration.get("folder_path") or config.configuration.get("folder_id")

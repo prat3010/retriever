@@ -7,6 +7,7 @@ import httpx
 from src.domain.abstractions.connector import (
     BaseConnector,
     ConnectorConfig,
+    ConnectorManifest,
     DiscoveredDocument,
 )
 
@@ -26,6 +27,17 @@ class NotionConnector(BaseConnector):
 
     NOTION_API_BASE = "https://api.notion.com/v1"
     NOTION_VERSION = "2022-06-28"
+
+    def get_manifest(self) -> ConnectorManifest:
+        return ConnectorManifest(
+            connector_type="notion",
+            name="Notion Knowledge Base",
+            description="Extracts databases, pages, and recursive block hierarchies from Notion workspaces.",
+            icon="notion",
+            supports_incremental=True,
+            required_parameters=["api_key", "database_id"],
+            optional_parameters={"page_size": 100},
+        )
 
     def _get_headers(self, config: ConnectorConfig) -> dict[str, str]:
         token = config.configuration.get("api_key") or config.configuration.get("access_token", "")

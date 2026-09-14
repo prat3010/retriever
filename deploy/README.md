@@ -1,103 +1,64 @@
-# Serverless GPU Serving & Custom vLLM / LoRA Deployment Recipes (Milestone 96)
+# 🚀 Retriever Deployment Architecture & Recipes
 
-This directory contains production deployment recipes for running self-hosted, fine-tuned open-weights models on serverless GPU infrastructure with automatic **Scale-to-Zero** auto-scaling and dynamic **Multi-LoRA** adapter swapping.
-
----
-
-## Architecture Overview
-
-```text
-  Client Inference Request ──► Retriever Gateway (M93)
-                                        │
-                         (Model: modal/vllm-llama-3.1-8b)
-                                        ▼
-                      Modal / BentoML Serverless Cluster
-                     ┌───────────────────────────────────┐
-                     │ • Auto-Scale: 0 ◄──► 5 Containers │
-                     │ • Idle Timeout: 300s (Scale to 0) │
-                     │ • Engine: vLLM PagedAttention     │
-                     │ • Dynamic Multi-LoRA Swapping     │
-                     └───────────────────────────────────┘
-```
+Retriever provides turnkey deployment pathways tailored to every operational tier—from local developer laptops and single virtual machines to enterprise multi-tenant Kubernetes clusters and serverless GPU fleets.
 
 ---
 
-## 1. Deploying to Modal (`deploy/modal/`)
+## 🗺️ Deployment Strategies Matrix
 
+| Tier | Target Infrastructure | Primary Artifacts | Ideal Use Case | Documentation Link |
+|:---|:---|:---|:---|:---|
+| **1-Click Quickstart** | Local Dev / Single VM | `install.sh`, `scripts/quickstart.sh` | Instant evaluation, 30-second time-to-dopamine | [Quickstart Guide](../README.md#-quickstart-in-30-seconds) |
+| **Docker Compose** | Single Server / VPS | `docker-compose.yml`, `deploy/docker/` | Self-hosted small teams, internal enterprise PoCs | [Docker Guide](../README.md#-1-click-docker-compose-quickstart) |
+| **Production Helm 3 Chart** | Enterprise Kubernetes | `deploy/helm/retriever/` | Multi-replica high-availability clusters (AWS EKS, GCP GKE, Azure AKS) | [Helm Chart Guide](helm/retriever/README.md) |
+| **Kubernetes Native Operator** | Self-Healing Clusters | `deploy/operator/` | Declarative CRD reconciliation, rolling upgrades & automated backups | [Operator Guide](operator/README.md) |
+| **Serverless GPU Serving** | Cloud GPU Auto-Scaling | `deploy/modal/`, `deploy/bentoml/` | Scale-to-zero vLLM serving with dynamic multi-LoRA weight swapping | [Serverless GPU Recipes](#serverless-gpu-serving-recipes-m96) |
+| **Production Cloud VPS** | Oracle Cloud / Ubuntu | `docs/infrastructure/DEPLOYMENT.md` | Free-tier / low-cost production hosting on dedicated VPS | [Oracle VPS Guide](../docs/infrastructure/DEPLOYMENT.md) |
+
+---
+
+## ☸️ Cloud-Native Kubernetes & Helm 3 (Milestone 112)
+
+For enterprise production deployments on Kubernetes:
+
+- **Production Helm 3 Chart (`deploy/helm/retriever/`):**
+  - High-availability FastAPI API pods with HorizontalPodAutoscaler v2.
+  - Next.js Web Studio with Ingress TLS termination.
+  - StatefulSet with persistent storage for pgvector PostgreSQL 16 and Redis 7.
+  - See the [Helm Chart Documentation](helm/retriever/README.md).
+
+- **Kubernetes Native Operator (`deploy/operator/`):**
+  - Custom Resource Definition: `RetrieverCluster` (`retriever.run/v1alpha1`).
+  - Level-triggered controller automating rolling image updates, GPU affinity, and S3 backups.
+  - See the [Kubernetes Operator Documentation](operator/README.md).
+
+---
+
+## ⚡ Serverless GPU Serving Recipes (Milestone 96)
+
+For hosting self-hosted, fine-tuned open-weights models on serverless GPU infrastructure with automatic **Scale-to-Zero** auto-scaling and dynamic **Multi-LoRA** adapter swapping:
+
+### 1. Deploying to Modal (`deploy/modal/`)
 Modal provides true serverless GPUs with $<3\text{s}$ container warm-boot and per-second billing that automatically scales down to 0 instances when idle.
 
-### Prerequisites
-1. Install Modal CLI:
-   ```bash
-   pip install modal>=0.63.0
-   ```
-2. Authenticate:
-   ```bash
-   modal token new
-   ```
-3. Set up Hugging Face secret (for gated models like Llama 3.1):
-   ```bash
-   modal secret create huggingface-secret HF_TOKEN=hf_...
-   ```
-
-### Pre-Cache Model Weights
 ```bash
+# Pre-cache model weights
 modal run deploy/modal/vllm_server.py::download_model --model-name meta-llama/Meta-Llama-3.1-8B-Instruct
-```
 
-### Deploy the Serving Application
-```bash
+# Deploy serving application
 modal deploy deploy/modal/vllm_server.py
 ```
 
-After deployment, Modal outputs a permanent HTTPS endpoint URL (e.g. `https://<org>--retriever-vllm-serving-serve-vllm.modal.run`).
-
-Configure Retriever's `.env`:
-```env
-MODAL_ENABLED=true
-MODAL_ENDPOINT_URL=https://<org>--retriever-vllm-serving-serve-vllm.modal.run
-SERVERLESS_BASE_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
-SERVERLESS_GPU_TIER=A10G
-SERVERLESS_IDLE_TIMEOUT_SEC=300
-```
-
----
-
-## 2. Deploying to BentoCloud / BentoML (`deploy/bentoml/`)
-
+### 2. Deploying to BentoCloud / BentoML (`deploy/bentoml/`)
 BentoML enables deployment on BentoCloud or on your own Kubernetes cluster using Yatai.
 
-### Build Bento Container
 ```bash
+# Build bento container
 bentoml build -f deploy/bentoml/bentofile.yaml
-```
 
-### Deploy to BentoCloud
-```bash
+# Deploy to BentoCloud
 bentoml deploy retriever-vllm-service:latest --env BASE_MODEL=Qwen/Qwen2.5-7B-Instruct
 ```
 
-Configure Retriever's `.env`:
-```env
-BENTOML_ENDPOINT_URL=https://<your-bento-endpoint>.bentocloud.ai
-```
-
----
-
-## 3. Dynamic Multi-LoRA Swapping
-
-Both Modal and BentoML deployment recipes support dynamic tensor loading per request without restarting the base model.
-
-When invoking the inference API, pass either:
-1. Model identifier with LoRA suffix:
-   ```json
-   {
-     "model": "meta-llama/Meta-Llama-3.1-8B-Instruct:enterprise_sow_v1",
-     "messages": [{"role": "user", "content": "Draft technical proposal..."}]
-   }
-   ```
-2. Or custom HTTP headers:
-   ```http
-   x-lora-id: lora_tn_client_123
-   x-lora-artifact-uri: /root/loras/enterprise_sow_v1
-   ```
+### 3. Dynamic Multi-LoRA Swapping
+Both Modal and BentoML deployment recipes support dynamic tensor loading per request without restarting the base model via the `x-lora-id` HTTP header.

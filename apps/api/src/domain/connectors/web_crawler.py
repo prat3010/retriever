@@ -5,12 +5,24 @@ import httpx
 from src.domain.abstractions.connector import (
     BaseConnector,
     ConnectorConfig,
+    ConnectorManifest,
     DiscoveredDocument,
 )
 
 
 class WebCrawlerConnector(BaseConnector):
     """Web crawler connector for fetching and parsing web documents."""
+
+    def get_manifest(self) -> ConnectorManifest:
+        return ConnectorManifest(
+            connector_type="web_crawler",
+            name="Recursive Web Crawler",
+            description="Crawls and extracts text content from public web URLs and documentation hierarchies.",
+            icon="globe",
+            supports_incremental=False,
+            required_parameters=["start_url"],
+            optional_parameters={"max_depth": 1},
+        )
 
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
         start_url = config.configuration.get("start_url")

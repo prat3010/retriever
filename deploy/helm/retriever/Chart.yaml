@@ -1,0 +1,20 @@
+apiVersion: v2
+name: retriever
+description: Production Helm Chart for Retriever Cognitive RAG Engine and Studio
+type: application
+version: 1.2.0-alpha1
+appVersion: "1.2.0-alpha1"
+keywords:
+  - rag
+  - pgvector
+  - search
+  - ai
+  - fastapi
+  - nextjs
+home: https://prateeq.in/rag
+sources:
+  - https://github.com/prat3010/retriever
+maintainers:
+  - name: Prateek Sharma
+    email: prateeqsharma@gmail.com
+    url: https://prateeq.in

@@ -4,6 +4,80 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [1.2.0-alpha1] - 2026-09-15 - Milestone 112: Kubernetes Native Operator & Production Helm Charts
+
+### Added
+- **Official Production Helm 3 Chart** (`deploy/helm/retriever/`):
+  - Comprehensive orchestration for high-availability FastAPI API pods (`api-deployment.yaml`, `api-service.yaml`) and Next.js Web Studio (`web-deployment.yaml`, `web-service.yaml`).
+  - Native Kubernetes HorizontalPodAutoscaler v2 (`hpa.yaml`) scaling API replicas on CPU/Memory thresholds.
+  - Production Ingress (`ingress.yaml`) with cert-manager Let's Encrypt TLS annotations and dual routing for API and Web Studio.
+  - StatefulSet manifests for pgvector PostgreSQL 16 (`pgvector-statefulset.yaml`, `pgvector-service.yaml`) and Redis 7 Alpine (`redis-statefulset.yaml`, `redis-service.yaml`) with dynamic PVC storage provisioning.
+  - Pre-install and pre-upgrade Alembic database migration hook Job (`migration-job.yaml`).
+  - ConfigMap and Secret templates for database credentials, Redis URLs, and runtime environment flags.
+- **RetrieverCluster Custom Resource Definition (CRD)** (`deploy/operator/crds/retrieverclusters.retriever.run.crd.yaml`):
+  - Custom API group `retriever.run/v1alpha1` with `kind: RetrieverCluster`.
+  - Comprehensive OpenAPI v3 schema validation for `spec` (`replicas`, `webReplicas`, `imageTag`, `postgresPvcSize`, `gpu`, `backupPolicy`) and `status` (`phase`, `readyReplicas`, `desiredReplicas`, `databaseHealthy`, `conditions`).
+  - Native subresources (`status`, `scale`) and `kubectl get rc` printer columns (Phase, Desired, Ready, Version, Age).
+- **Hexagonal Domain Abstractions & Level-Triggered Reconciler** (`apps/api/src/domain/abstractions/operator.py`, `apps/api/src/adapters/operator/cluster_reconciler.py`):
+  - Pure domain models (`RetrieverClusterSpec`, `RetrieverClusterStatus`, `ClusterCondition`, `IKubernetesClient`).
+  - Level-triggered state machine managing phase transitions (`Pending` $\rightarrow$ `Provisioning` $\rightarrow$ `Running`), detecting image tag divergence for zero-downtime rolling upgrades, replica autoscaling, GPU worker node assignments, and automated S3 backup dispatches.
+  - In-memory Kubernetes client (`InMemoryKubernetesClient`) supporting standalone operations and testing without live cluster dependencies.
+- **Admin Cluster Management APIs** (`apps/api/src/routers/admin.py`):
+  - `GET /v1/admin/operator/status`: Controller health, CRD group, and registered cluster count.
+  - `GET /v1/admin/operator/clusters`: List all managed custom resources across namespaces.
+  - `POST /v1/admin/operator/reconcile`: Trigger programmatic reconciliation cycle.
+  - `POST /v1/admin/operator/clusters/{cluster_name}/backup`: Dispatch on-demand database & vector backup jobs.
+- **Platform Battery #28 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+  - Cataloged `kubernetes_native_operator` under `SYSTEM_EXTENSIBILITY` (now 28 platform batteries).
+
+## [1.1.0-alpha1] - 2026-09-14 - Milestone 111: Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline
+
+### Added
+- **Relational Database Change-Data-Capture (CDC) Connector** (`apps/api/src/domain/connectors/database_cdc.py`):
+  - High-watermark chronological replication for PostgreSQL and MySQL.
+  - Formats database rows into clean, searchable Markdown documents with attribute tables, primary keys, and source engine identifiers.
+  - Incremental sync tracking high-watermarks without re-fetching unmodified historical records.
+- **Cloud Object Storage Auto-Indexing Watcher** (`apps/api/src/domain/connectors/cloud_storage.py`):
+  - S3-compatible bucket crawler supporting AWS S3, Cloudflare R2, MinIO, and Google Cloud Storage.
+  - Tracks object `ETag` checksums and `LastModified` timestamps to only ingest new or altered documents.
+  - Supports prefix folder filtering and multi-extension discovery (`.pdf`, `.md`, `.txt`, `.docx`, `.csv`, `.json`).
+- **Developer Workspace Connectors** (`apps/api/src/domain/connectors/github.py`, `slack.py`):
+  - GitHub Connector syncing repository Markdown docs, issues, and pull requests with author, labels, and `since` cursor tracking.
+  - Slack Connector synchronizing channel conversations and threaded replies with user handles, formatted timestamps, and `ts` watermark cursors.
+- **Custom Ingestion Pipeline SDK & Decorator** (`apps/api/src/domain/abstractions/connector.py`, `registry.py`):
+  - Standardized `BaseConnector` lifecycle, `BaseDocumentParser`, and `@register_connector` decorator for dynamic third-party community extensions.
+  - `GET /v1/admin/connectors/manifests` catalog endpoint returning descriptor manifests and parameter schemas.
+- **Platform Battery #27 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+  - Cataloged `cdc_community_connectors` under `SYSTEM_EXTENSIBILITY` (now 27 platform batteries).
+- **Decoupled Client SDK Enhancements**:
+  - `@prat3010/retriever-client`: Added `listConnectorManifests()`, `listConnectors()`, `createConnector()`, `triggerConnectorSync()`.
+  - `retriever-python`: Added sync and async connector management methods on `RetrieverClient` and `AsyncRetrieverClient`.
+
+## [1.0.0-rc1] - 2026-09-14 - Milestone 110: Public Open-Source Launch & Unified Developer Ecosystem
+
+### Added
+- **Production Docker Compose & Multi-Stage Containers** (`docker-compose.yml`, `deploy/docker/Dockerfile.api`, `deploy/docker/Dockerfile.web`):
+  - 5-tier isolated orchestration: PostgreSQL 16 (`pgvector/pgvector:pg16`), Redis 7 Alpine, Ollama embedding engine (`nomic-embed-text` with local volume cache), FastAPI API (`retriever-api`), and Next.js Web Studio (`retriever-web`).
+  - Automated entrypoint (`scripts/docker-entrypoint.sh`) running database migrations and self-seeding demo tenant (`tn_demo_workspace` with API key `ret_live_demo_00000000000000000000000000000000`).
+  - Container-ready environment template (`.env.docker.example`).
+- **1-Line Quickstart Installer & Hardware Sensor** (`install.sh`, `scripts/quickstart.sh`):
+  - Hardware sensing detecting Apple Silicon Metal GPU acceleration, NVIDIA CUDA (`nvidia-smi`), or multi-core AVX2 CPU fallback.
+  - Automated port conflict detection (`8000`, `3000`, `5432`, `6379`, `11434`), Docker daemon health check, polling container health, and end-to-end vector search verification against the live demo tenant.
+  - Public installer curl script: `curl -fsSL https://get.retriever.run | bash`.
+- **Decoupled TypeScript Client SDK** (`packages/retriever-client`):
+  - Zero-dependency ESM/CJS library (`@prat3010/retriever-client`) for Browser and Node.js environments.
+  - Full TypeScript typings for `RetrieverClient`, `SearchQuery`, `SearchResult`, `IngestPayload`, and `TenantConfig`.
+  - Built-in retry logic with exponential backoff and typed error hierarchy (`RetrieverError`, `AuthenticationError`, `RateLimitError`).
+  - Verified with Node.js native test runner (`node --test`).
+- **Decoupled Python Client SDK** (`packages/retriever-python`):
+  - High-performance, type-hinted Python client (`retriever-python`) built on `httpx`.
+  - Supports synchronous and asynchronous workflows (`RetrieverClient`, `AsyncRetrieverClient`).
+  - Models for vector search, context compression, streaming chat completions, and tenant administration.
+  - 100% test coverage with Pytest and Ruff compliance.
+- **Open-Source Launch Matrix & Battery Reconciliation** (`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`):
+  - Reconciled all 26 platform batteries across 8 categories (Retrieval, Graph, Guardrails, Evaluators, Rerankers, Embeddings, Orchestration, Context Engine).
+  - Pinned open-source licensing (Apache 2.0), contributor code of conduct, bug reporting, and GitHub community discussions.
+
 ### Added / Improved
 - **Hardware-Sensing Neo4j Auto-Activation (`InfraCapabilities`)**:
   - Enhanced `InfraCapabilities` in `src/config.py` with `neo4j_viable` property, automatically detecting available RAM pool ($\ge 2.0\text{ GB}$ physical + swap) with `NEO4J_ENABLED` environment override support.

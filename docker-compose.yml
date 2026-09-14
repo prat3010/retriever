@@ -1,0 +1,129 @@
+# ==============================================================================
+# Retriever — Official Open-Source Docker Compose Stack (v1.0.0-rc1)
+# 26 Batteries Included • Scale-to-Zero Architecture • Local Ollama Embeddings
+# ==============================================================================
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: retriever-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-retriever}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-retriever}
+      POSTGRES_DB: ${POSTGRES_DB:-retriever}
+    ports:
+      - "5432:5432"
+    volumes:
+      - retriever_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retriever} -d ${POSTGRES_DB:-retriever}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - retriever-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: retriever-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - retriever_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - retriever-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: retriever-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - retriever_ollama:/root/.ollama
+    networks:
+      - retriever-network
+
+  ollama-init:
+    image: curlimages/curl:latest
+    container_name: retriever-ollama-init
+    restart: "no"
+    depends_on:
+      - ollama
+    networks:
+      - retriever-network
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for Ollama daemon...';
+      until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 2; done;
+      echo 'Pulling nomic-embed-text embedding model...';
+      curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"nomic-embed-text\"}';
+      echo 'Ollama embeddings ready.';
+      "
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: retriever-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-retriever}:${POSTGRES_PASSWORD:-retriever}@postgres:5432/${POSTGRES_DB:-retriever}
+      REDIS_URL: redis://redis:6379/0
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://ollama:11434
+      ADMIN_MASTER_KEY: ${ADMIN_MASTER_KEY:-ret_live_master_admin_secret_0000000000000}
+      SECRET_KEY: ${SECRET_KEY:-retriever-local-dev-secret-key-32-chars-long-min}
+      KEY_ENCRYPTION_KEY: ${KEY_ENCRYPTION_KEY:-dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcy1sb25nIQ==}
+      STORAGE_PROVIDER: local
+      STORAGE_BUCKET: retriever-documents
+      CORS_ORIGINS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - retriever_storage:/app/storage
+    networks:
+      - retriever-network
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+    container_name: retriever-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - api
+    networks:
+      - retriever-network
+
+volumes:
+  retriever_pgdata:
+    name: retriever_pgdata
+  retriever_redisdata:
+    name: retriever_redisdata
+  retriever_ollama:
+    name: retriever_ollama
+  retriever_storage:
+    name: retriever_storage
+
+networks:
+  retriever-network:
+    name: retriever-network
+    driver: bridge

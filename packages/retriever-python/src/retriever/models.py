@@ -213,6 +213,39 @@ class VoiceStreamEventDTO(BaseModel):
 # ── Distributed MCP Mesh & Agent Federation (Battery #30 / Milestone 115) ─────
 
 
+class NodeCapacityMetricsDTO(BaseModel):
+    cpu_utilization_pct: float = 0.0
+    memory_utilization_pct: float = 0.0
+    active_execution_slots: int = 0
+    max_execution_slots: int = 16
+    queue_depth: int = 0
+    ewma_latency_ms: float = 5.0
+    is_ephemeral: bool = False
+    ephemeral_idle_seconds: float = 0.0
+
+
+class AutoscalingPolicyDTO(BaseModel):
+    scale_up_utilization_pct: float = 80.0
+    scale_up_queue_depth: int = 10
+    scale_up_latency_ms: float = 250.0
+    scale_down_idle_seconds: float = 300.0
+    min_enclaves: int = 0
+    max_ephemeral_enclaves: int = 4
+    load_shedding_threshold_pct: float = 95.0
+
+
+class AutoscalingEventDTO(BaseModel):
+    event_id: str
+    timestamp: float
+    cluster_id: str
+    action: str
+    reason: str
+    node_id: str | None = None
+    trigger_metric: str
+    metric_value: float
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
 class MeshPeerNodeDTO(BaseModel):
     node_id: str
     cluster_id: str
@@ -224,6 +257,7 @@ class MeshPeerNodeDTO(BaseModel):
     last_heartbeat: float = 0.0
     public_key_fingerprint: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
+    capacity: NodeCapacityMetricsDTO = Field(default_factory=NodeCapacityMetricsDTO)
 
 
 class MeshStatusSummaryDTO(BaseModel):
@@ -247,5 +281,6 @@ class FederatedDelegationResponseDTO(BaseModel):
     execution_latency_ms: float = 0.0
     signature: str = ""
     error_message: str | None = None
+
 
 

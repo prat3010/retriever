@@ -15,6 +15,8 @@ from retriever.exceptions import (
     RateLimitExceededError,
 )
 from retriever.models import (
+    AutoscalingEventDTO,
+    AutoscalingPolicyDTO,
     CognitiveMemoryNode,
     ConnectorConfigDTO,
     ConnectorManifestDTO,
@@ -400,6 +402,43 @@ class RetrieverClient:
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
 
+    # ── Autonomous Mesh Dynamic Load-Balancing & Autoscaling (Battery #31 / M116) ──
+
+    def get_mesh_load_metrics(self) -> dict[str, Any]:
+        resp = self._client.get("/v1/mesh/load/metrics")
+        _handle_error(resp)
+        return resp.json()
+
+    def get_autoscaling_events(self, limit: int = 50) -> list[AutoscalingEventDTO]:
+        resp = self._client.get(f"/v1/mesh/load/autoscaling/events?limit={limit}")
+        _handle_error(resp)
+        return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
+
+    def update_autoscaling_policy(
+        self, policy: dict[str, Any] | AutoscalingPolicyDTO
+    ) -> AutoscalingPolicyDTO:
+        body = policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        resp = self._client.post("/v1/mesh/load/autoscaling/policy", json=body)
+        _handle_error(resp)
+        return AutoscalingPolicyDTO.model_validate(resp.json())
+
+    def report_node_capacity_telemetry(
+        self, node_id: str, metrics: dict[str, Any]
+    ) -> MeshPeerNodeDTO:
+        resp = self._client.post(
+            "/v1/mesh/load/heartbeat-telemetry",
+            json={"node_id": node_id, "metrics": metrics},
+        )
+        _handle_error(resp)
+        return MeshPeerNodeDTO.model_validate(resp.json())
+
+    def reap_idle_enclaves(
+        self, cluster_id: str = "cluster-primary"
+    ) -> list[AutoscalingEventDTO]:
+        resp = self._client.post(f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}")
+        _handle_error(resp)
+        return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
+
 
 class AsyncRetrieverClient:
     """Asynchronous Client for Retriever Cognitive Engine."""
@@ -691,5 +730,42 @@ class AsyncRetrieverClient:
         resp = await self._client.get(f"/v1/mesh/federation/tasks/{delegation_id}")
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
+
+    # ── Autonomous Mesh Dynamic Load-Balancing & Autoscaling (Battery #31 / M116) ──
+
+    async def get_mesh_load_metrics(self) -> dict[str, Any]:
+        resp = await self._client.get("/v1/mesh/load/metrics")
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_autoscaling_events(self, limit: int = 50) -> list[AutoscalingEventDTO]:
+        resp = await self._client.get(f"/v1/mesh/load/autoscaling/events?limit={limit}")
+        _handle_error(resp)
+        return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
+
+    async def update_autoscaling_policy(
+        self, policy: dict[str, Any] | AutoscalingPolicyDTO
+    ) -> AutoscalingPolicyDTO:
+        body = policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        resp = await self._client.post("/v1/mesh/load/autoscaling/policy", json=body)
+        _handle_error(resp)
+        return AutoscalingPolicyDTO.model_validate(resp.json())
+
+    async def report_node_capacity_telemetry(
+        self, node_id: str, metrics: dict[str, Any]
+    ) -> MeshPeerNodeDTO:
+        resp = await self._client.post(
+            "/v1/mesh/load/heartbeat-telemetry",
+            json={"node_id": node_id, "metrics": metrics},
+        )
+        _handle_error(resp)
+        return MeshPeerNodeDTO.model_validate(resp.json())
+
+    async def reap_idle_enclaves(
+        self, cluster_id: str = "cluster-primary"
+    ) -> list[AutoscalingEventDTO]:
+        resp = await self._client.post(f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}")
+        _handle_error(resp)
+        return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
 
 

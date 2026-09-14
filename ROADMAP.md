@@ -101,14 +101,25 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added full mesh and federation API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated 3-tab segmented controller in `McpPanel.tsx` with decentralized node topology visualizer and cross-cluster agent delegation cockpit under Design System 2.0.
 
+### Milestone 116: Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling (v1.6.0-alpha1) — **Completed**
+- [x] **Platform Battery #31 Registration:** Cataloged `mesh_load_balancer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Power-of-Two-Choices (P2C) Load Balancing:** Implemented pure domain P2C candidate selection algorithm minimizing composite load scores combining EWMA latency, queue depth, and slot saturation without stampedes.
+- [x] **EWMA Latency Decay & Concurrency Tracking:** Atomic execution slot reservation (`acquire_slot`/`release_slot`) with Exponentially Weighted Moving Average decay ($\alpha = 0.2$) reflecting genuine execution overhead.
+- [x] **Autonomous Scale-to-Zero Enclave Provisioning:** In-process `SovereignEnclaveProvisionerAdapter` scaling out edge enclaves under high cluster pressure and reaping idle enclaves after 300s of inactivity.
+- [x] **Circuit-Breaker Load-Shedding:** Hard circuit breaker emitting HTTP 429 Too Many Requests when all candidate nodes exceed 95% slot saturation.
+- [x] **FastAPI REST Endpoints:** Mounted `/v1/mesh/load/metrics`, `/v1/mesh/load/autoscaling/events`, `/v1/mesh/load/autoscaling/policy`, `/v1/mesh/load/heartbeat-telemetry`, and `/v1/mesh/load/scale-down/reap`.
+- [x] **Decoupled API Client SDKs Extended:** Added full load metrics, autoscaling policy, and enclave reaping API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated 4th tab "Dynamic Load & Enclaves" in `McpPanel.tsx` with cluster capacity dials, interactive autoscaling policy sliders, and live event audit ledger under Design System 2.0.
+
 ---
 
 ## 📚 Technical Documentation Hub
 
 - 🏛️ **Architecture & ADRs:** [`docs/architecture.md`](docs/architecture.md) • [`docs/decisions/`](docs/decisions/)
-- 🔌 **REST & SSE API Reference:** [`docs/api/`](docs/api/) (28 endpoints)
+- 🔌 **REST & SSE API Reference:** [`docs/api/`](docs/api/) (29 endpoints)
 - 🔒 **Enterprise Security Whitepaper:** [`docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md`](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md)
 - 🛡️ **Sovereign Edge Swarm Handbook:** [`docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md`](docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md)
 - 🕸️ **Distributed MCP Mesh & Federation Handbook:** [`docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md`](docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md)
+- ⚖️ **Mesh Load Balancing & Autoscaling Feature Guide:** [`docs/features/mesh-load-balancer.md`](docs/features/mesh-load-balancer.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

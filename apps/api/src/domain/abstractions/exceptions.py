@@ -84,3 +84,16 @@ class MeshNodeUnreachableError(DomainError):
     """Exception raised when a remote MCP mesh peer cannot be reached."""
 
     pass
+
+
+class MeshLoadSheddingError(DomainError):
+    """Exception raised when all available mesh nodes exceed saturation threshold and load is shed."""
+
+    pass
+
+
+class AutoscalingCapacityExceededError(DomainError):
+    """Exception raised when an autonomous scale-up action exceeds maximum allowed enclave limits."""
+
+    pass
+

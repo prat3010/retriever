@@ -416,6 +416,27 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/mesh/status",
             ),
+            PlatformBatteryDTO(
+                id="mesh_load_balancer",
+                name="Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling",
+                category=BatteryCategory.SYSTEM_EXTENSIBILITY,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Power-of-Two-Choices (P2C) + EWMA Latency Decay + Saturation Load Shedding & Scale-to-Zero Lifecycle",
+                milestone="M116 (v1.6.0-alpha1)",
+                latency_profile="<2ms P2C routing selection / <50ms auto-scale trigger",
+                description="Autonomous load balancer and capacity manager for the Distributed MCP Mesh tracking CPU/GPU slot saturation, EWMA latency distribution, adaptive load shedding, and scale-to-zero lifecycle for ephemeral micro-enclaves.",
+                active_parameters={
+                    "algorithm": "power_of_two_choices_ewma",
+                    "ewma_alpha": 0.2,
+                    "scale_up_latency_ms": 150.0,
+                    "scale_up_queue_depth": 10,
+                    "scale_up_utilization_pct": 85.0,
+                    "scale_down_idle_seconds": 300.0,
+                    "max_ephemeral_enclaves": 4,
+                    "load_shedding_threshold_pct": 95.0,
+                },
+                health_check_endpoint="/v1/mesh/load/metrics",
+            ),
         ]
 
 

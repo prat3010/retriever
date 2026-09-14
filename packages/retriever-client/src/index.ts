@@ -779,12 +779,106 @@ export class RetrieverClient {
   async getFederatedTaskStatus(delegationId: string): Promise<FederatedDelegationResponse> {
     return this.request<FederatedDelegationResponse>(`/v1/mesh/federation/tasks/${delegationId}`);
   }
+
+  // ── Autonomous Mesh Dynamic Load-Balancing & Autoscaling (Battery #31 / M116) ──
+
+  async getMeshLoadMetrics(): Promise<ClusterLoadSummary> {
+    return this.request<ClusterLoadSummary>("/v1/mesh/load/metrics");
+  }
+
+  async getAutoscalingEvents(limit: number = 50): Promise<AutoscalingEvent[]> {
+    return this.request<AutoscalingEvent[]>(`/v1/mesh/load/autoscaling/events?limit=${limit}`);
+  }
+
+  async updateAutoscalingPolicy(policy: AutoscalingPolicy): Promise<AutoscalingPolicy> {
+    return this.request<AutoscalingPolicy>("/v1/mesh/load/autoscaling/policy", {
+      method: "POST",
+      body: JSON.stringify(policy),
+    });
+  }
+
+  async reportNodeCapacityTelemetry(nodeId: string, metrics: NodeCapacityMetrics): Promise<MeshPeerNode> {
+    return this.request<MeshPeerNode>("/v1/mesh/load/heartbeat-telemetry", {
+      method: "POST",
+      body: JSON.stringify({ node_id: nodeId, metrics }),
+    });
+  }
+
+  async reapIdleEnclaves(clusterId: string = "cluster-primary"): Promise<AutoscalingEvent[]> {
+    return this.request<AutoscalingEvent[]>(`/v1/mesh/load/scale-down/reap?cluster_id=${encodeURIComponent(clusterId)}`, {
+      method: "POST",
+    });
+  }
 }
 
 export type MeshNodeRole = "seed_gateway" | "sovereign_node" | "edge_enclave" | "remote_peer";
 export type MeshNodeStatus = "online" | "degraded" | "standby" | "unreachable";
-export type MeshRoutingPolicy = "local_first" | "lowest_latency" | "round_robin" | "failover";
+export type MeshRoutingPolicy = "local_first" | "lowest_latency" | "round_robin" | "failover" | "load_balanced_ewma";
 export type FederatedTaskStatus = "pending" | "executing" | "completed" | "failed" | "rejected";
+
+export interface NodeCapacityMetrics {
+  cpu_utilization_pct: number;
+  memory_utilization_pct: number;
+  active_execution_slots: number;
+  max_execution_slots: number;
+  queue_depth: number;
+  ewma_latency_ms: number;
+  is_ephemeral: boolean;
+  ephemeral_idle_seconds: number;
+}
+
+export interface AutoscalingPolicy {
+  scale_up_utilization_pct: number;
+  scale_up_queue_depth: number;
+  scale_up_latency_ms: number;
+  scale_down_idle_seconds: number;
+  min_enclaves: number;
+  max_ephemeral_enclaves: number;
+  load_shedding_threshold_pct: number;
+}
+
+export interface AutoscalingEvent {
+  event_id: string;
+  timestamp: number;
+  cluster_id: string;
+  action: "scale_up" | "scale_down" | "shed_load" | "rebalance";
+  reason: string;
+  node_id?: string | null;
+  trigger_metric: string;
+  metric_value: number;
+  details?: Record<string, any>;
+}
+
+export interface ClusterLoadSummary {
+  total_nodes: number;
+  online_nodes: number;
+  ephemeral_nodes: number;
+  clusters: Record<
+    string,
+    {
+      total_nodes: number;
+      online_nodes: number;
+      ephemeral_nodes: number;
+      active_execution_slots: number;
+      max_execution_slots: number;
+      utilization_pct: number;
+      avg_ewma_latency_ms: number;
+      queue_depth: number;
+      nodes: {
+        node_id: string;
+        role: string;
+        status: string;
+        is_ephemeral: boolean;
+        active_slots: number;
+        max_slots: number;
+        cpu_pct: number;
+        ewma_latency_ms: number;
+        queue_depth: number;
+        idle_seconds: number;
+      }[];
+    }
+  >;
+}
 
 export interface MeshPeerNode {
   node_id: string;
@@ -797,6 +891,7 @@ export interface MeshPeerNode {
   last_heartbeat: number;
   public_key_fingerprint?: string;
   metadata?: Record<string, any>;
+  capacity?: NodeCapacityMetrics;
 }
 
 export interface MeshStatusSummary {

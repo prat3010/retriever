@@ -81,6 +81,11 @@ class McpMeshService:
         )
         self._nodes[self.local_node_id] = local_node
 
+    @property
+    def local_node(self) -> MeshPeerNode:
+        """Return the local node representation."""
+        return self._nodes[self.local_node_id]
+
     def update_local_tools(self, tools: list[McpToolDefinition]) -> None:
         """Update advertised capabilities for the local node."""
         if self.local_node_id in self._nodes:
@@ -113,9 +118,15 @@ class McpMeshService:
             node.latency_ms = max(0.1, latency_ms)
         return node
 
-    def list_nodes(self, status_filter: MeshNodeStatus | None = None) -> list[MeshPeerNode]:
+    def list_nodes(
+        self,
+        status_filter: MeshNodeStatus | None = None,
+        online_only: bool = False,
+    ) -> list[MeshPeerNode]:
         """List registered peer nodes, optionally filtered by health status."""
         self.evict_stale_nodes()
+        if online_only or status_filter == MeshNodeStatus.ONLINE:
+            return [n for n in self._nodes.values() if n.status == MeshNodeStatus.ONLINE]
         if status_filter:
             return [n for n in self._nodes.values() if n.status == status_filter]
         return list(self._nodes.values())
@@ -162,7 +173,19 @@ class McpMeshService:
                 f"No online mesh peer currently advertises capability '{tool_name}'."
             )
 
-        if effective_policy == MeshRoutingPolicy.LOWEST_LATENCY or effective_policy == MeshRoutingPolicy.LOCAL_FIRST:
+        if effective_policy == MeshRoutingPolicy.LOAD_BALANCED_EWMA:
+            # Sort candidates by composite load score: EWMA * (1 + queue_depth) * (1 + active/max)
+            candidates.sort(
+                key=lambda n: (
+                    n.capacity.ewma_latency_ms
+                    * (1.0 + float(n.capacity.queue_depth))
+                    * (1.0 + (n.capacity.active_execution_slots / max(1, n.capacity.max_execution_slots)))
+                    * (1.0 if n.status == MeshNodeStatus.ONLINE else 10.0)
+                )
+            )
+            return candidates[0]
+
+        if effective_policy in (MeshRoutingPolicy.LOWEST_LATENCY, MeshRoutingPolicy.LOCAL_FIRST):
             # Pick node with lowest latency
             candidates.sort(key=lambda n: n.latency_ms)
             return candidates[0]

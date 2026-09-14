@@ -714,8 +714,9 @@ class Container:
         self._cache["schematic_extractor"] = schematic_extractor
         self._cache["multimodal_graph_service"] = multimodal_graph_service
 
-        # --- Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation ---
+        # --- Milestone 115 & 116: Distributed MCP Mesh, Agent Federation & Load Balancing ---
         from src.domain.mcp.federation_service import AgentFederationService
+        from src.domain.mcp.load_balancer_service import MeshLoadBalancerService
         from src.domain.mcp.mesh_service import McpMeshService
 
         mesh_service = McpMeshService(
@@ -725,8 +726,10 @@ class Container:
             cluster_secret=os.getenv("RETRIEVER_MESH_SECRET", "retriever_mcp_mesh_internal_trust_key_v1"),
         )
         federation_service = AgentFederationService(mesh_service=mesh_service)
+        load_balancer_service = MeshLoadBalancerService(mesh_service=mesh_service)
         self._cache["mcp_mesh_service"] = mesh_service
         self._cache["agent_federation_service"] = federation_service
+        self._cache["mesh_load_balancer_service"] = load_balancer_service
 
     def reset(self) -> None:
         self._cache.clear()
@@ -848,4 +851,5 @@ multimodal_graph_service = container.multimodal_graph_service
 voice_stream_service = container.voice_stream_service
 mcp_mesh_service = container.mcp_mesh_service
 agent_federation_service = container.agent_federation_service
+mesh_load_balancer_service = container.mesh_load_balancer_service
 

@@ -1954,6 +1954,15 @@
 - **SaaS Studio Cockpit**: Dedicated 4-subview control panel in `src/components/rag/VectorShardingPanel.tsx` under Design System 2.0.
 - **Platform Battery #32 Registration**: Added `vector_raft_sharding` under `EDGE_DISTRIBUTION` (32 active platform batteries).
 
+### Milestone 118: Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Grounding (v1.8.0-alpha1) — **Completed**
+- **Deterministic Binary Merkle Trees**: In-process cryptographic DAG construction over document chunks with SHA-256 leaf commitments ($h_i = \text{SHA256}(\text{tenant} \mathbin{\Vert} \text{doc} \mathbin{\Vert} i \mathbin{\Vert} \text{chunk\_sha256})$), canonical odd-leaf padding, and immutable Merkle root calculation.
+- **Sub-Millisecond Inclusion Proofs**: High-performance $O(\log N)$ inclusion paths ($\pi_i$) enabling cryptographic verification that an exact chunk belongs to an indexed document without disclosing sibling text.
+- **Ed25519 Grounding Certificates**: Curve25519 digital signature envelope binding query text, response hash, cited chunk commitments, cosine similarity lower bounds, and root hash into verifiable attestation tokens.
+- **Public Zero-Knowledge Verification**: Mounted unauthenticated public endpoint `POST /v1/zkp/verify` allowing downstream clients and compliance auditors to verify grounding validity without sharing private corpora.
+- **FastAPI Endpoints & SDK Parity**: Mounted `/v1/zkp/health`, `/v1/tenants/{tenantId}/zkp/merkle-root/{documentId}`, `/v1/tenants/{tenantId}/zkp/proof/chunk/{chunkId}`, `/v1/tenants/{tenantId}/zkp/attest`, and `/v1/tenants/{tenantId}/zkp/certificates`. Decoupled client SDKs updated in `@prat3010/retriever-client` and `retriever-python`.
+- **SaaS Studio Cockpit**: Dedicated 3-subview control panel in `src/components/rag/ZkpAttestationPanel.tsx` in `/rag/app` under Design System 2.0 (Merkle Tree Explorer, Live Zero-Knowledge Verifier, Compliance Audit Ledger).
+- **Platform Battery #33 Registration**: Added `zkp_vector_attestation` under `SAFETY_DEFENSE` (33 active platform batteries).
+
 ---
 
 ## 7. Cross-Cutting Engineering Invariants

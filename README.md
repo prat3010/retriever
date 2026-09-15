@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
 [![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-32%20included-ff69b4.svg)](#-the-32-platform-batteries)
+[![Batteries](https://img.shields.io/badge/batteries-33%20included-ff69b4.svg)](#-the-33-platform-batteries)
 [![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
@@ -131,9 +131,9 @@ See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Oper
 
 ---
 
-## 🔋 The 32 Platform Batteries
+## 🔋 The 33 Platform Batteries
 
-Retriever ships with **32 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **33 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Algorithm / Foundation |
 |:---:|:---|:---|:---|
@@ -169,6 +169,7 @@ Retriever ships with **32 production-grade batteries** pre-wired through Hexagon
 | **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology + HMAC-SHA256 Trust Envelope + Federated ReAct Sub-Agent Delegation |
 | **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) + EWMA Latency Decay + Saturation Load Shedding & Scale-to-Zero Lifecycle |
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion |
+| **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
 
 ---
 

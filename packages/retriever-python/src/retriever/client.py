@@ -28,10 +28,17 @@ from retriever.models import (
     MeshPeerNodeDTO,
     MeshStatusSummaryDTO,
     MultimodalGraphResponseDTO,
+    RaftConsensusStatus,
     ReActEvent,
+    ScatterGatherQuery,
+    ScatterGatherResponse,
     SchematicDiagramDTO,
     SearchResponse,
     SearchResultItem,
+    ShardMutationRequest,
+    ShardMutationResponse,
+    ShardRebalancePlan,
+    ShardTopologyResponse,
     SwarmDebateResult,
 )
 
@@ -439,6 +446,51 @@ class RetrieverClient:
         _handle_error(resp)
         return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
 
+    # ── Decentralized Vector Sharding & Distributed Raft Consensus (Battery #32 / M117) ──
+
+    def get_shard_topology(self) -> ShardTopologyResponse:
+        resp = self._client.get("/v1/shards/topology")
+        _handle_error(resp)
+        return ShardTopologyResponse.model_validate(resp.json())
+
+    def query_sharded_vectors(
+        self, query: dict[str, Any] | ScatterGatherQuery
+    ) -> ScatterGatherResponse:
+        body = query.model_dump() if isinstance(query, ScatterGatherQuery) else query
+        resp = self._client.post("/v1/shards/query", json=body)
+        _handle_error(resp)
+        return ScatterGatherResponse.model_validate(resp.json())
+
+    def mutate_sharded_vectors(
+        self, mutation: dict[str, Any] | ShardMutationRequest
+    ) -> ShardMutationResponse:
+        body = mutation.model_dump() if isinstance(mutation, ShardMutationRequest) else mutation
+        resp = self._client.post("/v1/shards/mutate", json=body)
+        _handle_error(resp)
+        return ShardMutationResponse.model_validate(resp.json())
+
+    def get_raft_consensus_status(self) -> RaftConsensusStatus:
+        resp = self._client.get("/v1/shards/raft/status")
+        _handle_error(resp)
+        return RaftConsensusStatus.model_validate(resp.json())
+
+    def trigger_raft_election(self, candidate_node_id: str) -> dict[str, Any]:
+        resp = self._client.post("/v1/shards/election", json={"candidate_node_id": candidate_node_id})
+        _handle_error(resp)
+        return resp.json()
+
+    def rebalance_shards(
+        self, payload: dict[str, Any] | None = None
+    ) -> ShardRebalancePlan:
+        resp = self._client.post("/v1/shards/rebalance", json=payload or {})
+        _handle_error(resp)
+        return ShardRebalancePlan.model_validate(resp.json())
+
+    def snapshot_shard(self, shard_id: str) -> dict[str, Any]:
+        resp = self._client.post(f"/v1/shards/{shard_id}/snapshot")
+        _handle_error(resp)
+        return resp.json()
+
 
 class AsyncRetrieverClient:
     """Asynchronous Client for Retriever Cognitive Engine."""
@@ -767,5 +819,50 @@ class AsyncRetrieverClient:
         resp = await self._client.post(f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}")
         _handle_error(resp)
         return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
+
+    # ── Decentralized Vector Sharding & Distributed Raft Consensus (Battery #32 / M117) ──
+
+    async def get_shard_topology(self) -> ShardTopologyResponse:
+        resp = await self._client.get("/v1/shards/topology")
+        _handle_error(resp)
+        return ShardTopologyResponse.model_validate(resp.json())
+
+    async def query_sharded_vectors(
+        self, query: dict[str, Any] | ScatterGatherQuery
+    ) -> ScatterGatherResponse:
+        body = query.model_dump() if isinstance(query, ScatterGatherQuery) else query
+        resp = await self._client.post("/v1/shards/query", json=body)
+        _handle_error(resp)
+        return ScatterGatherResponse.model_validate(resp.json())
+
+    async def mutate_sharded_vectors(
+        self, mutation: dict[str, Any] | ShardMutationRequest
+    ) -> ShardMutationResponse:
+        body = mutation.model_dump() if isinstance(mutation, ShardMutationRequest) else mutation
+        resp = await self._client.post("/v1/shards/mutate", json=body)
+        _handle_error(resp)
+        return ShardMutationResponse.model_validate(resp.json())
+
+    async def get_raft_consensus_status(self) -> RaftConsensusStatus:
+        resp = await self._client.get("/v1/shards/raft/status")
+        _handle_error(resp)
+        return RaftConsensusStatus.model_validate(resp.json())
+
+    async def trigger_raft_election(self, candidate_node_id: str) -> dict[str, Any]:
+        resp = await self._client.post("/v1/shards/election", json={"candidate_node_id": candidate_node_id})
+        _handle_error(resp)
+        return resp.json()
+
+    async def rebalance_shards(
+        self, payload: dict[str, Any] | None = None
+    ) -> ShardRebalancePlan:
+        resp = await self._client.post("/v1/shards/rebalance", json=payload or {})
+        _handle_error(resp)
+        return ShardRebalancePlan.model_validate(resp.json())
+
+    async def snapshot_shard(self, shard_id: str) -> dict[str, Any]:
+        resp = await self._client.post(f"/v1/shards/{shard_id}/snapshot")
+        _handle_error(resp)
+        return resp.json()
 
 

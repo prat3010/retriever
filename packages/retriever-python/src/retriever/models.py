@@ -1,5 +1,6 @@
 """Pydantic data models for Retriever Python SDK."""
 
+import time
 from typing import Any, Literal
 from pydantic import BaseModel, Field
 
@@ -280,6 +281,127 @@ class FederatedDelegationResponseDTO(BaseModel):
     tool_trace_summary: list[dict[str, Any]] = Field(default_factory=list)
     execution_latency_ms: float = 0.0
     signature: str = ""
+    error_message: str | None = None
+
+
+# ── Vector Sharding & Raft Consensus (Battery #32 / M117) ─────────────────────
+
+
+class ShardPartition(BaseModel):
+    shard_id: str
+    tenant_id: str | None = None
+    hash_range_start: int
+    hash_range_end: int
+    leader_node_id: str
+    replica_node_ids: list[str] = Field(default_factory=list)
+    status: str = "healthy"
+    vector_count: int = 0
+    index_size_bytes: int = 0
+    created_at: float = Field(default_factory=time.time)
+    updated_at: float = Field(default_factory=time.time)
+
+
+class ShardTopologyResponse(BaseModel):
+    cluster_id: str
+    total_shards: int
+    replication_factor: int
+    shards: list[ShardPartition] = Field(default_factory=list)
+    skew_metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class RaftLogEntry(BaseModel):
+    index: int
+    term: int
+    command_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    timestamp: float = Field(default_factory=time.time)
+
+
+class RaftNodeState(BaseModel):
+    node_id: str
+    current_term: int = 1
+    voted_for: str | None = None
+    role: str = "follower"
+    commit_index: int = 0
+    last_applied: int = 0
+    leader_id: str | None = None
+    log_length: int = 0
+    heartbeat_timestamp: float = Field(default_factory=time.time)
+
+
+class RaftConsensusStatus(BaseModel):
+    cluster_id: str
+    current_term: int
+    active_leader_id: str | None = None
+    total_nodes: int
+    leader_elected: bool
+    quorum_healthy: bool
+    nodes: list[RaftNodeState] = Field(default_factory=list)
+    recent_log_entries: list[RaftLogEntry] = Field(default_factory=list)
+
+
+class ScatterGatherQuery(BaseModel):
+    tenant_id: str
+    query_vector: list[float]
+    top_k: int = 10
+    read_quorum: str = "quorum"
+    filter_metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ShardCandidate(BaseModel):
+    chunk_id: str
+    score: float
+    text: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    shard_id: str
+    node_id: str
+
+
+class ShardQueryBreakdown(BaseModel):
+    shard_id: str
+    node_id: str
+    latency_ms: float
+    candidates_count: int
+    status: str = "success"
+
+
+class ScatterGatherResponse(BaseModel):
+    query_id: str
+    tenant_id: str
+    total_shards_queried: int
+    successful_shards: int
+    quorum_achieved: bool
+    total_latency_ms: float
+    shard_breakdown: list[ShardQueryBreakdown] = Field(default_factory=list)
+    results: list[ShardCandidate] = Field(default_factory=list)
+
+
+class ShardMutationRequest(BaseModel):
+    tenant_id: str
+    document_id: str
+    vectors: list[dict[str, Any]]
+    write_quorum: str = "quorum"
+
+
+class ShardMutationResponse(BaseModel):
+    shard_id: str
+    committed_log_index: int
+    term: int
+    vectors_written: int
+    quorum_achieved: bool
+    elapsed_ms: float
+
+
+class ShardRebalancePlan(BaseModel):
+    plan_id: str
+    source_node_id: str
+    target_node_id: str
+    shard_id: str
+    status: str = "planned"
+    vectors_transferred: int = 0
+    total_vectors: int = 0
+    start_time: float = Field(default_factory=time.time)
+    completion_time: float | None = None
     error_message: str | None = None
 
 

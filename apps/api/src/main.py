@@ -214,6 +214,7 @@ from src.routers.serverless_gpu import tenant_router as serverless_tenant_router
 from src.routers.swarm import admin_router as swarm_admin_router
 from src.routers.swarm import tenant_router as swarm_tenant_router
 from src.routers.tenant import router as tenant_router
+from src.routers.vector_sharding import router as vector_sharding_router
 from src.routers.vision import router as vision_router
 from src.routers.voice import admin_router as voice_admin_router
 from src.routers.voice import stream_router as voice_stream_router
@@ -224,6 +225,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(mcp_router)
 app.include_router(mcp_mesh_router)
+app.include_router(vector_sharding_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

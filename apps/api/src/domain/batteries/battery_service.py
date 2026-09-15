@@ -437,6 +437,25 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/mesh/load/metrics",
             ),
+            PlatformBatteryDTO(
+                id="vector_raft_sharding",
+                name="Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion",
+                milestone="M117 (v1.7.0-alpha1)",
+                latency_profile="<2ms hash routing / ~15ms parallel scatter-gather / <20ms Raft commit",
+                description="Horizontally partitions multi-tenant vector indices across distributed nodes using consistent virtual-node hashing, Raft consensus log replication, and parallel scatter-gather search with tunable read consistency quorums.",
+                active_parameters={
+                    "total_shards": 8,
+                    "replication_factor": 3,
+                    "vnodes_per_shard": 64,
+                    "heartbeat_interval_ms": 50,
+                    "election_timeout_ms": 250,
+                    "default_read_quorum": "quorum",
+                },
+                health_check_endpoint="/v1/shards/topology",
+            ),
         ]
 
 

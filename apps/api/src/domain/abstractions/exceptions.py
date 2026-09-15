@@ -97,3 +97,33 @@ class AutoscalingCapacityExceededError(DomainError):
 
     pass
 
+
+class VectorShardingError(DomainError):
+    """Base exception for decentralized vector sharding and consensus failures."""
+
+    pass
+
+
+class ShardNotFoundError(VectorShardingError):
+    """Exception raised when a requested vector partition shard does not exist."""
+
+    pass
+
+
+class RaftQuorumNotReachedError(VectorShardingError):
+    """Exception raised when a Raft mutation or read quorum cannot be established."""
+
+    pass
+
+
+class LeaderNotElectedError(VectorShardingError):
+    """Exception raised when an operation requires an active Raft leader but none is elected."""
+
+    pass
+
+
+class ShardRebalanceConflictError(VectorShardingError):
+    """Exception raised when a concurrent shard rebalance or migration conflict occurs."""
+
+    pass
+

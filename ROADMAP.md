@@ -50,6 +50,8 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 | **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 | ✅ Production |
 | **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural schematic parsing, normalized bounding-box coordinates & cross-modal GraphRAG | ✅ Production |
 | **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology, HMAC-SHA256 trust envelopes & federated ReAct delegation | ✅ Production |
+| **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) load balancing, EWMA latency decay, load-shedding & ephemeral scale-to-zero | ✅ Production |
+| **32** | `vector_raft_sharding` | Edge Distribution | Consistent virtual-node hash partitioning, Raft consensus replication & parallel scatter-gather | ✅ Production |
 
 ---
 
@@ -110,6 +112,16 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 - [x] **FastAPI REST Endpoints:** Mounted `/v1/mesh/load/metrics`, `/v1/mesh/load/autoscaling/events`, `/v1/mesh/load/autoscaling/policy`, `/v1/mesh/load/heartbeat-telemetry`, and `/v1/mesh/load/scale-down/reap`.
 - [x] **Decoupled API Client SDKs Extended:** Added full load metrics, autoscaling policy, and enclave reaping API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated 4th tab "Dynamic Load & Enclaves" in `McpPanel.tsx` with cluster capacity dials, interactive autoscaling policy sliders, and live event audit ledger under Design System 2.0.
+
+### Milestone 117: Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus (v1.7.0-alpha1) — **Completed**
+- [x] **Platform Battery #32 Registration:** Cataloged `vector_raft_sharding` in `BatteryService` under `EDGE_DISTRIBUTION`.
+- [x] **Consistent Virtual-Node Hashing:** Deterministic 32-bit FNV-1a hash ring partitioning with 64 virtual nodes (`vnodes`) per shard, supporting both dedicated tenant isolation and shared uniform partitions.
+- [x] **Distributed Raft Consensus State Machine:** In-process Raft engine maintaining monotonic terms, candidate majority elections ($\lfloor N/2 \rfloor + 1$), heartbeat leases (50ms), and replicated AppendEntries logs for vector mutations.
+- [x] **Scatter-Gather Parallel Vector Search:** Concurrent async query fan-out with Reciprocal Rank Fusion (RRF), score normalization, duplicate suppression, and tunable read consistency quorums (`LOCAL`, `ONE`, `QUORUM`, `ALL`).
+- [x] **Online Zero-Downtime Shard Rebalancing:** Skew detector standard deviation monitoring with 2-phase online migration (snapshot transfer + delta log replay + atomic lease cutover).
+- [x] **FastAPI REST Endpoints:** Mounted `/v1/shards/topology`, `/v1/shards/query`, `/v1/shards/mutate`, `/v1/shards/raft/status`, `/v1/shards/election`, `/v1/shards/rebalance`, and `/v1/shards/{shard_id}/snapshot`.
+- [x] **Decoupled API Client SDKs Extended:** Added full vector sharding, Raft status, and rebalance API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated "Vector Shards & Raft" panel in `src/components/rag/VectorShardingPanel.tsx` in `/rag/app` under Design System 2.0.
 
 ---
 

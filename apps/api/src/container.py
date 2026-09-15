@@ -731,6 +731,19 @@ class Container:
         self._cache["agent_federation_service"] = federation_service
         self._cache["mesh_load_balancer_service"] = load_balancer_service
 
+        # --- Vector Sharding & Raft Consensus (M117) ---
+        from src.domain.retrieval.vector_raft_sharding_service import (
+            VectorRaftShardingService,
+        )
+
+        vector_raft_sharding_service = VectorRaftShardingService(
+            cluster_id=os.getenv("RETRIEVER_CLUSTER_ID", "cluster_alpha"),
+            num_shards=int(os.getenv("RETRIEVER_NUM_SHARDS", "8")),
+            vnodes_per_shard=int(os.getenv("RETRIEVER_VNODES_PER_SHARD", "64")),
+            replication_factor=int(os.getenv("RETRIEVER_REPLICATION_FACTOR", "3")),
+        )
+        self._cache["vector_raft_sharding_service"] = vector_raft_sharding_service
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -852,4 +865,5 @@ voice_stream_service = container.voice_stream_service
 mcp_mesh_service = container.mcp_mesh_service
 agent_federation_service = container.agent_federation_service
 mesh_load_balancer_service = container.mesh_load_balancer_service
+vector_raft_sharding_service = container.vector_raft_sharding_service
 

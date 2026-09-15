@@ -475,6 +475,25 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/zkp/health",
             ),
+            PlatformBatteryDTO(
+                id="enterprise_identity_federation",
+                name="Enterprise Identity Federation & RB-VAC",
+                category=BatteryCategory.SAFETY_DEFENSE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="SAML 2.0 XML Sig + SCIM 2.0 Directory Sync & Pre-Retrieval ACL Set Intersection",
+                milestone="M119 (v1.9.0-alpha1)",
+                latency_profile="<1ms filter / <5ms auth",
+                description="Enterprise SAML 2.0 Single Sign-On, SCIM 2.0 automated employee directory lifecycle synchronization, and mathematical Role-Based Vector Access Control (RB-VAC) preventing cross-departmental LLM knowledge leakage.",
+                active_parameters={
+                    "saml_protocol": "2.0",
+                    "scim_protocol": "2.0",
+                    "rfc_compliance": ["RFC7643", "RFC7644"],
+                    "pre_retrieval_filtering": True,
+                    "default_public_wildcard": "*",
+                    "jit_provisioning": True,
+                },
+                health_check_endpoint="/v1/identity/health",
+            ),
         ]
 
 

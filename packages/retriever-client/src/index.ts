@@ -891,6 +891,91 @@ export class RetrieverClient {
   async listGroundingCertificates(limit = 50): Promise<ZkpGroundingCertificate[]> {
     return this.request<ZkpGroundingCertificate[]>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/zkp/certificates?limit=${limit}`);
   }
+
+  // --- Enterprise Identity Federation & RB-VAC (M119, Battery #34) ---
+
+  async getSamlConfig(): Promise<SamlIdpConfig> {
+    return this.request<SamlIdpConfig>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/saml/config`);
+  }
+
+  async configureSamlIdp(config: Partial<SamlIdpConfig>): Promise<SamlIdpConfig> {
+    return this.request<SamlIdpConfig>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/saml/config`, {
+      method: "POST",
+      body: JSON.stringify(config),
+    });
+  }
+
+  async getSpMetadataXml(): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/saml/metadata`, {
+      headers: { "X-API-Key": this.apiKey },
+    });
+    return res.text();
+  }
+
+  async validateSamlAcs(samlResponseB64: string): Promise<SamlAssertionPayload> {
+    return this.request<SamlAssertionPayload>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/saml/acs`, {
+      method: "POST",
+      body: JSON.stringify({ saml_response: samlResponseB64 }),
+    });
+  }
+
+  async generateScimToken(): Promise<{ tenant_id: string; token: string; token_type: string }> {
+    return this.request<{ tenant_id: string; token: string; token_type: string }>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/scim/token`,
+      { method: "POST" }
+    );
+  }
+
+  async listScimUsers(startIndex = 1, count = 20, filter?: string): Promise<ScimListResponse<ScimUser>> {
+    const params = new URLSearchParams({ startIndex: String(startIndex), count: String(count) });
+    if (filter) params.set("filter", filter);
+    return this.request<ScimListResponse<ScimUser>>(`/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Users?${params.toString()}`);
+  }
+
+  async createScimUser(user: Record<string, any>): Promise<ScimUser> {
+    return this.request<ScimUser>(`/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Users`, {
+      method: "POST",
+      body: JSON.stringify(user),
+    });
+  }
+
+  async patchScimUser(userId: string, operations: any[]): Promise<ScimUser> {
+    return this.request<ScimUser>(`/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ Operations: operations }),
+    });
+  }
+
+  async deleteScimUser(userId: string): Promise<void> {
+    await this.request(`/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+  }
+
+  async listScimGroups(startIndex = 1, count = 20): Promise<ScimListResponse<ScimGroup>> {
+    return this.request<ScimListResponse<ScimGroup>>(
+      `/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Groups?startIndex=${startIndex}&count=${count}`
+    );
+  }
+
+  async createScimGroup(group: Record<string, any>): Promise<ScimGroup> {
+    return this.request<ScimGroup>(`/v1/scim/v2/tenants/${encodeURIComponent(this.tenantId)}/Groups`, {
+      method: "POST",
+      body: JSON.stringify(group),
+    });
+  }
+
+  async simulateRbVac(
+    userId: string,
+    email: string,
+    securityGroups: string[],
+    candidates: RbVacCandidateChunk[] = []
+  ): Promise<RbVacSimulationResult> {
+    return this.request<RbVacSimulationResult>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/identity/rbvac/simulate`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, email, security_groups: securityGroups, candidates }),
+    });
+  }
 }
 
 export type MeshNodeRole = "seed_gateway" | "sovereign_node" | "edge_enclave" | "remote_peer";
@@ -1218,5 +1303,107 @@ export interface VerifyCertificatePayload {
   query?: string;
   response?: string;
   expected_document_root?: string;
+}
+
+export interface SamlIdpConfig {
+  tenant_id: string;
+  idp_entity_id: string;
+  sso_url: string;
+  idp_x509_cert: string;
+  sp_entity_id?: string;
+  acs_url?: string;
+  attribute_mapping?: Record<string, string>;
+  default_groups?: string[];
+  enabled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SamlAssertionPayload {
+  tenant_id: string;
+  name_id: string;
+  session_index: string;
+  attributes: Record<string, any>;
+  security_groups: string[];
+  issuer: string;
+  issue_instant: string;
+  valid_until: string;
+  is_verified: boolean;
+}
+
+export interface ScimMeta {
+  resourceType: string;
+  created: string;
+  lastModified: string;
+  location?: string;
+  version?: string;
+}
+
+export interface ScimEmail {
+  value: string;
+  primary?: boolean;
+  type?: string;
+}
+
+export interface ScimUser {
+  schemas?: string[];
+  id: string;
+  externalId?: string | null;
+  userName: string;
+  displayName?: string | null;
+  active: boolean;
+  emails?: ScimEmail[];
+  groups?: Array<Record<string, string>>;
+  meta?: ScimMeta;
+}
+
+export interface ScimGroupMember {
+  value: string;
+  display?: string | null;
+  ref?: string | null;
+}
+
+export interface ScimGroup {
+  schemas?: string[];
+  id: string;
+  displayName: string;
+  members: ScimGroupMember[];
+  meta?: ScimMeta;
+}
+
+export interface ScimListResponse<T> {
+  schemas: string[];
+  totalResults: number;
+  startIndex: number;
+  itemsPerPage: number;
+  Resources: T[];
+}
+
+export interface RbVacCandidateChunk {
+  chunk_id: string;
+  document_id: string;
+  content: string;
+  score: number;
+  acl_groups: string[];
+  classification: string;
+}
+
+export interface RbVacPrunedTelemetry {
+  chunk_id: string;
+  document_id: string;
+  required_acl_groups: string[];
+  user_groups: string[];
+  similarity_score: number;
+  reason: string;
+}
+
+export interface RbVacSimulationResult {
+  tenant_id: string;
+  user_id: string;
+  user_groups: string[];
+  total_candidates: number;
+  allowed_candidates: RbVacCandidateChunk[];
+  pruned_telemetry: RbVacPrunedTelemetry[];
+  execution_time_ms: number;
 }
 

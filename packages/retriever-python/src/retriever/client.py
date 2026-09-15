@@ -939,5 +939,105 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
+    # --- Enterprise Identity Federation & RB-VAC (M119, Battery #34) ---
+
+    async def get_saml_config(self) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/identity/saml/config")
+        _handle_error(resp)
+        return resp.json()
+
+    async def configure_saml_idp(self, config: dict[str, Any]) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/identity/saml/config", json=config
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_sp_metadata_xml(self) -> str:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/identity/saml/metadata")
+        _handle_error(resp)
+        return resp.text
+
+    async def validate_saml_acs(self, saml_response_b64: str) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/identity/saml/acs",
+            json={"saml_response": saml_response_b64},
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def generate_scim_token(self) -> dict[str, Any]:
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/identity/scim/token")
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_scim_users(
+        self, start_index: int = 1, count: int = 20, filter_query: str | None = None
+    ) -> dict[str, Any]:
+        params = {"startIndex": start_index, "count": count}
+        if filter_query:
+            params["filter"] = filter_query
+        resp = await self._client.get(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Users", params=params
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def create_scim_user(self, user_payload: dict[str, Any]) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Users", json=user_payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def patch_scim_user(
+        self, user_id: str, operations: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        resp = await self._client.patch(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Users/{user_id}",
+            json={"Operations": operations},
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def delete_scim_user(self, user_id: str) -> bool:
+        resp = await self._client.delete(f"/v1/scim/v2/tenants/{self.tenant_id}/Users/{user_id}")
+        _handle_error(resp)
+        return True
+
+    async def list_scim_groups(self, start_index: int = 1, count: int = 20) -> dict[str, Any]:
+        params = {"startIndex": start_index, "count": count}
+        resp = await self._client.get(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Groups", params=params
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def create_scim_group(self, group_payload: dict[str, Any]) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Groups", json=group_payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def simulate_rbvac(
+        self,
+        user_id: str,
+        email: str,
+        security_groups: list[str],
+        candidates: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "user_id": user_id,
+            "email": email,
+            "security_groups": security_groups,
+            "candidates": candidates or [],
+        }
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/identity/rbvac/simulate", json=payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
 
 

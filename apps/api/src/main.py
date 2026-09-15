@@ -195,6 +195,7 @@ from src.routers.gateway import tenant_router as gateway_tenant_router
 from src.routers.guardrails import router as guardrails_router
 from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
+from src.routers.identity_federation import router as identity_federation_router
 from src.routers.integrations import router as integrations_router
 from src.routers.mcp import router as mcp_router
 from src.routers.mcp_mesh import router as mcp_mesh_router
@@ -228,6 +229,7 @@ app.include_router(mcp_router)
 app.include_router(mcp_mesh_router)
 app.include_router(vector_sharding_router)
 app.include_router(zkp_router)
+app.include_router(identity_federation_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

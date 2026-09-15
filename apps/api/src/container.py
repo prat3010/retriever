@@ -752,6 +752,14 @@ class Container:
         zkp_attestation_adapter = ZkpAttestationAdapter()
         self._cache["zkp_attestation_adapter"] = zkp_attestation_adapter
 
+        # --- Enterprise Identity Federation & RB-VAC (M119) ---
+        from src.adapters.security.identity_federation_adapter import (
+            IdentityFederationAdapter,
+        )
+
+        identity_federation_adapter = IdentityFederationAdapter()
+        self._cache["identity_federation_adapter"] = identity_federation_adapter
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -875,4 +883,5 @@ agent_federation_service = container.agent_federation_service
 mesh_load_balancer_service = container.mesh_load_balancer_service
 vector_raft_sharding_service = container.vector_raft_sharding_service
 zkp_attestation_adapter = container.zkp_attestation_adapter
+identity_federation_adapter = container.identity_federation_adapter
 

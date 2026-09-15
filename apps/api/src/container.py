@@ -744,6 +744,14 @@ class Container:
         )
         self._cache["vector_raft_sharding_service"] = vector_raft_sharding_service
 
+        # --- ZKP Vector Attestation & Verifiable Grounding (M118) ---
+        from src.adapters.security.zkp_attestation_adapter import (
+            ZkpAttestationAdapter,
+        )
+
+        zkp_attestation_adapter = ZkpAttestationAdapter()
+        self._cache["zkp_attestation_adapter"] = zkp_attestation_adapter
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -866,4 +874,5 @@ mcp_mesh_service = container.mcp_mesh_service
 agent_federation_service = container.agent_federation_service
 mesh_load_balancer_service = container.mesh_load_balancer_service
 vector_raft_sharding_service = container.vector_raft_sharding_service
+zkp_attestation_adapter = container.zkp_attestation_adapter
 

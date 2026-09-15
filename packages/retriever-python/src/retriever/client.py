@@ -865,4 +865,79 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
+    # ── Zero-Knowledge Proof (ZKP) Vector Attestation & Grounding (Battery #33 / M118) ──
+
+    async def get_zkp_health(self) -> dict[str, Any]:
+        resp = await self._client.get("/v1/zkp/health")
+        _handle_error(resp)
+        return resp.json()
+
+    async def compute_document_merkle_root(
+        self, document_id: str, chunks: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/zkp/merkle-root/{document_id}",
+            json={"chunks": chunks or []},
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_chunk_inclusion_proof(
+        self, chunk_id: str, document_id: str, chunks: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/zkp/proof/chunk/{chunk_id}",
+            json={"document_id": document_id, "chunks": chunks or []},
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def issue_grounding_certificate(
+        self,
+        document_id: str,
+        query: str,
+        response_text: str,
+        cited_chunks: list[dict[str, Any]],
+        all_document_chunks: list[dict[str, Any]],
+        similarity_bound: float = 0.7,
+        ttl_seconds: float = 86400.0,
+    ) -> dict[str, Any]:
+        payload = {
+            "document_id": document_id,
+            "query": query,
+            "response": response_text,
+            "cited_chunks": cited_chunks,
+            "all_document_chunks": all_document_chunks,
+            "similarity_bound": similarity_bound,
+            "ttl_seconds": ttl_seconds,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/zkp/attest", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def verify_grounding_certificate(
+        self,
+        certificate: dict[str, Any],
+        query: str | None = None,
+        response_text: str | None = None,
+        expected_document_root: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "certificate": certificate,
+            "query": query,
+            "response": response_text,
+            "expected_document_root": expected_document_root,
+        }
+        resp = await self._client.post("/v1/zkp/verify", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_grounding_certificates(self, limit: int = 50) -> list[dict[str, Any]]:
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/zkp/certificates", params={"limit": limit}
+        )
+        _handle_error(resp)
+        return resp.json()
+
+
 

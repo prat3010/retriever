@@ -52,6 +52,7 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 | **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology, HMAC-SHA256 trust envelopes & federated ReAct delegation | ✅ Production |
 | **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) load balancing, EWMA latency decay, load-shedding & ephemeral scale-to-zero | ✅ Production |
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent virtual-node hash partitioning, Raft consensus replication & parallel scatter-gather | ✅ Production |
+| **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic binary Merkle trees, zero-knowledge leaf commitments & Ed25519 Grounding Certificates | ✅ Production |
 
 ---
 
@@ -122,6 +123,17 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 - [x] **FastAPI REST Endpoints:** Mounted `/v1/shards/topology`, `/v1/shards/query`, `/v1/shards/mutate`, `/v1/shards/raft/status`, `/v1/shards/election`, `/v1/shards/rebalance`, and `/v1/shards/{shard_id}/snapshot`.
 - [x] **Decoupled API Client SDKs Extended:** Added full vector sharding, Raft status, and rebalance API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated "Vector Shards & Raft" panel in `src/components/rag/VectorShardingPanel.tsx` in `/rag/app` under Design System 2.0.
+
+### Milestone 118: Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Grounding (v1.8.0-alpha1) — **Completed**
+- [x] **Platform Battery #33 Registration:** Cataloged `zkp_vector_attestation` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **Deterministic Binary Merkle Trees:** Implemented canonical SHA-256 Merkle DAG construction with odd-leaf duplicate padding and leaf commitments ($h_i = \text{SHA256}(\text{tenant} \mathbin{\Vert} \text{doc} \mathbin{\Vert} i \mathbin{\Vert} \text{chunk\_sha256})$).
+- [x] **Sub-Millisecond Inclusion Proofs:** Generated authenticated inclusion proof paths ($\pi_i$) allowing instant logarithmic verification without revealing sibling or leaf plaintext text.
+- [x] **Ed25519-Signed Grounding Certificates:** Asymmetric digital signatures binding query turns, response hashes, similarity bounds, and Merkle root commitments into immutable tokens.
+- [x] **Public Zero-Knowledge Verification Endpoint:** Mounted `POST /v1/zkp/verify` allowing independent auditors to verify grounding validity without authentication or confidential text disclosure.
+- [x] **FastAPI REST Endpoints:** Mounted `/v1/zkp/health`, `/v1/tenants/{tenantId}/zkp/merkle-root/{documentId}`, `/v1/tenants/{tenantId}/zkp/proof/chunk/{chunkId}`, `/v1/tenants/{tenantId}/zkp/attest`, and `/v1/tenants/{tenantId}/zkp/certificates`.
+- [x] **Decoupled API Client SDKs Extended:** Added full ZKP Merkle root, chunk proof, attestation, and verification API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated "ZKP Verifiable Grounding" panel in `src/components/rag/ZkpAttestationPanel.tsx` in `/rag/app` under Design System 2.0.
+
 
 ---
 

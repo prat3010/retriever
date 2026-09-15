@@ -456,6 +456,25 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/shards/topology",
             ),
+            PlatformBatteryDTO(
+                id="zkp_vector_attestation",
+                name="Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Document Grounding",
+                category=BatteryCategory.SAFETY_DEFENSE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates",
+                milestone="M118 (v1.8.0-alpha1)",
+                latency_profile="<1ms Merkle proof generation / <0.5ms zero-knowledge verification",
+                description="Cryptographically proves document provenance and chunk inclusion without exposing confidential plaintext text to third-party auditors, issuing Ed25519-signed Grounding Certificates with sub-millisecond verifiable inclusion proofs.",
+                active_parameters={
+                    "hash_algorithm": "sha256",
+                    "signature_algorithm": "ed25519",
+                    "tree_padding": "duplicate_leaf",
+                    "zero_knowledge_commitments": True,
+                    "public_verification_enabled": True,
+                    "default_ttl_seconds": 86400,
+                },
+                health_check_endpoint="/v1/zkp/health",
+            ),
         ]
 
 

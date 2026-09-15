@@ -220,12 +220,14 @@ from src.routers.voice import admin_router as voice_admin_router
 from src.routers.voice import stream_router as voice_stream_router
 from src.routers.voice import tenant_router as voice_tenant_router
 from src.routers.workflow import router as workflow_router
+from src.routers.zkp import router as zkp_router
 
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(mcp_router)
 app.include_router(mcp_mesh_router)
 app.include_router(vector_sharding_router)
+app.include_router(zkp_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

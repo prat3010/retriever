@@ -129,6 +129,11 @@
 | **M110** | Public Open-Source Launch & Decoupled SDKs | 1-line quickstart script, Docker Compose stack, @prat3010/retriever-client (npm) & retriever-python (PyPI) | **Completed** (Phase O / v1.0.0-rc1) |
 | **M111** | Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline | Relational DB CDC (PostgreSQL/MySQL), S3/R2 object storage watcher, GitHub/Slack connectors & Battery #27 | **Completed** (Phase O / v1.1.0-alpha1) |
 | **M112** | Kubernetes Native Operator & Production Helm Charts | Official Production Helm 3 chart, RetrieverCluster CRD, level-triggered reconciler & Battery #28 | **Completed** (Phase O / v1.2.0-alpha1) |
+| **M113** | Multimodal Vision GraphRAG & Schematic Ingestion | Architectural schematic parsing, normalized bounding-box coordinates, cross-modal GraphRAG & Battery #29 | **Completed** (Phase O / v1.3.0-alpha1) |
+| **M114** | Real-time Audio Streaming & Low-Latency Full-Duplex WebRTC Voice Agent | Full-duplex WebSocket audio streaming, in-process VAD endpointing, conversational barge-in cancellation | **Completed** (Phase P / v1.4.0-alpha1) |
+| **M115** | Distributed Model Context Protocol (MCP) Mesh & Agent Federation | Decentralized P2P MCP Mesh, HMAC trust envelopes, agent federation & Battery #30 | **Completed** (Phase P / v1.5.0-alpha1) |
+| **M116** | Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling | Power-of-Two-Choices (P2C), EWMA latency decay ($\alpha = 0.2$), scale-to-zero enclave provisioning, 95% load shedding & Battery #31 | **Completed** (Phase P / v1.6.0-alpha1) |
+| **M117** | Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus | 32-bit FNV-1a consistent hash ring (64 vnodes/shard), Raft leader election & AppendEntries log replication, scatter-gather query with RRF rank fusion, 2-phase online rebalancing & Battery #32 | **Completed** (Phase P / v1.7.0-alpha1) |
 
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)**.
@@ -1916,6 +1921,38 @@
   - `POST /v1/admin/operator/clusters/{cluster_name}/backup`: Dispatch on-demand database & vector backup jobs.
 - **Platform Battery #28 Registration (`apps/api/src/domain/batteries/battery_service.py`)**:
   - Registered `kubernetes_native_operator` under `SYSTEM_EXTENSIBILITY` (now 28 platform batteries).
+
+### Milestone 113: Multimodal Vision GraphRAG & Schematic Ingestion (v1.3.0-alpha1) — **Completed**
+- **Schematic Vision Extraction**: Layout-aware architectural diagram parser extracting components, connector arrows, and normalized bounding boxes.
+- **Cross-Modal Graph Construction**: Interleaved multimodal GraphRAG connecting visual entities with text passages in dual PostgreSQL recursive CTE and Neo4j formats.
+- **Platform Battery #29 Registration**: Added `multimodal_vision_graphrag` under `COMPUTATION_GRAPH` (29 active platform batteries).
+
+### Milestone 114: Real-time Audio Streaming & Low-Latency Full-Duplex WebRTC Voice Agent (v1.4.0-alpha1) — **Completed**
+- **Full-Duplex Audio WebSocket Streaming**: Low-latency PCM16 audio streaming with server-side VAD turn endpointing.
+- **Conversational Barge-In Cancellation**: Real-time interruptibility canceling ongoing TTS stream upon user speech detection.
+- **Genuine Web Audio Spectrum**: Zero-mock client-side frequency spectrum analyzer visualizing voice waves.
+
+### Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation (v1.5.0-alpha1) — **Completed**
+- **Decentralized P2P MCP Mesh Topology**: Inter-cluster tool advertising, latency-weighted peer routing, and 120s heartbeat leases.
+- **Cryptographic Trust Envelopes**: HMAC-SHA256 authenticated RPC requests with 60-second sliding-window nonce replay protection.
+- **Federated ReAct Agent Delegation**: Cross-cluster agent task delegation with circular recursion loop breaker.
+- **Platform Battery #30 Registration**: Added `distributed_mcp_mesh` under `SYSTEM_EXTENSIBILITY` (30 active platform batteries).
+
+### Milestone 116: Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling (v1.6.0-alpha1) — **Completed**
+- **Power-of-Two-Choices (P2C) Algorithm**: Random 2-candidate node sampling minimizing composite load score ($\text{EWMA} \times (1 + \text{queue}) \times (1 + \text{slot\_utilization})$).
+- **EWMA Latency Decay ($\alpha = 0.2$)**: Smooth execution duration tracking adapting to observed cluster performance.
+- **Autonomous Scale-to-Zero Enclave Provisioning**: `SovereignEnclaveProvisionerAdapter` dynamically spinning up edge enclaves under burst load and reaping idle enclaves after 300s.
+- **Circuit-Breaker Load-Shedding**: 95% slot saturation ceiling returning HTTP 429 to protect cluster stability.
+- **Platform Battery #31 Registration**: Added `mesh_load_balancer` under `SYSTEM_EXTENSIBILITY` (31 active platform batteries).
+
+### Milestone 117: Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus (v1.7.0-alpha1) — **Completed**
+- **Consistent Virtual-Node Hash Ring**: 32-bit FNV-1a hash ring with 64 virtual nodes per shard on a $[0, 2^{32}-1]$ integer circle with $O(\log N)$ binary search lookup.
+- **Distributed Raft Consensus State Machine**: Full Raft election lifecycle (Follower $\rightarrow$ Candidate $\rightarrow$ Leader), term monotonicity, majority voting ($\lfloor N/2 \rfloor + 1$), AppendEntries log replication, and write-quorum validation.
+- **Scatter-Gather Parallel Vector Retrieval**: Parallel multi-shard querying with local cosine similarity filtering and Reciprocal Rank Fusion (RRF, $k=60$) rank merging.
+- **Online 2-Phase Shard Rebalancing**: Zero-downtime 2-phase migration (`PREPARING` $\rightarrow$ delta sync $\rightarrow$ `SYNCHRONIZING` $\rightarrow$ cutover) for elastic scale-out and scale-in.
+- **FastAPI Endpoints & SDK Parity**: Mounted `/v1/shards/*` and extended `@prat3010/retriever-client` and `retriever-python`.
+- **SaaS Studio Cockpit**: Dedicated 4-subview control panel in `src/components/rag/VectorShardingPanel.tsx` under Design System 2.0.
+- **Platform Battery #32 Registration**: Added `vector_raft_sharding` under `EDGE_DISTRIBUTION` (32 active platform batteries).
 
 ---
 

@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
 [![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-26%20included-ff69b4.svg)](#-the-26-platform-batteries)
+[![Batteries](https://img.shields.io/badge/batteries-32%20included-ff69b4.svg)](#-the-32-platform-batteries)
 [![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
@@ -131,9 +131,9 @@ See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Oper
 
 ---
 
-## 🔋 The 28 Platform Batteries
+## 🔋 The 32 Platform Batteries
 
-Retriever ships with **28 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **32 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Algorithm / Foundation |
 |:---:|:---|:---|:---|
@@ -165,6 +165,10 @@ Retriever ships with **28 production-grade batteries** pre-wired through Hexagon
 | **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning |
 | **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack |
 | **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 |
+| **29** | `multimodal_vision_graphrag` | Computation Graph | Interleaved Visual-Textual Entity Extraction + Schematic Bounding-Box Graph Topology |
+| **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology + HMAC-SHA256 Trust Envelope + Federated ReAct Sub-Agent Delegation |
+| **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) + EWMA Latency Decay + Saturation Load Shedding & Scale-to-Zero Lifecycle |
+| **32** | `vector_raft_sharding` | Edge Distribution | Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion |
 
 ---
 
@@ -191,7 +195,7 @@ While specialized vector database startups (Pinecone, Chroma, Milvus) face comme
 - Combines structured relational data, JSONB tenant configs, native BM25 full-text search, graph recursive CTEs, and HNSW vector indexes within a **single unified database**.
 
 ### 4. Universal Open Standards (Model Context Protocol - MCP)
-Retriever is a native **Model Context Protocol (MCP)** server (Milestone 103). Rather than existing as an isolated software silo, all 26 platform batteries are exposed via standard JSON-RPC 2.0 (SSE and Stdio) transports. Any future AI model, IDE (Cursor, VS Code), or autonomous agent framework (Claude Desktop) can natively discover, authorize, and invoke Retriever tools out-of-the-box.
+Retriever is a native **Model Context Protocol (MCP)** server (Milestone 103). Rather than existing as an isolated software silo, all 32 platform batteries are exposed via standard JSON-RPC 2.0 (SSE and Stdio) transports. Any future AI model, IDE (Cursor, VS Code), or autonomous agent framework (Claude Desktop) can natively discover, authorize, and invoke Retriever tools out-of-the-box.
 
 ### 5. Sovereign Edge Immunity & Regulatory Durability
 Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding globally, legally prohibiting the transmission of confidential corporate IP to public cloud AI endpoints. Retriever's **offline embedded SQLite FTS5 engine**, **local Ollama embedding pipeline**, and **hardware-rooted micro-enclave memory sealing** guarantee that your retrieval infrastructure remains compliant, air-gapped, and resilient against cloud policy mandates.
@@ -243,10 +247,10 @@ Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding g
 - **[Open-Source Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md):** 10k-Star viral launch execution strategy.
 - **[Enterprise Security Whitepaper](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md):** PostgreSQL RLS isolation, AES-256 envelope encryption, and zero PII retention.
 - **[REST API Reference](docs/api/):** Complete specifications for all 25+ REST/SSE endpoints.
-- **[Architecture Decision Records (ADRs)](docs/decisions/):** 22 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice).
+- **[Architecture Decision Records (ADRs)](docs/decisions/):** 32 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice, MCP Mesh, Vector Sharding).
 - **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
-- **[Project Health & Test Status](docs/operations/PROJECT_STATUS.md):** Continuous verification matrix across 112 test suites.
-- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 20 production batteries overview.
+- **[Project Health & Test Status](docs/operations/PROJECT_STATUS.md):** Continuous verification matrix across 125 test suites.
+- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 32 production batteries overview.
 
 ---
 

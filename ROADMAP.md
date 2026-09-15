@@ -133,5 +133,6 @@ All 30 batteries are wired through strict Hexagonal dependency injection:
 - 🛡️ **Sovereign Edge Swarm Handbook:** [`docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md`](docs/cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md)
 - 🕸️ **Distributed MCP Mesh & Federation Handbook:** [`docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md`](docs/cognitive/DISTRIBUTED_MCP_MESH_HANDBOOK.md)
 - ⚖️ **Mesh Load Balancing & Autoscaling Feature Guide:** [`docs/features/mesh-load-balancer.md`](docs/features/mesh-load-balancer.md)
+- 💎 **Vector Sharding & Raft Consensus Feature Guide:** [`docs/features/vector-raft-sharding.md`](docs/features/vector-raft-sharding.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

@@ -1963,6 +1963,16 @@
 - **SaaS Studio Cockpit**: Dedicated 3-subview control panel in `src/components/rag/ZkpAttestationPanel.tsx` in `/rag/app` under Design System 2.0 (Merkle Tree Explorer, Live Zero-Knowledge Verifier, Compliance Audit Ledger).
 - **Platform Battery #33 Registration**: Added `zkp_vector_attestation` under `SAFETY_DEFENSE` (33 active platform batteries).
 
+### Milestone 119: Enterprise Identity Federation (SAML 2.0 / SCIM 2.0 Directory Sync) & RB-VAC (v1.9.0-alpha1) — **Completed**
+- **Hexagonal Domain Abstractions (`identity_federation.py`)**: Pure Python domain models (`SamlIdpConfig`, `SamlAssertionPayload`, `ScimUser`, `ScimGroup`, `ScimListResponse`, `AccessControlContext`, `RbVacCandidateChunk`, `RbVacPrunedTelemetry`, `RbVacSimulationResult`) and port protocol `IdentityFederationPort` with zero external vendor SDK or database imports.
+- **SAML 2.0 Identity Provider Federation Engine**: Standard XML digital signature validation (SHA-256 with canonicalization), SP Entity ID mapping, ACS assertion parsing, monotonic assertion ID replay suppression, and dynamic SP metadata generator (`GET /v1/tenants/{tenantId}/identity/saml/metadata.xml`).
+- **RFC 7643 / 7644 SCIM 2.0 Directory Engine**: Full lifecycle directory synchronization for enterprise IdPs (Okta, Azure AD / Microsoft Entra ID, PingFederate) supporting bearer token authorization, User & Group schema parsing, complex filter expressions (`userName eq "..."`), RFC 7644 JSON-PATCH operations (`add`, `remove`, `replace`), and stateful de-provisioning.
+- **Role-Based Vector Access Control (RB-VAC)**: Sub-millisecond pre-retrieval mathematical set intersection ($C_{\text{chunk}} \cap G_{\text{user}} \neq \emptyset$) executed prior to LLM synthesis, pruning unauthorized vector chunks while emitting verifiable audit telemetry (`RbVacPrunedTelemetry`).
+- **FastAPI REST Endpoints**: Mounted 18 REST routes across SAML configuration, metadata, ACS validation, SCIM Users & Groups, ServiceProviderConfig, and RB-VAC simulation (`POST /v1/tenants/{tenantId}/identity/rbvac/simulate`).
+- **Decoupled API Client SDKs Extended**: Added SAML, SCIM, and RB-VAC client methods to `@prat3010/retriever-client` (TypeScript) and `retriever-python` (Python).
+- **Platform Battery #34 Registration**: Cataloged `enterprise_identity_federation` in `BatteryService` under `SAFETY_DEFENSE` (now 34 active platform batteries).
+- **Control Plane Studio Cockpit**: Dedicated 3-subview cockpit in `src/components/rag/IdentityFederationPanel.tsx` in `/rag/app` under Design System 2.0 (SAML 2.0 SSO, SCIM 2.0 Directory Sync, RB-VAC Simulator).
+
 ---
 
 ## 7. Cross-Cutting Engineering Invariants

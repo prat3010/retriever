@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 33 Platform Batteries Matrix
+## 🔋 The 34 Platform Batteries Matrix
 
-All 33 batteries are wired through strict Hexagonal dependency injection:
+All 34 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -53,6 +53,7 @@ All 33 batteries are wired through strict Hexagonal dependency injection:
 | **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) load balancing, EWMA latency decay, load-shedding & ephemeral scale-to-zero | ✅ Production |
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent virtual-node hash partitioning, Raft consensus replication & parallel scatter-gather | ✅ Production |
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic binary Merkle trees, zero-knowledge leaf commitments & Ed25519 Grounding Certificates | ✅ Production |
+| **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 IdP SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning | ✅ Production |
 
 ---
 
@@ -134,6 +135,14 @@ All 33 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added full ZKP Merkle root, chunk proof, attestation, and verification API parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated "ZKP Verifiable Grounding" panel in `src/components/rag/ZkpAttestationPanel.tsx` in `/rag/app` under Design System 2.0.
 
+### Milestone 119: Enterprise Identity Federation (SAML 2.0 / SCIM 2.0 Directory Sync) & RB-VAC (v1.9.0-alpha1) — **Completed**
+- [x] **Platform Battery #34 Registration:** Cataloged `enterprise_identity_federation` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **SAML 2.0 Identity Provider Federation:** Cryptographically verified XML signature validation (X.509 SHA-256), SP/IdP Entity ID mapping, ACS assertion consuming, replay protection via monotonic assertion ID caching, and dynamic SP metadata generation (`GET /v1/tenants/{tenantId}/identity/saml/metadata.xml`).
+- [x] **RFC 7643 / 7644 SCIM 2.0 Directory Engine:** Enterprise identity lifecycle state machine supporting bearer-authenticated User and Group provisioning, filtering (`userName eq "..."`), RFC 7644 JSON-PATCH operations (`add`, `remove`, `replace`), and stateful de-provisioning.
+- [x] **Role-Based Vector Access Control (RB-VAC):** Sub-millisecond pre-retrieval mathematical set intersection ($C_{\text{chunk}} \cap G_{\text{user}} \neq \emptyset$) pruning unauthorized vector chunks before LLM synthesis and emitting audit telemetry (`RbVacPrunedTelemetry`).
+- [x] **FastAPI REST Endpoints:** Mounted 18 endpoints across SAML configuration/metadata/ACS, SCIM Users/Groups/ServiceConfiguration, and RB-VAC evaluation simulations (`POST /v1/tenants/{tenantId}/identity/rbvac/simulate`).
+- [x] **Decoupled API Client SDKs Extended:** Added SAML, SCIM, and RB-VAC methods to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated 3-subview cockpit in `src/components/rag/IdentityFederationPanel.tsx` in `/rag/app` under Design System 2.0 (SAML 2.0 SSO, SCIM 2.0 Directory Sync, RB-VAC Simulator).
 
 ---
 
@@ -147,5 +156,6 @@ All 33 batteries are wired through strict Hexagonal dependency injection:
 - ⚖️ **Mesh Load Balancing & Autoscaling Feature Guide:** [`docs/features/mesh-load-balancer.md`](docs/features/mesh-load-balancer.md)
 - 💎 **Vector Sharding & Raft Consensus Feature Guide:** [`docs/features/vector-raft-sharding.md`](docs/features/vector-raft-sharding.md)
 - 📜 **Zero-Knowledge Vector Attestation Feature Guide:** [`docs/features/zkp-vector-attestation.md`](docs/features/zkp-vector-attestation.md)
+- 🛡️ **Enterprise Identity Federation & RB-VAC Feature Guide:** [`docs/features/enterprise-identity-federation.md`](docs/features/enterprise-identity-federation.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

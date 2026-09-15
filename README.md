@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
 [![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-33%20included-ff69b4.svg)](#-the-33-platform-batteries)
+[![Batteries](https://img.shields.io/badge/batteries-34%20included-ff69b4.svg)](#-the-34-platform-batteries)
 [![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
@@ -131,45 +131,46 @@ See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Oper
 
 ---
 
-## 🔋 The 33 Platform Batteries
+### 🔋 The 34 Platform Batteries
 
-Retriever ships with **33 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **34 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
-| Battery # | Battery Identifier | Category | Algorithm / Foundation |
+| # | Battery Name | Category | Architectural Capability |
 |:---:|:---|:---|:---|
-| **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW cosine indexing with dynamic dimensionality (768, 1536, 3072) |
-| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL full-text search with English stemming & Reciprocal Rank Fusion |
-| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-level late interaction computing cross-attention similarity without latency hit |
-| **4** | `docling_ocr_parser` | Multimodal Ingestion | Document layout vision parsing, markdown table reconstruction, bounding-box citations |
-| **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model document synthesis with sandboxed Python REPL execution |
-| **6** | `graphrag_topology` | Graph Reasoning | Dual-engine GraphRAG with Neo4j Cypher and PostgreSQL recursive CTE relational traversals |
-| **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn unsupervised behavioral profiling with autonomous token-quarantine |
-| **8** | `quantile_effort_regressor` | ML Operations | Gradient boosted quantile regressors ($p10, p50, p90$) for software timeline estimation |
-| **9** | `zero_cookie_persona_clusterer`| ML Operations | Unsupervised KMeans buyer intent clustering with conversion propensity scoring |
-| **10** | `edge_token_shield` | Rate Limiting | Distributed Redis sliding-window token throttling with resilient SSE reconnections |
-| **11** | `llama_guard_safety` | LLM Safety | Llama Guard 3 prompt injection filtering and zero-trust PII redaction |
-| **12** | `longllmlingua_compressor` | Token Optimization | Perplexity-directed prompt compression removing up to 70% of filler tokens |
-| **13** | `nemo_conversational_guardrails`| Conversational Safety| NVIDIA NeMo Colang multi-turn topical moderation and jailbreak prevention |
-| **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher graph engine with hardware-sensed fallback to PostgreSQL CTEs |
-| **15** | `durable_workflow_engine` | Asynchronous Workflows| Step-memoized fault-tolerant checkpoint state machines with automatic backoff retries |
-| **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-zero serverless vLLM with dynamic multi-tenant LoRA tensor swapping (Modal / BentoML) |
-| **17** | `autonomous_fde_metaprogrammer`| System Extensibility | AST-verified Hexagonal code synthesis and dynamic in-process plugin mounting |
-| **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, binary float32 BLOB vectors & differential delta synchronization |
-| **19** | `multicloud_failover_libsql` | Edge Distribution | Multi-cloud quorum consensus failover & embedded Turso LibSQL WAL frame replication |
-| **20** | `sovereign_edge_voice` | Multimodal Cognition | Full-duplex WebRTC, local Whisper ASR, RMS/ZCR VAD & streaming neural speech synthesis |
-| **21** | `micro_enclave_attestation` | Security & KMS | Zero-trust AES-256-GCM enclave sealing & hardware TPM/KMS remote attestation |
-| **22** | `autonomous_swarm_mesh` | P2P Edge Swarm | SWIM gossip failure detection, vector clock causality & partition healing |
-| **23** | `autonomous_react_loop` | Agentic Execution | Cyclic ReAct tool loop, self-healing diagnostic recovery & loop circuit-breaker |
-| **24** | `smart_tool_gateway` | Model Orchestration | Complexity pre-classification, mid-flight escalation & counterfactual savings math |
-| **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation |
-| **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning |
-| **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack |
-| **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 |
-| **29** | `multimodal_vision_graphrag` | Computation Graph | Interleaved Visual-Textual Entity Extraction + Schematic Bounding-Box Graph Topology |
-| **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology + HMAC-SHA256 Trust Envelope + Federated ReAct Sub-Agent Delegation |
+| **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW Cosine Indexing with Dynamic Dimensionality (768, 1536, 3072) |
+| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL Full-Text Search with English Stemming & RRF Fusion |
+| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-Level Cross-Attention Similarity over Query/Document Token Embeddings |
+| **4** | `docling_ocr_parser` | Multimodal Ingestion | Vision Layout Parsing, Markdown Table Reconstruction & Bounding-Box Citations |
+| **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model Document Synthesis with Sandboxed Python REPL |
+| **6** | `graphrag_topology` | Graph Reasoning | Dual-Engine GraphRAG with Neo4j Cypher and PostgreSQL Recursive CTEs |
+| **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn Unsupervised Behavioral Profiling with Automated Token-Quarantine |
+| **8** | `quantile_effort_regressor` | ML Operations | Gradient Boosted Quantile Regressors ($P_{10}, P_{50}, P_{90}$) for Scope Estimation |
+| **9** | `zero_cookie_persona_clusterer` | ML Operations | Unsupervised KMeans Buyer Intent Clustering with Conversion Propensity Scoring |
+| **10** | `edge_token_shield` | Rate Limiting | Distributed Redis Sliding-Window Token Throttling with Resilient SSE Reconnections |
+| **11** | `llama_guard_safety` | LLM Safety | Llama Guard 3 Prompt Injection Filtering and Zero-Trust PII Redaction |
+| **12** | `longllmlingua_compressor` | Token Optimization | Perplexity-Directed Prompt Compression Removing up to 70% of Filler Tokens |
+| **13** | `nemo_conversational_guardrails` | Conversational Safety | NVIDIA NeMo Colang Multi-Turn Topical Moderation and Jailbreak Prevention |
+| **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher Graph Engine with Hardware-Sensed Fallback to PostgreSQL CTEs |
+| **15** | `durable_workflow_engine` | Async Workflows | Step-Memoized Fault-Tolerant Checkpoint State Machines with Exponential Backoff |
+| **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-Zero Serverless vLLM with Dynamic Multi-Tenant LoRA Tensor Swapping |
+| **17** | `autonomous_fde_metaprogrammer` | Extensibility | AST-Verified Hexagonal Code Synthesis and Dynamic In-Process Plugin Mounting |
+| **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, Binary Float32 Vectors & Differential Delta CRDT Sync |
+| **19** | `multicloud_failover_libsql` | Edge Distribution | Monotonic Generation Raft Quorum + EWMA Circuit Breakers & Turso LibSQL Replication |
+| **20** | `sovereign_edge_voice` | Sovereign Audio | Full-Duplex Neural Voice with Local Whisper ASR, RMS/ZCR VAD & WebRTC Streaming |
+| **21** | `zero_trust_kms_enclave` | Hardware Security | Sub-Enclave AES-256-GCM Hardware Encryption with Cloud KMS Remote Attestation |
+| **22** | `autonomous_edge_swarm` | Edge Distribution | Decentralized Anti-Entropy Gossip Mesh with Vector CRDT Sync & Split-Brain Quorum |
+| **23** | `autonomous_react_loop` | Agentic Reasoning | Directed DAG Multi-Turn ReAct Tool Loop with Self-Healing Dynamic Ast Corrections |
+| **24** | `smart_tool_gateway` | Gateway Economics | Heuristic Cost-Aware Semantic Tool Router with Model Escalation Routing |
+| **25** | `studio_tool_cockpit` | Developer Experience | Visual Model Context Protocol (MCP) Tool Builder & Dynamic JSON-RPC Stdio Invoker |
+| **26** | `zero_toy_conformance` | Architecture Safety | Static AST Hexagonal Boundary Enforcement & Anti-Toy Algorithmic Gatekeeper |
+| **27** | `cdc_community_connectors` | System Extensibility | High-Watermark CDC Pipelines (PostgreSQL, S3, GitHub, Slack) with ETag Caching |
+| **28** | `kubernetes_native_operator` | System Extensibility | Level-Triggered State Reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 Charts |
+| **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural Schematic Parsing, Bounding-Box Graph Construction & Cross-Modal RRF |
+| **30** | `distributed_mcp_mesh` | System Extensibility | P2P MCP Mesh Topology, HMAC-SHA256 Trust Envelopes & Dynamic ReAct Task Delegation |
 | **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) + EWMA Latency Decay + Saturation Load Shedding & Scale-to-Zero Lifecycle |
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion |
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
+| **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 Identity Provider SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
 
 ---
 
@@ -196,7 +197,7 @@ While specialized vector database startups (Pinecone, Chroma, Milvus) face comme
 - Combines structured relational data, JSONB tenant configs, native BM25 full-text search, graph recursive CTEs, and HNSW vector indexes within a **single unified database**.
 
 ### 4. Universal Open Standards (Model Context Protocol - MCP)
-Retriever is a native **Model Context Protocol (MCP)** server (Milestone 103). Rather than existing as an isolated software silo, all 32 platform batteries are exposed via standard JSON-RPC 2.0 (SSE and Stdio) transports. Any future AI model, IDE (Cursor, VS Code), or autonomous agent framework (Claude Desktop) can natively discover, authorize, and invoke Retriever tools out-of-the-box.
+Retriever is a native **Model Context Protocol (MCP)** server (Milestone 103). Rather than existing as an isolated software silo, all 34 platform batteries are exposed via standard JSON-RPC 2.0 (SSE and Stdio) transports. Any future AI model, IDE (Cursor, VS Code), or autonomous agent framework (Claude Desktop) can natively discover, authorize, and invoke Retriever tools out-of-the-box.
 
 ### 5. Sovereign Edge Immunity & Regulatory Durability
 Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding globally, legally prohibiting the transmission of confidential corporate IP to public cloud AI endpoints. Retriever's **offline embedded SQLite FTS5 engine**, **local Ollama embedding pipeline**, and **hardware-rooted micro-enclave memory sealing** guarantee that your retrieval infrastructure remains compliant, air-gapped, and resilient against cloud policy mandates.
@@ -251,7 +252,7 @@ Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding g
 - **[Architecture Decision Records (ADRs)](docs/decisions/):** 32 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice, MCP Mesh, Vector Sharding).
 - **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
 - **[Project Health & Test Status](docs/operations/PROJECT_STATUS.md):** Continuous verification matrix across 125 test suites.
-- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 32 production batteries overview.
+- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 34 production batteries overview.
 
 ---
 

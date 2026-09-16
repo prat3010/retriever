@@ -154,6 +154,25 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added full tuning config, pair harvesting, job trigger, adapter rollback, and math simulation parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousTuningPanel.tsx` in `/rag/app` under Design System 2.0 with real-time DPO/ORPO mathematical loss simulator.
 
+### Milestone 121: Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves (v2.0.0-alpha3) — **Completed**
+- [x] **Platform Battery #36 Registration:** Cataloged `confidential_mpc_enclave` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **Additive Secret Sharing Engine:** Arithmetic vector share generation over $Q_{16.16}$ fixed-point scale factor ($S = 65,536$) guaranteeing complete information-theoretic secrecy ($\sum_{i=1}^N [x]_i = x$).
+- [x] **Beaver Multiplication Triples & PPIP:** Authenticated offline triple generation ($c = a \cdot b$) executing Privacy-Preserving Inner Product ($\langle q, d \rangle$) and cosine similarity without exposing plain query or document vectors across sovereign parties.
+- [x] **Oblivious Threshold Top-K & Differential Privacy:** Secure score ranking filtering entries above $\tau_{\text{privacy}}$, bounded by Laplace noise injection ($\epsilon$ privacy budget tracking) and Shannon entropy auditing.
+- [x] **Multi-Party Enclave Session Lifecycle:** Real-time state machine (`INITIALIZED` $\to$ `WAITING_FOR_SHARES` $\to$ `COMPUTING` $\to$ `COMPLETED` / `ABORTED`) with cryptographically verified party authentication and share submission.
+- [x] **FastAPI REST Endpoints:** Mounted 10 endpoints across session CRUD, consortium party join, share dispatch, confidential compute execution, session abort, and math simulation (`POST /v1/mpc/simulate`).
+- [x] **Decoupled API Client SDKs Extended:** Added full MPC session, share submission, compute execution, and simulation methods to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/MpcEnclavePanel.tsx` in `/rag/app` under Design System 2.0 (Consortium Enclaves & Sessions, Secret Share Distributor & Noise, Confidential Inner Product & Top-K, Interactive Beaver Triples & PPIP Math Simulator).
+
+### Milestone 122: Autonomous Continuous Benchmark & Regression Gatekeeper (v2.1.0-alpha1) — **Completed**
+- [x] **Platform Battery #37 Registration:** Cataloged `autonomous_benchmark_gatekeeper` in `BatteryService` under `ML_INTELLIGENCE`.
+- [x] **Authentic IR & RAG Triad Metrics:** Authentic implementation of NDCG@K ($2^{rel}-1$ gain), MRR@K, Recall@K, Precision@K, Faithfulness token-overlap claim grounding, Answer Relevancy, and latency percentiles (P50, P95, P99).
+- [x] **Two-Sample Welch's t-Test Hypothesis Testing:** Evaluates candidate vs baseline metric distributions without assuming equal variance, computing Welch-Satterthwaite degrees of freedom ($\nu$) and two-tailed Student's $t$ $p$-values.
+- [x] **Autonomous Gatekeeper Policy & Automated Rollback:** Evaluates candidates against configurable tenant policies (`max_latency_p95_increase_pct`, `max_ndcg_drop_abs`, `max_faithfulness_drop_abs`, `significance_alpha`), emitting `PASSED_CLEAN`, `WARNING_DEGRADED`, or `REJECTED_REGRESSION` verdicts and triggering automated deployment rollbacks.
+- [x] **FastAPI REST Endpoints:** Mounted 8 endpoints under `/v1/benchmarks/*` and `/v1/tenants/{tenant_id}/benchmarks/*` for suites, runs, gate evaluation, and mathematical simulation.
+- [x] **Decoupled API Client SDKs Extended:** Added full benchmark suite, run, gate evaluation, and math simulation methods to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousBenchmarkPanel.tsx` in `/rag/app` under Design System 2.0 (Suites & Runs Ledger, Comparative Regression Diff, Item-Level Query Inspector, Interactive Welch's t-Test Simulator).
+
 
 ---
 
@@ -169,5 +188,7 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - 📜 **Zero-Knowledge Vector Attestation Feature Guide:** [`docs/features/zkp-vector-attestation.md`](docs/features/zkp-vector-attestation.md)
 - 🛡️ **Enterprise Identity Federation & RB-VAC Feature Guide:** [`docs/features/enterprise-identity-federation.md`](docs/features/enterprise-identity-federation.md)
 - 🧠 **Continuous DPO / ORPO Tuning Feature Guide:** [`docs/features/continuous-preference-tuning.md`](docs/features/continuous-preference-tuning.md)
+- 🛡️ **Confidential MPC Privacy Enclaves Feature Guide:** [`docs/features/confidential-mpc-enclaves.md`](docs/features/confidential-mpc-enclaves.md)
+- 🎯 **Autonomous Continuous Benchmark Feature Guide:** [`docs/features/autonomous-benchmark-gatekeeper.md`](docs/features/autonomous-benchmark-gatekeeper.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

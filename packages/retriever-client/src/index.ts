@@ -1062,6 +1062,161 @@ export class RetrieverClient {
       body: JSON.stringify(req),
     });
   }
+
+  // --- Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves (M121 / Battery #36) ---
+
+  async createMpcSession(payload: {
+    title: string;
+    protocol?: MpcProtocolType;
+    required_parties_count?: number;
+    dimension?: number;
+    privacy_threshold?: number;
+    top_k?: number;
+    epsilon_budget?: number;
+  }): Promise<MpcSession> {
+    return this.request<MpcSession>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async listMpcSessions(): Promise<MpcSession[]> {
+    return this.request<MpcSession[]>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions`);
+  }
+
+  async getMpcSession(sessionId: string): Promise<MpcSession> {
+    return this.request<MpcSession>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}`
+    );
+  }
+
+  async joinMpcSession(
+    sessionId: string,
+    party: {
+      party_id: string;
+      display_name: string;
+      public_key: string;
+      role?: EnclavePartyRole;
+    }
+  ): Promise<MpcSession> {
+    return this.request<MpcSession>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}/join`,
+      {
+        method: "POST",
+        body: JSON.stringify(party),
+      }
+    );
+  }
+
+  async submitMpcVectorShares(
+    sessionId: string,
+    payload: {
+      party_id: string;
+      shares: EncryptedVectorShare[];
+    }
+  ): Promise<MpcSession> {
+    return this.request<MpcSession>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}/shares`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  async executeMpcCompute(sessionId: string): Promise<MpcResultsResponse> {
+    return this.request<MpcResultsResponse>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}/compute`,
+      { method: "POST" }
+    );
+  }
+
+  async getMpcResults(sessionId: string): Promise<MpcResultsResponse> {
+    return this.request<MpcResultsResponse>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}/results`
+    );
+  }
+
+  async abortMpcSession(sessionId: string, reason = "User aborted"): Promise<MpcSession> {
+    return this.request<MpcSession>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/mpc/sessions/${encodeURIComponent(sessionId)}/abort`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    );
+  }
+
+  async simulateMpcMath(request: MpcMathSimulationRequest): Promise<MpcMathSimulationResponse> {
+    return this.request<MpcMathSimulationResponse>("/v1/mpc/math/simulate", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  // --- Continuous Benchmark & Regression Gatekeeper (M122 / Battery #37) ---
+
+  async listBenchmarkSuites(): Promise<BenchmarkSuite[]> {
+    return this.request<BenchmarkSuite[]>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/suites`);
+  }
+
+  async createBenchmarkSuite(payload: {
+    name: string;
+    description?: string;
+    k_cutoff?: number;
+    gate_policy?: Partial<GatePolicy>;
+  }): Promise<BenchmarkSuite> {
+    return this.request<BenchmarkSuite>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/suites`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async listBenchmarkRuns(suiteId?: string): Promise<BenchmarkRun[]> {
+    const query = suiteId ? `?suite_id=${encodeURIComponent(suiteId)}` : "";
+    return this.request<BenchmarkRun[]>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/runs${query}`);
+  }
+
+  async getBenchmarkRun(runId: string): Promise<BenchmarkRun> {
+    return this.request<BenchmarkRun>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/runs/${encodeURIComponent(runId)}`
+    );
+  }
+
+  async triggerBenchmarkRun(payload: {
+    suite_id: string;
+    checkpoint_or_commit: string;
+    is_baseline?: boolean;
+    samples?: BenchmarkItemSample[];
+  }): Promise<BenchmarkRun> {
+    return this.request<BenchmarkRun>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/runs`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async evaluateRegressionGate(payload: {
+    suite_id: string;
+    candidate_run_id: string;
+    baseline_run_id?: string;
+  }): Promise<GateEvaluationResult> {
+    return this.request<GateEvaluationResult>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/benchmarks/evaluate-gate`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  async simulateBenchmarkMath(
+    request: BenchmarkMathSimulationRequest
+  ): Promise<BenchmarkMathSimulationResponse> {
+    return this.request<BenchmarkMathSimulationResponse>("/v1/benchmarks/math/simulate", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
 }
 
 export type MeshNodeRole = "seed_gateway" | "sovereign_node" | "edge_enclave" | "remote_peer";
@@ -1591,6 +1746,233 @@ export interface TuningMathSimulationResult {
   orpo_odds_l: number;
   orpo_odds_ratio: number;
   orpo_loss: number;
+}
+
+// ── Confidential Multi-Party Vector Computation (MPC) Types (M121) ──────────
+
+export type MpcProtocolType = "additive_sharing" | "beaver_triples" | "shamir_threshold";
+export type EnclaveSessionStatus = "initializing" | "key_exchange" | "shares_ingested" | "computing" | "completed" | "aborted";
+export type EnclavePartyRole = "initiator" | "evaluator" | "observer";
+
+export interface EnclaveParty {
+  party_id: string;
+  tenant_id: string;
+  display_name: string;
+  role: EnclavePartyRole;
+  public_key: string;
+  has_submitted_shares: boolean;
+  joined_at: string;
+}
+
+export interface EncryptedVectorShare {
+  share_id: string;
+  party_id: string;
+  vector_id: string;
+  dimension: number;
+  share_values: number[];
+  share_signature: string;
+  submitted_at: string;
+}
+
+export interface BeaverTripleDTO {
+  triple_id: string;
+  party_id: string;
+  a_share: number;
+  b_share: number;
+  c_share: number;
+}
+
+export interface MpcSession {
+  session_id: string;
+  tenant_id: string;
+  title: string;
+  protocol: MpcProtocolType;
+  status: EnclaveSessionStatus;
+  required_parties_count: number;
+  participating_parties: EnclaveParty[];
+  dimension: number;
+  fixed_point_scale: number;
+  privacy_threshold: number;
+  top_k: number;
+  epsilon_budget_total: number;
+  epsilon_budget_consumed: number;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface MpcSimilarityResult {
+  rank: number;
+  item_id: string;
+  owner_party_id: string;
+  cosine_similarity: number;
+  passed_threshold: boolean;
+  privacy_cost_epsilon: number;
+}
+
+export interface MpcResultsResponse {
+  session_id: string;
+  status: EnclaveSessionStatus;
+  candidates_evaluated: number;
+  matches_above_threshold: number;
+  results: MpcSimilarityResult[];
+  computation_time_ms: number;
+  epsilon_remaining: number;
+}
+
+export interface MpcMathSimulationRequest {
+  vector_dimension?: number;
+  parties_count?: number;
+  fixed_point_scale?: number;
+  query_vector?: number[];
+  candidate_vector?: number[];
+}
+
+export interface MpcMathSimulationResponse {
+  vector_dimension: number;
+  parties_count: number;
+  plaintext_dot_product: number;
+  plaintext_cosine_similarity: number;
+  mpc_reconstructed_dot_product: number;
+  mpc_cosine_similarity: number;
+  numerical_error_absolute: number;
+  shares_distribution_entropy: number;
+  shares_sample: number[][];
+  beaver_triples_verified: boolean;
+}
+
+// --- Benchmark Gatekeeper Types (M122) ---
+
+export type BenchmarkMetricType =
+  | "ndcg_at_k"
+  | "mrr"
+  | "recall_at_k"
+  | "precision_at_k"
+  | "faithfulness"
+  | "answer_relevancy"
+  | "latency_p50"
+  | "latency_p95"
+  | "latency_p99"
+  | "cost_per_1k";
+
+export type BenchmarkGateVerdict = "passed_clean" | "warning_degraded" | "rejected_regression";
+export type BenchmarkRunStatus = "pending" | "running" | "completed" | "failed";
+
+export interface BenchmarkItemSample {
+  query_id: string;
+  query_text: string;
+  ground_truth_chunks: string[];
+  retrieved_chunks: string[];
+  ground_truth_answer?: string;
+  generated_answer?: string;
+  latency_ms: number;
+  tokens_used: number;
+  ndcg_at_k: number;
+  mrr: number;
+  faithfulness: number;
+  answer_relevancy: number;
+}
+
+export interface BenchmarkMetricsSummary {
+  sample_count: number;
+  mean_ndcg_at_k: number;
+  mean_mrr: number;
+  mean_recall_at_k: number;
+  mean_precision_at_k: number;
+  mean_faithfulness: number;
+  mean_answer_relevancy: number;
+  latency_p50_ms: number;
+  latency_p95_ms: number;
+  latency_p99_ms: number;
+  mean_tokens_per_query: number;
+}
+
+export interface WelchTTestResult {
+  metric_name: string;
+  t_statistic: number;
+  degrees_of_freedom: number;
+  p_value: number;
+  is_statistically_significant: boolean;
+}
+
+export interface MetricRegressionDiff {
+  metric: BenchmarkMetricType;
+  baseline_value: number;
+  candidate_value: number;
+  delta_absolute: number;
+  delta_percentage: number;
+  ttest_result?: WelchTTestResult;
+  is_regression: boolean;
+  severity: "NONE" | "WARNING" | "CRITICAL";
+}
+
+export interface GatePolicy {
+  max_latency_p95_increase_pct: number;
+  max_ndcg_drop_abs: number;
+  max_faithfulness_drop_abs: number;
+  significance_alpha: number;
+  min_sample_size: number;
+  auto_rollback_on_regression: boolean;
+}
+
+export interface BenchmarkSuite {
+  suite_id: string;
+  tenant_id: string;
+  name: string;
+  description: string;
+  k_cutoff: number;
+  sample_queries_count: number;
+  gate_policy: GatePolicy;
+  created_at: string;
+}
+
+export interface BenchmarkRun {
+  run_id: string;
+  tenant_id: string;
+  suite_id: string;
+  checkpoint_or_commit: string;
+  is_baseline: boolean;
+  status: BenchmarkRunStatus;
+  summary: BenchmarkMetricsSummary;
+  samples: BenchmarkItemSample[];
+  created_at: string;
+}
+
+export interface GateEvaluationResult {
+  evaluation_id: string;
+  tenant_id: string;
+  suite_id: string;
+  baseline_run_id: string;
+  candidate_run_id: string;
+  verdict: BenchmarkGateVerdict;
+  confidence_score: number;
+  metric_diffs: MetricRegressionDiff[];
+  rejection_reasons: string[];
+  rollback_triggered: boolean;
+  evaluated_at: string;
+}
+
+export interface BenchmarkMathSimulationRequest {
+  metric_type?: BenchmarkMetricType;
+  baseline_mean: number;
+  baseline_std: number;
+  baseline_n?: number;
+  candidate_mean: number;
+  candidate_std: number;
+  candidate_n?: number;
+  alpha?: number;
+  tolerance_threshold_pct?: number;
+}
+
+export interface BenchmarkMathSimulationResponse {
+  metric_type: BenchmarkMetricType;
+  t_statistic: number;
+  degrees_of_freedom: number;
+  p_value: number;
+  delta_absolute: number;
+  delta_percentage: number;
+  is_statistically_significant: boolean;
+  verdict: BenchmarkGateVerdict;
+  explanation: string;
 }
 
 

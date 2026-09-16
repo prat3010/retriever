@@ -1156,6 +1156,208 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
+    # ── Confidential Multi-Party Vector Computation (MPC) (Battery #36 / M121) ─
+
+    async def create_mpc_session(
+        self,
+        title: str,
+        protocol: str = "beaver_triples",
+        required_parties_count: int = 2,
+        dimension: int = 768,
+        privacy_threshold: float = 0.70,
+        top_k: int = 5,
+        epsilon_budget: float = 10.0,
+    ) -> dict[str, Any]:
+        payload = {
+            "title": title,
+            "protocol": protocol,
+            "required_parties_count": required_parties_count,
+            "dimension": dimension,
+            "privacy_threshold": privacy_threshold,
+            "top_k": top_k,
+            "epsilon_budget": epsilon_budget,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/mpc/sessions", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_mpc_sessions(self) -> list[dict[str, Any]]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/mpc/sessions")
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_mpc_session(self, session_id: str) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}")
+        _handle_error(resp)
+        return resp.json()
+
+    async def join_mpc_session(
+        self,
+        session_id: str,
+        party_id: str,
+        display_name: str,
+        public_key: str,
+        role: str = "evaluator",
+    ) -> dict[str, Any]:
+        payload = {
+            "party_id": party_id,
+            "display_name": display_name,
+            "public_key": public_key,
+            "role": role,
+        }
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/join",
+            json=payload,
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def submit_mpc_vector_shares(
+        self,
+        session_id: str,
+        party_id: str,
+        shares: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        payload = {"party_id": party_id, "shares": shares}
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/shares",
+            json=payload,
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def execute_mpc_compute(self, session_id: str) -> dict[str, Any]:
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/compute")
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_mpc_results(self, session_id: str) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/results")
+        _handle_error(resp)
+        return resp.json()
+
+    async def abort_mpc_session(self, session_id: str, reason: str = "User aborted") -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/abort",
+            json={"reason": reason},
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def simulate_mpc_math(
+        self,
+        vector_dimension: int = 8,
+        parties_count: int = 3,
+        fixed_point_scale: int = 65536,
+        query_vector: list[float] | None = None,
+        candidate_vector: list[float] | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "vector_dimension": vector_dimension,
+            "parties_count": parties_count,
+            "fixed_point_scale": fixed_point_scale,
+            "query_vector": query_vector,
+            "candidate_vector": candidate_vector,
+        }
+        resp = await self._client.post("/v1/mpc/math/simulate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    # --- Benchmark Gatekeeper (M122) ---
+
+    async def list_benchmark_suites(self) -> list[dict[str, Any]]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/benchmarks/suites")
+        _handle_error(resp)
+        return resp.json()
+
+    async def create_benchmark_suite(
+        self,
+        name: str,
+        description: str = "",
+        k_cutoff: int = 10,
+        gate_policy: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "name": name,
+            "description": description,
+            "k_cutoff": k_cutoff,
+            "gate_policy": gate_policy,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/suites", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_benchmark_runs(self, suite_id: str | None = None) -> list[dict[str, Any]]:
+        query = f"?suite_id={suite_id}" if suite_id else ""
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/benchmarks/runs{query}")
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_benchmark_run(self, run_id: str) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/benchmarks/runs/{run_id}")
+        _handle_error(resp)
+        return resp.json()
+
+    async def trigger_benchmark_run(
+        self,
+        suite_id: str,
+        checkpoint_or_commit: str,
+        is_baseline: bool = False,
+        samples: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "suite_id": suite_id,
+            "checkpoint_or_commit": checkpoint_or_commit,
+            "is_baseline": is_baseline,
+            "samples": samples,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/runs", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def evaluate_regression_gate(
+        self,
+        suite_id: str,
+        candidate_run_id: str,
+        baseline_run_id: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "suite_id": suite_id,
+            "candidate_run_id": candidate_run_id,
+            "baseline_run_id": baseline_run_id,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/evaluate-gate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def simulate_benchmark_math(
+        self,
+        baseline_mean: float,
+        baseline_std: float,
+        candidate_mean: float,
+        candidate_std: float,
+        baseline_n: int = 30,
+        candidate_n: int = 30,
+        metric_type: str = "latency_p95",
+        alpha: float = 0.05,
+        tolerance_threshold_pct: float = 10.0,
+    ) -> dict[str, Any]:
+        payload = {
+            "metric_type": metric_type,
+            "baseline_mean": baseline_mean,
+            "baseline_std": baseline_std,
+            "baseline_n": baseline_n,
+            "candidate_mean": candidate_mean,
+            "candidate_std": candidate_std,
+            "candidate_n": candidate_n,
+            "alpha": alpha,
+            "tolerance_threshold_pct": tolerance_threshold_pct,
+        }
+        resp = await self._client.post("/v1/benchmarks/math/simulate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+
 
 
 

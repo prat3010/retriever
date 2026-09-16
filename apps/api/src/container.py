@@ -768,6 +768,20 @@ class Container:
         continuous_tuning_adapter = ContinuousTuningAdapter()
         self._cache["continuous_tuning_adapter"] = continuous_tuning_adapter
 
+        # --- Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves (M121) ---
+        from src.adapters.security.mpc_enclave_adapter import MpcEnclaveAdapter
+
+        mpc_enclave_adapter = MpcEnclaveAdapter()
+        self._cache["mpc_enclave_adapter"] = mpc_enclave_adapter
+
+        # --- Autonomous Continuous Benchmark & Regression Gatekeeper (M122) ---
+        from src.adapters.eval.benchmark_gatekeeper_adapter import (
+            BenchmarkGatekeeperAdapter,
+        )
+
+        benchmark_gatekeeper_adapter = BenchmarkGatekeeperAdapter()
+        self._cache["benchmark_gatekeeper_adapter"] = benchmark_gatekeeper_adapter
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -893,4 +907,6 @@ vector_raft_sharding_service = container.vector_raft_sharding_service
 zkp_attestation_adapter = container.zkp_attestation_adapter
 identity_federation_adapter = container.identity_federation_adapter
 continuous_tuning_adapter = container.continuous_tuning_adapter
+mpc_enclave_adapter = container.mpc_enclave_adapter
+benchmark_gatekeeper_adapter = container.benchmark_gatekeeper_adapter
 

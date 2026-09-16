@@ -760,6 +760,14 @@ class Container:
         identity_federation_adapter = IdentityFederationAdapter()
         self._cache["identity_federation_adapter"] = identity_federation_adapter
 
+        # --- Continuous Preference Tuning & DPO / ORPO (M120) ---
+        from src.adapters.tuning.continuous_tuning_adapter import (
+            ContinuousTuningAdapter,
+        )
+
+        continuous_tuning_adapter = ContinuousTuningAdapter()
+        self._cache["continuous_tuning_adapter"] = continuous_tuning_adapter
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -884,4 +892,5 @@ mesh_load_balancer_service = container.mesh_load_balancer_service
 vector_raft_sharding_service = container.vector_raft_sharding_service
 zkp_attestation_adapter = container.zkp_attestation_adapter
 identity_federation_adapter = container.identity_federation_adapter
+continuous_tuning_adapter = container.continuous_tuning_adapter
 

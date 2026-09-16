@@ -182,6 +182,7 @@ from src.routers.agentic import router as agentic_router
 from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
 from src.routers.consensus import router as consensus_router
+from src.routers.continuous_tuning import router as continuous_tuning_router
 from src.routers.document import router as document_router
 from src.routers.durable_workflow import admin_router as durable_workflow_admin_router
 from src.routers.durable_workflow import router as durable_workflow_router
@@ -230,6 +231,7 @@ app.include_router(mcp_mesh_router)
 app.include_router(vector_sharding_router)
 app.include_router(zkp_router)
 app.include_router(identity_federation_router)
+app.include_router(continuous_tuning_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

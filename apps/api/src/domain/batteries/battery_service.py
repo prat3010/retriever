@@ -494,6 +494,25 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/identity/health",
             ),
+            PlatformBatteryDTO(
+                id="continuous_preference_tuning",
+                name="Continuous DPO / ORPO Preference Tuning Pipeline",
+                category=BatteryCategory.ML_INTELLIGENCE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Direct Preference Optimization (DPO) & Odds Ratio (ORPO) with Automated LoRA Swapping",
+                milestone="M120 (v2.0.0-alpha1)",
+                latency_profile="<5ms inference routing / async background training",
+                description="Self-improving retrieval-augmented generation engine autonomously harvesting user feedback pairs, optimizing policy odds ratios, evaluating held-out reward margins, and hot-swapping tenant-specific LoRA adapters with zero downtime.",
+                active_parameters={
+                    "supported_objectives": ["dpo", "orpo", "kto"],
+                    "default_beta": 0.1,
+                    "default_lambda_orpo": 0.1,
+                    "default_lora_r": 16,
+                    "auto_eval_gate_threshold": 0.75,
+                    "instant_rollback_enabled": True,
+                },
+                health_check_endpoint="/v1/tuning/health",
+            ),
         ]
 
 

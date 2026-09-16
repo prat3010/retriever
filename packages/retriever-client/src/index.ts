@@ -976,6 +976,92 @@ export class RetrieverClient {
       body: JSON.stringify({ user_id: userId, email, security_groups: securityGroups, candidates }),
     });
   }
+
+  // --- Continuous DPO / ORPO Preference Fine-Tuning (M120) ---
+
+  async getTuningConfig(): Promise<ContinuousTuningConfig> {
+    return this.request<ContinuousTuningConfig>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/config`);
+  }
+
+  async updateTuningConfig(config: Partial<ContinuousTuningConfig>): Promise<ContinuousTuningConfig> {
+    return this.request<ContinuousTuningConfig>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/config`, {
+      method: "PUT",
+      body: JSON.stringify({ ...config, tenant_id: this.tenantId }),
+    });
+  }
+
+  async listPreferencePairs(limit = 50, offset = 0): Promise<PreferenceListResponse> {
+    return this.request<PreferenceListResponse>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/pairs?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  async harvestPreferencePair(pair: {
+    prompt: string;
+    winning_response: string;
+    losing_response: string;
+    source_message_id?: string;
+    feedback_rating?: number;
+    tags?: string[];
+  }): Promise<PreferencePair> {
+    return this.request<PreferencePair>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/pairs`, {
+      method: "POST",
+      body: JSON.stringify(pair),
+    });
+  }
+
+  async deletePreferencePair(pairId: string): Promise<void> {
+    await this.request(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/pairs/${encodeURIComponent(pairId)}`, {
+      method: "DELETE",
+    });
+  }
+
+  async triggerTuningJob(
+    objective: "dpo" | "orpo" | "kto" = "dpo",
+    hyperparams?: Partial<TuningHyperparameters>
+  ): Promise<TuningJob> {
+    return this.request<TuningJob>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/jobs`, {
+      method: "POST",
+      body: JSON.stringify({ objective, hyperparameters: hyperparams }),
+    });
+  }
+
+  async listTuningJobs(limit = 20): Promise<TuningJob[]> {
+    return this.request<TuningJob[]>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/jobs?limit=${limit}`);
+  }
+
+  async getTuningJob(jobId: string): Promise<TuningJob> {
+    return this.request<TuningJob>(`/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/jobs/${encodeURIComponent(jobId)}`);
+  }
+
+  async promoteTuningJobAdapter(jobId: string): Promise<ContinuousTuningConfig> {
+    return this.request<ContinuousTuningConfig>(
+      `/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/jobs/${encodeURIComponent(jobId)}/promote`,
+      { method: "POST" }
+    );
+  }
+
+  async rollbackTuningAdapter(targetAdapterId?: string): Promise<ContinuousTuningConfig> {
+    const url = targetAdapterId
+      ? `/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/rollback?target_adapter_id=${encodeURIComponent(targetAdapterId)}`
+      : `/v1/tenants/${encodeURIComponent(this.tenantId)}/tuning/rollback`;
+    return this.request<ContinuousTuningConfig>(url, { method: "POST" });
+  }
+
+  async simulateTuningMath(req: {
+    prompt: string;
+    beta?: number;
+    lambda_orpo?: number;
+    pi_theta_win_prob?: number;
+    pi_ref_win_prob?: number;
+    pi_theta_lose_prob?: number;
+    pi_ref_lose_prob?: number;
+  }): Promise<TuningMathSimulationResult> {
+    return this.request<TuningMathSimulationResult>("/v1/tuning/math/simulate", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
 }
 
 export type MeshNodeRole = "seed_gateway" | "sovereign_node" | "edge_enclave" | "remote_peer";
@@ -1406,4 +1492,105 @@ export interface RbVacSimulationResult {
   pruned_telemetry: RbVacPrunedTelemetry[];
   execution_time_ms: number;
 }
+
+// --- Continuous DPO / ORPO Preference Fine-Tuning Types (M120) ---
+
+export type TuningObjective = "dpo" | "orpo" | "kto";
+export type TuningJobStatus = "collecting" | "queued" | "training" | "evaluating" | "completed" | "failed" | "rolled_back";
+
+export interface PreferencePair {
+  pair_id: string;
+  tenant_id: string;
+  prompt: string;
+  winning_response: string;
+  losing_response: string;
+  source_message_id?: string | null;
+  feedback_rating: number;
+  tags: string[];
+  is_verified: boolean;
+  created_at: string;
+}
+
+export interface PreferenceListResponse {
+  items: PreferencePair[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface TuningHyperparameters {
+  learning_rate: number;
+  beta: number;
+  lambda_orpo: number;
+  lora_r: number;
+  lora_alpha: number;
+  batch_size: number;
+  epochs: number;
+  auto_trigger_threshold: number;
+  eval_split_ratio: number;
+}
+
+export interface TuningLossStep {
+  step: number;
+  epoch: number;
+  train_loss: number;
+  reward_margin: number;
+  accuracy: number;
+  odds_ratio: number;
+}
+
+export interface EvaluationGateResult {
+  passed: boolean;
+  validation_accuracy: number;
+  avg_reward_margin: number;
+  validation_loss: number;
+  total_eval_pairs: number;
+  recommendation: string;
+}
+
+export interface ContinuousTuningConfig {
+  tenant_id: string;
+  objective: TuningObjective;
+  base_model: string;
+  active_adapter_id?: string | null;
+  auto_train_enabled: boolean;
+  hyperparameters: TuningHyperparameters;
+  total_pairs_harvested: number;
+  active_pairs_in_buffer: number;
+}
+
+export interface TuningJob {
+  job_id: string;
+  tenant_id: string;
+  objective: TuningObjective;
+  status: TuningJobStatus;
+  base_model: string;
+  output_adapter_id: string;
+  dataset_size: number;
+  hyperparameters: TuningHyperparameters;
+  loss_history: TuningLossStep[];
+  evaluation?: EvaluationGateResult | null;
+  created_at: string;
+  completed_at?: string | null;
+  error_message?: string | null;
+}
+
+export interface TuningMathSimulationResult {
+  prompt: string;
+  beta: number;
+  lambda_orpo: number;
+  pi_theta_win_prob: number;
+  pi_ref_win_prob: number;
+  pi_theta_lose_prob: number;
+  pi_ref_lose_prob: number;
+  dpo_reward_w: number;
+  dpo_reward_l: number;
+  dpo_reward_margin: number;
+  dpo_loss: number;
+  orpo_odds_w: number;
+  orpo_odds_l: number;
+  orpo_odds_ratio: number;
+  orpo_loss: number;
+}
+
 

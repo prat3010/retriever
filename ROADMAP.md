@@ -144,6 +144,17 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added SAML, SCIM, and RB-VAC methods to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 3-subview cockpit in `src/components/rag/IdentityFederationPanel.tsx` in `/rag/app` under Design System 2.0 (SAML 2.0 SSO, SCIM 2.0 Directory Sync, RB-VAC Simulator).
 
+### Milestone 120: Automated Continuous DPO / ORPO Model Fine-Tuning Pipeline (v1.9.0-alpha2) — **Completed**
+- [x] **Platform Battery #35 Registration:** Cataloged `continuous_preference_tuning` in `BatteryService` under `ML_INTELLIGENCE`.
+- [x] **Continuous Preference Harvesting:** Ingest pairwise feedback $(x, y_w, y_l)$ from real user chat interactions (👍/👎), ratings, and explicit corrections with prompt deduplication and buffer threshold auto-dispatch.
+- [x] **Authentic Mathematical Alignment Engines:** Bradley-Terry Direct Preference Optimization (DPO, temperature $\beta$) and monolithic reference-free Odds Ratio Preference Optimization (ORPO, regularization $\lambda_{ORPO}$).
+- [x] **State Machine & Validation Gating:** Complete continuous lifecycle (`COLLECTING` $\to$ `QUEUED` $\to$ `TRAINING` $\to$ `EVALUATING` $\to$ `COMPLETED`) with automated held-out validation gating (accuracy $\ge 0.75$).
+- [x] **LoRA Adapter Governance & Hot Rollback:** Parameter-efficient LoRA adapter versioning with zero-downtime hot promotion and 1-click atomic rollback to prior checkpoints.
+- [x] **FastAPI REST Endpoints:** Mounted 12 REST endpoints across tuning config, preference buffer, job lifecycle, adapter promotion, rollback, and mathematical simulation (`POST /v1/tuning/math/simulate`).
+- [x] **Decoupled API Client SDKs Extended:** Added full tuning config, pair harvesting, job trigger, adapter rollback, and math simulation parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousTuningPanel.tsx` in `/rag/app` under Design System 2.0 with real-time DPO/ORPO mathematical loss simulator.
+
+
 ---
 
 ## 📚 Technical Documentation Hub
@@ -157,5 +168,6 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - 💎 **Vector Sharding & Raft Consensus Feature Guide:** [`docs/features/vector-raft-sharding.md`](docs/features/vector-raft-sharding.md)
 - 📜 **Zero-Knowledge Vector Attestation Feature Guide:** [`docs/features/zkp-vector-attestation.md`](docs/features/zkp-vector-attestation.md)
 - 🛡️ **Enterprise Identity Federation & RB-VAC Feature Guide:** [`docs/features/enterprise-identity-federation.md`](docs/features/enterprise-identity-federation.md)
+- 🧠 **Continuous DPO / ORPO Tuning Feature Guide:** [`docs/features/continuous-preference-tuning.md`](docs/features/continuous-preference-tuning.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

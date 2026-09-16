@@ -1039,5 +1039,123 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
+    # --- Continuous DPO / ORPO Preference Fine-Tuning (M120) ---
+
+    async def get_tuning_config(self) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/tuning/config")
+        _handle_error(resp)
+        return resp.json()
+
+    async def update_tuning_config(self, config_payload: dict[str, Any]) -> dict[str, Any]:
+        config_payload["tenant_id"] = self.tenant_id
+        resp = await self._client.put(
+            f"/v1/tenants/{self.tenant_id}/tuning/config", json=config_payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_preference_pairs(self, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+        params = {"limit": limit, "offset": offset}
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/tuning/pairs", params=params
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def harvest_preference_pair(
+        self,
+        prompt: str,
+        winning_response: str,
+        losing_response: str,
+        source_message_id: str | None = None,
+        feedback_rating: int = 1,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "prompt": prompt,
+            "winning_response": winning_response,
+            "losing_response": losing_response,
+            "source_message_id": source_message_id,
+            "feedback_rating": feedback_rating,
+            "tags": tags or [],
+        }
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/tuning/pairs", json=payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def delete_preference_pair(self, pair_id: str) -> bool:
+        resp = await self._client.delete(
+            f"/v1/tenants/{self.tenant_id}/tuning/pairs/{pair_id}"
+        )
+        _handle_error(resp)
+        return True
+
+    async def trigger_tuning_job(
+        self,
+        objective: str = "dpo",
+        hyperparams: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload = {"objective": objective, "hyperparameters": hyperparams}
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/tuning/jobs", json=payload
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def list_tuning_jobs(self, limit: int = 20) -> list[dict[str, Any]]:
+        params = {"limit": limit}
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/tuning/jobs", params=params
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_tuning_job(self, job_id: str) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/tuning/jobs/{job_id}"
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def promote_tuning_adapter(self, job_id: str) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/tuning/jobs/{job_id}/promote"
+        )
+        _handle_error(resp)
+        return resp.json()
+
+    async def rollback_tuning_adapter(self, target_adapter_id: str | None = None) -> dict[str, Any]:
+        url = f"/v1/tenants/{self.tenant_id}/tuning/rollback"
+        params = {"target_adapter_id": target_adapter_id} if target_adapter_id else {}
+        resp = await self._client.post(url, params=params)
+        _handle_error(resp)
+        return resp.json()
+
+    async def simulate_tuning_math(
+        self,
+        prompt: str,
+        beta: float = 0.1,
+        lambda_orpo: float = 0.1,
+        pi_theta_win_prob: float = 0.85,
+        pi_ref_win_prob: float = 0.50,
+        pi_theta_lose_prob: float = 0.15,
+        pi_ref_lose_prob: float = 0.50,
+    ) -> dict[str, Any]:
+        payload = {
+            "prompt": prompt,
+            "beta": beta,
+            "lambda_orpo": lambda_orpo,
+            "pi_theta_win_prob": pi_theta_win_prob,
+            "pi_ref_win_prob": pi_ref_win_prob,
+            "pi_theta_lose_prob": pi_theta_lose_prob,
+            "pi_ref_lose_prob": pi_ref_lose_prob,
+        }
+        resp = await self._client.post("/v1/tuning/math/simulate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+
 
 

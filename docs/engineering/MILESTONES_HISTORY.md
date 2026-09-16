@@ -1973,6 +1973,17 @@
 - **Platform Battery #34 Registration**: Cataloged `enterprise_identity_federation` in `BatteryService` under `SAFETY_DEFENSE` (now 34 active platform batteries).
 - **Control Plane Studio Cockpit**: Dedicated 3-subview cockpit in `src/components/rag/IdentityFederationPanel.tsx` in `/rag/app` under Design System 2.0 (SAML 2.0 SSO, SCIM 2.0 Directory Sync, RB-VAC Simulator).
 
+### Milestone 120: Automated Continuous DPO / ORPO Model Fine-Tuning Pipeline (v1.9.0-alpha2) — **Completed**
+- **Hexagonal Domain Abstractions (`dpo_orpo_tuning.py`)**: Pure Python domain models (`PreferencePair`, `TuningHyperparameters`, `TuningLossStep`, `EvaluationGateResult`, `ContinuousTuningConfig`, `TuningJob`, `TuningMathSimulationResult`, `TuningObjective`, `TuningJobStatus`) and port protocol `ContinuousTuningPort` with strictly zero framework imports.
+- **Autonomous Preference Harvesting Engine**: Pairwise dataset harvesting from real user chat interactions (👍/👎), ratings, and explicit corrections with prompt deduplication and buffer threshold auto-dispatch.
+- **Authentic Mathematical Alignment Engines**: Direct Preference Optimization (DPO, Bradley-Terry formulation with temperature parameter $\beta$) and Odds Ratio Preference Optimization (ORPO, monolithic reference-free objective with weight $\lambda_{ORPO}$).
+- **Continuous Job Lifecycle & Validation Gating**: Complete continuous state machine (`COLLECTING` $\to$ `QUEUED` $\to$ `TRAINING` $\to$ `EVALUATING` $\to$ `COMPLETED`) with automated held-out evaluation gating ($\ge 0.75$ preference accuracy threshold).
+- **LoRA Adapter Governance & Atomic Rollback**: Multi-tenant PEFT LoRA adapter versioning with zero-downtime hot promotion and 1-click atomic rollback to prior stable checkpoints.
+- **FastAPI REST Endpoints**: Mounted 12 REST endpoints across tuning config, preference buffer, job lifecycle, adapter promotion, rollback, and mathematical simulation (`POST /v1/tuning/math/simulate`).
+- **Decoupled API Client SDKs Extended**: Added full tuning config, pair harvesting, job trigger, adapter rollback, and math simulation parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- **Platform Battery #35 Registration**: Cataloged `continuous_preference_tuning` in `BatteryService` under `ML_INTELLIGENCE` (35 active platform batteries).
+- **Control Plane Studio Cockpit**: Dedicated 4-subview cockpit in `src/components/rag/ContinuousTuningPanel.tsx` in `/rag/app` under Design System 2.0 (Preference Dataset Curator, Continuous Training Jobs, Adapter Governance, DPO/ORPO Math Simulator).
+
 ---
 
 ## 7. Cross-Cutting Engineering Invariants

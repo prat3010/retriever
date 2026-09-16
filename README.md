@@ -6,8 +6,8 @@
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
-[![Tests](https://img.shields.io/badge/tests-811%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-34%20included-ff69b4.svg)](#-the-34-platform-batteries)
+[![Tests](https://img.shields.io/badge/tests-821%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
+[![Batteries](https://img.shields.io/badge/batteries-35%20included-ff69b4.svg)](#-the-35-platform-batteries)
 [![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
@@ -131,9 +131,9 @@ See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Oper
 
 ---
 
-### 🔋 The 34 Platform Batteries
+### 🔋 The 35 Platform Batteries
 
-Retriever ships with **34 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **35 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | # | Battery Name | Category | Architectural Capability |
 |:---:|:---|:---|:---|
@@ -171,6 +171,7 @@ Retriever ships with **34 production-grade batteries** pre-wired through Hexagon
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion |
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
 | **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 Identity Provider SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
+| **35** | `continuous_preference_tuning` | ML Intelligence | Continuous DPO / ORPO Preference Fine-Tuning + Automated Validation Gate & Hot LoRA Rollback |
 
 ---
 

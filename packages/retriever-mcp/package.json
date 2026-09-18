@@ -1,0 +1,33 @@
+{
+  "name": "@prat3010/retriever-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol (MCP) Server for Retriever RAG Platform",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "retriever-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "retriever",
+    "rag",
+    "ai-agent"
+  ],
+  "author": "Prateek Sharma",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "typescript": "^5.7.3"
+  }
+}

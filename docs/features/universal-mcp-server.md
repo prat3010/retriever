@@ -38,21 +38,28 @@ Milestone 103 transforms Retriever into a Universal MCP Server:
 
 ---
 
-## 3. Desktop Client Configuration (Claude Desktop / Cursor)
+## 3. Desktop Client Configuration (Claude Desktop / Cursor / Antigravity)
 
-Add to `claude_desktop_config.json`:
+The recommended production implementation is the standalone Node.js MCP package at **[`packages/retriever-mcp`](../../packages/retriever-mcp)**, which runs instantly with zero Python virtualenv dependencies.
+
+Add to `claude_desktop_config.json` or `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
     "retriever": {
-      "command": "python",
-      "args": ["-m", "apps.api.src.adapters.mcp.battery_mcp_adapter"],
+      "command": "node",
+      "args": ["/Users/prateeksharma/Developer/retriever/packages/retriever-mcp/dist/index.js"],
       "env": {
         "RETRIEVER_API_URL": "https://rag.prateeq.in",
+        "RETRIEVER_ADMIN_MASTER_KEY": "your-admin-master-key",
         "RETRIEVER_API_KEY": "ret_live_...",
-        "RETRIEVER_TENANT_ID": "00000000-0000-0000-0000-000000000001"
+        "RETRIEVER_TENANT_ID": "your-tenant-uuid"
       }
     }
   }
 }
 ```
+
+### 4. Zero-Wipe Security Invariant
+Administrative workspace deletion (`delete_tenant`, `wipe_all_vectors`) is intentionally excluded from the MCP toolset. All deletions remain strictly confined to the manual Web Admin Dashboard (`https://admin.rag.prateeq.in`) to prevent prompt-injection attacks or catastrophic agent hallucinations.
+

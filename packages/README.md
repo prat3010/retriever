@@ -7,3 +7,4 @@ This directory contains packages shared across client-server boundaries or betwe
 3. **[processing-core](processing-core):** Shared Python library for document chunking, PDF parsing, and text embedding.
 4. **[client-proxy-worker](client-proxy-worker):** Edge proxy and background worker distribution routines.
 5. **[retriever-client-js](retriever-client-js):** Legacy internal client reference.
+6. **[retriever-mcp](retriever-mcp):** Official Model Context Protocol (MCP) Server for agent-native tenant provisioning, document ingestion, and cognitive tool execution.

@@ -71,8 +71,8 @@ Once Docker services boot or are verified:
   python3 scripts/query_architecture.py --target <entity_or_api>
   ```
   to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
+
 ## Deployment and Infrastructure Topology
 - **Retriever Cognitive Engine (FastAPI Backend):** Deployed on Oracle Cloud VPS (`130.210.35.134` Ubuntu 24.04), mapped to `https://rag.prateeq.in`. Runs FastAPI, pgvector storage, and local Ollama embeddings (`nomic-embed-text`).
 - **Retriever Admin Dashboard:** Deployed at **[`https://admin.rag.prateeq.in`](https://admin.rag.prateeq.in)** (`retriever/apps/web`). Used for tenant onboarding (`/onboard`), API key issuance, document vector ingestion, and system prompt configuration.
 - **Web Application & Control Plane:** Deployed on Vercel at `https://prateeq.in`. Hosts the portfolio, `/scoping` engine, `/dashboard` client portal, and `/rag` product landing pages.
-

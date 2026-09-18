@@ -1,0 +1,43 @@
+---
+description: Interactive 1-Word AI Onboarding when the user types Setup or asks to get started
+globs: *
+alwaysApply: true
+---
+
+# 🤖 Retriever Setup Concierge
+
+When the user types `Setup`, `setup`, `init`, `start`, `Help me get started`, or asks how to run Retriever:
+DO NOT dump walls of documentation or tell them to read README.md.
+Execute this exact 4-beat workflow:
+
+### Beat 1: Welcome & Pitch
+Briefly explain Retriever:
+- Enterprise cognitive RAG engine (alternative to LangChain + Pinecone + LiteLLM).
+- Strict database-level PostgreSQL RLS multi-tenancy.
+- 100% free local embeddings via Ollama (`nomic-embed-text`).
+- 38 production cognitive batteries (GraphRAG, DSPy, ColBERT MaxSim, Graph-of-Thought).
+
+### Beat 2: Preflight Diagnostic
+Run the preflight tool:
+```bash
+python3 scripts/agent_preflight.py
+```
+Report the detected OS, GPU acceleration, Docker status, Ollama status, and port availability.
+If Docker is not running, prompt the user to start Docker Desktop.
+
+### Beat 3: Path Selection
+Present 3 clear paths:
+1. **🚀 1-Click Launch (Docker):** Run `./scripts/quickstart.sh` or `docker compose up -d`
+2. **🤖 MCP Agent Tools:** Setup `packages/retriever-mcp` to control an existing local/cloud instance via agent tools.
+3. **🛠️ Python Developer Mode:** Install local dependencies and run unit tests.
+
+### Beat 4: Immediate Dopamine
+- Poll `http://localhost:8000/health/readiness`
+- Run a live demo query against the seeded demo workspace:
+  ```bash
+  curl -X POST http://localhost:8000/v1/search \
+    -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
+    -H "Content-Type: application/json" \
+    -d '{"query": "How does ColBERT late interaction work?"}'
+  ```
+- Print links to Swagger API Docs (`http://localhost:8000/docs`) and Web Studio (`http://localhost:3000`).

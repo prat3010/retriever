@@ -1,0 +1,20 @@
+# Cursor Rules for Retriever — The Open-Source Enterprise Cognitive Engine
+
+## 🤖 1-Word AI Onboarding: "Setup"
+When the user types `Setup`, `setup`, `init`, `start`, or asks how to run/configure Retriever:
+DO NOT dump long documentation or ask the user to read README.md.
+Follow the 4-Beat Setup Concierge flow:
+1. **Welcome & Pitch:** Explain Retriever (Hexagonal RAG, Postgres RLS multi-tenancy, free local Ollama embeddings, 38 batteries).
+2. **Preflight Sensing:** Run `python3 scripts/agent_preflight.py` to check Docker, ports, hardware acceleration, and Ollama.
+3. **Intent Selection:** Offer 3 options:
+   - 1. Launch full Docker stack (`./scripts/quickstart.sh` or `docker compose up -d`)
+   - 2. Setup MCP server (`packages/retriever-mcp`) for this agent
+   - 3. Python dev environment (`pip install -r requirements.txt`, pytest)
+4. **Live Dopamine:** Wait for `http://localhost:8000/health/readiness`, run a live demo search query, and show links to `http://localhost:8000/docs` and `http://localhost:3000`.
+
+## Architecture & Code Rules
+- **Hexagonal Architecture:** Code in `src/domain/` MUST NOT import adapters, database ORMs, or external SDKs.
+- **Strict Multi-Tenancy:** All queries and APIs MUST be scoped by `tenant_id`.
+- **Local Embeddings First:** Always use local Ollama (`nomic-embed-text`) on `http://host.docker.internal:11434/v1`.
+- **Zero-Toy Invariant:** All implementations must be production-grade. Run `python3 scripts/audit_zero_toy.py` before finishing.
+- **Linting:** Run `ruff check --fix` on modified Python files.

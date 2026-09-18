@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
 [![Tests](https://img.shields.io/badge/tests-821%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-35%20included-ff69b4.svg)](#-the-35-platform-batteries)
+[![Batteries](https://img.shields.io/badge/batteries-38%20included-ff69b4.svg)](#-the-38-platform-batteries)
 [![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
 
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
@@ -16,6 +16,15 @@
 [🚀 Live Production Demo](https://rag.prateeq.in) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
 </div>
+
+> ### 🤖 1-Word AI Onboarding (Zero Reading Required)
+> **Don't waste time reading setup guides.** Open this repo in **Cursor**, **Windsurf**, **Claude Code**, or **Antigravity** and simply type:
+> 
+> ```text
+> Setup
+> ```
+> 
+> Your AI agent will inspect your machine, configure environment variables, boot local containers, and run a live demo query in <60 seconds.
 
 ---
 
@@ -52,7 +61,14 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 
 Spin up the entire platform locally with zero external API dependencies (runs 100% free with local Ollama embeddings):
 
-### Option A: The 1-Line Drop-In (Recommended)
+### Option 0: AI Coding Assistant (Recommended)
+Open this repository in Cursor, Windsurf, Claude Code, or Antigravity, and simply send:
+```text
+Setup
+```
+Your AI agent will sense your hardware, launch the stack, and test your first search query autonomously.
+
+### Option A: The 1-Line Drop-In
 ```bash
 curl -fsSL https://get.retriever.run | bash
 ```
@@ -131,9 +147,9 @@ See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Oper
 
 ---
 
-### 🔋 The 35 Platform Batteries
+### 🔋 The 38 Platform Batteries
 
-Retriever ships with **35 production-grade batteries** pre-wired through Hexagonal dependency injection:
+Retriever ships with **38 production-grade batteries** pre-wired through Hexagonal dependency injection:
 
 | # | Battery Name | Category | Architectural Capability |
 |:---:|:---|:---|:---|
@@ -172,6 +188,9 @@ Retriever ships with **35 production-grade batteries** pre-wired through Hexagon
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
 | **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 Identity Provider SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
 | **35** | `continuous_preference_tuning` | ML Intelligence | Continuous DPO / ORPO Preference Fine-Tuning + Automated Validation Gate & Hot LoRA Rollback |
+| **36** | `ephemeral_federated_sandbox` | Security | Ephemeral multi-tenant code execution sandbox with hard resource limits |
+| **37** | `distributed_task_memoizer` | Resiliency | Step-memoized async task checkpointing with deterministic crash resumption |
+| **38** | `graph_of_thought_engine` | Cognitive Reasoning | Autonomous Graph-of-Thought (GoT) cognitive reasoning, multi-path exploration & backtracking |
 
 ---
 

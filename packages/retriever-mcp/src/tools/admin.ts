@@ -133,4 +133,29 @@ export function registerAdminTools(server: any, client: RetrieverClient) {
       }
     }
   );
+
+  // 4b. retriever_system_health
+  server.tool(
+    "retriever_system_health",
+    "Inspect health, readiness, active embedding models, and platform connectivity of the Retriever engine.",
+    {},
+    async () => {
+      try {
+        const health = await client.getSystemHealth();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(health, null, 2),
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error checking system health: ${err.message}` }],
+        };
+      }
+    }
+  );
 }

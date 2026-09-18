@@ -2,14 +2,33 @@
  * HTTP Client for Retriever Cognitive Engine (https://rag.prateeq.in)
  */
 
-import { readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { basename, extname, join } from "node:path";
 
 export interface RetrieverClientOptions {
   baseUrl?: string;
   adminMasterKey?: string;
   defaultTenantId?: string;
   apiKey?: string;
+}
+
+export interface DirectoryIngestOptions {
+  extensions?: string[];
+  recursive?: boolean;
+  maxFiles?: number;
+}
+
+export interface DirectoryIngestResult {
+  directoryPath: string;
+  totalFound: number;
+  totalIngested: number;
+  failedCount: number;
+  files: Array<{
+    file: string;
+    documentId?: string;
+    status: string;
+    error?: string;
+  }>;
 }
 
 export interface TenantInfo {
@@ -84,6 +103,50 @@ export class RetrieverClient {
   }
 
   // ── Admin Suite ────────────────────────────────────────────────────────────
+
+  async getSystemHealth(): Promise<{
+    status: string;
+    baseUrl: string;
+    readiness: any;
+    liveness: any;
+    timestamp: string;
+  }> {
+    let readiness: any = null;
+    let liveness: any = null;
+
+    try {
+      const r = await fetch(`${this.baseUrl}/health/readiness`, {
+        headers: { Accept: "application/json" },
+      });
+      if (r.ok) readiness = await r.json();
+      else readiness = { status: "degraded", httpStatus: r.status };
+    } catch (err: any) {
+      readiness = { status: "unreachable", error: err.message };
+    }
+
+    try {
+      const l = await fetch(`${this.baseUrl}/health/liveness`, {
+        headers: { Accept: "application/json" },
+      });
+      if (l.ok) liveness = await l.json();
+      else liveness = { status: "degraded", httpStatus: l.status };
+    } catch (err: any) {
+      liveness = { status: "unreachable", error: err.message };
+    }
+
+    const isHealthy =
+      readiness?.status === "ready" ||
+      readiness?.status === "ok" ||
+      liveness?.status === "ok";
+
+    return {
+      status: isHealthy ? "healthy" : "degraded",
+      baseUrl: this.baseUrl,
+      readiness,
+      liveness,
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   async createTenant(name: string, tier = "standard"): Promise<TenantInfo> {
     const res = await fetch(`${this.baseUrl}/v1/tenants`, {
@@ -215,6 +278,84 @@ export class RetrieverClient {
 
     const data = await res.json();
     return Array.isArray(data) ? data : data.items || [];
+  }
+
+  async ingestDirectory(
+    tenantId: string,
+    dirPath: string,
+    options: DirectoryIngestOptions = {}
+  ): Promise<DirectoryIngestResult> {
+    const targetExts = new Set(
+      (options.extensions || [".md", ".txt", ".pdf", ".json", ".csv"]).map((e) =>
+        e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`
+      )
+    );
+    const recursive = options.recursive !== false;
+    const maxFiles = options.maxFiles || 100;
+
+    const ignoreDirs = new Set([
+      ".git",
+      "node_modules",
+      ".next",
+      "dist",
+      "__pycache__",
+      ".venv",
+      "venv",
+      ".pytest_cache",
+      ".ruff_cache",
+    ]);
+
+    const collectedFiles: string[] = [];
+
+    function scan(currentDir: string) {
+      if (collectedFiles.length >= maxFiles) return;
+      const entries = readdirSync(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (collectedFiles.length >= maxFiles) break;
+        const fullPath = join(currentDir, entry.name);
+        if (entry.isDirectory()) {
+          if (recursive && !ignoreDirs.has(entry.name) && !entry.name.startsWith(".")) {
+            scan(fullPath);
+          }
+        } else if (entry.isFile()) {
+          const ext = extname(entry.name).toLowerCase();
+          if (targetExts.has(ext)) {
+            collectedFiles.push(fullPath);
+          }
+        }
+      }
+    }
+
+    scan(dirPath);
+
+    const results: DirectoryIngestResult = {
+      directoryPath: dirPath,
+      totalFound: collectedFiles.length,
+      totalIngested: 0,
+      failedCount: 0,
+      files: [],
+    };
+
+    for (const filePath of collectedFiles) {
+      try {
+        const uploadRes = await this.uploadFile(tenantId, filePath);
+        results.totalIngested++;
+        results.files.push({
+          file: basename(filePath),
+          documentId: uploadRes.documentId,
+          status: uploadRes.status,
+        });
+      } catch (err: any) {
+        results.failedCount++;
+        results.files.push({
+          file: basename(filePath),
+          status: "failed",
+          error: err.message,
+        });
+      }
+    }
+
+    return results;
   }
 
   // ── Cognitive Suite ────────────────────────────────────────────────────────

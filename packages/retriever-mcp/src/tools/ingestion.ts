@@ -117,4 +117,62 @@ export function registerIngestionTools(server: any, client: RetrieverClient) {
       }
     }
   );
+
+  // 7b. retriever_ingest_directory
+  server.tool(
+    "retriever_ingest_directory",
+    "Recursively scan and batch-upload all markdown, text, pdf, and data files from a local directory into a tenant workspace.",
+    {
+      tenant_id: z.string().describe("The UUID of the tenant."),
+      directory_path: z.string().describe("Absolute or relative filesystem path to the directory."),
+      extensions: z
+        .array(z.string())
+        .optional()
+        .describe("File extensions to include (default: ['.md', '.txt', '.pdf', '.json', '.csv'])."),
+      recursive: z.boolean().optional().default(true).describe("Whether to crawl subdirectories recursively."),
+      max_files: z.number().optional().default(100).describe("Safety cap on total files to upload in a single batch (default: 100)."),
+    },
+    async ({
+      tenant_id,
+      directory_path,
+      extensions,
+      recursive,
+      max_files,
+    }: {
+      tenant_id: string;
+      directory_path: string;
+      extensions?: string[];
+      recursive?: boolean;
+      max_files?: number;
+    }) => {
+      try {
+        const result = await client.ingestDirectory(tenant_id, directory_path, {
+          extensions,
+          recursive,
+          maxFiles: max_files,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  message: `Directory batch ingestion completed: ${result.totalIngested}/${result.totalFound} files successfully uploaded.`,
+                  summary: result,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error batch-ingesting directory: ${err.message}` }],
+        };
+      }
+    }
+  );
 }

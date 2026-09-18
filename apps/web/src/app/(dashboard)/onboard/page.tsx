@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { useCreateApiKey } from "@/hooks/use-api-keys";
 import { API_BASE } from "@/lib/api";
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import { CheckCircle, Copy, ArrowLeft, Loader2 } from "lucide-react";
 
 type Step = "tenant" | "key" | "user" | "done";
+type SnippetTab = "typescript" | "python" | "widget" | "curl";
 
 export default function OnboardPage() {
   const router = useRouter();
@@ -30,6 +32,7 @@ export default function OnboardPage() {
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [createdUserId, setCreatedUserId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [snippetTab, setSnippetTab] = useState<SnippetTab>("typescript");
 
   const createTenant = useCreateTenant();
   const createApiKey = useCreateApiKey(createdTenantId ?? "");
@@ -287,25 +290,102 @@ export default function OnboardPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label id="quickstart-curl-label">Quick-start: curl</Label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    aria-label="Copy quick-start curl commands"
-                    onClick={() => {
-                      const curlText = `curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}"\n\ncurl ${API_BASE}/v1/tenants/${createdTenantId}/search \\\n  -X POST \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "hello world", "limit": 5}'`;
-                      navigator.clipboard.writeText(curlText);
-                      toast.success("Curl commands copied");
-                    }}
-                  >
-                    <Copy className="mr-1 h-3 w-3" aria-hidden="true" />
-                    Copy Commands
-                  </Button>
-                </div>
-                <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto">
+              <div className="space-y-3">
+                <Tabs
+                  value={snippetTab}
+                  onValueChange={(v) => setSnippetTab(v as SnippetTab)}
+                  className="w-full"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">Quick-Start Integration</Label>
+                    <div className="flex items-center gap-2">
+                      <TabsList className="h-8">
+                        <TabsTrigger value="typescript" className="text-xs px-2.5 py-1">
+                          TypeScript
+                        </TabsTrigger>
+                        <TabsTrigger value="python" className="text-xs px-2.5 py-1">
+                          Python
+                        </TabsTrigger>
+                        <TabsTrigger value="widget" className="text-xs px-2.5 py-1">
+                          HTML Widget
+                        </TabsTrigger>
+                        <TabsTrigger value="curl" className="text-xs px-2.5 py-1">
+                          cURL
+                        </TabsTrigger>
+                      </TabsList>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 text-xs"
+                        aria-label="Copy active code snippet"
+                        onClick={() => {
+                          let textToCopy = "";
+                          if (snippetTab === "typescript") {
+                            textToCopy = `import { RetrieverClient } from "@prat3010/retriever-client";\n\nconst client = new RetrieverClient({\n  baseUrl: "${API_BASE}",\n  apiKey: "${createdApiKey}",\n  tenantId: "${createdTenantId}",\n});\n\n// Execute hybrid search across knowledge base\nconst results = await client.search("How does hybrid fusion work?");\nconsole.log(results);`;
+                          } else if (snippetTab === "python") {
+                            textToCopy = `import requests\n\nAPI_URL = "${API_BASE}/v1/tenants/${createdTenantId}/search"\nHEADERS = {\n    "Authorization": "Bearer ${createdApiKey}",\n    "X-User-ID": "${createdUserId}",\n    "Content-Type": "application/json",\n}\n\nresp = requests.post(API_URL, headers=HEADERS, json={"query": "Hello world", "limit": 5})\nprint(resp.json())`;
+                          } else if (snippetTab === "widget") {
+                            textToCopy = `<!-- Mount Retriever interactive chatbox -->\n<script\n  src="${API_BASE}/static/widget.js"\n  data-tenant="${createdTenantId}"\n  data-key="${createdApiKey}"\n  data-title="${tenantForm.name || "AI Assistant"}"\n  defer\n></script>`;
+                          } else {
+                            textToCopy = `curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}"\n\ncurl ${API_BASE}/v1/tenants/${createdTenantId}/search \\\n  -X POST \\\n  -H "Authorization: Bearer ${createdApiKey}" \\\n  -H "X-User-ID: ${createdUserId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "hello world", "limit": 5}'`;
+                          }
+                          navigator.clipboard.writeText(textToCopy);
+                          toast.success(`${snippetTab.toUpperCase()} snippet copied`);
+                        }}
+                      >
+                        <Copy className="mr-1 h-3 w-3" aria-hidden="true" />
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+
+                  <TabsContent value="typescript" className="mt-0">
+                    <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto font-mono">
+{`import { RetrieverClient } from "@prat3010/retriever-client";
+
+const client = new RetrieverClient({
+  baseUrl: "${API_BASE}",
+  apiKey: "${createdApiKey}",
+  tenantId: "${createdTenantId}",
+});
+
+// Execute hybrid search across knowledge base
+const results = await client.search("How does hybrid fusion work?");
+console.log(results);`}
+                    </pre>
+                  </TabsContent>
+
+                  <TabsContent value="python" className="mt-0">
+                    <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto font-mono">
+{`import requests
+
+API_URL = "${API_BASE}/v1/tenants/${createdTenantId}/search"
+HEADERS = {
+    "Authorization": "Bearer ${createdApiKey}",
+    "X-User-ID": "${createdUserId}",
+    "Content-Type": "application/json",
+}
+
+resp = requests.post(API_URL, headers=HEADERS, json={"query": "Hello world", "limit": 5})
+print(resp.json())`}
+                    </pre>
+                  </TabsContent>
+
+                  <TabsContent value="widget" className="mt-0">
+                    <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto font-mono">
+{`<!-- Drop this script tag anywhere before </body> to mount the chatbox -->
+<script
+  src="${API_BASE}/static/widget.js"
+  data-tenant="${createdTenantId}"
+  data-key="${createdApiKey}"
+  data-title="${tenantForm.name || "AI Assistant"}"
+  defer
+></script>`}
+                    </pre>
+                  </TabsContent>
+
+                  <TabsContent value="curl" className="mt-0">
+                    <pre className="rounded-lg bg-muted p-3 text-xs overflow-x-auto font-mono">
 {`curl ${API_BASE}/v1/tenants/${createdTenantId}/documents \\
   -H "Authorization: Bearer ${createdApiKey}" \\
   -H "X-User-ID: ${createdUserId}"
@@ -316,7 +396,9 @@ curl ${API_BASE}/v1/tenants/${createdTenantId}/search \\
   -H "X-User-ID: ${createdUserId}" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "hello world", "limit": 5}'`}
-                </pre>
+                    </pre>
+                  </TabsContent>
+                </Tabs>
               </div>
 
               <div className="flex gap-2">

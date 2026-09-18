@@ -22,8 +22,10 @@ This package is the official **Agent-Native Interface** for the Retriever platfo
 | `retriever_list_tenants` | **Admin** | List registered tenants, creation dates, and statuses | `limit?: number`, `search?: string` |
 | `retriever_inspect_tenant` | **Admin** | View tenant details and tier | `tenant_id: string` |
 | `retriever_issue_api_key` | **Admin** | Generate a scoped client API key (`ret_live_...`) | `tenant_id: string`, `name: string`, `role?: "client"\|"admin"` |
+| `retriever_system_health` | **Admin / Ops** | Inspect backend health, readiness, and connectivity | None |
 | `retriever_ingest_text` | **Tenant / Write** | Ingest raw markdown text into tenant vector database | `tenant_id: string`, `filename: string`, `content: string`, `tags?: string[]` |
 | `retriever_upload_file` | **Tenant / Write** | Ingest a local filesystem document (Markdown, PDF, TXT) | `tenant_id: string`, `file_path: string` |
+| `retriever_ingest_directory`| **Tenant / Write** | Recursively batch-upload all documents from a folder | `tenant_id: string`, `directory_path: string`, `extensions?: string[]`, `recursive?: boolean`, `max_files?: number` |
 | `retriever_list_documents` | **Tenant / Read** | List indexed documents, chunk counts, and statuses | `tenant_id: string`, `limit?: number` |
 | `retriever_hybrid_search` | **Tenant / Read** | Query knowledge via dense vector + BM25 with citations | `tenant_id: string`, `query: string`, `top_k?: number` |
 | `retriever_got_plan` | **Tenant / AI** | Execute Battery #38 Graph-of-Thought narrative branching | `tenant_id: string`, `prompt: string`, `branching_factor?: number` |

@@ -552,6 +552,27 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/benchmarks/health",
             ),
+            PlatformBatteryDTO(
+                id="hierarchical_memory_got_planner",
+                name="Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning",
+                category=BatteryCategory.COMPUTATION_GRAPH,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Graph-of-Thoughts (GoT) DAG Reasoning Graph + Multi-Antecedent Aggregation + 3-Tier Hierarchical Working Memory & Spreading Activation",
+                milestone="M123 (v2.2.0-alpha1)",
+                latency_profile="<15ms DAG step / <25ms multi-in-degree aggregation / <5ms memory retrieval",
+                description="Cognitive reasoning and planning engine executing Graph-of-Thoughts (GoT) transformations (generate, aggregate, refine, score, prune) over a 3-tier hierarchical working memory (L1 Scratchpad, L2 Episodic with Ebbinghaus decay, L3 Semantic with graph contraction).",
+                active_parameters={
+                    "supported_transformations": ["generate", "aggregate", "refine", "score", "prune"],
+                    "default_branching_factor": 3,
+                    "default_max_depth": 4,
+                    "default_pruning_threshold": 0.40,
+                    "default_aggregation_fanin": 2,
+                    "memory_tiers": ["l1_scratchpad", "l2_episodic", "l3_semantic"],
+                    "ebbinghaus_decay_enabled": True,
+                    "zero_toy_verified": True,
+                },
+                health_check_endpoint="/v1/got/health",
+            ),
         ]
 
 

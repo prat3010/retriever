@@ -194,6 +194,7 @@ from src.routers.enclave import tenant_router as enclave_tenant_router
 from src.routers.estimation import router as estimation_router
 from src.routers.gateway import router as gateway_router
 from src.routers.gateway import tenant_router as gateway_tenant_router
+from src.routers.got_planning import router as got_planning_router
 from src.routers.guardrails import router as guardrails_router
 from src.routers.guardrails import tenant_router as guardrails_tenant_router
 from src.routers.health import router as health_router
@@ -236,6 +237,7 @@ app.include_router(identity_federation_router)
 app.include_router(continuous_tuning_router)
 app.include_router(mpc_router)
 app.include_router(benchmark_router)
+app.include_router(got_planning_router)
 app.include_router(pricing_router)
 app.include_router(payments_router)
 app.include_router(workflow_router)

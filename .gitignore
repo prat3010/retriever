@@ -57,6 +57,7 @@ env/
 
 # Local file storage
 apps/api/storage/
+data/
 
 # Build artifacts
 **/dist/

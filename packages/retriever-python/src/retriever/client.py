@@ -492,6 +492,103 @@ class RetrieverClient:
         return resp.json()
 
 
+
+    # ── Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (Battery #38 / M123) ──
+
+    def create_got_plan(
+        self,
+        query: str,
+        context: dict[str, Any] | None = None,
+        branch_factor: int = 3,
+        max_depth: int = 4,
+        prune_threshold: float = 0.35,
+        convergence_threshold: float = 0.85,
+    ) -> dict[str, Any]:
+        payload = {
+            "query": query,
+            "context": context or {},
+            "branch_factor": branch_factor,
+            "max_depth": max_depth,
+            "prune_threshold": prune_threshold,
+            "convergence_threshold": convergence_threshold,
+        }
+        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    def get_got_plan(self, plan_id: str) -> dict[str, Any]:
+        resp = self._client.get(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}")
+        _handle_error(resp)
+        return resp.json()
+
+    def step_got_plan(
+        self,
+        plan_id: str,
+        action: str,
+        node_id: str | None = None,
+        parent_ids: list[str] | None = None,
+        feedback: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "action": action,
+            "node_id": node_id,
+            "parent_ids": parent_ids,
+            "feedback": feedback,
+        }
+        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    def execute_got_plan(self, plan_id: str, max_iterations: int = 10) -> dict[str, Any]:
+        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}")
+        _handle_error(resp)
+        return resp.json()
+
+    def aggregate_got_thoughts(
+        self,
+        plan_id: str,
+        parent_node_ids: list[str],
+        prompt: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "parent_node_ids": parent_node_ids,
+            "prompt": prompt,
+        }
+        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    def get_hierarchical_memory(self) -> dict[str, Any]:
+        resp = self._client.get(f"/v1/tenants/{self.tenant_id}/got/memory")
+        _handle_error(resp)
+        return resp.json()
+
+    def distill_got_plan(self, plan_id: str, target_tier: str = "L3_SEMANTIC") -> dict[str, Any]:
+        payload = {"target_tier": target_tier}
+        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    def simulate_got_math(
+        self,
+        thoughts_generated: int = 5,
+        aggregation_in_degree: int = 3,
+        depth: int = 4,
+        ebbinghaus_elapsed_hours: float = 24.0,
+        retention_factor_s: float = 18.0,
+    ) -> dict[str, Any]:
+        payload = {
+            "thoughts_generated": thoughts_generated,
+            "aggregation_in_degree": aggregation_in_degree,
+            "depth": depth,
+            "ebbinghaus_elapsed_hours": ebbinghaus_elapsed_hours,
+            "retention_factor_s": retention_factor_s,
+        }
+        resp = self._client.post("/v1/got/simulate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+
 class AsyncRetrieverClient:
     """Asynchronous Client for Retriever Cognitive Engine."""
 
@@ -1357,7 +1454,98 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
+    # ── Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (Battery #38 / M123) ──
 
+    async def create_got_plan(
+        self,
+        query: str,
+        context: dict[str, Any] | None = None,
+        branch_factor: int = 3,
+        max_depth: int = 4,
+        prune_threshold: float = 0.35,
+        convergence_threshold: float = 0.85,
+    ) -> dict[str, Any]:
+        payload = {
+            "query": query,
+            "context": context or {},
+            "branch_factor": branch_factor,
+            "max_depth": max_depth,
+            "prune_threshold": prune_threshold,
+            "convergence_threshold": convergence_threshold,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans", json=payload)
+        _handle_error(resp)
+        return resp.json()
 
+    async def get_got_plan(self, plan_id: str) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}")
+        _handle_error(resp)
+        return resp.json()
 
+    async def step_got_plan(
+        self,
+        plan_id: str,
+        action: str,
+        node_id: str | None = None,
+        parent_ids: list[str] | None = None,
+        feedback: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "action": action,
+            "node_id": node_id,
+            "parent_ids": parent_ids,
+            "feedback": feedback,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def execute_got_plan(self, plan_id: str, max_iterations: int = 10) -> dict[str, Any]:
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}")
+        _handle_error(resp)
+        return resp.json()
+
+    async def aggregate_got_thoughts(
+        self,
+        plan_id: str,
+        parent_node_ids: list[str],
+        prompt: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "parent_node_ids": parent_node_ids,
+            "prompt": prompt,
+        }
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def get_hierarchical_memory(self) -> dict[str, Any]:
+        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/got/memory")
+        _handle_error(resp)
+        return resp.json()
+
+    async def distill_got_plan(self, plan_id: str, target_tier: str = "L3_SEMANTIC") -> dict[str, Any]:
+        payload = {"target_tier": target_tier}
+        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload)
+        _handle_error(resp)
+        return resp.json()
+
+    async def simulate_got_math(
+        self,
+        thoughts_generated: int = 5,
+        aggregation_in_degree: int = 3,
+        depth: int = 4,
+        ebbinghaus_elapsed_hours: float = 24.0,
+        retention_factor_s: float = 18.0,
+    ) -> dict[str, Any]:
+        payload = {
+            "thoughts_generated": thoughts_generated,
+            "aggregation_in_degree": aggregation_in_degree,
+            "depth": depth,
+            "ebbinghaus_elapsed_hours": ebbinghaus_elapsed_hours,
+            "retention_factor_s": retention_factor_s,
+        }
+        resp = await self._client.post("/v1/got/simulate", json=payload)
+        _handle_error(resp)
+        return resp.json()
 

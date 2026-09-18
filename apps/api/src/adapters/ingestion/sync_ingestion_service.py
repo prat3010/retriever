@@ -20,15 +20,18 @@ logger = logging.getLogger(__name__)
 
 async def ingest_file_sync(
     tenant_id: str,
-    document_id: str,
-    filename: str,
-    file_content: bytes,
-    file_hash: str,
-    mime_type: str,
-    embedder: EmbeddingProvider,
+    document_id: str | None = None,
+    filename: str = "document.txt",
+    file_content: bytes | None = None,
+    file_hash: str | None = None,
+    mime_type: str | None = None,
+    embedder: EmbeddingProvider | None = None,
     chunk_size: int = 500,
     chunk_overlap: int = 100,
+    content_bytes: bytes | None = None,
+    tags: list[str] | None = None,
 ) -> int:
+    import hashlib
     import os
     import tempfile
 
@@ -37,8 +40,19 @@ async def ingest_file_sync(
         extract_text_from_file,
     )
 
+    actual_content = file_content if file_content is not None else (content_bytes or b"")
+    if document_id is None:
+        document_id = str(uuid.uuid4())
+    if file_hash is None:
+        file_hash = hashlib.sha256(actual_content).hexdigest()
+    if mime_type is None:
+        mime_type = "text/markdown" if filename.endswith(".md") else "application/octet-stream"
+    if embedder is None:
+        from src.container import container
+        embedder = container.search_service.embedder
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
-        tmp.write(file_content)
+        tmp.write(actual_content)
         tmp_path = tmp.name
 
     layout_meta = {"has_tables": False, "table_count": 0, "layout_parsed": False}
@@ -57,7 +71,7 @@ async def ingest_file_sync(
         os.unlink(tmp_path)
 
     if not text:
-        text = file_content.decode("utf-8", errors="ignore")
+        text = actual_content.decode("utf-8", errors="ignore")
 
     from src.adapters.cognitive.ast_code_chunker import AstCodeChunker
     from src.domain.compliance.pii_anonymizer import PiiAnonymizer
@@ -131,7 +145,7 @@ async def ingest_file_sync(
                 filename=filename,
                 file_hash=file_hash,
                 storage_path="memory",
-                file_size=len(file_content),
+                file_size=len(actual_content),
                 mime_type=mime_type,
                 status="INDEXING",
             )

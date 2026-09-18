@@ -5,18 +5,18 @@
 
 ---
 
-## ⚡ Current Status: Enterprise Production Ready (v0.93.0+)
+## ⚡ Current Status: Enterprise Production Ready (v2.2.0-alpha1)
 
-Retriever has completed **109 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 118 automated test suites.
+Retriever has completed **110 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 119 automated test suites.
 
 👉 **Looking for granular historical milestone logs (M1–M109)?**  
 See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTONES_HISTORY.md`](docs/engineering/MILESTONES_HISTORY.md).
 
 ---
 
-## 🔋 The 34 Platform Batteries Matrix
+## 🔋 The 38 Platform Batteries Matrix
 
-All 34 batteries are wired through strict Hexagonal dependency injection:
+All 38 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -54,15 +54,20 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 | **32** | `vector_raft_sharding` | Edge Distribution | Consistent virtual-node hash partitioning, Raft consensus replication & parallel scatter-gather | ✅ Production |
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic binary Merkle trees, zero-knowledge leaf commitments & Ed25519 Grounding Certificates | ✅ Production |
 | **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 IdP SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning | ✅ Production |
+| **35** | `continuous_preference_tuning` | ML Intelligence | Continuous user feedback harvesting, DPO / ORPO preference optimization & LoRA rollback | ✅ Production |
+| **36** | `confidential_mpc_enclave` | Safety & Defense | Additive secret sharing over Q16.16 fixed-point arithmetic & Beaver multiplication triples | ✅ Production |
+| **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Empirical NDCG/MRR/Faithfulness evaluation, Two-Sample Welch's t-test regression gating | ✅ Production |
+| **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with multi-parent thought aggregation, Kahn's topological sort & 3-tier memory | ✅ Production |
 
 ---
 
 ## 🚀 Active Open-Source Releases & Roadmap (2026+)
 
 ### Milestone 110: Public Open-Source Launch (v1.0.0-rc1) — **Completed**
+- [x] **Public GitHub Repositories:** Both [`retriever`](https://github.com/prat3010/retriever) and [`Prateek_website`](https://github.com/prat3010/Prateek_website) published public with Apache 2.0 open-source licensing.
 - [x] **1-Line Quickstart Script:** `curl -fsSL https://get.retriever.run | bash` with automated environment sensing (Apple Silicon MPS / NVIDIA CUDA / CPU) and 1-click Docker Compose launch.
-- [x] **Decoupled API Client SDKs:** Standalone `@prat3010/retriever-client` on npm (TypeScript/ESM/CJS) and `retriever-python` on PyPI (Sync/Async) covering all 26 batteries.
-- [x] **Hacker News & X Launch:** Reconciled 26-battery launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
+- [x] **Decoupled API Client SDKs:** Standalone `@prat3010/retriever-client` on npm (TypeScript/ESM/CJS) and `retriever-python` on PyPI (Sync/Async) covering all 38 platform batteries.
+- [x] **Hacker News & X Launch:** Reconciled 38-battery launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
 
 ### Milestone 111: Community Connectors Ecosystem (v1.1.0-alpha1) — **Completed**
 - [x] **Enterprise Data Connectors:**
@@ -173,6 +178,15 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added full benchmark suite, run, gate evaluation, and math simulation methods to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousBenchmarkPanel.tsx` in `/rag/app` under Design System 2.0 (Suites & Runs Ledger, Comparative Regression Diff, Item-Level Query Inspector, Interactive Welch's t-Test Simulator).
 
+### Milestone 123: Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (v2.2.0-alpha1) — **Completed**
+- [x] **Platform Battery #38 Registration:** Cataloged `hierarchical_memory_got_planner` in `BatteryService` under `COMPUTATION_GRAPH`.
+- [x] **Directed Acyclic Graph (DAG) Reasoning Engine:** Non-linear cognitive planning allowing multi-parent thought aggregation ($M \to 1$), recursive thought refinement ($1 \to 1$), exploratory generation ($1 \to N$), and heuristic pruning below confidence $\tau_{\text{prune}}$.
+- [x] **Topological Sort & Dynamic Programming Optimal Path:** Kahn's topological sorting algorithm enforcing acyclicity and memoized DP calculating the globally optimal reasoning path from root origin to converged synthesis.
+- [x] **3-Tier Hierarchical Memory Architecture:** Partitioned memory model spanning transient L1 Scratchpad buffer, decaying L2 Episodic memory parameterized by Hermann Ebbinghaus's exponential forgetting curve ($R(t) = e^{-t/S}$), and consolidated L3 Semantic persistent memory graphs.
+- [x] **Cognitive Graph Distillation:** Distills converged reasoning DAGs into contracted semantic knowledge nodes with empirical contraction ratio reporting ($C = 1 - |V_{\text{distilled}}| / |V_{\text{raw}}|$).
+- [x] **FastAPI REST Endpoints:** Mounted 9 REST endpoints under `/v1/got/*` and `/v1/tenants/{tenantId}/got/*` covering plan CRUD, transformations, autonomous execution loops, memory inspection, distillation, and simulation.
+- [x] **Decoupled API Client SDKs Extended:** Added full GoT plan, step, aggregate, execution, memory, distillation, and simulation parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
+- [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/GotPlanningPanel.tsx` in `/rag/app` under Design System 2.0 (Graph Topology DAG Canvas, Hierarchical Memory Pyramid L1/L2/L3, Thought Transformation Ledger, Interactive GoT & Aggregation Math Simulator).
 
 ---
 
@@ -190,5 +204,7 @@ All 34 batteries are wired through strict Hexagonal dependency injection:
 - 🧠 **Continuous DPO / ORPO Tuning Feature Guide:** [`docs/features/continuous-preference-tuning.md`](docs/features/continuous-preference-tuning.md)
 - 🛡️ **Confidential MPC Privacy Enclaves Feature Guide:** [`docs/features/confidential-mpc-enclaves.md`](docs/features/confidential-mpc-enclaves.md)
 - 🎯 **Autonomous Continuous Benchmark Feature Guide:** [`docs/features/autonomous-benchmark-gatekeeper.md`](docs/features/autonomous-benchmark-gatekeeper.md)
+- 🕸️ **Hierarchical Memory & GoT Planning Feature Guide:** [`docs/features/hierarchical-memory-got-planning.md`](docs/features/hierarchical-memory-got-planning.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
+

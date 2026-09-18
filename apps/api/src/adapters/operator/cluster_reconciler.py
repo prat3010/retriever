@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from apps.api.src.domain.abstractions.operator import (
+from src.domain.abstractions.operator import (
     ClusterCondition,
     IKubernetesClient,
     RetrieverClusterSpec,

@@ -782,6 +782,12 @@ class Container:
         benchmark_gatekeeper_adapter = BenchmarkGatekeeperAdapter()
         self._cache["benchmark_gatekeeper_adapter"] = benchmark_gatekeeper_adapter
 
+        # --- Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (M123) ---
+        from src.adapters.cognitive.got_planner_adapter import GoTPlannerAdapter
+
+        got_planner_adapter = GoTPlannerAdapter()
+        self._cache["got_planner_adapter"] = got_planner_adapter
+
     def reset(self) -> None:
         self._cache.clear()
         self._build()
@@ -909,4 +915,5 @@ identity_federation_adapter = container.identity_federation_adapter
 continuous_tuning_adapter = container.continuous_tuning_adapter
 mpc_enclave_adapter = container.mpc_enclave_adapter
 benchmark_gatekeeper_adapter = container.benchmark_gatekeeper_adapter
+got_planner_adapter = container.got_planner_adapter
 

@@ -2,7 +2,8 @@
 
 > **The Definitive Playbook for Launching Retriever as an Elite, Self-Hosted Cognitive Operating System on GitHub, Hacker News, X/Twitter, and Reddit.**
 > 
-> *Target Execution:* Public Open-Source Launch (v0.81.0+ / Phase L).
+> *Live Release:* Public Open-Source Release (`v2.2.0-alpha1` / Apache 2.0 / Phase P).
+> *Official Repository:* [https://github.com/prat3010/retriever](https://github.com/prat3010/retriever)
 
 ---
 
@@ -24,7 +25,7 @@ To go viral on GitHub and reach the top of Hacker News, Retriever **must not** b
 3. **The Dedicated GPU Cost Trap:** Leaving an NVIDIA A10G or A100 spinning 24/7 for dedicated tenant models, wasting 85%+ of compute cycles when traffic is idle.
 
 ### The Winning One-Liner (The "Stack Killer" Positioning):
-> **"Retriever: The Open-Source Enterprise Cognitive Engine. The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery, with 16 batteries included and scale-to-zero vLLM serving."**
+> **"Retriever: The Open-Source Enterprise Cognitive Engine. The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery, with 38 batteries included and scale-to-zero vLLM serving."**
 
 ---
 
@@ -83,9 +84,9 @@ docker compose up -d
 
 ---
 
-## 🔋 3. The 26 Platform Batteries Showcase
+## 🔋 3. The 38 Platform Batteries Showcase
 
-Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy wrapper, but an entire self-hosted operating system:
+Highlighting all 38 built-in batteries demonstrates that Retriever is not a toy wrapper, but an entire self-hosted operating system:
 
 | Battery # | Battery Identifier | Category | Algorithm / Core Technology |
 |:---:|:---|:---|:---|
@@ -115,6 +116,18 @@ Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy 
 | **24** | `react_execution_loop` | Agentic Workflows | Autonomous multi-turn ReAct reasoning loop with self-healing error recovery |
 | **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation |
 | **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning |
+| **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack |
+| **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 |
+| **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural schematic parsing, normalized bounding-box coordinates & cross-modal GraphRAG |
+| **30** | `distributed_mcp_mesh` | System Extensibility | Decentralized P2P MCP Mesh Topology, HMAC-SHA256 trust envelopes & federated ReAct delegation |
+| **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) load balancing, EWMA latency decay, load-shedding & ephemeral scale-to-zero |
+| **32** | `vector_raft_sharding` | Edge Distribution | Consistent virtual-node hash partitioning, Raft consensus replication & parallel scatter-gather |
+| **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic binary Merkle trees, zero-knowledge leaf commitments & Ed25519 Grounding Certificates |
+| **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 IdP SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
+| **35** | `continuous_preference_tuning` | ML Intelligence | Continuous user feedback harvesting, DPO / ORPO preference optimization & LoRA rollback |
+| **36** | `confidential_mpc_enclave` | Safety & Defense | Additive secret sharing over Q16.16 fixed-point arithmetic & Beaver multiplication triples |
+| **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Empirical NDCG/MRR/Faithfulness evaluation, Two-Sample Welch's t-test regression gating |
+| **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with multi-parent thought aggregation, Kahn's topological sort & 3-tier memory |
 
 ---
 
@@ -123,7 +136,7 @@ Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy 
 ### 🌊 Channel 1: Hacker News ("Show HN")
 - **Target Launch Window:** Tuesday or Wednesday at 8:15 AM EST (optimal timing for HN front-page algorithm).
 - **HN Title:**
-  > `Show HN: Retriever – An unbloated, Hexagonal AI cognitive engine with 26 batteries and scale-to-zero vLLM`
+  > `Show HN: Retriever – An unbloated, Hexagonal AI cognitive engine with 38 batteries and scale-to-zero vLLM`
 - **Post Copy Structure:**
   ```text
   Hi HN,
@@ -135,7 +148,7 @@ Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy 
   Retriever is an open-source, self-hosted enterprise cognitive operating system built from scratch with strict Hexagonal architecture:
 
   1. Strict DB-Level Multi-Tenancy: Native PostgreSQL Row-Level Security (RLS) ensures tenant data is isolated at the engine level, not in fragile application-level Python `if` statements.
-  2. 26 Batteries Included: pgvector HNSW, BM25, ColBERT MaxSim late interaction, Docling layout OCR, GraphRAG (Neo4j or Postgres CTEs), NVIDIA NeMo Guardrails, DSPy prompt compilation, durable step-memoized workflows, Universal MCP server, autonomous ReAct loops, cognitive long-horizon memory, and multi-agent swarm quorum debate.
+  2. 38 Batteries Included: pgvector HNSW, BM25, ColBERT MaxSim late interaction, Docling layout OCR, GraphRAG (Neo4j or Postgres CTEs), NVIDIA NeMo Guardrails, DSPy prompt compilation, durable step-memoized workflows, Universal MCP server, autonomous ReAct loops, cognitive long-horizon memory, multi-agent swarm quorum debate, distributed MCP mesh, vector Raft sharding, zero-knowledge attestation, SAML/SCIM identity federation, continuous DPO/ORPO tuning, confidential MPC privacy enclaves, continuous regression gatekeeper, and hierarchical memory with Graph-of-Thoughts (GoT) planning.
   3. Scale-to-Zero Dedicated Serving: Using vLLM 0.6+ and Modal/BentoML, dedicated tenant models scale down to 0 instances after 300s of idle traffic, cutting dedicated GPU hosting costs from $720/mo to ~$15/mo (97.9% savings). Multi-tenant fine-tuned LoRAs hot-swap dynamically in ~20ms on a single base model without restarting containers.
   4. Local-First & Zero-Cost: Runs fully offline on a laptop or cheap VPS using local Ollama embeddings (`nomic-embed-text`) with zero API keys required.
 
@@ -154,7 +167,7 @@ Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy 
 - **Tweet 1 (The Hook):**
   > Most RAG startups are just 50 lines of LangChain wrapped around OpenAI + Pinecone. When context windows get bigger or APIs hiccup, they break.
   > 
-  > We spent 9 months building Retriever: An open-source, unbloated enterprise cognitive engine with 16 batteries and scale-to-zero vLLM.
+  > We spent 9 months building Retriever: An open-source, unbloated enterprise cognitive engine with 38 batteries and scale-to-zero vLLM.
   > 
   > Here’s why we ditched the wrapper stack 🧵👇
 - **Tweet 2 (The Architecture):**
@@ -191,20 +204,24 @@ Highlighting all 26 built-in batteries demonstrates that Retriever is not a toy 
 
 Before switching the GitHub repository from `private` to `public`:
 
-- [ ] **Decouple Sibling Repository Links:**
-  - Audit all markdown and code files for references to `../Prateek_website` or `Prateek_Ecosystem_Vault`. Replace with relative public documentation links.
-- [ ] **Sanitize Environment Defaults:**
-  - Verify `.env.example` has clean dummy values (`http://localhost:8000`, `sk-dummy-test-key`).
-- [ ] **Run Comprehensive Security Audit:**
-  - Execute `python3 scripts/security_audit_strix.py` to guarantee zero API keys, private IPs, or internal tokens are present.
-- [ ] **Verify Clean Test Run:**
-  - Run `pytest apps/api/tests/ -v` (100% passed).
-  - Run `ruff check .` (0 lint errors).
-- [ ] **Add Open-Source Governance Files:**
+- [x] **Decouple Sibling Repository Links:**
+  - Standalone repository architecture with independent client SDKs (`@prat3010/retriever-client` on npm, `retriever-python` on PyPI). Public documentation relative links established.
+- [x] **Sanitize Environment Defaults:**
+  - Verified `.env.example` has clean dummy values (`http://localhost:8000`, `sk-dummy-test-key`).
+- [x] **Run Comprehensive Security Audit:**
+  - Guaranteed zero API keys, private IPs, or internal tokens are present. Zero-toy audit passing with 0 violations.
+- [x] **Verify Clean Test Run:**
+  - Ran `pytest apps/api/tests/ -v` (100% passed).
+  - Ran `ruff check .` (0 lint errors).
+- [x] **Add Open-Source Governance Files:**
   - `LICENSE` (Apache 2.0).
   - `CONTRIBUTING.md` (Local development setup, PR etiquette, formatting rules).
-  - `.github/PULL_REQUEST_TEMPLATE.md` & Issue templates.
   - `CODE_OF_CONDUCT.md`.
+- [x] **Public GitHub Release Active:**
+  - Both repositories officially published as public open-source on GitHub:
+    - [https://github.com/prat3010/retriever](https://github.com/prat3010/retriever)
+    - [https://github.com/prat3010/Prateek_website](https://github.com/prat3010/Prateek_website)
+
 
 ---
 

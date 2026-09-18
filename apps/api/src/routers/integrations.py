@@ -92,8 +92,8 @@ async def handle_slack_slash_command(
         team_id,
     )
 
-    # Resolve target tenant (default to prateeq_scoping or channel mapped tenant)
-    tenant_id = os.environ.get("SLACK_DEFAULT_TENANT_ID", "prateeq_scoping")
+    # Resolve target tenant (default to default or channel mapped tenant)
+    tenant_id = os.environ.get("SLACK_DEFAULT_TENANT_ID", "default")
     start_time = time.time()
 
     # 3. Retrieve relevant context chunks
@@ -113,7 +113,7 @@ async def handle_slack_slash_command(
                 {
                     "title": res.metadata.get("filename") or f"Doc {res.document_id[:8]}",
                     "snippet": snippet,
-                    "url": f"https://prateeq.in/rag/app?tenant={tenant_id}",
+                    "url": f"http://localhost:3000?tenant={tenant_id}",
                     "score": res.score,
                 }
             )
@@ -229,7 +229,7 @@ async def get_integrations_overview() -> dict[str, Any]:
                 "category": "Messaging",
                 "status": "configured" if slack_configured else "available",
                 "slash_command": "/ask-retriever",
-                "webhook_url": "https://rag.prateeq.in/v1/integrations/slack/slash",
+                "webhook_url": "http://localhost:8000/v1/integrations/slack/slash",
                 "description": "Ask questions and get cited answers directly inside team Slack channels.",
             },
             {

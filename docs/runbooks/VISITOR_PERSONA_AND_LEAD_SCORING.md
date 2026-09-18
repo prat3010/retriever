@@ -81,7 +81,7 @@ Score < 0.40   ──> ⚪ COLD / CASUAL: Standard analytics logging; no outboun
 
 ### 1. Classify Visitor Persona
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/intelligence/persona/classify" \
+curl -X POST "http://localhost:8000/v1/admin/intelligence/persona/classify" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -107,7 +107,7 @@ curl -X POST "https://rag.prateeq.in/v1/admin/intelligence/persona/classify" \
 
 ### 2. Score Lead Conversion Propensity
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/intelligence/leads/score" \
+curl -X POST "http://localhost:8000/v1/admin/intelligence/leads/score" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,5 +138,5 @@ curl -X POST "https://rag.prateeq.in/v1/admin/intelligence/leads/score" \
 
 Lead scores and persona classifications are continuously updated in Supabase table `outreach_leads` and viewable in:
 1. **Local Streamlit Synchronizer:** Tab **Leads & Pipeline** (`sync_tabs/leads.py`).
-2. **Master Admin Portal:** Route `/admin` on `prateeq.in`.
+2. **Master Admin Portal:** Route `/admin` on `retriever.run`.
 3. **Autonomous Outreach Queue:** Dispatches personalized outbound drafts for review before sending via Resend.

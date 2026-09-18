@@ -50,7 +50,7 @@ Add to `claude_desktop_config.json` or `.cursor/mcp.json`:
       "command": "node",
       "args": ["/Users/prateeksharma/Developer/retriever/packages/retriever-mcp/dist/index.js"],
       "env": {
-        "RETRIEVER_API_URL": "https://rag.prateeq.in",
+        "RETRIEVER_API_URL": "http://localhost:8000",
         "RETRIEVER_ADMIN_MASTER_KEY": "your-admin-master-key",
         "RETRIEVER_API_KEY": "ret_live_...",
         "RETRIEVER_TENANT_ID": "your-tenant-uuid"
@@ -61,5 +61,5 @@ Add to `claude_desktop_config.json` or `.cursor/mcp.json`:
 ```
 
 ### 4. Zero-Wipe Security Invariant
-Administrative workspace deletion (`delete_tenant`, `wipe_all_vectors`) is intentionally excluded from the MCP toolset. All deletions remain strictly confined to the manual Web Admin Dashboard (`https://admin.rag.prateeq.in`) to prevent prompt-injection attacks or catastrophic agent hallucinations.
+Administrative workspace deletion (`delete_tenant`, `wipe_all_vectors`) is intentionally excluded from the MCP toolset. All deletions remain strictly confined to the manual Web Admin Dashboard (`http://localhost:3000`) to prevent prompt-injection attacks or catastrophic agent hallucinations.
 

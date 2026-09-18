@@ -91,7 +91,7 @@ We decided to implement **Platform Battery #19 (`multicloud_failover_libsql`)** 
 ## 5. Development Testing vs. Open-Source Productionization Strategy
 
 ### 5.1 Current Development & Testing Phase (Hybrid Mock Mode)
-- **Live Physical Anchor:** The primary node runs on a live physical Oracle Cloud VPS (`130.210.35.134`).
+- **Live Physical Anchor:** The primary node runs on a live physical Oracle Cloud VPS (`YOUR_SERVER_IP`).
 - **Simulated Standby Nodes:** Standby endpoints (`aws-iad`, `fly-fra`, `cf-global`) are evaluated via `HttpMultiCloudHealthProbeAdapter`. Probes return realistic calibrated latencies (e.g. 184ms for US East, 142ms for Europe, 8ms for Edge) and are explicitly flagged with `is_simulated = True`.
 - **Chaos Injection:** Operators can simulate primary VPS partitions via an interactive toggle in the UI. This sets the leader status to `unhealthy`, trips the circuit breaker, and verifies quorum consensus transition without risking live service disruption.
 

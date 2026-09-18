@@ -124,4 +124,4 @@ await client.synthesizeMemoryExperience(sessionId);
 
 ## 📄 License
 
-Apache-2.0. Maintained by [Prateek Sharma](https://prateeq.in).
+Apache-2.0. Maintained by [Prateek Sharma](https://github.com/prat3010).

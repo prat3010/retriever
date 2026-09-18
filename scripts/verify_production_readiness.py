@@ -12,7 +12,6 @@ Executes end-to-end diagnostic probes against live production infrastructure
   7. Rate Limiting Margin Check (x-ratelimit-remaining)
 
 Usage:
-  python3 scripts/verify_production_readiness.py --target https://rag.prateeq.in
   python3 scripts/verify_production_readiness.py --target http://localhost:8000
 """
 
@@ -24,7 +23,7 @@ import time
 import urllib.error
 import urllib.request
 
-DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "https://rag.prateeq.in")
+DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "http://localhost:8000")
 DEFAULT_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4")
 DEFAULT_API_KEY = os.getenv("LOAD_TEST_API_KEY", "ret_live_hUQ-4muveDE.w9aBPR9iJBMbWeaUapCwUR-_T9IlwmXh")
 DEFAULT_USER_ID = os.getenv("LOAD_TEST_USER_ID", "36e62429-419e-48ef-af92-533afca9e028")

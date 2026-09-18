@@ -537,7 +537,7 @@ Client App → Cloudflare Proxy → Oracle VPS (API) → Supabase (DB, vectors, 
 ### Manual Actions Required
 1. **Configure GitHub Secrets — ✅ DONE:** `ORACLE_HOST`, `ORACLE_USER`, `ORACLE_SSH_KEY`, `ORACLE_PORT` all present in GitHub secrets (verified 2026-07-31).
 2. **Configure Sentry — ✅ DONE:** `SENTRY_DSN` set (EU region) and verified via one-off `capture_exception` (error "Sentry wiring test from retriever-oracle-vm" ingested 2026-07-31). Required a one-line fix in `main.py:40` — OTel integration import path changed in newer sentry-sdk (`.integration` module).
-3. **Set up uptime monitoring — ⬜ UNVERIFIABLE:** Configure UptimeRobot or Better Uptime to poll `https://rag.prateeq.in/health/liveness` every 5 minutes (endpoint verified reachable, 200). External service — check the provider dashboard.
+3. **Set up uptime monitoring — ⬜ UNVERIFIABLE:** Configure UptimeRobot or Better Uptime to poll `http://localhost:8000/health/liveness` every 5 minutes (endpoint verified reachable, 200). External service — check the provider dashboard.
 
 ---
 
@@ -576,13 +576,13 @@ Client App → Cloudflare Proxy → Oracle VPS (API) → Supabase (DB, vectors, 
 
 ## 29. Outstanding Blockers & Issues
 
-Pending items (verified against live Oracle VM `130.210.35.134`, 2026-07-31):
+Pending items (verified against live Oracle VM `YOUR_SERVER_IP`, 2026-07-31):
 
 | Item | Milestone | Status |
 |---|---|---|
 | Scrub `apps/web/.env.local` from git history + Vercel OIDC token | M31 | ✅ Done (git-filter-repo, 2026-07-31; token verified expired — rotation unnecessary) |
 | Set `SENTRY_DSN` on Oracle VM + verify error capture | M34 | ✅ Done (EU region, test error ingested; one-line OTel import fix in main.py) |
-| UptimeRobot/Better Uptime monitor on `rag.prateeq.in/health/liveness` | M34 | ⬜ Needs UptimeRobot account (optional) |
+| UptimeRobot/Better Uptime monitor on `localhost:8000/health/liveness` | M34 | ⬜ Needs UptimeRobot account (optional) |
 | Backend short ID columns + API path acceptance (`tn_`/`usr_`) | M32 | ⬜ Deferred |
 | Wire `REDIS_ENABLED`/`BROKER_ENABLED`/`WORKERS_ENABLED` into `container.py` (spec-gated deployment) | M35 | ⬜ Known gap |
 | LLM key quota alerting | M30 | ✅ Done (quota-alert.sh + cron; free-tier key = non-monitorable until prepaid) |

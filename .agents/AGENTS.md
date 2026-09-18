@@ -22,7 +22,7 @@ If Docker Desktop is not running, instruct the user to start Docker Desktop.
 ### Beat 3: Interactive Path Selection
 Present 3 clear, actionable paths based on the user's intent:
 1. **🚀 Option 1: 1-Click Full Stack (Docker Compose)** — Spins up PostgreSQL 16 (pgvector), Redis, Ollama, FastAPI Engine, and Admin Web Studio (`./scripts/quickstart.sh` or `docker compose up -d`).
-2. **🤖 Option 2: Connect AI Tools via MCP (`retriever-mcp`)** — If the user already has a running instance (or remote VPS at `https://rag.prateeq.in`), register the MCP server in their IDE config (`mcp_config.json`) so the agent can directly create tenants, upload files, and search vectors.
+2. **🤖 Option 2: Connect AI Tools via MCP (`retriever-mcp`)** — If the user already has a running instance (local or remote), register the MCP server in their IDE config (`mcp_config.json`) so the agent can directly create tenants, upload files, and search vectors.
 3. **🛠️ Option 3: Core Python Developer Mode** — For contributors working directly on Python algorithms (`pip install -r requirements.txt`, Alembic migrations, Pytest).
 
 ### Beat 4: Immediate Dopamine & Live Demo
@@ -46,11 +46,6 @@ Once Docker services boot or are verified:
 - **Always use a local model for generating embeddings.** (e.g., local Ollama using `nomic-embed-text` on `http://host.docker.internal:11434/v1`).
 - **Do NOT use client-provided LLM keys** (such as Gemini, OpenAI, or Cohere) for embedding tasks to avoid hitting API rate limits and preserving quotas.
 
-## Multi-Tenant & Scoping Integration Rules
-- **Scoping Tenant Dogfooding Rule:** The Scoping engine on `prateeq.in` operates as a real standard tenant (`prateeq_scoping`). System prompts and knowledge documents are configured through standard tenant document ingestion and prompt settings without custom backend backdoor routing.
-- **Client Auto-Onboarding & 7-Day Trial:** When a new commercial client signs in via Google OAuth on the website, Retriever's tenant provisioning API provisions a 7-day trial tenant (`tn_client_<uuid>`). The baseline SOW/scope details uploaded during onboarding are marked with `is_system = true` (or `is_deletable = false`), rendering them permanent and immutable in the client's document library.
-- **Audit-First Contract Rule:** Any feature exposed for consumption by the frontend (such as `widget.js`, embed scripts, SSE streaming, document uploads, or GraphRAG traversals) must be fully tested, verified, and conforming to Hexagonal domain boundaries in `retriever` before frontend integration.
-
 ## Production-First & Zero-Toy Utility Invariant Rule (No Mocks, No Gimmicks)
 - **Rule:** All backend algorithms, adapters, cognitive workflows, and administrative endpoints MUST be genuine, production-grade implementations with verified enterprise utility.
 - **Strict Invariants:**
@@ -71,8 +66,3 @@ Once Docker services boot or are verified:
   python3 scripts/query_architecture.py --target <entity_or_api>
   ```
   to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
-## Deployment and Infrastructure Topology
-- **Retriever Cognitive Engine (FastAPI Backend):** Deployed on Oracle Cloud VPS (`130.210.35.134` Ubuntu 24.04), mapped to `https://rag.prateeq.in`. Runs FastAPI, pgvector storage, and local Ollama embeddings (`nomic-embed-text`).
-- **Retriever Admin Dashboard:** Deployed at **[`https://admin.rag.prateeq.in`](https://admin.rag.prateeq.in)** (`retriever/apps/web`). Used for tenant onboarding (`/onboard`), API key issuance, document vector ingestion, and system prompt configuration.
-- **Web Application & Control Plane:** Deployed on Vercel at `https://prateeq.in`. Hosts the portfolio, `/scoping` engine, `/dashboard` client portal, and `/rag` product landing pages.
-

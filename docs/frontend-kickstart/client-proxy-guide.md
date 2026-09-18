@@ -3,7 +3,7 @@
 This guide details how to securely connect public frontend applications (such as iOS/Android mobile apps or web clients) to your **Retriever** RAG backend.
 
 The current production deployment runs on production-grade infrastructure:
-- **API**: Oracle Cloud VPS (`https://rag.prateeq.in` at `130.210.35.134`, Ubuntu 24.04, FastAPI, systemd)
+- **API**: Oracle Cloud VPS (`http://localhost:8000` at `YOUR_SERVER_IP`, Ubuntu 24.04, FastAPI, systemd)
 - **Database**: Supabase (PostgreSQL + pgvector)
 - **Embeddings**: Local Ollama (`nomic-embed-text` on `http://localhost:11434`, 768-dim) to eliminate API rate limits and external costs
 - **LLM**: Client BYOK / Tenant configured keys (Gemini, OpenAI, Anthropic, or local)
@@ -35,7 +35,7 @@ Instead of direct connection, route client traffic through an edge-based **Cloud
 
 ```
 Client App (Mobile) ───────→ Cloudflare Proxy (JWT auth, key injection) ──┐
-                                                                           ├──→ Oracle VPS (FastAPI: https://rag.prateeq.in)
+                                                                           ├──→ Oracle VPS (FastAPI: http://localhost:8000)
 Client App (Web/Next.js) ──→ Next.js Route Handler (BFF pattern) ─────────┘        ├──→ Local Ollama (nomic-embed-text)
                                                                                    ├──→ Supabase (DB, vectors, RLS)
                                                                                    └──→ Tenant's LLM
@@ -61,7 +61,7 @@ npm install
 Open `wrangler.toml` and verify `RETRIEVER_API_URL` points to the production API URL:
 ```toml
 [vars]
-RETRIEVER_API_URL = "https://rag.prateeq.in"
+RETRIEVER_API_URL = "http://localhost:8000"
 ```
 
 
@@ -258,9 +258,9 @@ If the user navigates away or walks into a cellular dead-zone, active HTTP reque
 
 | Component | Provider | URL / Endpoint |
 |---|---|---|
-| **API Engine** | Oracle Cloud VPS | `https://rag.prateeq.in` (IP: `130.210.35.134`) |
-| **Admin Dashboard** | Vercel | `https://admin.rag.prateeq.in` (`retriever/apps/web`) |
-| **SaaS App Studio** | Vercel | `https://prateeq.in/rag/app` (`Prateek_website`) |
+| **API Engine** | Oracle Cloud VPS | `http://localhost:8000` (IP: `YOUR_SERVER_IP`) |
+| **Admin Dashboard** | Vercel | `http://localhost:3000` (`retriever/apps/web`) |
+| **SaaS App Studio** | Vercel | `http://localhost:3000` (`Prateek_website`) |
 | **Database** | Supabase (us-west-2) | PostgreSQL + pgvector session pooler |
 | **Embeddings** | Local Ollama VPS | `nomic-embed-text` (768-dim) on `http://localhost:11434` |
 | **Mobile Proxy** | Cloudflare Workers | Edge Worker template (`packages/client-proxy-worker`) |
@@ -268,15 +268,15 @@ If the user navigates away or walks into a cellular dead-zone, active HTTP reque
 ### Step 1: Verify Live API Health
 The live engine runs 24/7 on Oracle Cloud VPS managed via systemd:
 ```bash
-curl https://rag.prateeq.in/health/readiness
+curl http://localhost:8000/health/readiness
 # Returns: {"status":"ready"}
 
-curl https://rag.prateeq.in/v1/admin/platform/batteries
+curl http://localhost:8000/v1/admin/platform/batteries
 # Returns: {"total":38,"active":36}
 ```
 
 ### Step 2: Onboard Tenant & Issue Credentials
-- Navigate to **[`https://admin.rag.prateeq.in/onboard`](https://admin.rag.prateeq.in/onboard)**.
+- Navigate to **[`http://localhost:3000/onboard`](http://localhost:3000/onboard)**.
 - Create a Tenant (e.g. `tn_evolution_story`), generate a Client API Key (`ret_live_...`), and configure initial prompt templates.
 
 ### Step 3: Choose Integration Strategy
@@ -285,7 +285,7 @@ curl https://rag.prateeq.in/v1/admin/platform/batteries
 - **Do not deploy the Cloudflare Worker.**
 - Store secrets securely in `.env.local`:
   ```env
-  RETRIEVER_API_URL=https://rag.prateeq.in
+  RETRIEVER_API_URL=http://localhost:8000
   RETRIEVER_TENANT_ID=your-tenant-uuid
   RETRIEVER_API_KEY=your-client-api-key
   ```
@@ -305,7 +305,7 @@ curl https://rag.prateeq.in/v1/admin/platform/batteries
 - Pass the user's authenticated session JWT with `sub` (User ID) and `tenant_id` (Tenant UUID).
 
 ### Step 4: Ingest Story / Domain Knowledge
-Upload knowledge documents using the Admin Dashboard at `https://admin.rag.prateeq.in/tenants/{tenantId}` or via API:
+Upload knowledge documents using the Admin Dashboard at `http://localhost:3000/tenants/{tenantId}` or via API:
 ```bash
 POST /v1/admin/tenants/{tenantId}/documents/upload
 ```

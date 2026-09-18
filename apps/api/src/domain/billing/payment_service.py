@@ -192,8 +192,8 @@ class PaymentService:
         tenant_id: str,
         plan_id: str,
         currency: str = "INR",
-        success_url: str = "https://prateeq.in/dashboard",
-        cancel_url: str = "https://prateeq.in/rag",
+        success_url: str = "http://localhost:3000/dashboard",
+        cancel_url: str = "http://localhost:3000/billing",
     ) -> dict[str, Any]:
         """Generate hosted checkout session metadata."""
         if plan_id not in PLAN_QUOTA_MAPPING:

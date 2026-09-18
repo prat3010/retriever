@@ -38,7 +38,7 @@
   ```bash
   python3 scripts/query_architecture.py --target <component_or_endpoint>
   ```
-- **Constraint:** Verify all cross-repo callers (e.g. `prateeq.in/scoping`, `prateeq.in/rag/app`, `prateeq_scoping` dogfooding tenant) before modifying endpoint signatures or schemas.
+- **Constraint:** Verify all external callers and client SDKs (e.g. client applications, embed widgets, API consumers) before modifying endpoint signatures or schemas.
 
 ### 9. Episodic Memory Bank & Failure Postmortems
 - **Rule:** Before attempting any complex refactor, database migration, or debugging task, the agent **MUST** inspect `docs/LEARNINGS.md` for known framework quirks (e.g. Hexagonal domain pollution, multi-tenant leaks, local embedding constraints, alembic model detection).

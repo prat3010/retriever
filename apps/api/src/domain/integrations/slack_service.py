@@ -72,7 +72,7 @@ class SlackService:
             source_links: list[str] = []
             for i, c in enumerate(citations[:5], 1):
                 title = c.get("title") or c.get("filename") or f"Document #{i}"
-                url = c.get("source_url") or c.get("url") or "https://prateeq.in/rag/app"
+                url = c.get("source_url") or c.get("url") or "http://localhost:3000"
                 source_links.append(f"<{url}|*{title}*>")
 
             citation_text = " • ".join(source_links)
@@ -122,7 +122,7 @@ class SlackService:
                     {
                         "type": "button",
                         "text": {"type": "plain_text", "text": "📄 Open in Studio"},
-                        "url": f"https://prateeq.in/rag/app?tenant={tenant_id}",
+                        "url": f"http://localhost:3000?tenant={tenant_id}",
                         "action_id": "btn_open_studio",
                     },
                 ],

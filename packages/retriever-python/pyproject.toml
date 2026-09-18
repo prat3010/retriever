@@ -46,6 +46,6 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://rag.prateeq.in"
+Homepage = "https://github.com/prat3010/retriever"
 Documentation = "https://github.com/prat3010/retriever"
 Repository = "https://github.com/prat3010/retriever"

@@ -107,7 +107,7 @@ Many developer platforms suffer from "demo rot" where sample apps and client int
 
 ### 2. Architectural Solution
 1. **Zero-Backdoor Principle:**
-   The commercial Project Scoping wizard on `prateeq.in/scoping` does not have private database access to Retriever. It interacts strictly as an external tenant:
+   The commercial Project Scoping wizard on `retriever.run/scoping` does not have private database access to Retriever. It interacts strictly as an external tenant:
    - Authenticates via `RETRIEVER_SCOPING_TENANT_ID` and `RETRIEVER_SCOPING_API_KEY`.
    - Uses the official `@/lib/rag-client` TypeScript client.
    - Leverages public endpoints: `POST /v1/tenants/{tenantId}/intent/classify` and `POST /v1/tenants/{tenantId}/search`.

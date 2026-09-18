@@ -517,7 +517,7 @@ class BatteryMcpAdapter:
         self,
         tenant_id: str,
         api_key: str,
-        base_url: str = "https://rag.prateeq.in",
+        base_url: str = "http://localhost:8000",
     ) -> McpConfigResponse:
         """Generate pre-populated JSON configurations and installation snippets for AI tools."""
         sse_endpoint = f"{base_url}/v1/mcp/sse"

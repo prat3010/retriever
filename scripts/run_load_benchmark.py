@@ -13,10 +13,9 @@ Measures:
 Generates:
   - docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md (Retriever Markdown report)
   - docs/benchmarks/latest_benchmark_run.json (Machine-readable empirical metrics)
-  - Auto-syncs to ../Prateek_website/src/data/benchmark_results.json
 
 Usage:
-  python3 scripts/run_load_benchmark.py --target https://rag.prateeq.in --users 10,25,50,100
+  python3 scripts/run_load_benchmark.py --target http://localhost:8000 --users 10,25,50,100
 """
 
 import argparse
@@ -31,7 +30,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "https://rag.prateeq.in")
+DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "http://localhost:8000")
 DEFAULT_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4")
 DEFAULT_ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266")
 
@@ -272,7 +271,7 @@ async def main_async():
     parser.add_argument("--users", default="10,25,50", help="Comma-separated concurrency tiers (e.g. 10,25,50)")
     parser.add_argument("--reqs-per-user", type=int, default=2, help="Requests per virtual user per tier")
     parser.add_argument("--outdir", default="docs/benchmarks", help="Output directory in retriever")
-    parser.add_argument("--sync-web", action="store_true", default=True, help="Auto-sync metrics JSON to Prateek_website")
+    parser.add_argument("--sync-dir", default=None, help="Optional external directory path to sync metrics JSON to")
 
     args = parser.parse_args()
     target_base = args.target.rstrip("/")
@@ -304,9 +303,9 @@ async def main_async():
         )
 
     out_path = Path(__file__).resolve().parent.parent / args.outdir
-    web_dir = Path(__file__).resolve().parent.parent.parent / "Prateek_website" / "src" / "data" if args.sync_web else None
+    sync_dir = Path(args.sync_dir).resolve() if args.sync_dir else None
 
-    generate_reports(target_base, sweep_data, out_path, web_dir)
+    generate_reports(target_base, sweep_data, out_path, sync_dir)
     print("\n🏁 Benchmark Suite Finished Successfully!", flush=True)
 
 

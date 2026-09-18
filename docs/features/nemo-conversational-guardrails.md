@@ -148,11 +148,11 @@ Retriever provides 4 out-of-the-box Colang templates customizable via the SaaS S
 
 ## 7. Administrative & Client UI Surfaces
 
-- **Retriever Master Admin Cockpit (`admin.rag.prateeq.in/guardrails`):**
+- **Retriever Master Admin Cockpit (`localhost:3000/guardrails`):**
   - Cross-tenant selector for super-admins to inspect, audit, and configure safety policies for any onboarded organization.
   - Platform Battery #13 health metrics, fast-path latency tracking, and blocked/steered intervention counters.
   - Interactive Colang 2.0 flow editor with 1-click template loader, live syntax test sandbox, and rolling safety violation telemetry table with 10s auto-refresh.
-- **Client SaaS Studio Panel (`prateeq.in/rag/app`):**
+- **Client SaaS Studio Panel (`retriever.run/rag/app`):**
   - Tenant-scoped self-service guardrail tuning (execution mode, custom Colang flows, competitor keyword lists, and grounding threshold slider).
   - Authenticated via tenant API keys with zero platform privilege escalation.
 

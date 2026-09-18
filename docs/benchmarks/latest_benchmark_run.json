@@ -2,9 +2,9 @@
   "meta": {
     "title": "Retriever Engine Empirical Load & Latency Benchmark",
     "generated_at": "2026-09-07 19:50:24Z",
-    "target_url": "https://rag.prateeq.in",
+    "target_url": "http://localhost:8000",
     "system_specs": {
-      "environment": "Oracle Cloud Infrastructure (VPS 130.210.35.134) + Vercel Edge Control Plane",
+      "environment": "Oracle Cloud Infrastructure (VPS YOUR_SERVER_IP) + Vercel Edge Control Plane",
       "compute": "4 OCPU ARM Ampere A1, 24 GB RAM",
       "storage_engine": "PostgreSQL 16 + pgvector (HNSW Indexing) + Local Redis Cache",
       "backend_framework": "FastAPI (ASGI) + Uvicorn Workers + Hexagonal Architecture",

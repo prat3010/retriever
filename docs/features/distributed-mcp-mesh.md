@@ -73,7 +73,7 @@ import { RetrieverClient } from "@prat3010/retriever-client";
 const client = new RetrieverClient({
   apiKey: "ret_live_...",
   tenantId: "tn_enterprise_corp",
-  baseUrl: "https://rag.prateeq.in",
+  baseUrl: "http://localhost:8000",
 });
 
 // 1. Inspect mesh status

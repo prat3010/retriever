@@ -230,7 +230,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Next.js 16.2.10 Version Pinning** (`apps/web/package.json`): Pinned exact `next: 16.2.10` dependency version, bypassing Vercel static asset output bug on unpinned Next 16.3.1 releases.
 
 ### Removed
-- **Legacy Client Reference App (`apps/client-reference`)**: Removed unused standalone client reference web application and deleted duplicate Vercel deployment project (`retriever`), consolidating all live client demos under the primary website (`prateeq.in/rag`).
+- **Legacy Client Reference App (`apps/client-reference`)**: Removed unused standalone client reference web application and deleted duplicate deployment project (`retriever`).
 
 ## [v0.51.0] - 2026-08-15
 
@@ -468,7 +468,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Bulk Batch Processing CLI Tool**: Added `scripts/process-pending.sh` wrapper and `apps/api/src/scripts/process_pending.py` script to batch-process all `PENDING` documents across all tenants in one command.
 
 ### Changed
-- **Config Settings**: Added `REMOTE_STORAGE_API_URL` setting (`https://rag.prateeq.in`) to `config.py`.
+- **Config Settings**: Added `REMOTE_STORAGE_API_URL` setting (`http://localhost:8000`) to `config.py`.
 - **Tech Debt Documentation**: Deferred Cloudflare R2 cloud storage setup under Product/Deferred items in `TECH_DEBT.md`.
 
 ## [0.28.0] - 2026-07-21
@@ -538,7 +538,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 ### Added
 - **Onboarding wizard user creation** (`onboard/page.tsx`): New Step 3 ("User") between API key generation and credentials summary. Auto-creates a user for the new tenant with pre-filled display name and external ID. Final credentials now include the real User ID (not a `user_123` placeholder).
 - **User ID in Users tab** (`tenant-users.tsx`): Added a "User ID" column to the tenant users table with a copy-to-clipboard action, so admins can easily provide the internal UUID to clients.
-- **Advanced toggle in RAG client config** (`RagInterface.tsx`): API Base URL field is now hidden behind a "Show Advanced" toggle. Default value stays as `https://rag.prateeq.in`.
+- **Advanced toggle in RAG client config** (`RagInterface.tsx`): API Base URL field is now hidden behind a "Show Advanced" toggle. Default value stays as local endpoint.
 
 ### Changed
 - **Client login form defaults** (`RagInterface.tsx`): `tenantId` and `userId` now start empty instead of pre-filled with production tenant/user IDs. API key placeholder changed from `sk_live_...` to `ret_live_...`.

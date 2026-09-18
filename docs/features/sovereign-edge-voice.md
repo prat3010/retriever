@@ -188,7 +188,7 @@ CREATE POLICY tenant_voice_turns_isolation ON public.voice_turns
 {
   "session_id": "vcs_984f1a23b4c5",
   "message_type": "answer",
-  "sdp": "v=0\r\no=- 98765 2 IN IP4 130.210.35.134\r\ns=Retriever-Voice-Engine\r\nt=0 0\r\nm=audio 9 RTP/SAVPF 111\r\na=rtpmap:111 opus/48000/2"
+  "sdp": "v=0\r\no=- 98765 2 IN IP4 YOUR_SERVER_IP\r\ns=Retriever-Voice-Engine\r\nt=0 0\r\nm=audio 9 RTP/SAVPF 111\r\na=rtpmap:111 opus/48000/2"
 }
 ```
 
@@ -267,7 +267,7 @@ CREATE POLICY tenant_voice_turns_isolation ON public.voice_turns
 ## 6. Development Testing vs. Open-Source Productionization
 
 ### 6.1 Current Development & Staging Phase
-- **Backend Anchor:** Runs on Oracle Cloud VPS (`130.210.35.134`) using quantized Whisper models and streaming neural synthesis.
+- **Backend Anchor:** Runs on Oracle Cloud VPS (`YOUR_SERVER_IP`) using quantized Whisper models and streaming neural synthesis.
 - **Client Offline Simulation:** When testing without a physical microphone or in headless Vitest environments, `VoiceStudioPanel` and the TypeScript SDK execute authentic DSP calculations and latency profiling in-memory, ensuring zero flaky tests.
 
 ### 6.2 Open-Source Public Release Roadmap

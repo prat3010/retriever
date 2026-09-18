@@ -80,7 +80,7 @@ Content-Type: application/json
     "batch_size": 25
   },
   "idempotency_key": "ingest_vault_2026_09_04_abc",
-  "webhook_url": "https://api.prateeq.in/api/rag/workflow-webhook"
+  "webhook_url": "https://api.retriever.run/api/rag/workflow-webhook"
 }
 ```
 
@@ -104,7 +104,7 @@ Content-Type: application/json
   "current_step_name": "scan_documents",
   "error_message": null,
   "step_history": [],
-  "webhook_url": "https://api.prateeq.in/api/rag/workflow-webhook",
+  "webhook_url": "https://api.retriever.run/api/rag/workflow-webhook",
   "started_at": "2026-09-04T19:30:00Z",
   "completed_at": null
 }

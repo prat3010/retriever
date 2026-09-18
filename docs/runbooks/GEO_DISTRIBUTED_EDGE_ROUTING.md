@@ -129,7 +129,7 @@ DATABASE_URL="postgresql+asyncpg://postgres:password@primary-db.internal:5432/re
 
 ### 1. Inspect Cluster Topology & Health
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions" \
+curl -X GET "http://localhost:8000/v1/admin/platform/regions" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 **Sample Response:**
@@ -146,7 +146,7 @@ curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions" \
       "city": "Mumbai / Singapore",
       "is_primary": true,
       "is_configured": true,
-      "endpoint_display": "rag.prateeq.in (Primary Master)",
+      "endpoint_display": "localhost:8000 (Primary Master)",
       "status": "healthy",
       "latency_ms": 14.5
     },
@@ -156,7 +156,7 @@ curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions" \
       "city": "N. Virginia / New York",
       "is_primary": false,
       "is_configured": true,
-      "endpoint_display": "us-east.rag.prateeq.in",
+      "endpoint_display": "us-east.retriever.run",
       "status": "healthy",
       "latency_ms": 18.2
     },
@@ -176,13 +176,13 @@ curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions" \
 
 ### 2. Trigger Active RTT Latency Probe
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/platform/regions/probe" \
+curl -X POST "http://localhost:8000/v1/admin/platform/regions/probe" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 
 ### 3. Simulate Geo-IP Routing for Any Country
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions/preview?country=US" \
+curl -X GET "http://localhost:8000/v1/admin/platform/regions/preview?country=US" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 **Sample Response:**
@@ -191,7 +191,7 @@ curl -X GET "https://rag.prateeq.in/v1/admin/platform/regions/preview?country=US
   "client_country": "US",
   "detected_continent": "Americas",
   "selected_region": "us-east",
-  "target_endpoint": "https://us-east.rag.prateeq.in",
+  "target_endpoint": "https://us-east.retriever.run",
   "is_fallback": false,
   "estimated_primary_latency_ms": 215.0,
   "estimated_replica_latency_ms": 18.0,

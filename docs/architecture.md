@@ -664,16 +664,16 @@ Retriever is designed to be deployed on a single VPS for the free/startup tier, 
     │   Vercel (CDN)   │        │  │  Reverse proxy, SSL termination   │  │
     │   apps/web       │        │  │  Let's Encrypt (certbot)           │  │
     │   admin.rag.     │        │  └──────────────┬─────────────────────┘  │
-    │   prateeq.in     │        │                 │                        │
+    │   retriever.run     │        │                 │                        │
     └────────┬──────────┘       │                 ▼                        │
              │                  │  ┌────────────────────────────────────┐  │
              │  HTTPS           │  │     systemd: retriever-api.service  │  │
-             │  rag.prateeq.in  │  │  Uvicorn (127.0.0.1:8000)          │  │
+             │  localhost:8000  │  │  Uvicorn (127.0.0.1:8000)          │  │
              ▼                  │  │  FastAPI app                        │  │
     ┌──────────────────┐        │  └────────────────────────────────────┘  │
     │   GoDaddy DNS    │        │                                          │
     │   A record →     │        │  ┌────────────────────────────────────┐  │
-    │   130.210.35.134 │        │  │     systemd: ollama.service         │  │
+    │   YOUR_SERVER_IP │        │  │     systemd: ollama.service         │  │
     └──────────────────┘        │  │  Native (not Docker)               │  │
                                 │  │  Model: nomic-embed-text (274 MB)  │  │
                                 │  │  Listens on 127.0.0.1:11434        │  │
@@ -844,7 +844,7 @@ This section documents the actual production deployment as it exists today, as o
 | Component | Provider | Spec | Cost |
 |---|---|---|---|
 | VPS | Oracle Cloud Free Tier | VM.Standard.E2.1.Micro (1 OCPU, 1 GB RAM, 0.48 Gbps, x86) | $0/mo |
-| Domain | GoDaddy | `rag.prateeq.in` A record → `130.210.35.134` | ~$15/yr |
+| Domain | GoDaddy | `localhost:8000` A record → `YOUR_SERVER_IP` | ~$15/yr |
 | SSL | Let's Encrypt (certbot) | Auto-renewing, Nginx termination | $0 |
 | Database | Supabase (free tier) | PostgreSQL 15, pgvector, 500 MB, connection pooler | $0/mo |
 | Frontend CDN | Vercel (Hobby) | `retriever-ivory.vercel.app` | $0/mo |
@@ -854,7 +854,7 @@ This section documents the actual production deployment as it exists today, as o
 ### 16.2 Processes on Oracle VPS
 
 ```
-ubuntu@130.210.35.134
+ubuntu@YOUR_SERVER_IP
 ├── systemd: retriever-api.service
 │   └── uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1
 ├── systemd: ollama.service
@@ -866,7 +866,7 @@ ubuntu@130.210.35.134
 ### 16.3 SSH Access
 
 ```bash
-ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134
+ssh -i ~/.ssh/oracle_rsa ubuntu@YOUR_SERVER_IP
 ```
 
 ### 16.4 Deploy Process
@@ -894,10 +894,10 @@ Server `.env` at `/opt/retriever/.env` contains:
 
 A separate Next.js app at `apps/web/` provides a browser-based admin interface for platform management. Deployed on Vercel:
 
-- **URL:** `https://admin.rag.prateeq.in`
+- **URL:** `http://localhost:3000`
 - **Source:** `apps/web/` in this repo
 - **Vercel root directory:** `apps/web`
-- **Environment variable:** `NEXT_PUBLIC_API_URL=https://rag.prateeq.in`
+- **Environment variable:** `NEXT_PUBLIC_API_URL=http://localhost:8000`
 - **Login:** Admin Master Key (from server `.env` `ADMIN_MASTER_KEY`)
 - **Stack:** Next.js App Router, shadcn/ui, Tailwind CSS, TanStack React Query, Zustand
 
@@ -918,25 +918,25 @@ A separate Next.js app at `apps/web/` provides a browser-based admin interface f
 
 ```bash
 # Health check
-curl https://rag.prateeq.in/health
+curl http://localhost:8000/health
 
 # Search test
-curl -X POST https://rag.prateeq.in/v1/tenants/00000000-0000-0000-0000-000000000000/search \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/search \
   -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
   -H "Content-Type: application/json" \
   -d '{"query": "test", "top_k": 3}'
 
 # Chat test (requires active LLM key)
-curl -X POST https://rag.prateeq.in/v1/tenants/00000000-0000-0000-0000-000000000000/chat/sessions \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/chat/sessions \
   -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "a8b819bb-61bb-450b-9662-62bd06b188d3"}'
 
 # Tail logs
-ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo journalctl -u retriever-api.service -n 50 -f"
+ssh -i ~/.ssh/oracle_rsa ubuntu@YOUR_SERVER_IP "sudo journalctl -u retriever-api.service -n 50 -f"
 
 # Restart API
-ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134 "sudo systemctl restart retriever-api.service"
+ssh -i ~/.ssh/oracle_rsa ubuntu@YOUR_SERVER_IP "sudo systemctl restart retriever-api.service"
 ```
 
 ### 16.9 Provider Provisioning Checklist (LLM Keys)

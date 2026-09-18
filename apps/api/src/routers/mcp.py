@@ -232,16 +232,13 @@ async def get_mcp_configuration(
         user = await _resolve_mcp_user(request, token_param=token)
         active_tenant = user.tenant_id
     except HTTPException:
-        active_tenant = tenant_id or "prateeq_scoping"
+        active_tenant = tenant_id or "default"
 
     # Extract clean api key from request header if present, else provide placeholder
     auth_header = request.headers.get("Authorization", "")
     api_key = auth_header[7:] if auth_header.lower().startswith("bearer ") else "YOUR_RETRIEVER_API_KEY"
 
     base_url = str(request.base_url).rstrip("/")
-    # In production or public exposure, point to canonical public HTTPS gateway
-    if "localhost" not in base_url and "127.0.0.1" not in base_url:
-        base_url = "https://rag.prateeq.in"
 
     return battery_mcp_adapter.generate_config_response(
         tenant_id=active_tenant,

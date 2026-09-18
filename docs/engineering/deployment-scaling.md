@@ -15,7 +15,7 @@ The platform runs on a **near-zero-cost** stack:
 | Database | [Supabase](https://supabase.com) (free tier) | $0 — 500 MB, pgvector support, Row-Level Security, connection pooler |
 | Embeddings | [Ollama](https://ollama.com) self-hosted on same VM | $0 — `nomic-embed-text` (274 MB), CPU-only, always-on, zero API rate limits |
 | LLM | BYOK (bring your own key) | $0 platform cost — tenant provides their own OpenAI/Anthropic/Gemini key |
-| Frontend CDN | [Vercel](https://vercel.com) (Hobby) | $0 — `retriever-ivory.vercel.app` & `prateeq.in`, auto-deploys from GitHub |
+| Frontend CDN | [Vercel](https://vercel.com) (Hobby) | $0 — `retriever-ivory.vercel.app` & `retriever.run`, auto-deploys from GitHub |
 | Domain + SSL | GoDaddy + Let's Encrypt | ~$15/yr for domain; SSL is free and auto-renewing |
 
 ### 0.1 Architecture
@@ -85,13 +85,13 @@ Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supab
    [Install]
    WantedBy=multi-user.target
    ```
-5. **Nginx reverse proxy** — Configure `/etc/nginx/sites-available/rag.prateeq.in`:
+5. **Nginx reverse proxy** — Configure `/etc/nginx/sites-available/localhost:8000`:
    ```nginx
    server {
        listen 443 ssl;
-       server_name rag.prateeq.in;
-       ssl_certificate /etc/letsencrypt/live/rag.prateeq.in/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/rag.prateeq.in/privkey.pem;
+       server_name localhost:8000;
+       ssl_certificate /etc/letsencrypt/live/localhost:8000/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/localhost:8000/privkey.pem;
 
        location / {
            proxy_pass http://127.0.0.1:8000;
@@ -101,7 +101,7 @@ Client App (Vercel) → Nginx (Oracle VM, SSL) → Uvicorn (Oracle VM) → Supab
        }
    }
    ```
-6. **SSL** — `sudo certbot --nginx -d rag.prateeq.in`
+6. **SSL** — `sudo certbot --nginx -d localhost:8000`
 7. **Enable and start services**:
    ```bash
    sudo systemctl enable --now ollama redis-server retriever-api nginx

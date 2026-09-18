@@ -307,7 +307,7 @@ The table below defines how the system handles critical error states:
 - **Document upload:** Files upload, parse, chunk, and index. Worker runs synchronously in the API process.
 - **Admin API:** Tenant CRUD, API key management, config management, prompt templates CRUD — all functional.
 - **Multi-tenancy:** RLS isolation verified. Two tenants cannot see each other's data.
-- **SSL:** Let's Encrypt auto-renewing on `rag.prateeq.in`.
+- **SSL:** Let's Encrypt auto-renewing on `localhost:8000`.
 - **Domain:** GoDaddy A record pointing to Oracle VPS static IP.
 
 ### 13.2 What's Blocked

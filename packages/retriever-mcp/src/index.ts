@@ -22,7 +22,7 @@ const server = new McpServer({
 });
 
 const client = new RetrieverClient({
-  baseUrl: process.env.RETRIEVER_API_URL || "https://rag.prateeq.in",
+  baseUrl: process.env.RETRIEVER_API_URL || "http://localhost:8000",
   adminMasterKey: process.env.RETRIEVER_ADMIN_MASTER_KEY,
   defaultTenantId: process.env.RETRIEVER_TENANT_ID,
   apiKey: process.env.RETRIEVER_API_KEY,
@@ -37,7 +37,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(
-    `[Retriever MCP] Server active on stdio, connected to ${process.env.RETRIEVER_API_URL || "https://rag.prateeq.in"}`
+    `[Retriever MCP] Server active on stdio, connected to ${process.env.RETRIEVER_API_URL || "http://localhost:8000"}`
   );
 }
 

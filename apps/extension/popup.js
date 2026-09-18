@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ingestBtn.addEventListener("click", async () => {
     saveSettings();
 
-    const serverUrl = (serverUrlInput.value.trim() || "https://rag.prateeq.in").replace(/\/$/, "");
+    const serverUrl = (serverUrlInput.value.trim() || "http://localhost:8000").replace(/\/$/, "");
     const tenantId = tenantIdInput.value.trim();
     const apiKey = apiKeyInput.value.trim();
 

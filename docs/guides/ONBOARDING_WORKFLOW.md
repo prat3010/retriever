@@ -28,7 +28,7 @@ First, log into the **Admin Dashboard** (`http://localhost:3001` or your product
 2. **API Key:** Enter a key name and select the role (Client/Admin). Click **Generate Key**. Copy the raw key string (`ret_live_...`). This is the `RETRIEVER_API_KEY`.
 3. **Create User:** Enter a display name and external ID for the tenant's initial user. These are pre-filled based on the tenant name. Click **Create User**. This generates a `RETRIEVER_USER_ID`.
 4. **Credentials Summary:** The final screen displays all four required values:
-   - `API URL` — the base endpoint (`https://rag.prateeq.in/v1`)
+   - `API URL` — the base endpoint (`http://localhost:8000/v1`)
    - `RETRIEVER_TENANT_ID` — the tenant UUID
    - `RETRIEVER_USER_ID` — the user UUID
    - `RETRIEVER_API_KEY` — the full un-truncated generated key (with instant copy button)

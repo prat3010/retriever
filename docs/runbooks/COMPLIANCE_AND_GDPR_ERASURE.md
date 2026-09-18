@@ -91,7 +91,7 @@ When text contains overlapping matches (e.g. an Aadhaar pattern embedded within 
 Contractual compliance often dictates that documents older than $N$ days must be purged:
 ```bash
 # Trigger an automated SLA retention scan across tenant documents
-curl -X POST "https://rag.prateeq.in/v1/admin/tenants/{tenantId}/compliance/retention?retention_days=90" \
+curl -X POST "http://localhost:8000/v1/admin/tenants/{tenantId}/compliance/retention?retention_days=90" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 
@@ -138,7 +138,7 @@ If any record count, tenant UUID, or timestamp is altered in the certificate, si
 External auditors can cryptographically verify certificate authenticity without requiring database access or sensitive tenant credentials:
 
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/compliance/verify/cert_gdpr_10293847"
+curl -X GET "http://localhost:8000/v1/compliance/verify/cert_gdpr_10293847"
 ```
 
 **Auditor Response:**

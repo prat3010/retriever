@@ -48,7 +48,7 @@ The domain verification in `apps/api/src/domain/integrations/slack_service.py`:
 1. Navigate to **[api.slack.com/apps](https://api.slack.com/apps)** $\rightarrow$ **Create New App** $\rightarrow$ **From scratch**.
 2. Under **Slash Commands**, click **Create New Command**:
    - **Command:** `/ask-retriever`
-   - **Request URL:** `https://rag.prateeq.in/v1/integrations/slack/slash`
+   - **Request URL:** `http://localhost:8000/v1/integrations/slack/slash`
    - **Short Description:** `Ask Retriever AI enterprise knowledge assistant`
    - **Usage Hint:** `[your question]`
 3. Under **Basic Information** $\rightarrow$ **App Credentials**, copy your **Signing Secret** and set:
@@ -104,7 +104,7 @@ When the user clicks **"⚡ Ingest Active Page"** in the popup:
 
 ### B. Triggering Sync via API
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync" \
+curl -X POST "http://localhost:8000/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 
@@ -128,7 +128,7 @@ curl -X POST "https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{con
 For third-party automations (Zapier, n8n, custom webhooks, or browser extensions):
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/{tenantId}/documents/raw" \
+curl -X POST "http://localhost:8000/v1/tenants/{tenantId}/documents/raw" \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
   -d '{

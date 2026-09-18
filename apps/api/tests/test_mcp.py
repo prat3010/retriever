@@ -92,7 +92,7 @@ def test_battery_mcp_adapter_generate_config():
     cfg = battery_mcp_adapter.generate_config_response(
         tenant_id="tenant_alpha",
         api_key="retriever_sk_test_12345",
-        base_url="https://rag.prateeq.in",
+        base_url="http://localhost:8000",
     )
     assert isinstance(cfg, McpConfigResponse)
     assert cfg.tenant_id == "tenant_alpha"

@@ -13,7 +13,7 @@ Confirm that Battery #28 (`kubernetes_native_operator`) is operational:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/operator/status | jq .
+  http://localhost:8000/v1/admin/operator/status | jq .
 ```
 
 **Expected Output:**
@@ -69,7 +69,7 @@ retriever-system   retriever-prod   Running   3         3       v1.2.0-alpha1   
   ```
 - Trigger a level-triggered re-reconciliation:
   ```bash
-  curl -X POST https://rag.prateeq.in/v1/admin/operator/reconcile \
+  curl -X POST http://localhost:8000/v1/admin/operator/reconcile \
     -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
     -H "Content-Type: application/json" \
     -d '{"name": "retriever-prod", "namespace": "retriever-system", "replicas": 3}'
@@ -125,7 +125,7 @@ kubectl patch retrievercluster retriever-prod -n retriever-system \
 ### 4.1 Trigger Manual On-Demand S3 Backup
 Before major database migrations or infrastructure maintenance:
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/operator/clusters/retriever-prod/backup?namespace=retriever-system" \
+curl -X POST "http://localhost:8000/v1/admin/operator/clusters/retriever-prod/backup?namespace=retriever-system" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" | jq .
 ```
 

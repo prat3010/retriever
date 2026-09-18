@@ -44,7 +44,7 @@ GDRIVE_SYNC_INTERVAL_SECONDS=300 # Poll / webhook delta check every 5 minutes
 
 To manually trigger a synchronization run for a tenant's configured Google Drive folder:
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/connectors/{connectorId}/sync" \
+curl -X POST "http://localhost:8000/v1/connectors/{connectorId}/sync" \
   -H "Authorization: Bearer $TENANT_API_KEY"
 ```
 The sync job executes in the background via Celery, emitting progress logs to the Admin Dashboard and SaaS Studio.

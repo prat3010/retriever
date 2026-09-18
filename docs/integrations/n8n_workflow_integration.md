@@ -46,7 +46,7 @@ flowchart LR
 
 1. In n8n, create an **HTTP Request** node.
 2. Set Method to `POST`.
-3. Set URL to `https://rag.prateeq.in/v1/workflow/n8n/webhook`.
+3. Set URL to `http://localhost:8000/v1/workflow/n8n/webhook`.
 4. Add Header: `X-Tenant-Key: ret_live_...`.
 5. Send binary file body or JSON payload with download URL.
 

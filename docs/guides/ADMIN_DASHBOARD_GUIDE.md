@@ -2,9 +2,9 @@
 
 The **Admin Dashboard** (`apps/web`) is a Next.js 16 application built to manage the global multi-tenant infrastructure, vector parameters, token quotas, and security settings of the Retriever platform.
 
-- **Production URL:** [`https://admin.rag.prateeq.in`](https://admin.rag.prateeq.in) (Vercel Project: `web`)
+- **Production URL:** [`http://localhost:3000`](http://localhost:3000) (Vercel Project: `web`)
 - **Repository Location:** `retriever/apps/web` (Self-contained Next.js 16 App Router)
-- **Role vs. `prateeq.in/admin`:** This panel is strictly for **Infrastructure & Vector Engine Administration** (tenant onboarding, master keys, vector dimensions, system prompts). Commercial operations (SOW contracts, change orders, client invoices, autonomous outreach) live in `Prateek_website` at `https://prateeq.in/admin`.
+- **Role vs. `retriever.run/admin`:** This panel is strictly for **Infrastructure & Vector Engine Administration** (tenant onboarding, master keys, vector dimensions, system prompts). Commercial operations (SOW contracts, change orders, client invoices, autonomous outreach) live in `Prateek_website` at `https://github.com/prat3010/retriever/admin`.
 
 
 ---

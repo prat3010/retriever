@@ -148,9 +148,6 @@ function parseJwtPayload(token: string): any {
 }
 
 const ALLOWED_ORIGINS = [
-  "https://prateeq.in",
-  "https://www.prateeq.in",
-  "https://admin.rag.prateeq.in",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ];

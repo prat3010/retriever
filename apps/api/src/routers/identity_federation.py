@@ -41,7 +41,7 @@ class IdentityHealthResponse(BaseModel):
     category: str = "SAFETY_DEFENSE"
     saml_version: str = "2.0"
     scim_version: str = "2.0"
-    sp_entity_id: str = "https://rag.prateeq.in/saml"
+    sp_entity_id: str = "http://localhost:8000/saml"
     rbvac_enforcement_enabled: bool = True
     rfc_compliance: list[str] = Field(
         default_factory=lambda: ["RFC7643", "RFC7644", "SAML20-CORE", "SAML20-BINDINGS"]

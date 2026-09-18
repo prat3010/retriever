@@ -1,8 +1,8 @@
 # Admin Dashboard Architecture & Operational Roadmap
 **System:** Retriever RAG Engine — Control Panel (`apps/web`)  
-**Deployment URL:** `https://admin.rag.prateeq.in`  
+**Deployment URL:** `http://localhost:3000`  
 **Target Audience:** Platform Administrator (Prateek Sharma)  
-**Control Plane Reference:** Connects with the Client Workspace & SaaS Studio on `https://prateeq.in/rag/app`.
+**Control Plane Reference:** Connects with the Client Workspace & SaaS Studio on `http://localhost:3000`.
 
 ---
 
@@ -11,7 +11,7 @@
 The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicated Next.js 16 web application engineered to serve as the **Single Operational Helm** for managing the global multi-tenant infrastructure, configuration, and security bounds of the Retriever platform.
 
 ### Strategic Boundaries
-* **Decoupled Control Panel:** The Admin Dashboard is restricted to platform administrators. End-user clients and RAG subscribers never access this dashboard; they interact exclusively through the **Client SaaS Studio** (`prateeq.in/rag/app`) and **Client Workspace** (`prateeq.in/dashboard`).
+* **Decoupled Control Panel:** The Admin Dashboard is restricted to platform administrators. End-user clients and RAG subscribers never access this dashboard; they interact exclusively through the **Client SaaS Studio** (`retriever.run/rag/app`) and **Client Workspace** (`retriever.run/dashboard`).
 * **Root System Oversight:** Operating with administrative master privileges, the dashboard can monitor, configure, suspend, or provision any customer workspace across the entire platform.
 
 ---
@@ -20,7 +20,7 @@ The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicate
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ CONTROL PLANE: Prateek_website (prateeq.in) on Vercel                                 │
+│ CONTROL PLANE: Prateek_website (retriever.run) on Vercel                                 │
 │ ┌───────────────────────────┐   ┌─────────────────────────┐   ┌─────────────────────┐  │
 │ │ Supabase Auth             │   │ Razorpay Subscriptions  │   │ Supabase DB         │  │
 │ │ (Google OAuth / Session)  │   │ (Starter / Growth / Ent)│   │ rag_tenants/members │  │
@@ -30,7 +30,7 @@ The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicate
                 │ Webhook Tenant Provisioning  │ Administrative Sync       │
                 ▼                              ▼                           ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ RESOURCE SERVER & ADMIN GATEWAY: retriever (rag.prateeq.in) on Oracle VPS              │
+│ RESOURCE SERVER & ADMIN GATEWAY: retriever (localhost:8000) on Oracle VPS              │
 │ ┌───────────────────────────────────────────────────────────────────────────────────┐  │
 │ │ FastAPI Admin Gateway (apps/api/src/routers/admin.py)                             │  │
 │ │ • Security Header: X-Admin-Master-Key                                             │  │
@@ -38,7 +38,7 @@ The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicate
 │ └─────────────────────────────────────┬─────────────────────────────────────────────┘  │
 │                                       ▼                                                │
 │ ┌───────────────────────────────────────────────────────────────────────────────────┐  │
-│ │ Admin Dashboard UI (apps/web) ──► admin.rag.prateeq.in                            │  │
+│ │ Admin Dashboard UI (apps/web) ──► localhost:3000                            │  │
 │ │ • KPI Metrics, 4-Step Onboard, 8-Tab Tenant Cockpit, GraphRAG, AI Config, Logs    │  │
 │ └───────────────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
@@ -50,7 +50,7 @@ The **Admin Dashboard** (`apps/web` in the `retriever` repository) is a dedicate
    X-Admin-Master-Key: <ADMIN_MASTER_KEY>
    ```
 2. **RLS Bypass Context:** The backend FastAPI gateway catches this header via [`verify_admin_key`](../apps/api/src/adapters/api/security.py#L233) and sets `app.bypass_rls = 'true'` on the database session context. This grants root visibility across all tenant boundaries in `TenantDb`, `UserDb`, `ApiKeyDb`, and `DocumentDb`.
-3. **Control Plane Provisioning Webhook:** When a client purchases a subscription on `prateeq.in`, `prateeq.in`'s server-side Razorpay webhook handler calls `POST /v1/admin/tenants` using the `X-Admin-Master-Key` to automatically bootstrap the tenant in `retriever`.
+3. **Control Plane Provisioning Webhook:** When a client purchases a subscription on `retriever.run`, `retriever.run`'s server-side Razorpay webhook handler calls `POST /v1/admin/tenants` using the `X-Admin-Master-Key` to automatically bootstrap the tenant in `retriever`.
 
 ---
 
@@ -180,7 +180,7 @@ timeline
 ### Phase 2: Control Plane Integration & Auth Harmonization (M39 Alignment)
 - **Deprecate Independent Auth:** Remove standalone Google login from `/v1/auth/google` in `retriever`.
 - **Supabase OIDC/JWKS Verification:** Configure FastAPI security middleware to validate Supabase Auth RS256 JWTs using public keys from `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`.
-- **Control Plane Provisioning Webhook Receiver:** Ensure `POST /v1/admin/tenants` handles automated provisioning calls triggered by Razorpay subscription webhooks from `prateeq.in`.
+- **Control Plane Provisioning Webhook Receiver:** Ensure `POST /v1/admin/tenants` handles automated provisioning calls triggered by Razorpay subscription webhooks from `retriever.run`.
 
 ### Phase 3: SaaS Resource Quotas & Cost Analytics (M26)
 - **Resource Limits UI:** Add quota management controls in the Tenant Config tab (`max_storage_mb`, `max_documents`, `monthly_token_budget`).

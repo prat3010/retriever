@@ -289,7 +289,7 @@ depends on an unverifiable manual DB insert. Also violates
 Fix: provision a server-side guest tenant + read-only key, or remove the demo.
 
 ### Production `OIDC_AUDIENCE` is a placeholder (open follow-up)
-**File:** `/opt/retriever/.env` on the Oracle VM (`rag.prateeq.in`, `130.210.35.134`)
+**File:** `/opt/retriever/.env` on the Oracle VM (`localhost:8000`, `YOUR_SERVER_IP`)
 
 Set to `retriever-oidc-audience-placeholder` on 2026-08-04 so the API could
 boot after the M38 security gate. Effect: `POST /v1/auth/google` rejects every
@@ -302,15 +302,15 @@ Credentials → copy the **OAuth 2.0 Client ID** (format
 then on the server:
 
 ```sh
-ssh -i ~/.ssh/oracle_rsa ubuntu@130.210.35.134
+ssh -i ~/.ssh/oracle_rsa ubuntu@YOUR_SERVER_IP
 cd /opt/retriever
 sed -i 's/^OIDC_AUDIENCE=.*/OIDC_AUDIENCE=<your-client-id>.apps.googleusercontent.com/' .env
 sudo systemctl restart retriever-api
 ```
 
-Verify: `curl -s https://rag.prateeq.in/health/liveness` returns 200, then test
+Verify: `curl -s http://localhost:8000/health/liveness` returns 200, then test
 Google login from the frontend. If no Google OAuth app exists yet, create one
-with authorized redirect URI `https://rag.prateeq.in/v1/auth/google/callback`
+with authorized redirect URI `http://localhost:8000/v1/auth/google/callback`
 (or whatever the login page uses) before replacing the placeholder.
 
 ### `RATE_LIMIT_ENABLED` intentionally off in production (open follow-up)

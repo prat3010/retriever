@@ -1,7 +1,7 @@
 # NeMo Guardrails & Conversational Safety REST API Specification
 
 **Milestone:** M94 (v0.79.0)  
-**Base URL:** `https://rag.prateeq.in/v1`  
+**Base URL:** `http://localhost:8000/v1`  
 **Authentication:**
 - Global endpoints: `X-Admin-Master-Key: <ADMIN_MASTER_KEY>`
 - Tenant endpoints: `Authorization: Bearer <JWT>` or `X-API-Key: <TENANT_API_KEY>`

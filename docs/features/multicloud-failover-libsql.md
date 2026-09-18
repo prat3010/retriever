@@ -10,7 +10,7 @@
 
 Milestone 99 delivers **Platform Battery #19: `multicloud_failover_libsql`**, completing the enterprise high-availability and distributed resilience foundations of the Retriever cognitive platform.
 
-Prior to Milestone 99, Retriever operated as a single-region deployment anchored on an Oracle Cloud Infrastructure VPS in Mumbai (`oracle-bom`, `130.210.35.134`). While high-performance, single-cloud deployments present unacceptable enterprise risks:
+Prior to Milestone 99, Retriever operated as a single-region deployment anchored on an Oracle Cloud Infrastructure VPS in Mumbai (`oracle-bom`, `YOUR_SERVER_IP`). While high-performance, single-cloud deployments present unacceptable enterprise risks:
 - Datacenter-wide power/fiber cuts take down the entire RAG pipeline.
 - Cross-continental API requests from North America and Europe suffer 150–250ms roundtrip latencies for read-heavy operations.
 - Naive failovers risk catastrophic **split-brain data corruption** where multiple nodes write contradictory data concurrently.
@@ -120,7 +120,7 @@ Turso LibSQL enables embedded SQLite database replicas that live on the same fil
 
 > [!IMPORTANT]
 > **Notice on Current Infrastructure Status:**  
-> During current development and test phases, **simulated/mock cloud region endpoints and calibrated latency probes are intentionally utilized** for standby regions (`aws-iad`, `fly-fra`, `cf-global`), anchored by the single live physical primary VPS on Oracle Cloud (`oracle-bom`, `130.210.35.134`).
+> During current development and test phases, **simulated/mock cloud region endpoints and calibrated latency probes are intentionally utilized** for standby regions (`aws-iad`, `fly-fra`, `cf-global`), anchored by the single live physical primary VPS on Oracle Cloud (`oracle-bom`, `YOUR_SERVER_IP`).
 
 ### 4.1 Rationale for Mock Probes in Development
 1. **Cost & Quota Efficiency:** Maintaining 24/7 dedicated multi-cloud production instances across AWS, Fly.io, and Hetzner/GCP during feature development generates recurring inter-region WAN egress and idle compute charges before public traffic arrives.
@@ -168,19 +168,19 @@ The step-by-step productionization roadmap is outlined below:
 ```
 
 ### Step 1: Physical Multi-Cloud VPS Provisioning
-- **Oracle Cloud (BOM):** Retain `130.210.35.134` (Ubuntu 24.04, 4 OCPU, 24GB RAM ARM64).
+- **Oracle Cloud (BOM):** Retain `YOUR_SERVER_IP` (Ubuntu 24.04, 4 OCPU, 24GB RAM ARM64).
 - **AWS (us-east-1):** Provision an EC2 `t4g.small` (2 vCPU, 2GB RAM ARM64) in North Virginia running Dockerized Retriever.
 - **Fly.io (fra):** Deploy a lightweight Fly Machine (`shared-cpu-1x`, 1GB RAM) in Frankfurt, Germany.
 - **Environment Configuration:** Update `MULTI_CLOUD_REGION_ENDPOINTS` in `.env.production`:
   ```bash
-  REGION_ORACLE_BOM_URL=https://rag.prateeq.in
-  REGION_AWS_IAD_URL=https://iad.rag.prateeq.in
-  REGION_FLY_FRA_URL=https://fra.rag.prateeq.in
-  REGION_CF_GLOBAL_URL=https://edge.prateeq.workers.dev
+  REGION_ORACLE_BOM_URL=http://localhost:8000
+  REGION_AWS_IAD_URL=https://iad.localhost:8000
+  REGION_FLY_FRA_URL=https://fra.localhost:8000
+  REGION_CF_GLOBAL_URL=https://edge.retriever.workers.dev
   ```
 
 ### Step 2: Cloudflare BGP Anycast DNS Steering & Health Monitors
-- Deploy a Cloudflare Load Balancer at `api.rag.prateeq.in`.
+- Deploy a Cloudflare Load Balancer at `api.localhost:8000`.
 - Attach an HTTP Health Monitor polling `/v1/admin/multicloud/probe` every 15 seconds.
 - Configure automatic failover steering:
   - Default Pool: `oracle-bom` (Weight 100).
@@ -195,7 +195,7 @@ The step-by-step productionization roadmap is outlined below:
   sqld --http-listen-addr 0.0.0.0:8080 --grpc-listen-addr 0.0.0.0:5001 --db-path /var/lib/sqld/primary.db
 
   # Launch standby read-replica in AWS
-  sqld --primary-grpc-url https://primary.rag.prateeq.in:5001 --db-path /var/lib/sqld/replica.db
+  sqld --primary-grpc-url https://primary.localhost:8000:5001 --db-path /var/lib/sqld/replica.db
   ```
 - Configure tenant database URLs using the `libsql://` protocol with embedded replica sync enabled.
 
@@ -232,7 +232,7 @@ Returns the active cluster topology, active leader, generation term, quorum stat
         "region": "oracle-bom",
         "provider": "oracle",
         "role": "leader",
-        "endpoint": "https://rag.prateeq.in",
+        "endpoint": "http://localhost:8000",
         "is_active": true,
         "weight": 100,
         "health_status": "healthy",
@@ -243,7 +243,7 @@ Returns the active cluster topology, active leader, generation term, quorum stat
         "region": "aws-iad",
         "provider": "aws",
         "role": "standby",
-        "endpoint": "https://iad.rag.prateeq.in",
+        "endpoint": "https://iad.localhost:8000",
         "is_active": true,
         "weight": 80,
         "health_status": "healthy",

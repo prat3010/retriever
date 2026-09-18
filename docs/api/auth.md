@@ -75,7 +75,7 @@ Retrieve the authenticated tenant, user identity, roles, and granted permission 
 
 #### Example Request (`curl`)
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/auth/session" \
+curl -X GET "http://localhost:8000/v1/auth/session" \
   -H "Authorization: Bearer ret_live_a1b2c3d4e5f67890abcdef1234567890" \
   -H "Content-Type: application/json"
 ```
@@ -85,7 +85,7 @@ curl -X GET "https://rag.prateeq.in/v1/auth/session" \
 import { RetrieverClient } from "@retriever/client-js";
 
 const client = new RetrieverClient({
-  baseUrl: "https://rag.prateeq.in",
+  baseUrl: "http://localhost:8000",
   apiKey: "ret_live_a1b2c3d4e5f6...",
 });
 

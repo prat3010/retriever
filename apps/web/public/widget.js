@@ -4,13 +4,13 @@
  * 
  * Usage:
  * <script 
- *   src="https://admin.rag.prateeq.in/widget.js" 
+ *   src="http://localhost:3000/widget.js" 
  *   data-tenant="YOUR_TENANT_ID" 
  *   data-key="YOUR_API_KEY" 
  *   data-color="#2563eb" 
  *   data-title="Retriever Concierge" 
  *   data-position="bottom-right"
- *   data-api-url="https://rag.prateeq.in">
+ *   data-api-url="http://localhost:8000">
  * </script>
  */
 (function () {
@@ -27,7 +27,7 @@
   const brandColor = script?.getAttribute("data-color") || "#2563eb";
   const botTitle = script?.getAttribute("data-title") || "Retriever AI";
   const position = script?.getAttribute("data-position") || "bottom-right";
-  const apiUrl = (script?.getAttribute("data-api-url") || "https://rag.prateeq.in").replace(/\/$/, "");
+  const apiUrl = (script?.getAttribute("data-api-url") || "http://localhost:8000").replace(/\/$/, "");
   const containerId = script?.getAttribute("data-container") || "";
 
   let sessionId = "";
@@ -251,7 +251,7 @@
       <button class="retriever-send-btn">Send</button>
     </div>
     <div class="retriever-branding">
-      ⚡ Powered by <a href="https://prateeq.in/rag" target="_blank" rel="noopener">Retriever RAG</a>
+      ⚡ Powered by <a href="https://github.com/prat3010/retriever" target="_blank" rel="noopener">Retriever</a>
     </div>
   `;
 

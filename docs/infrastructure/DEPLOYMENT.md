@@ -8,7 +8,7 @@ Total monthly cost: **$0**.
 ## Architecture
 
 ```
-rag.prateeq.in
+localhost:8000
         │
     ┌───▼──────────────┐
     │   Nginx (SSL)    │   port 443 → proxy_pass → port 8000 (300s timeout)
@@ -144,13 +144,13 @@ sudo systemctl enable --now retriever-api
 ### 5. Set Up Nginx + SSL
 
 ```sh
-# Point DNS first: A record for rag.prateeq.in → <PUBLIC_IP>
+# Point DNS first: A record for localhost:8000 → <PUBLIC_IP>
 
 # Nginx config
 sudo tee /etc/nginx/sites-available/retriever << 'EOF'
 server {
     listen 80;
-    server_name rag.prateeq.in;
+    server_name localhost:8000;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -167,14 +167,14 @@ sudo ln -sf /etc/nginx/sites-available/retriever /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # SSL
-sudo certbot --nginx -d rag.prateeq.in --non-interactive --agree-tos -m you@email.com
+sudo certbot --nginx -d localhost:8000 --non-interactive --agree-tos -m you@email.com
 ```
 
 ### 6. Verify
 
 ```sh
-curl https://rag.prateeq.in/health/liveness
-curl https://rag.prateeq.in/health/readiness
+curl http://localhost:8000/health/liveness
+curl http://localhost:8000/health/readiness
 ```
 
 ---

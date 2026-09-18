@@ -9,8 +9,8 @@ Usage:
   # Run entire pipeline: fetch data, ingest corpus, verify 38 batteries
   python3 scripts/test_massive_benchmark_ingest.py --all
 
-  # Target production or remote VPS
-  python3 scripts/test_massive_benchmark_ingest.py --target https://rag.prateeq.in --all
+  # Target custom or remote endpoint
+  python3 scripts/test_massive_benchmark_ingest.py --target http://localhost:8000 --all
 """
 
 import argparse

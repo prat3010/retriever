@@ -13,7 +13,7 @@
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
 *Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, multi-agent swarm quorum debate, and cognitive long-horizon memory.*
 
-[🚀 Live Production Demo](https://rag.prateeq.in) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
+[📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine) • [🎯 Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)
 
 </div>
 
@@ -297,14 +297,14 @@ uv run ruff check apps/api/src/ apps/api/tests/
 
 ---
 
-## 👷 Author & Enterprise Architecture Discovery
+## 👷 Author & Architecture
 
-Retriever is engineered by **[Prateek Sharma](https://prateeq.in)**.
+Retriever is engineered by **[Prateek Sharma](https://github.com/prat3010)**.
 
 > **Need Retriever deployed inside your enterprise VPC (AWS/GCP/Azure) with custom compliance, private fine-tuned LoRA pipelines, or proprietary ERP/CRM connectors?**  
 > 
-> 👉 **[Explore Architecture Discovery & Deployments](https://prateeq.in/scoping)**  
-> ✉️ Direct inquiries: `prateeqsharma@gmail.com`
+> 👉 Open an issue or discussion on **[GitHub Discussions](https://github.com/prat3010/retriever/discussions)**  
+> ✉️ Enterprise inquiries: `prateeqsharma@gmail.com`
 
 ---
 

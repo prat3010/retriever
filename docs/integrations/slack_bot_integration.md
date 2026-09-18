@@ -15,7 +15,7 @@ The Slack Workspace Bot integration enables team members to query tenant knowled
        │  Types `/ask-retriever What is our refund policy?`
        ▼
 [Slack API Gateway]
-       │  POST https://rag.prateeq.in/v1/integrations/slack/slash
+       │  POST http://localhost:8000/v1/integrations/slack/slash
        │  Headers: X-Slack-Signature, X-Slack-Request-Timestamp
        ▼
 [Retriever API Gateway]
@@ -46,7 +46,7 @@ Create a new Slack App at [api.slack.com/apps](https://api.slack.com/apps) and p
     "slash_commands": [
       {
         "command": "/ask-retriever",
-        "url": "https://rag.prateeq.in/v1/integrations/slack/slash",
+        "url": "http://localhost:8000/v1/integrations/slack/slash",
         "description": "Ask Retriever AI a question grounded in team knowledge",
         "usage_hint": "[your question]",
         "should_escape": false
@@ -63,7 +63,7 @@ Create a new Slack App at [api.slack.com/apps](https://api.slack.com/apps) and p
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://rag.prateeq.in/v1/integrations/slack/events",
+      "request_url": "http://localhost:8000/v1/integrations/slack/events",
       "user_events": []
     }
   }
@@ -77,7 +77,7 @@ Create a new Slack App at [api.slack.com/apps](https://api.slack.com/apps) and p
 In `.env` or systemd environment on your server:
 ```bash
 SLACK_SIGNING_SECRET="your_slack_signing_secret_here"
-SLACK_DEFAULT_TENANT_ID="prateeq_scoping" # Default tenant mapped to Slack queries
+SLACK_DEFAULT_TENANT_ID="demo_tenant" # Default tenant mapped to Slack queries
 ```
 
 ---
@@ -86,7 +86,7 @@ SLACK_DEFAULT_TENANT_ID="prateeq_scoping" # Default tenant mapped to Slack queri
 
 Test the webhook using curl with a test payload:
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/integrations/slack/slash" \
+curl -X POST "http://localhost:8000/v1/integrations/slack/slash" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "command=%2Fask-retriever&text=What+is+our+deployment+guide%3F&user_name=dev&channel_id=C123"
 ```

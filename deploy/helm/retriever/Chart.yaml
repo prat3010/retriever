@@ -11,10 +11,10 @@ keywords:
   - ai
   - fastapi
   - nextjs
-home: https://prateeq.in/rag
+home: https://github.com/prat3010/retriever
 sources:
   - https://github.com/prat3010/retriever
 maintainers:
   - name: Prateek Sharma
     email: prateeqsharma@gmail.com
-    url: https://prateeq.in
+    url: https://github.com/prat3010

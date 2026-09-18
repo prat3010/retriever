@@ -1,7 +1,7 @@
 # ⚡ Retriever Engine — Empirical Load Benchmarking & Stress-Testing Playbook
 
 > **Author:** Prateek Sharma  
-> **Target Infrastructure:** Oracle Cloud Infrastructure VPS (`130.210.35.134` / `https://rag.prateeq.in`) + Vercel Edge  
+> **Target Infrastructure:** Oracle Cloud Infrastructure VPS (`YOUR_SERVER_IP` / `http://localhost:8000`) + Vercel Edge  
 > **Status:** Production Verified • Gate 10 Zero-Toy Static AST Compliant  
 > **Last Verified Run:** `2026-09-07 18:41:05 UTC`
 
@@ -17,7 +17,7 @@ This playbook documents the design, automation, empirical execution, and root-ca
 1. **Zero-Dependency Native Async Runner:** A lightweight, microsecond-accurate benchmarking engine written in pure Python (`asyncio` + `time.perf_counter()`), eliminating reliance on cumbersome external binaries while supporting progressive concurrency sweeps.
 2. **Strict Zero-Toy Invariant Enforcement:** Banned permissive test assertions (such as treating HTTP 404 as a success condition). Every measurement reflects authentic HTTP 200 OK responses on authenticated tenant infrastructure.
 3. **Live Production Telemetry:** Tested against live infrastructure across public internet HTTPS routing, establishing baseline latency, connection pool stability, and identifying the exact server-side rate-limiting threshold.
-4. **Automated Dual-Layer Publishing:** Generates Markdown documentation for engineering repositories and auto-syncs structured JSON telemetry directly into the production portfolio frontend (`prateeq.in/rag/benchmarks`).
+4. **Automated Dual-Layer Publishing:** Generates Markdown documentation for engineering repositories and auto-syncs structured JSON telemetry directly into the production portfolio frontend (`retriever.run/rag/benchmarks`).
 
 ---
 
@@ -31,7 +31,7 @@ This playbook documents the design, automation, empirical execution, and root-ca
                                                             ┌──────────────────────────────────────┐
                                                             │   Oracle Cloud VPS (Ubuntu 24.04)    │
                                                             │   4 OCPU ARM Ampere A1 • 24 GB RAM   │
-                                                            │   IP: 130.210.35.134                 │
+                                                            │   IP: YOUR_SERVER_IP                 │
                                                             ├──────────────────────────────────────┤
                                                             │ Nginx Reverse Proxy (SSL / TLS 1.3)  │
                                                             │ Rate Limiter: x-ratelimit-limit: 120 │
@@ -110,7 +110,7 @@ The load runner is implemented in [`scripts/run_load_benchmark.py`](file:///User
 During the 20 Virtual User sweep (120 requests), the failure rate rose to **75.83%**. Rather than a flaw, this revealed a critical **production stability mechanism**:
 
 ### Root Cause Analysis:
-1. **The Rate-Limiter Barrier:** Inspection of response headers on `rag.prateeq.in` revealed active rate-limiting headers:
+1. **The Rate-Limiter Barrier:** Inspection of response headers on `localhost:8000` revealed active rate-limiting headers:
    ```http
    x-ratelimit-limit: 120
    x-ratelimit-remaining: 0
@@ -137,8 +137,8 @@ To make these empirical results verifiable by clients, interviewers, and the ope
    * Animated numeric transitions powered by `@number-flow/react`.
    * Visual $P_{50}, P_{90}, P_{95}, P_{99}$ latency distribution bars.
    * Full Design System 2.0 dual-theme support (Azure Graphic Novel Print vs Noir Cyber Monospace).
-3. **Dedicated Public Route:** [`src/app/rag/benchmarks/page.tsx`](file:///Users/prateeksharma/Developer/Prateek_website/src/app/rag/benchmarks/page.tsx) exposes the complete technical writeup and methodology at `https://prateeq.in/rag/benchmarks`.
-4. **Hero Badge Link:** The primary landing page at `https://prateeq.in/rag` includes a prominent callout linking directly to the live benchmark dashboard.
+3. **Dedicated Public Route:** [`src/app/rag/benchmarks/page.tsx`](file:///Users/prateeksharma/Developer/Prateek_website/src/app/rag/benchmarks/page.tsx) exposes the complete technical writeup and methodology at `https://github.com/prat3010/retriever/benchmarks`.
+4. **Hero Badge Link:** The primary landing page at `https://github.com/prat3010/retriever` includes a prominent callout linking directly to the live benchmark dashboard.
 
 ---
 
@@ -152,7 +152,7 @@ git clone https://github.com/prat3010/retriever.git
 cd retriever
 
 # Run the automated benchmark against the live production engine
-python3 scripts/run_load_benchmark.py --target https://rag.prateeq.in --users 5,10,20
+python3 scripts/run_load_benchmark.py --target http://localhost:8000 --users 5,10,20
 ```
 
 To run against a local Docker / FastAPI instance:

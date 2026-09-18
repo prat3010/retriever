@@ -1,5 +1,5 @@
 /**
- * HTTP Client for Retriever Cognitive Engine (https://rag.prateeq.in)
+ * HTTP Client for Retriever Cognitive Engine
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -77,7 +77,7 @@ export class RetrieverClient {
   private apiKey?: string;
 
   constructor(options: RetrieverClientOptions = {}) {
-    this.baseUrl = (options.baseUrl || process.env.RETRIEVER_API_URL || "https://rag.prateeq.in").replace(/\/+$/, "");
+    this.baseUrl = (options.baseUrl || process.env.RETRIEVER_API_URL || "http://localhost:8000").replace(/\/+$/, "");
     this.adminMasterKey = options.adminMasterKey || process.env.RETRIEVER_ADMIN_MASTER_KEY;
     this.defaultTenantId = options.defaultTenantId || process.env.RETRIEVER_TENANT_ID;
     this.apiKey = options.apiKey || process.env.RETRIEVER_API_KEY;

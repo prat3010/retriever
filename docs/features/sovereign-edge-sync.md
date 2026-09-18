@@ -208,7 +208,7 @@ In Next.js or Node.js applications:
 import { RetrieverClient } from "@/lib/rag-client";
 
 const client = new RetrieverClient({
-  apiUrl: "https://rag.prateeq.in",
+  apiUrl: "http://localhost:8000",
   tenantId: "tn_client_corp",
   apiKey: process.env.RETRIEVER_API_KEY!,
   userId: "usr_field_ops",

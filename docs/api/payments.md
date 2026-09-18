@@ -63,8 +63,8 @@ sequenceDiagram
   "planId": "tier_pro_annual",
   "gateway": "razorpay",
   "currency": "INR",
-  "successUrl": "https://rag.prateeq.in/dashboard?payment=success",
-  "cancelUrl": "https://rag.prateeq.in/dashboard?payment=cancelled"
+  "successUrl": "http://localhost:8000/dashboard?payment=success",
+  "cancelUrl": "http://localhost:8000/dashboard?payment=cancelled"
 }
 ```
 

@@ -12,8 +12,8 @@
 This document serves as the authoritative single source of truth detailing every feature, architectural mechanism, API endpoint, and UI component built into the Retriever platform across all **53 Engineering Milestones (M1 through M53)**.
 
 Each capability is categorized into its primary operational domain and mapped against its execution layer:
-- **Admin Dashboard UI** (`apps/web` at `admin.rag.prateeq.in`)
-- **Client RAG App UI** (`Prateek_website` at `prateeq.in/rag/app`)
+- **Admin Dashboard UI** (`apps/web` at `localhost:3000`)
+- **Client RAG App UI** (`Prateek_website` at `retriever.run/rag/app`)
 - **Backend Engine & Middleware** (PostgreSQL RLS, FastAPI, Celery, Redis, Pytest)
 
 ---

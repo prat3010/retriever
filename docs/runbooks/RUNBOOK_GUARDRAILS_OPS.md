@@ -13,7 +13,7 @@ Check that Battery #13 (`nemo_conversational_guardrails`) is active and register
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/guardrails/overview | jq .
+  http://localhost:8000/v1/guardrails/overview | jq .
 ```
 
 **Expected Output:**
@@ -34,18 +34,18 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 ### 2.1 Applying a Standard Colang Template
 To set up a new tenant with the **Enterprise Customer Support** rails:
 
-1. **Via Retriever Master Admin Dashboard ([`admin.rag.prateeq.in/guardrails`](https://admin.rag.prateeq.in/guardrails)):**
+1. **Via Retriever Master Admin Dashboard ([`localhost:3000/guardrails`](http://localhost:3000/guardrails)):**
    - Select the target tenant from the top tenant picker.
    - Under **Colang Flow Specifications**, choose **Enterprise Customer Support** from the template dropdown.
    - Adjust PII Redaction, Competitor Shielding, and Grounding Threshold.
    - Click **Save Guardrails**.
-2. **Via Client SaaS Studio ([`prateeq.in/rag/app`](https://prateeq.in/rag/app)):**
+2. **Via Client SaaS Studio ([`retriever.run/rag/app`](http://localhost:3000)):**
    - Navigate to the **NeMo Guardrails** panel.
    - Select preset template or edit rules.
    - Click **Save Policy Config**.
 3. **Via Admin REST API:**
 ```bash
-curl -X PUT https://rag.prateeq.in/v1/tenants/$TENANT_ID/guardrails/config \
+curl -X PUT http://localhost:8000/v1/tenants/$TENANT_ID/guardrails/config \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -66,7 +66,7 @@ curl -X PUT https://rag.prateeq.in/v1/tenants/$TENANT_ID/guardrails/config \
 * **Root Cause Diagnosis:**
   1. Fetch tenant telemetry:
      ```bash
-     curl -s https://rag.prateeq.in/v1/tenants/$TENANT_ID/guardrails/telemetry | jq .recent_violations
+     curl -s http://localhost:8000/v1/tenants/$TENANT_ID/guardrails/telemetry | jq .recent_violations
      ```
   2. Inspect the `query_excerpt` and `matched_flow_or_rule`.
   3. If the query was a technical prompt (e.g., describing SQL injection defenses or shell scripting), switch the tenant's Colang template to `developer_assistant` or update mode to `fast_input_only`.
@@ -78,7 +78,7 @@ curl -X PUT https://rag.prateeq.in/v1/tenants/$TENANT_ID/guardrails/config \
   2. If the tenant's chunk size is very large ($>2000$ tokens) or retrieved top-k is high ($>10$), relax `grounding_threshold` or switch mode to `full_conversational`.
   3. Check the average rail latency reported in telemetry:
      ```bash
-     curl -s https://rag.prateeq.in/v1/tenants/$TENANT_ID/guardrails/telemetry | jq .average_rail_latency_ms
+     curl -s http://localhost:8000/v1/tenants/$TENANT_ID/guardrails/telemetry | jq .average_rail_latency_ms
      ```
 
 ### 3.3 Mitigating an Active Jailbreak Campaign

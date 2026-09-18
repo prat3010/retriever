@@ -108,7 +108,7 @@ def test_automated_circuit_breaker_on_probe_failures():
     probe_fail_1 = RegionHealthProbe(
         node_id="node-oci-bom-01",
         region=CloudRegion.OCI_BOM,
-        probe_url="https://rag.prateeq.in/health/liveness",
+        probe_url="https://api.retriever.run/health/liveness",
         latency_ms=1800.0,
         status_code=504,
         is_healthy=False,
@@ -123,7 +123,7 @@ def test_automated_circuit_breaker_on_probe_failures():
     probe_fail_2 = RegionHealthProbe(
         node_id="node-oci-bom-01",
         region=CloudRegion.OCI_BOM,
-        probe_url="https://rag.prateeq.in/health/liveness",
+        probe_url="https://api.retriever.run/health/liveness",
         latency_ms=2000.0,
         status_code=503,
         is_healthy=False,
@@ -177,12 +177,12 @@ def test_libsql_replica_config_and_token():
     service = LibsqlReplicationService()
     config = service.get_replica_config(
         tenant_id="tenant_alpha_01",
-        active_leader_url="https://rag.prateeq.in",
+        active_leader_url="https://api.retriever.run",
         active_leader_region=CloudRegion.OCI_BOM,
     )
 
     assert config.tenant_id == "tenant_alpha_01"
-    assert config.primary_url == "https://rag.prateeq.in"
+    assert config.primary_url == "https://api.retriever.run"
     assert "tenant_alpha_01" in config.replica_url
     assert config.auth_token.startswith("tkn_libsql_")
     assert config.read_local is True

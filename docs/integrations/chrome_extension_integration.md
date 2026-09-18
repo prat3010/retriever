@@ -37,7 +37,7 @@ apps/extension/
 ### Step 1: Download Extension Bundle
 Download the extension zip file directly via the browser or curl:
 ```bash
-curl -O "https://rag.prateeq.in/v1/integrations/extension/bundle"
+curl -O "http://localhost:8000/v1/integrations/extension/bundle"
 unzip retriever-chrome-extension.zip -d retriever-extension
 ```
 
@@ -50,7 +50,7 @@ unzip retriever-chrome-extension.zip -d retriever-extension
 ### Step 3: Configure Tenant Credentials
 1. Click the Retriever extension gremlin icon in your browser toolbar.
 2. Click **Settings** (gear icon).
-3. Paste your **API URL** (`https://rag.prateeq.in`) and **API Key** (`ret_live_...`).
+3. Paste your **API URL** (`http://localhost:8000`) and **API Key** (`ret_live_...`).
 4. Click **Save Connection**.
 
 ---

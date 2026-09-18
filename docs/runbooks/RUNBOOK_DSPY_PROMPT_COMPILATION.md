@@ -58,7 +58,7 @@ POST /v1/tenants/{tenantId}/prompts/compile
 ### A. Compiling a Prompt Program
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/{tenantId}/prompts/compile" \
+curl -X POST "http://localhost:8000/v1/tenants/{tenantId}/prompts/compile" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,14 +93,14 @@ curl -X POST "https://rag.prateeq.in/v1/tenants/{tenantId}/prompts/compile" \
 Activating a program atomically deactivates any existing active program for that tenant and hot-reloads the prompt injection cache in `PromptBuilder`.
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/{tenantId}/prompts/compiled/prog_a1b2c3d4e5f6/activate" \
+curl -X POST "http://localhost:8000/v1/tenants/{tenantId}/prompts/compiled/prog_a1b2c3d4e5f6/activate" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY"
 ```
 
 ### C. Deactivating & Reverting to Default String Template
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/{tenantId}/prompts/compiled/prog_a1b2c3d4e5f6/deactivate" \
+curl -X POST "http://localhost:8000/v1/tenants/{tenantId}/prompts/compiled/prog_a1b2c3d4e5f6/deactivate" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY"
 ```
 

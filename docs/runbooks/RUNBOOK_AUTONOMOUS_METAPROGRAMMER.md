@@ -40,7 +40,7 @@ Confirm that Battery #17 (`autonomous_metaprogrammer`) is active:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/scaffold/health | jq .
+  http://localhost:8000/v1/scaffold/health | jq .
 ```
 
 **Expected Output:**
@@ -63,7 +63,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 To scaffold a new cognitive adapter or domain protocol:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/scaffold/generate" \
+curl -X POST "http://localhost:8000/v1/scaffold/generate" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,7 +81,7 @@ curl -X POST "https://rag.prateeq.in/v1/scaffold/generate" \
 Always run architectural validation before writing to disk:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/scaffold/validate" \
+curl -X POST "http://localhost:8000/v1/scaffold/validate" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,7 +95,7 @@ curl -X POST "https://rag.prateeq.in/v1/scaffold/validate" \
 Commit generated files to disk and trigger atomic hot-reload:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/scaffold/apply" \
+curl -X POST "http://localhost:8000/v1/scaffold/apply" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ curl -X POST "https://rag.prateeq.in/v1/scaffold/apply" \
 If a newly applied capability triggers runtime exceptions:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/scaffold/rollback" \
+curl -X POST "http://localhost:8000/v1/scaffold/rollback" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{

@@ -13,7 +13,7 @@ Confirm that Battery #15 (`durable_workflow_engine`) is active:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/workflows/overview | jq .
+  http://localhost:8000/v1/admin/workflows/overview | jq .
 ```
 
 **Expected Output:**
@@ -34,14 +34,14 @@ List all currently running jobs across the cluster:
 
 ```bash
 curl -s -H "X-API-Key: $TENANT_API_KEY" \
-  "https://rag.prateeq.in/v1/tenants/$TENANT_ID/workflows/executions?status=running" | jq .
+  "http://localhost:8000/v1/tenants/$TENANT_ID/workflows/executions?status=running" | jq .
 ```
 
 ### 2.2 Resuming a Failed Execution from Checkpoint
 When an execution fails (e.g. due to temporary network failure or upstream model rate limits):
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/$TENANT_ID/workflows/executions/$EXEC_ID/retry" \
+curl -X POST "http://localhost:8000/v1/tenants/$TENANT_ID/workflows/executions/$EXEC_ID/retry" \
   -H "X-API-Key: $TENANT_API_KEY" | jq .
 ```
 
@@ -51,7 +51,7 @@ The runner automatically skips previously completed steps using their memoized o
 If a pipeline is queued or running and needs to be stopped immediately:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/$TENANT_ID/workflows/executions/$EXEC_ID/cancel" \
+curl -X POST "http://localhost:8000/v1/tenants/$TENANT_ID/workflows/executions/$EXEC_ID/cancel" \
   -H "X-API-Key: $TENANT_API_KEY" | jq .
 ```
 

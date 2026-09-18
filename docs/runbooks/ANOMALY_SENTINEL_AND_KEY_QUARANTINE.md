@@ -88,7 +88,7 @@ When an Anomaly Alert fires, follow this 4-step checklist:
 
 ### Step 1: Inspect Active Alerts
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/admin/telemetry/alerts?status=active" \
+curl -X GET "http://localhost:8000/v1/admin/telemetry/alerts?status=active" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 **Sample Alert:**
@@ -107,7 +107,7 @@ curl -X GET "https://rag.prateeq.in/v1/admin/telemetry/alerts?status=active" \
 ### Step 2: Audit Historical Telemetry Logs
 Query recent requests for the flagged `key_id` to determine origin IPs, user agents, and requested documents:
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/admin/tenants/{tenantId}/logs?key_id={key_id}&limit=50" \
+curl -X GET "http://localhost:8000/v1/admin/tenants/{tenantId}/logs?key_id={key_id}&limit=50" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 
@@ -119,7 +119,7 @@ curl -X GET "https://rag.prateeq.in/v1/admin/tenants/{tenantId}/logs?key_id={key
 
 ### Step 4: Unquarantine Key (Restoration)
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/api-keys/{key_id}/unquarantine" \
+curl -X POST "http://localhost:8000/v1/admin/api-keys/{key_id}/unquarantine" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>"
 ```
 **Response:**
@@ -142,7 +142,7 @@ uv run --project apps/api pytest apps/api/tests/test_anomaly_detector.py apps/ap
 ```
 To emit a test alert via API:
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/telemetry/test-alert" \
+curl -X POST "http://localhost:8000/v1/admin/telemetry/test-alert" \
   -H "X-Admin-Key: <ADMIN_MASTER_KEY>" \
   -H "Content-Type: application/json" \
   -d '{"risk_level": "HIGH", "reason": "Manual SRE Fire Drill Test"}'

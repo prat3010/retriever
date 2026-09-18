@@ -79,7 +79,7 @@ Uploads a single or multiple documents (`.pdf`, `.docx`, `.xlsx`, `.pptx`, `.txt
 
 #### Example Request (`curl`)
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/c9a28c30-e34d-4871-bc01-e9451d6c8b09/documents" \
+curl -X POST "http://localhost:8000/v1/tenants/c9a28c30-e34d-4871-bc01-e9451d6c8b09/documents" \
   -H "Authorization: Bearer ret_live_..." \
   -F "file=@/Users/prateeksharma/Documents/Quarterly_Report_2026.pdf" \
   -F "chunk_strategy=docling_layout" \
@@ -139,7 +139,7 @@ Generates an HMAC-SHA256 signed temporary download URL expiring in 3600 seconds.
 ```json
 {
   "documentId": "doc_01928374-e5f6-4a3b-9c8d-1234567890cd",
-  "downloadUrl": "https://rag.prateeq.in/v1/storage/signed/doc_01928374?expires=1787635200&signature=a9f8b7...",
+  "downloadUrl": "http://localhost:8000/v1/storage/signed/doc_01928374?expires=1787635200&signature=a9f8b7...",
   "expiresAt": "2026-08-25T06:36:00Z"
 }
 ```

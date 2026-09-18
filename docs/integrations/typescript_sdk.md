@@ -41,7 +41,7 @@ import { RetrieverClient } from "@retriever/client-js";
 
 // Initialize client
 const client = new RetrieverClient({
-  baseUrl: "https://rag.prateeq.in",
+  baseUrl: "http://localhost:8000",
   apiKey: "ret_live_a1b2c3d4e5f67890abcdef...",
 });
 

@@ -234,7 +234,7 @@ The Distributed MCP Mesh exposes standard REST endpoints mounted at `/v1/mesh/*`
 import { RetrieverClient } from '@prat3010/retriever-client';
 
 const client = new RetrieverClient({
-  baseUrl: 'https://rag.prateeq.in',
+  baseUrl: 'http://localhost:8000',
   apiKey: process.env.RETRIEVER_API_KEY!,
 });
 
@@ -264,7 +264,7 @@ from retriever import AsyncRetrieverClient
 
 async def main():
     async with AsyncRetrieverClient(
-        base_url="https://rag.prateeq.in",
+        base_url="http://localhost:8000",
         api_key="YOUR_API_KEY",
     ) as client:
         # Route a tool invocation across the lowest-latency online node

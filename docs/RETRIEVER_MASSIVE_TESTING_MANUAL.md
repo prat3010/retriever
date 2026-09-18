@@ -1,7 +1,7 @@
 # Retriever: Massive Empirical Testing Manual & 38-Battery Operational Verification Playbook
 
 **Document Version:** 1.0.0-PROD  
-**Target Environment:** Local (`http://localhost:8000`) & Production VPS (`https://rag.prateeq.in`)  
+**Target Environment:** Local (`http://localhost:8000`) & Production VPS (`http://localhost:8000`)  
 **Scope:** Complete End-to-End Validation of All 38 Platform Batteries with Real-World Multi-Modal Datasets  
 **Governance:** Zero-Toy Invariant (Zero Mocks, Zero Synthetic Shortcuts, Genuine Engine Execution)
 

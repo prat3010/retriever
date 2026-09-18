@@ -75,11 +75,11 @@ class IdentityFederationAdapter(IdentityFederationPort):
 
     async def generate_sp_metadata(self, tenant_id: str) -> str:
         config = self._saml_configs.get(tenant_id)
-        sp_entity_id = config.sp_entity_id if config else "https://rag.prateeq.in/saml"
+        sp_entity_id = config.sp_entity_id if config else "http://localhost:8000/saml"
         acs_url = (
             config.acs_url
             if config
-            else f"https://rag.prateeq.in/v1/identity/saml/acs?tenant={tenant_id}"
+            else f"http://localhost:8000/v1/identity/saml/acs?tenant={tenant_id}"
         )
 
         metadata_xml = (

@@ -203,7 +203,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str | None = None
-    REMOTE_STORAGE_API_URL: str = "https://rag.prateeq.in"
+    REMOTE_STORAGE_API_URL: str = "http://localhost:8000"
 
     # Cryptography
     KEY_ENCRYPTION_KEY: str = "dev-key-encryption-key-must-be-32-bytes-long="
@@ -234,7 +234,7 @@ class Settings(BaseSettings):
     SERVERLESS_IDLE_TIMEOUT_SEC: int = 300
 
     # CORS
-    CORS_ORIGINS: str = "https://prateeq.in,https://admin.rag.prateeq.in,http://localhost:3000,http://127.0.0.1:3000,*"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,*"
 
     # Observability & Telemetry
     OTLP_ENDPOINT: str = ""

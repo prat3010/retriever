@@ -27,7 +27,7 @@ The Enterprise LLM Gateway provides multi-model routing, automated failovers, ci
 ### A. Inspecting Live Provider Latency & Reachability
 Execute a live probe across all configured upstream providers:
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/gateway/probe" \
+curl -X POST "http://localhost:8000/v1/gateway/probe" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY"
 ```
 **Expected Response:**
@@ -43,7 +43,7 @@ curl -X POST "https://rag.prateeq.in/v1/gateway/probe" \
 ### B. Configuring a Tenant Fallback Cascade & Budget Limits
 To configure primary model Claude 3.5 Sonnet with GPT-4o Mini and local Ollama fallback, with a $100 monthly cap and automatic downgrade:
 ```bash
-curl -X PUT "https://rag.prateeq.in/v1/tenants/{tenantId}/gateway/routes" \
+curl -X PUT "http://localhost:8000/v1/tenants/{tenantId}/gateway/routes" \
   -H "Authorization: Bearer $TENANT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -64,7 +64,7 @@ curl -X PUT "https://rag.prateeq.in/v1/tenants/{tenantId}/gateway/routes" \
 
 ### C. Checking Current Tenant Spend & Cost Breakdown
 ```bash
-curl -X GET "https://rag.prateeq.in/v1/tenants/{tenantId}/gateway/budget" \
+curl -X GET "http://localhost:8000/v1/tenants/{tenantId}/gateway/budget" \
   -H "Authorization: Bearer $TENANT_API_KEY"
 ```
 
@@ -92,7 +92,7 @@ curl -X GET "https://rag.prateeq.in/v1/tenants/{tenantId}/gateway/budget" \
 - **Diagnosis:**
   SSH into Oracle Cloud VPS:
   ```bash
-  ssh ubuntu@130.210.35.134
+  ssh ubuntu@YOUR_SERVER_IP
   systemctl status ollama
   ```
 - **Remediation:**

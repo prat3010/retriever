@@ -49,7 +49,7 @@ Confirm that Battery #21 is operational and inspect the active hardware isolatio
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/edge/attestation/status | jq .
+  http://localhost:8000/v1/admin/edge/attestation/status | jq .
 ```
 
 **Expected Output:**
@@ -74,12 +74,12 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 1. Request an anti-replay challenge nonce:
    ```bash
    NONCE_RESP=$(curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-     https://rag.prateeq.in/v1/admin/edge/attestation/nonce)
+     http://localhost:8000/v1/admin/edge/attestation/nonce)
    NONCE=$(echo "$NONCE_RESP" | jq -r .nonce)
    ```
 2. Gather hardware evidence and verify attestation:
    ```bash
-   curl -X POST "https://rag.prateeq.in/v1/admin/edge/attestation/verify" \
+   curl -X POST "http://localhost:8000/v1/admin/edge/attestation/verify" \
      -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
      -H "Content-Type: application/json" \
      -d "{
@@ -95,7 +95,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 Encrypt in-memory vectors or sensitive tenant secrets with tenant-bound AAD:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/tenants/$TENANT_ID/edge/seal" \
+curl -X POST "http://localhost:8000/v1/tenants/$TENANT_ID/edge/seal" \
   -H "Authorization: Bearer $TENANT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -109,7 +109,7 @@ curl -X POST "https://rag.prateeq.in/v1/tenants/$TENANT_ID/edge/seal" \
 In the event of suspected hardware tamper, side-channel intrusion, or physical breach of an edge node:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/edge/enclave/wipe" \
+curl -X POST "http://localhost:8000/v1/admin/edge/enclave/wipe" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{

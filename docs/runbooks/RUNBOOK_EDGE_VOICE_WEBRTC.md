@@ -39,7 +39,7 @@ Confirm that Battery #20 (`edge_voice_stream`) is operational:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/voice/health | jq .
+  http://localhost:8000/v1/voice/health | jq .
 ```
 
 **Expected Output:**
@@ -64,7 +64,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 Clients exchange SDP parameters via the voice session endpoint:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/voice/session" \
+curl -X POST "http://localhost:8000/v1/voice/session" \
   -H "Authorization: Bearer $TENANT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,7 +80,7 @@ curl -X POST "https://rag.prateeq.in/v1/voice/session" \
 Verify standalone audio transcription without full WebRTC initialization:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/voice/transcribe" \
+curl -X POST "http://localhost:8000/v1/voice/transcribe" \
   -H "Authorization: Bearer $TENANT_API_KEY" \
   -H "Content-Type: multipart/form-data" \
   -F "audio_file=@sample_query.wav" | jq .
@@ -91,7 +91,7 @@ curl -X POST "https://rag.prateeq.in/v1/voice/transcribe" \
 Verify text-to-speech audio streaming:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/voice/synthesize" \
+curl -X POST "http://localhost:8000/v1/voice/synthesize" \
   -H "Authorization: Bearer $TENANT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

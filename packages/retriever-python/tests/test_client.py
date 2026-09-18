@@ -198,7 +198,7 @@ def test_voice_streaming_url_formatting():
     """Verify WebSocket URL generation for voice streaming."""
     client = RetrieverClient(
         api_key="ret_live_secret",
-        base_url="https://rag.prateeq.in",
+        base_url="https://api.retriever.run",
         tenant_id="tn_test_voice",
     )
     url = client.get_voice_stream_url(
@@ -208,7 +208,7 @@ def test_voice_streaming_url_formatting():
         voice="warm_conversational",
         speed=1.1,
     )
-    assert url.startswith("wss://rag.prateeq.in/v1/tenants/tn_test_voice/voice/stream/vcs_12345")
+    assert url.startswith("wss://api.retriever.run/v1/tenants/tn_test_voice/voice/stream/vcs_12345")
     assert "token=ret_live_secret" in url
     assert "sensitivity=0.75" in url
     assert "silence_threshold_ms=300" in url

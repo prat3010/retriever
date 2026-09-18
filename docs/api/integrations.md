@@ -32,7 +32,7 @@ Returns the list of available and configured ecosystem plugins, connection statu
         "category": "Messaging",
         "status": "configured",
         "slash_command": "/ask-retriever",
-        "webhook_url": "https://rag.prateeq.in/v1/integrations/slack/slash",
+        "webhook_url": "http://localhost:8000/v1/integrations/slack/slash",
         "description": "Ask questions and get cited answers directly inside team Slack channels."
       },
       {
@@ -101,7 +101,7 @@ Processes inbound Slack slash command requests, verifies the Slack HMAC signatur
         "elements": [
           {
             "type": "mrkdwn",
-            "text": "📚 *Sources:* [RUNBOOK_DEPLOYMENT.md](https://prateeq.in/rag/app?tenant=prateeq_scoping) (Score: 0.94)"
+            "text": "📚 *Sources:* [RUNBOOK_DEPLOYMENT.md](http://localhost:3000?tenant=demo_tenant) (Score: 0.94)"
           },
           {
             "type": "mrkdwn",

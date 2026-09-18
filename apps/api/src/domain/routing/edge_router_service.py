@@ -102,7 +102,7 @@ class EdgeRouterService(EdgeRouterInterface):
             selected_region = self._primary_region
             is_fallback = True
             est_reduction = 0.0
-            endpoint = "https://rag.prateeq.in"
+            endpoint = "https://api.retriever.run"
             reason = f"Preferred region '{preferred_region.value}' unconfigured or degraded; routed to Primary Master."
         else:
             selected_region = preferred_region
@@ -111,7 +111,7 @@ class EdgeRouterService(EdgeRouterInterface):
                 est_reduction = round(((primary_rtt - replica_rtt) / primary_rtt) * 100.0, 1)
             else:
                 est_reduction = 0.0
-            endpoint = f"https://{preferred_region.value}.rag.prateeq.in" if preferred_region != self._primary_region else "https://rag.prateeq.in"
+            endpoint = f"https://{preferred_region.value}.api.retriever.run" if preferred_region != self._primary_region else "https://api.retriever.run"
             reason = f"Optimally routed to local {continent} edge replica ({selected_region.value})."
 
         return EdgeRoutingDecision(
@@ -135,7 +135,7 @@ class EdgeRouterService(EdgeRouterInterface):
                 city="Mumbai / Singapore",
                 is_primary=True,
                 is_configured=True,
-                endpoint_display="rag.prateeq.in (Primary Master)",
+                endpoint_display="api.retriever.run (Primary Master)",
                 status=self._node_health.get(RegionCode.AP_SOUTH, ReplicaHealthStatus.HEALTHY),
                 latency_ms=self._node_latencies.get(RegionCode.AP_SOUTH, 14.5),
                 last_probe_at=datetime.now(UTC),
@@ -146,7 +146,7 @@ class EdgeRouterService(EdgeRouterInterface):
                 city="N. Virginia / New York",
                 is_primary=False,
                 is_configured=RegionCode.US_EAST in self._configured_regions,
-                endpoint_display="us-east.rag.prateeq.in" if RegionCode.US_EAST in self._configured_regions else "Fallback to Primary Master",
+                endpoint_display="us-east.api.retriever.run" if RegionCode.US_EAST in self._configured_regions else "Fallback to Primary Master",
                 status=self._node_health.get(RegionCode.US_EAST, ReplicaHealthStatus.FALLBACK_PRIMARY),
                 latency_ms=self._node_latencies.get(RegionCode.US_EAST, 215.0),
                 last_probe_at=datetime.now(UTC),
@@ -157,7 +157,7 @@ class EdgeRouterService(EdgeRouterInterface):
                 city="Frankfurt / London",
                 is_primary=False,
                 is_configured=RegionCode.EU_CENTRAL in self._configured_regions,
-                endpoint_display="eu-central.rag.prateeq.in" if RegionCode.EU_CENTRAL in self._configured_regions else "Fallback to Primary Master",
+                endpoint_display="eu-central.api.retriever.run" if RegionCode.EU_CENTRAL in self._configured_regions else "Fallback to Primary Master",
                 status=self._node_health.get(RegionCode.EU_CENTRAL, ReplicaHealthStatus.FALLBACK_PRIMARY),
                 latency_ms=self._node_latencies.get(RegionCode.EU_CENTRAL, 158.0),
                 last_probe_at=datetime.now(UTC),

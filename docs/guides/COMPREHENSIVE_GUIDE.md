@@ -181,7 +181,7 @@ Since Cloudflare R2 is fully S3-compatible, Retriever's `S3Storage` adapter work
 * celry background tasks will download files from this endpoint to local temp folders, extract text, and clean up.
 
 #### 2. Cloudflare DNS & Tunnels (Local Dev Sharing & Prod Deployment)
-* **Cloudflare DNS:** Point `rag.prateeq.in` A record to your Oracle VM IP. WAF rules can be applied at the Cloudflare dashboard.
+* **Cloudflare DNS:** Point `localhost:8000` A record to your Oracle VM IP. WAF rules can be applied at the Cloudflare dashboard.
 * **WAF & Rate Limiting:** Apply Cloudflare Web Application Firewall rules to block SQL injections and enforce request-rate thresholds before traffic hits your API nodes.
 
 ---
@@ -278,7 +278,7 @@ The production system runs on bare systemd services (no Docker). See `ORACLE_DEP
 ### 7.1 Production Architecture
 
 ```
-rag.prateeq.in
+localhost:8000
         │
     ┌───▼──────────────┐
     │   Nginx (SSL)    │   port 443 → proxy_pass → port 8000

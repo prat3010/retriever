@@ -192,7 +192,7 @@ async def test_supabase_jwks_token_validation() -> None:
     """Supabase Auth RS256 JWKS tokens decode successfully into UserContext."""
     claims = {
         "sub": "supabase-user-uuid-123",
-        "email": "user@prateeq.in",
+        "email": "user@example.com",
         "tenant_id": "00000000-0000-0000-0000-000000000001",
         "roles": ["client"],
         "scopes": ["document:read", "chat:write"],

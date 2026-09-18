@@ -13,8 +13,8 @@ class SamlIdpConfig(BaseModel):
     idp_entity_id: str
     sso_url: str
     idp_x509_cert: str
-    sp_entity_id: str = "https://rag.prateeq.in/saml"
-    acs_url: str = "https://rag.prateeq.in/v1/identity/saml/acs"
+    sp_entity_id: str = "http://localhost:8000/saml"
+    acs_url: str = "http://localhost:8000/v1/identity/saml/acs"
     attribute_mapping: dict[str, str] = Field(
         default_factory=lambda: {
             "email": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",

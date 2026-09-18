@@ -10,7 +10,7 @@ This package is the official **Agent-Native Interface** for the Retriever platfo
 - **Zero-GUI Tenant Provisioning:** AI agents can provision workspaces (`retriever_create_tenant`) and generate scoped client API keys (`retriever_issue_api_key`) instantly.
 - **Direct Lore & Document Ingestion:** Push raw markdown, lore codices, and rulebooks directly into the tenant's vector database (`retriever_ingest_text`, `retriever_upload_file`).
 - **Cognitive & Reasoning Superpowers:** Perform hybrid dense vector + BM25 searches with cited context chunks (`retriever_hybrid_search`) and execute multi-branch Graph-of-Thought reasoning DAGs (`retriever_got_plan`).
-- **Zero-Wipe Invariant (Built-in Security):** Destructive operations (`delete_tenant`, `wipe_vectors`) are **intentionally omitted** from the tool palette. Deletions remain strictly confined to the manual Web Admin Dashboard (`https://admin.rag.prateeq.in`) to prevent prompt-injection exploits or accidental deletions.
+- **Zero-Wipe Invariant (Built-in Security):** Destructive operations (`delete_tenant`, `wipe_vectors`) are **intentionally omitted** from the tool palette. Deletions remain strictly confined to the manual Web Admin Dashboard (`http://localhost:3000`) to prevent prompt-injection exploits or accidental deletions.
 
 ---
 
@@ -40,9 +40,9 @@ This package is the official **Agent-Native Interface** for the Retriever platfo
   "mcpServers": {
     "retriever": {
       "command": "node",
-      "args": ["/Users/prateeksharma/Developer/retriever/packages/retriever-mcp/dist/index.js"],
+      "args": ["./packages/retriever-mcp/dist/index.js"],
       "env": {
-        "RETRIEVER_API_URL": "https://rag.prateeq.in",
+        "RETRIEVER_API_URL": "http://localhost:8000",
         "RETRIEVER_ADMIN_MASTER_KEY": "your-admin-master-key",
         "RETRIEVER_API_KEY": "ret_live_...",
         "RETRIEVER_TENANT_ID": "your-tenant-uuid"
@@ -58,9 +58,9 @@ This package is the official **Agent-Native Interface** for the Retriever platfo
   "mcpServers": {
     "retriever": {
       "command": "node",
-      "args": ["/Users/prateeksharma/Developer/retriever/packages/retriever-mcp/dist/index.js"],
+      "args": ["./packages/retriever-mcp/dist/index.js"],
       "env": {
-        "RETRIEVER_API_URL": "https://rag.prateeq.in",
+        "RETRIEVER_API_URL": "http://localhost:8000",
         "RETRIEVER_ADMIN_MASTER_KEY": "your-admin-master-key"
       }
     }

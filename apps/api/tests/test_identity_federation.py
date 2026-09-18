@@ -39,7 +39,7 @@ def sample_saml_xml() -> str:
     </saml:Subject>
     <saml:Conditions NotBefore="{now.isoformat()}" NotOnOrAfter="{not_after}">
       <saml:AudienceRestriction>
-        <saml:Audience>https://rag.prateeq.in/saml</saml:Audience>
+        <saml:Audience>http://localhost:8000/saml</saml:Audience>
       </saml:AudienceRestriction>
     </saml:Conditions>
     <saml:AttributeStatement>
@@ -66,7 +66,7 @@ async def test_saml_configuration_and_sp_metadata(test_tenant_id: str):
         idp_entity_id="https://idp.okta.com/exk12345",
         sso_url="https://idp.okta.com/exk12345/sso/saml",
         idp_x509_cert="MIIDpjCCAo6gAwIBAgIGAY...==",
-        sp_entity_id="https://rag.prateeq.in/saml",
+        sp_entity_id="http://localhost:8000/saml",
         default_groups=["all_staff"],
     )
 
@@ -80,7 +80,7 @@ async def test_saml_configuration_and_sp_metadata(test_tenant_id: str):
 
     sp_xml = await identity_federation_adapter.generate_sp_metadata(test_tenant_id)
     assert "<md:EntityDescriptor" in sp_xml
-    assert 'entityID="https://rag.prateeq.in/saml"' in sp_xml
+    assert 'entityID="http://localhost:8000/saml"' in sp_xml
     assert "AssertionConsumerService" in sp_xml
 
 

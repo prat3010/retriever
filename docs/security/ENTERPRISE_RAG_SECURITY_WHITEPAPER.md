@@ -68,7 +68,7 @@ Retriever sandwiches LLM reasoning between dual-layer security guardrails:
 
 ## 4. Telemetry Privacy & GDPR Zero-PII Invariant
 
-Visitor logging on `prateeq.in` adheres to strict EU General Data Protection Regulation (GDPR) standards:
+Visitor logging on `retriever.run` adheres to strict EU General Data Protection Regulation (GDPR) standards:
 - **Salted SHA-256 Hashing:** Raw client IP addresses are combined with a server-side salt rotated at midnight UTC:
   $$\text{AnonymizedHash} = \text{SHA-256}(\text{ClientIP} + \text{DailySalt})$$
 - **Zero Raw PII Storage:** Neither database tables (`page_visits`) nor proxy logs ever store unhashed IP addresses, user-agent fingerprints, or tracking cookies without explicit consent.

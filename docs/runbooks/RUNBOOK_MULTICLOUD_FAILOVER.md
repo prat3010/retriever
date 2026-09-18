@@ -10,7 +10,7 @@
 ## 1. Architecture & Multi-Cloud Topology
 
 Retriever's zero-downtime database high availability spans three distinct cloud providers using distributed LibSQL / sqld replication:
-- **Primary Region (Active Write):** Oracle Cloud VPS (`eu-frankfurt-1` / `130.210.35.134`)
+- **Primary Region (Active Write):** Oracle Cloud VPS (`eu-frankfurt-1` / `YOUR_SERVER_IP`)
 - **Secondary Replica (Hot Standby):** Fly.io Managed Edge Cluster (`ams` / Amsterdam)
 - **Disaster Recovery Replica (Cold Standby):** AWS EC2 (`us-east-1` / N. Virginia)
 
@@ -40,7 +40,7 @@ Query the cluster state, active primary node, and cross-region replication lag:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/multicloud/status | jq .
+  http://localhost:8000/v1/admin/multicloud/status | jq .
 ```
 
 **Expected Output (Normal Operations):**
@@ -62,7 +62,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 Trigger a synthetic latency and read-after-write consistency probe:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/admin/multicloud/probe" \
+curl -X POST "http://localhost:8000/v1/admin/multicloud/probe" \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" | jq .
 ```
 
@@ -76,7 +76,7 @@ When performing OS kernel upgrades or routine maintenance on the primary Oracle 
 
 1. Initiate controlled promotion of the Fly.io replica:
    ```bash
-   curl -X POST "https://rag.prateeq.in/v1/admin/multicloud/failover" \
+   curl -X POST "http://localhost:8000/v1/admin/multicloud/failover" \
      -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
      -H "Content-Type: application/json" \
      -d '{
@@ -89,7 +89,7 @@ When performing OS kernel upgrades or routine maintenance on the primary Oracle 
 3. Perform maintenance on the Oracle VPS.
 4. Once maintenance is complete, re-attach Oracle as a follower, wait for replication lag to reach `< 20ms`, and fail back:
    ```bash
-   curl -X POST "https://rag.prateeq.in/v1/admin/multicloud/failover" \
+   curl -X POST "http://localhost:8000/v1/admin/multicloud/failover" \
      -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
      -H "Content-Type: application/json" \
      -d '{ "target_region": "oracle-fra-1", "reason": "Restoring primary after maintenance" }' | jq .
@@ -101,11 +101,11 @@ If the primary VPS becomes unreachable (hardware failure, datacenter network cut
 
 1. Confirm health probe failures:
    ```bash
-   curl -I --connect-timeout 3 https://130.210.35.134:8000/v1/health
+   curl -I --connect-timeout 3 https://YOUR_SERVER_IP:8000/v1/health
    ```
 2. If unreachable, issue forceful leader promotion on the standby node:
    ```bash
-   curl -X POST "https://api.fly.rag.prateeq.in/v1/admin/multicloud/failover" \
+   curl -X POST "https://api.fly.retriever.run/v1/admin/multicloud/failover" \
      -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
      -H "Content-Type: application/json" \
      -d '{
@@ -114,7 +114,7 @@ If the primary VPS becomes unreachable (hardware failure, datacenter network cut
        "reason": "Unplanned Oracle VPS power outage"
      }' | jq .
    ```
-3. Update DNS CNAME record for `rag.prateeq.in` to point to `api.fly.rag.prateeq.in`.
+3. Update DNS CNAME record for `localhost:8000` to point to `api.fly.retriever.run`.
 
 ---
 

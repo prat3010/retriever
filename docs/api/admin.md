@@ -57,8 +57,8 @@ graph TD
   "tenants": [
     {
       "tenantId": "c9a28c30-e34d-4871-bc01-e9451d6c8b09",
-      "name": "Prateeq Scoping Lab",
-      "slug": "prateeq_scoping",
+      "name": "Enterprise Workspace",
+      "slug": "demo_tenant",
       "plan": "enterprise",
       "documentCount": 142,
       "totalTokens": 892000,

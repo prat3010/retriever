@@ -121,8 +121,8 @@ ROADMAP EXECUTION HORIZONS:
 
 ### Phase G: Commercial Scoping V2 & Dashboard Integration (Completed)
 * **Milestone M63–M68:** Documented in detail in [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../../Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md).
-  - Authentic dogfooding tenant (`prateeq_scoping`) configured via Retriever Admin.
-  - Scoping chatbox powered by the public 1-line `<script src="https://prateeq.in/widget.js" ...>` embed widget.
+  - Authentic dogfooding tenant (`demo_tenant`) configured via Retriever Admin.
+  - Scoping chatbox powered by the public 1-line `<script src="https://github.com/prat3010/retriever/widget.js" ...>` embed widget.
   - Auto-onboarding 7-day trial tenant creation upon Google OAuth sign-in with permanent non-deletable scope document indexing (`is_system: true`).
 
 ---
@@ -193,7 +193,7 @@ ROADMAP EXECUTION HORIZONS:
 *   **Status:** **Completed** (Phase I)
 
 #### Milestone M78: Visual Claim-by-Claim Grounding Diff & Retriever Admin Observability Cockpit (Completed)
-*   **Objective:** Deliver granular visual insight into model faithfulness and integrate deep cognitive observability natively inside the Retriever Admin Dashboard (`https://admin.rag.prateeq.in` / `retriever/apps/web`).
+*   **Objective:** Deliver granular visual insight into model faithfulness and integrate deep cognitive observability natively inside the Retriever Admin Dashboard (`http://localhost:3000` / `retriever/apps/web`).
 *   **Key Deliverables:**
     1.  Visual Claim Grounding Diff (`grounding-diff.tsx` / `tenant-hallucinations.tsx` in `retriever/apps/web`): Highlights generated responses sentence-by-sentence (green = verified in source, red = ungrounded/hallucinated, yellow = partial/neutral), with interactive side-by-side popovers showing the exact source chunk citation.
     2.  Retriever Admin Observability Cockpit (`tenant-metrics.tsx` & `tenant-telemetry.tsx`): Real-time charts for Hallucination Trends, Token Burn Rate, P99 Latency SLAs, and Active Alert Incident feeds.
@@ -415,6 +415,6 @@ ROADMAP EXECUTION HORIZONS:
 - [Open-Source Roadmap](../ROADMAP.md)
 - [Enterprise Security Whitepaper](security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md)
 - [Sovereign Edge Swarm Handbook](cognitive/SOVEREIGN_EDGE_SWARM_HANDBOOK.md)
-- [Client Scoping Tenant Specification (Public)](https://prateeq.in/scoping)
+- [Client Scoping Tenant Specification (Public)](https://github.com/prat3010/retriever)
 - [Logical Architecture Blueprint](architecture.md)
 - [Physical System Design](implementation/system-design.md)

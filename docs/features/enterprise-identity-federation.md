@@ -84,7 +84,7 @@ The **Enterprise Identity Federation & RB-VAC** engine bridges corporate Identit
 
 ### Configure SAML 2.0 IdP
 ```bash
-curl -X POST https://rag.prateeq.in/v1/tenants/tn_acme/identity/saml/config \
+curl -X POST http://localhost:8000/v1/tenants/tn_acme/identity/saml/config \
   -H "X-API-Key: ret_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -97,7 +97,7 @@ curl -X POST https://rag.prateeq.in/v1/tenants/tn_acme/identity/saml/config \
 
 ### Test RB-VAC Pre-Filtering
 ```bash
-curl -X POST https://rag.prateeq.in/v1/tenants/tn_acme/identity/rbvac/simulate \
+curl -X POST http://localhost:8000/v1/tenants/tn_acme/identity/rbvac/simulate \
   -H "X-API-Key: ret_live_..." \
   -H "Content-Type: application/json" \
   -d '{

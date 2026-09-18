@@ -160,8 +160,8 @@ def main():
     )
     parser.add_argument(
         "--api-url",
-        default=os.getenv("RETRIEVER_API_URL", "https://rag.prateeq.in"),
-        help="Retriever Base API URL (default: https://rag.prateeq.in)",
+        default=os.getenv("RETRIEVER_API_URL", "http://localhost:8000"),
+        help="Retriever Base API URL (default: http://localhost:8000)",
     )
     parser.add_argument(
         "--admin-key",

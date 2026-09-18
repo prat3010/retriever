@@ -1,7 +1,7 @@
 # Serverless Dedicated GPU & Dynamic LoRA REST API Reference
 
 **Base URLs:**
-- Production Engine: `https://rag.prateeq.in`
+- Production Engine: `http://localhost:8000`
 - Local Development: `http://localhost:8000`
 
 ---
@@ -24,7 +24,7 @@ Returns deployment tier, active/min/max container scale counts, scaledown timeou
   "max_containers": 5,
   "scaledown_window_seconds": 300,
   "is_warm": false,
-  "endpoint_url": "https://prateeq--vllm-llama-serve.modal.run",
+  "endpoint_url": "https://retriever--vllm-llama-serve.modal.run",
   "current_active_model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
   "active_lora_adapters": []
 }

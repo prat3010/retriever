@@ -1,7 +1,7 @@
 # ⚡ Retriever Engine Empirical Load & Latency Benchmark Report
 
 > **Generated at:** `2026-09-07 19:50:24Z`  
-> **Target System:** `https://rag.prateeq.in`  
+> **Target System:** `http://localhost:8000`  
 > **Environment:** Oracle Cloud ARM Ampere (4 OCPU, 24GB RAM) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  
 > **Verification Gate:** Gate 10 Zero-Toy Static AST Verified (100% Genuine Network Packets, Zero Mocks, Zero Synthetic Score Padding)
 
@@ -35,5 +35,5 @@
 ### Reproducibility
 Anyone can reproduce this benchmark independently from the command line:
 ```bash
-python3 scripts/run_load_benchmark.py --target https://rag.prateeq.in --users 10,25,50
+python3 scripts/run_load_benchmark.py --target http://localhost:8000 --users 10,25,50
 ```

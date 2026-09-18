@@ -1,6 +1,6 @@
 # Retriever × RAG Client — Comprehensive Analysis Report
 
-> **Scope:** [Retriever admin dashboard](../../apps/web) (deployed at `admin.rag.prateeq.in`) and [RAG client app](https://prateeq.in/rag) (deployed at `prateeq.in/rag`).
+> **Scope:** [Retriever admin dashboard](../../apps/web) (deployed at `localhost:3000`) and [RAG client app](https://github.com/prat3010/retriever) (deployed at `retriever.run/rag`).
 > **Date:** 2026-07-19
 
 ---
@@ -10,7 +10,7 @@
 1. [System Architecture Overview](#1-system-architecture-overview)
 2. [Mental Model: UI, UX, DX](#2-mental-model-ui-ux-dx)
 3. [Onboarding Flow Analysis](#3-onboarding-flow-analysis)
-4. [Login at prateeq.in/rag — Deep Dive](#4-login-at-prateeqinrag--deep-dive)
+4. [Login at retriever.run/rag — Deep Dive](#4-login-at-retrieverrunrag--deep-dive)
 5. [Inconsistencies, Dead Code & Bad Patterns](#5-inconsistencies-dead-code--bad-patterns)
 6. [DevOps Strategy Analysis](#6-devops-strategy-analysis)
 7. [Strengths & Weaknesses](#7-strengths--weaknesses)
@@ -24,12 +24,12 @@
 ```mermaid
 graph LR
     subgraph "User Facing"
-        A["prateeq.in/rag<br/>(Next.js Client)"]
-        B["admin.rag.prateeq.in<br/>(Next.js Admin)"]
+        A["retriever.run/rag<br/>(Next.js Client)"]
+        B["localhost:3000<br/>(Next.js Admin)"]
     end
 
     subgraph "Backend Infrastructure"
-        C["FastAPI<br/>rag.prateeq.in:8000"]
+        C["FastAPI<br/>localhost:8000:8000"]
         D["PostgreSQL + pgvector"]
         E["Redis Cache"]
         F["RabbitMQ"]
@@ -56,7 +56,7 @@ graph LR
     L -->|"Proxy gateway"| N
 ```
 
-> **In plain English:** You have a full RAG (Retrieval Augmented Generation) pipeline. The backend is a Python FastAPI server running on an **Oracle Cloud Free Tier** VM ($0/mo), behind Nginx with Let's Encrypt SSL, at `rag.prateeq.in`. It stores documents, splits them into chunks, creates vector embeddings (via a local Ollama instance), and lets users search or chat with those documents. The database is hosted on **Supabase** (also free tier). There are two frontends: an **admin dashboard** (Vercel) where you onboard clients and manage settings, and a **client app** on your portfolio where end-users connect and interact with the system.
+> **In plain English:** You have a full RAG (Retrieval Augmented Generation) pipeline. The backend is a Python FastAPI server running on an **Oracle Cloud Free Tier** VM ($0/mo), behind Nginx with Let's Encrypt SSL, at `localhost:8000`. It stores documents, splits them into chunks, creates vector embeddings (via a local Ollama instance), and lets users search or chat with those documents. The database is hosted on **Supabase** (also free tier). There are two frontends: an **admin dashboard** (Vercel) where you onboard clients and manage settings, and a **client app** on your portfolio where end-users connect and interact with the system.
 
 ---
 
@@ -81,7 +81,7 @@ graph LR
 - Manage system data
 - Global settings
 
-### RAG Client (`prateeq.in/rag`)
+### RAG Client (`retriever.run/rag`)
 
 | Aspect | Current State |
 |--------|---------------|
@@ -121,11 +121,11 @@ Step 1: Tenant Details          Step 2: API Key              Step 3: Credentials
 > 
 > The client must then navigate to **Tenants → [Tenant] → Users tab → Add User** to create one. This is a broken handoff — the credentials shown during onboarding are incomplete, and the client cannot actually use the system until someone manually creates a user.
 
-### Client App: Connecting at `prateeq.in/rag`
+### Client App: Connecting at `retriever.run/rag`
 
 The user must fill in **4 required fields + 2 optional** to connect:
 
-1. **API Base URL** — defaults to `https://rag.prateeq.in` ✅
+1. **API Base URL** — defaults to `http://localhost:8000` ✅
 2. **Tenant ID** — defaults to `00000000-0000-0000-0000-000000000000` ❌
 3. **User ID** — defaults to `a8b819bb-61bb-450b-9662-62bd06b188d3` ❌  
 4. **API Key** — empty, placeholder shows `sk_live_...` ❌
@@ -134,7 +134,7 @@ The user must fill in **4 required fields + 2 optional** to connect:
 
 ---
 
-## 4. Login at prateeq.in/rag — Deep Dive
+## 4. Login at retriever.run/rag — Deep Dive
 
 ### Problem 1: Pre-filled IDs Create False Confidence
 
@@ -160,7 +160,7 @@ The form validates both Tenant ID and User ID with a strict UUID regex ([RagInte
 
 ### Problem 4: API Base URL is Redundant
 
-Since there is only one Retriever instance (`https://rag.prateeq.in`), asking users to fill in the API URL is unnecessary friction. It should be fixed/hidden with an option to override for advanced users.
+Since there is only one Retriever instance (`http://localhost:8000`), asking users to fill in the API URL is unnecessary friction. It should be fixed/hidden with an option to override for advanced users.
 
 ---
 
@@ -215,8 +215,8 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | **Redis** | Docker container | 💤 **Dormant** — intentionally disabled on 1 GB Oracle VM. Ready to enable on a beefier VPS. |
 | **RabbitMQ** | Docker container | 💤 **Dormant** — same. Task broker for async doc processing. |
 | **Celery Workers** | Docker container | 💤 **Dormant** — same. Background workers for chunking, embedding, etc. |
-| **Admin Dashboard** | `npm run dev` on `:3000` | Vercel (`admin.rag.prateeq.in`) |
-| **Client App (RAG)** | Part of Prateek_website dev server | Vercel (`prateeq.in/rag`) |
+| **Admin Dashboard** | `npm run dev` on `:3000` | Vercel (`localhost:3000`) |
+| **Client App (RAG)** | Part of Prateek_website dev server | Vercel (`retriever.run/rag`) |
 | **Client Proxy** | N/A | Cloudflare Workers |
 
 > **In plain English:** The production API runs on a tiny free Oracle VM (1 CPU core, 1 GB RAM). It's a bare-metal deployment — no Docker, no Kubernetes, just a systemd service behind Nginx. Render was **deprecated** because Ollama kept crashing with OOM errors on Render's 512 MB free tier. Oracle's 1 GB tier gives just enough breathing room.
@@ -241,10 +241,10 @@ Since there is only one Retriever instance (`https://rag.prateeq.in`), asking us
 | **Manual SSH deploys** | Every backend change requires `ssh → git pull → systemctl restart`. No CI/CD auto-deploy to Oracle. | 🟡 Medium |
 | **No auto-detection for infra services** | Redis/RabbitMQ/Celery are intentionally dormant on the 1 GB Oracle VM (correct decision). But when you upgrade to a bigger VPS, you'd need to manually configure them. An auto-detection feature should enable them when server specs allow it. | 🟡 Medium |
 | **ADMIN_MASTER_KEY is the default in prod** | [ORACLE_DEPLOYMENT_REFERENCE.md](../infrastructure/ORACLE_DEPLOYMENT_REFERENCE.md#L106) shows `ADMIN_MASTER_KEY=dev-admin-master-key-change-in-production` **in the production .env**. Anyone who guesses or reads the source code can log into the admin dashboard. | 🔴 Critical |
-| **Ephemeral IP** | Oracle's public IP (`130.210.35.134`) is ephemeral — it changes if the VM is stopped and restarted. DNS (`rag.prateeq.in`) would break. | 🟡 Medium |
+| **Ephemeral IP** | Oracle's public IP (`YOUR_SERVER_IP`) is ephemeral — it changes if the VM is stopped and restarted. DNS (`localhost:8000`) would break. | 🟡 Medium |
 | **1 GB RAM constraint** | Ollama + FastAPI share 1 GB RAM. Under load, OOM is possible (same reason Render was abandoned). | 🟡 Medium |
 | No integration tests in CI | CI only runs unit tests (`-m "not integration"`). Docker integration test infrastructure removed — reintroduce when needed. | 🟡 Medium |
-| No health check monitoring | No uptime monitoring for `rag.prateeq.in` | 🟡 Medium |
+| No health check monitoring | No uptime monitoring for `localhost:8000` | 🟡 Medium |
 | `.env` committed to repo | Credentials exposed in version control | 🔴 Critical |
 | No database migration CI | Alembic migrations exist but aren't run or validated in CI | 🟡 Medium |
 | **Port 8000 open to public** | Oracle security group allows `0.0.0.0/0` on port 8000, bypassing Nginx SSL. Should be closed. | 🟡 Medium |
@@ -324,7 +324,7 @@ The [ROADMAP.md](../../ROADMAP.md) tracks 30 milestones. M1–M25 are completed.
 | Secrets in `.env` on server | ✅ Done | `.env` on Oracle VM exists |
 | Sentry DSN configured and verified | ❌ Not done | Sentry DSN is empty in config; no evidence of Sentry integration on Oracle |
 | `/metrics` endpoint exposed with Prometheus | ❌ Not done | No Prometheus target or scrape config on Oracle VM |
-| Uptime monitoring on `rag.prateeq.in` | ❌ Not done | No UptimeRobot or similar configured |
+| Uptime monitoring on `localhost:8000` | ❌ Not done | No UptimeRobot or similar configured |
 | LLM API key quota alerts (< 20% remaining) | ❌ Not done | No alerting mechanism exists |
 | Nightly DB backup cron | ❌ Not done | No backup automation on Oracle |
 | CI/CD auto-deploy (rsync + systemctl restart) | ❌ Not done | Deploys are still manual `ssh → git pull → restart` |
@@ -400,7 +400,7 @@ The [ROADMAP.md](../../ROADMAP.md) tracks 30 milestones. M1–M25 are completed.
 #### 2. Fix the Client Login Form Defaults
 
 **What:**
-- Set `apiUrl` to `https://rag.prateeq.in` (keep this as the only default)
+- Set `apiUrl` to `http://localhost:8000` (keep this as the only default)
 - Set `tenantId` to `""` (empty — force user to enter their own)
 - Set `userId` to `""` (empty — force user to enter their own)
 - Change API key placeholder from `sk_live_...` to `ret_live_...`

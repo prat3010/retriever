@@ -40,7 +40,7 @@ Confirm that Battery #18 (`edge_vector_sync`) is active and healthy:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/edge/health | jq .
+  http://localhost:8000/v1/admin/edge/health | jq .
 ```
 
 **Expected Output:**
@@ -60,7 +60,7 @@ Query active peer devices and vector clock synchronization metrics for a tenant:
 
 ```bash
 curl -s -H "Authorization: Bearer $TENANT_API_KEY" \
-  https://rag.prateeq.in/v1/edge/tenants/$TENANT_ID/status | jq .
+  http://localhost:8000/v1/edge/tenants/$TENANT_ID/status | jq .
 ```
 
 ---
@@ -71,7 +71,7 @@ curl -s -H "Authorization: Bearer $TENANT_API_KEY" \
 
 1. Register the device via administrative or tenant key:
    ```bash
-   curl -X POST "https://rag.prateeq.in/v1/edge/peers/register" \
+   curl -X POST "http://localhost:8000/v1/edge/peers/register" \
      -H "Authorization: Bearer $TENANT_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
@@ -89,7 +89,7 @@ When deploying a new edge node, download the current consolidated SQLite replica
 
 ```bash
 curl -s -H "Authorization: Bearer $PEER_AUTH_TOKEN" \
-  "https://rag.prateeq.in/v1/edge/tenants/$TENANT_ID/snapshot?format=zstd" \
+  "http://localhost:8000/v1/edge/tenants/$TENANT_ID/snapshot?format=zstd" \
   -o /var/lib/retriever/snapshot_baseline.sqlite.zst
 
 # Uncompress snapshot
@@ -107,7 +107,7 @@ sqlite3 /var/lib/retriever/edge_replica.sqlite "SELECT count(*) FROM local_embed
 Edge devices execute periodic cron jobs (e.g. every 60 seconds) to push local vector changes and receive remote insertions:
 
 ```bash
-curl -X POST "https://rag.prateeq.in/v1/edge/tenants/$TENANT_ID/delta" \
+curl -X POST "http://localhost:8000/v1/edge/tenants/$TENANT_ID/delta" \
   -H "Authorization: Bearer $PEER_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

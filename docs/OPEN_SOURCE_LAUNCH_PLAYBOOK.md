@@ -154,7 +154,7 @@ Highlighting all 38 built-in batteries demonstrates that Retriever is not a toy 
 
   Everything spins up with a single `curl -fsSL https://get.retriever.run | bash` or `docker compose up` command.
 
-  Live demo: https://rag.prateeq.in
+  Live demo: http://localhost:8000
   GitHub: https://github.com/prat3010/retriever
 
   Would love your feedback on the architecture and benchmarks!
@@ -232,18 +232,18 @@ Open-sourcing Retriever is the ultimate professional proof-of-work. The reposito
 1. **README Author Hero Banner:**
    ```markdown
    ---
-   ### 👷 Architected by [Prateek Sharma](https://prateeq.in)
+   ### 👷 Architected by [Prateek Sharma](https://github.com/prat3010/retriever)
    **Forward Deployed AI Engineer & Systems Architect**
    
    Need Retriever deployed inside your enterprise VPC (AWS/GCP/Azure) with custom compliance, 
    private fine-tuned LoRAs, or proprietary ERP/CRM connectors?
    
-   👉 **[Explore Enterprise Architecture Discovery & Deployment](https://prateeq.in/scoping)**  
+   👉 **[Explore Enterprise Architecture Discovery & Deployment](https://github.com/prat3010/retriever)**  
    📫 Reach out directly: `prateeqsharma@gmail.com`
    ---
    ```
 2. **"Deploy with the Creator" Badge:** Placed strategically after the Docker quickstart and at the conclusion of the README.
-3. **Commercial Dual-Licensing / Enterprise Cloud Deployment:** Provide the open-source Apache 2.0 core for community developers, with bespoke enterprise deployment and SLA support offered through `prateeq.in`.
+3. **Commercial Dual-Licensing / Enterprise Cloud Deployment:** Provide the open-source Apache 2.0 core for community developers, with bespoke enterprise deployment and SLA support offered through `retriever.run`.
 
 ---
 

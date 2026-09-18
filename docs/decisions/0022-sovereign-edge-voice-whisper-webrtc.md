@@ -105,7 +105,7 @@ Database migrations (`alembic_version = 'm1n2o3p4q5r6'`) define two dedicated ta
 ## 5. Development Testing vs. Open-Source Productionization Strategy
 
 ### 5.1 Current Development & Testing Phase (Hybrid Sovereign Engine)
-- **Backend VPS Anchor:** Local Whisper adapter (`whisper_cpp_sovereign_edge`) and streaming neural synthesis engine (`edge_neural_tts_streamer`) run directly on the Oracle Cloud VPS (`130.210.35.134`).
+- **Backend VPS Anchor:** Local Whisper adapter (`whisper_cpp_sovereign_edge`) and streaming neural synthesis engine (`edge_neural_tts_streamer`) run directly on the Oracle Cloud VPS (`YOUR_SERVER_IP`).
 - **Graceful Client Fallbacks:** If the client operates in an offline test harness or without audio hardware access, the UI and SDK transparently simulate audio chunks and turn profiling with realistic mathematical latencies (128–184ms), ensuring 100% test reliability in CI environments.
 
 ### 5.2 Open-Source Public Release Productionization Roadmap

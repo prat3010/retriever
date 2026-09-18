@@ -25,8 +25,8 @@ class LibsqlReplicationService:
 
     def __init__(
         self,
-        primary_endpoint: str = "https://rag.prateeq.in",
-        turso_cluster_url: str = "libsql://retriever-cluster-prateeq.turso.io",
+        primary_endpoint: str = "https://api.retriever.run",
+        turso_cluster_url: str = "libsql://retriever-cluster.turso.io",
         token_secret_salt: str = "retriever-libsql-secret-v1",
         default_sync_interval: int = 10,
     ) -> None:

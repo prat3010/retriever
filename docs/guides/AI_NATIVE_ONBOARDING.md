@@ -69,7 +69,7 @@ Spins up the complete sovereign RAG engine locally with zero external API depend
 - Next.js Admin Web Studio (port 3000)
 
 ### 2. 🤖 Option 2: Connect AI Tools via MCP (`retriever-mcp`)
-If the developer already has a running instance (or connects to `https://rag.prateeq.in`), the agent configures the Model Context Protocol server. This equips their AI assistant with native tools:
+If the developer already has a running instance (or connects to `http://localhost:8000`), the agent configures the Model Context Protocol server. This equips their AI assistant with native tools:
 - `retriever_create_tenant`
 - `retriever_upload_file`
 - `retriever_hybrid_search`

@@ -121,7 +121,7 @@ import { RetrieverClient } from "@prat3010/retriever-client";
 
 const client = new RetrieverClient({
   apiKey: "retriever_live_...",
-  baseUrl: "https://rag.prateeq.in",
+  baseUrl: "http://localhost:8000",
   tenantId: "tn_client_enterprise",
 });
 
@@ -158,7 +158,7 @@ from retriever import RetrieverClient
 
 client = RetrieverClient(
     api_key="retriever_live_...",
-    base_url="https://rag.prateeq.in",
+    base_url="http://localhost:8000",
     tenant_id="tn_client_enterprise",
 )
 

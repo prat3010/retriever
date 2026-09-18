@@ -130,7 +130,7 @@ async def get_n8n_openapi_spec() -> Any:
             "version": "v0.51.0",
             "description": "OpenAPI specification for 1-click import into n8n HTTP Nodes.",
         },
-        "servers": [{"url": "https://rag.prateeq.in"}],
+        "servers": [{"url": "http://localhost:8000"}],
         "paths": {
             "/v1/tenants/{tenantId}/ingest/webhook": {
                 "post": {

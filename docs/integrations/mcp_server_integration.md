@@ -92,7 +92,7 @@ Add the following to your project's `.cursor/mcp.json`:
 {
   "mcpServers": {
     "retriever": {
-      "url": "https://rag.prateeq.in/v1/mcp/sse",
+      "url": "http://localhost:8000/v1/mcp/sse",
       "headers": {
         "Authorization": "Bearer YOUR_RETRIEVER_API_KEY"
       }
@@ -111,7 +111,7 @@ Add to `claude_desktop_config.json`:
       "args": [
         "-y",
         "mcp-remote",
-        "https://rag.prateeq.in/v1/mcp/sse",
+        "http://localhost:8000/v1/mcp/sse",
         "--header",
         "Authorization: Bearer YOUR_RETRIEVER_API_KEY"
       ]
@@ -125,7 +125,7 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "retriever": {
-      "url": "https://rag.prateeq.in/v1/mcp/sse",
+      "url": "http://localhost:8000/v1/mcp/sse",
       "headers": {
         "Authorization": "Bearer YOUR_RETRIEVER_API_KEY"
       }
@@ -140,7 +140,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 
 client = MultiServerMCPClient({
     "retriever": {
-        "url": "https://rag.prateeq.in/v1/mcp/sse",
+        "url": "http://localhost:8000/v1/mcp/sse",
         "headers": {"Authorization": "Bearer YOUR_RETRIEVER_API_KEY"},
         "transport": "sse",
     }

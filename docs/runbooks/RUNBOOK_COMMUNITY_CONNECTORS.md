@@ -13,13 +13,13 @@ Confirm that Battery #27 (`cdc_community_connectors`) is operational:
 
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/platform/batteries | jq '.batteries[] | select(.id == "cdc_community_connectors")'
+  http://localhost:8000/v1/admin/platform/batteries | jq '.batteries[] | select(.id == "cdc_community_connectors")'
 ```
 
 ### 1.2 Inspect Registered Connector Types
 ```bash
 curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-  https://rag.prateeq.in/v1/admin/connectors/manifests | jq '.[].name'
+  http://localhost:8000/v1/admin/connectors/manifests | jq '.[].name'
 ```
 
 ---
@@ -35,7 +35,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 1. Check tenant connector status:
    ```bash
    curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
-     https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors | jq .
+     http://localhost:8000/v1/admin/tenants/{tenantId}/connectors | jq .
    ```
 2. Verify target table indexing: Ensure `updated_at` (or configured watermark column) has a B-tree index in the upstream database:
    ```sql
@@ -43,7 +43,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
    ```
 3. Test connectivity and run manual sync:
    ```bash
-   curl -X POST https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync \
+   curl -X POST http://localhost:8000/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync \
      -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
      -H "Content-Type: application/json" \
      -d '{"mode": "incremental"}' | jq .
@@ -58,7 +58,7 @@ curl -s -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
 **Remediation:**
 Trigger a forced full re-sync (bypassing the ETag cache):
 ```bash
-curl -X POST https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync \
+curl -X POST http://localhost:8000/v1/admin/tenants/{tenantId}/connectors/{connectorId}/sync \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{"mode": "full"}' | jq .
@@ -81,6 +81,6 @@ curl -X POST https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{conn
 ## 3. Resetting Connector Watermarks
 To reset a connector to ingest all historical data from epoch:
 ```bash
-curl -X PUT https://rag.prateeq.in/v1/admin/tenants/{tenantId}/connectors/{connectorId}/reset \
+curl -X PUT http://localhost:8000/v1/admin/tenants/{tenantId}/connectors/{connectorId}/reset \
   -H "X-Admin-Master-Key: $ADMIN_MASTER_KEY" | jq .
 ```

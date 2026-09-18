@@ -179,8 +179,8 @@ def main():
     parser = argparse.ArgumentParser(description="Retriever Interactive Terminal Chat")
     parser.add_argument(
         "--api-url",
-        default=os.getenv("RETRIEVER_API_URL", "https://rag.prateeq.in"),
-        help="Base API URL",
+        default=os.getenv("RETRIEVER_API_URL", "http://localhost:8000"),
+        help="Base API URL (default: http://localhost:8000)",
     )
     parser.add_argument(
         "--tenant",

@@ -1,6 +1,6 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M112) connecting `retriever` and the `prateeq.in` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M112) connecting `retriever` and the `retriever.run` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md).
 > 
 > This document tracks the backend and unified cross-platform engineering milestones (M1–M112) for the Retriever AI engine and control plane.
 
@@ -48,7 +48,7 @@
 | **M36** | SaaS Data Connectors Framework | WebCrawler + cloud-drive connectors, admin CRUD, sync ingestion | **Completed** |
 | **M37** | GraphRAG & Knowledge Graph Indexing | Entity-relationship graph extraction and hybrid graph+vector reasoning | **Completed** |
 | **M38** | Critical Security Remediation | Google OAuth verification, JWT secret, SQL-injection-safe filters, file-serve traversal & HMAC hardening, upload caps, RLS coverage, error redaction | **Completed** (v0.36.0) |
-| **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, auto-tenant provisioning, GET /v1/auth/session, and aligning with `prateeq.in` control plane | **Completed** |
+| **M39** | Production Multi-Tenant Identity & Workspace Portal | Supabase Auth OIDC/JWKS resource server integration, auto-tenant provisioning, GET /v1/auth/session, and aligning with `retriever.run` control plane | **Completed** |
 | **M40** | Active Real-Time LLM Safety Guardrails | Llama Guard 3 taxonomy, pre-execution prompt injection blocks, post-execution output PII redactor | **Completed** |
 | **M41** | Chunk-Level Granular Access Control (ACL) | Add allowed_roles/allowed_users to chunk metadata & enforce DB engine RLS | **Completed** (v0.39.0) |
 | **M42** | Layout-Aware Vision OCR & Table Parsing | Replace PyPDF2 with Docling/Unstructured layout-aware OCR for scanned PDFs & tables | **Completed** (v0.40.0) |
@@ -61,13 +61,13 @@
 | **M49** | Context Compression & Zero-Trust Encryption | Implement LongLLMLingua chunk compression and envelope encryption for vector/text storage | **Completed** (v0.47.0) |
 | **M50** | Online Production Hallucination Tracing | Continuous real-time faithfulness & context relevance scoring on live API streams | **Completed** (v0.48.0) |
 | **M51** | Compliance & Data Sovereignty Lifecycle | Automated GDPR vector purge, data retention schedulers, and zero-footprint PII redaction | **Completed** (v0.49.0) |
-| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `prateeq.in`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
+| **M52** | Commercial SaaS Quota Sync & Webhook Provisioning | Receive Razorpay/Stripe webhooks from `retriever.run`, sync tenant quotas (`M26`), and track usage balance | **Completed** (v0.50.0) |
 | **M53** | Enterprise n8n & Workflow Automation Integration | Self-hosted n8n automation connectors, inbound document auto-ingest webhooks (Gmail/GDrive/Notion), outbound event triggers (Slack/WhatsApp/Zendesk), and community node integration | **Completed** (v0.51.0) |
 | **M54** | Enforced Parent-Child Hydration & Exact Citation Grounding | Small-chunk precision search with parent-chunk context expansion & exact string-span citation verification | **Completed** (v0.52.0) |
 | **M55** | Embeddable Chat Widget & Public JavaScript Client | Zero-dependency standalone `widget.js` bundle & `@prat3010/retriever-client-js` streaming client | **Completed** (v0.53.0) |
-| **M58.5**| Retriever Grounded Outbound (`prateeq_outreach`) | Dedicated tenant for Synchronizer pitch generation, portfolio vector indexing & evidence inspector | **Planned (Phase E)** |
+| **M58.5**| Retriever Grounded Outbound (`outreach_engine`) | Dedicated tenant for pitch generation, document vector indexing & evidence inspector | **Planned (Phase E)** |
 | **M62.5**| Operational Hardening & Cross-Repo Security Baseline | Secrets rotation, git purge, CORS restriction, exception handler fix, bare except logging, CI gates & dual-DB API protocol | **Completed** |
-| **M63** | Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Completed** (Phase G) |
+| **M63** | Multimodal Discovery & Dogfooding Tenant (`demo_tenant`) | Onboard authentic dogfooding tenant with rate cards & embed widget chatbox | **Completed** (Phase G) |
 | **M64** | Productized Architecture Cart Drawer & GraphRAG Upsells | Slide-over cart drawer, volume bundle discounts & Python REPL CPQ pricing | **Completed** (Phase G) |
 | **M65** | Live Visual Architecture Topology Map & Cascade Solver | Dynamic SVG node graph visualizer & interactive dependency cascade disconnect modal | **Completed** (Phase G) |
 | **M66** | Terminal Scoping CLI (`/terminal`) & Mobile QR Checkout | CLI scoping commands in `/terminal` & mobile ASCII QR code checkout | **Completed** (Phase G) |
@@ -96,7 +96,7 @@
 | **M85.9**| Dashboard God Component Decomposition & Zod Validation | Decomposed dashboard into 10 modular widgets with runtime Zod request validation | **Completed** (Phase J.6 / Frontend) |
 | **M85.10**| Multi-Tenant Locust Load Testing & Benchmark Reporting | Multi-tenant Locust concurrent load testing suite and automated latency & throughput report generator | **Completed** (Phase J.6 / Benchmarks) |
 | **M85.11**| parse-intent Real-Retriever Structured Classification | Replace `if/else` keyword classifier in `Prateek_website` scoping with authentic Retriever chat/orchestrator structured JSON classification (archetype, features, confidence, telemetry); remove fabricated latency/model; keep labeled fallback | **Completed** (Phase J.7) |
-| **M85.12**| AiScopingPromptBar AI-Theater Removal & Honest Telemetry | Remove fake default telemetry + stale "primed for prateeq-scoping-live" badge + simulated 3-step `setTimeout` progress; show real backend telemetry only | **Completed** (Phase J.7) |
+| **M85.12**| AiScopingPromptBar AI-Theater Removal & Honest Telemetry | Remove fake default telemetry + stale "primed for demo-scoping-live" badge + simulated 3-step `setTimeout` progress; show real backend telemetry only | **Completed** (Phase J.7) |
 | **M85.13**| Scoping PRD & Audit Docs Reconciliation | Reconcile `SCOPING_AUDIT_ROADMAP.md` §5.1 / SOTA PRD "powered by gemini-3.6-flash" claims with the real Retriever implementation | **Completed** (Phase J.7) |
 | **M85.14**| CI Test Execution Gate & Coverage (Frontend) | Add `npm test` + coverage + Playwright interaction job to `Prateek_website` CI (`db_sync.yml`); tests currently never run in CI | **Completed** (Phase J.7) |
 | **M85.15**| Honest Communication Pass | Reword "256-bit Encrypted" badge, un-hide reCAPTCHA, correct stale hardcoded test counts in terminal copy | **Completed** (Phase J.7) |
@@ -138,7 +138,7 @@
 > 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
 > - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)**.
 > - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](../ADMIN_DASHBOARD_ROADMAP.md)**.  
-> - For the Client Portal & SaaS Studio (`prateeq.in/dashboard` & `prateeq.in/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
+> - For the Client Portal & SaaS Studio (`retriever.run/dashboard` & `retriever.run/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
 > - For the Master Unified Cross-Platform Roadmap (M1–M109), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md)**.
 > - For the Active **Phase J.7** (M85.11–M85.16: Honest AI Wiring, Trust Hardening & FDE Hiring Credibility), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` §Phase J.7](../UNIFIED_MASTER_ROADMAP.md)**.
 
@@ -732,7 +732,7 @@
 **Targets:**
 - ✅ Real deployment topology documented: Oracle VPS, systemd, nginx reverse proxy, Let's Encrypt SSL, Ollama sidecar — replaces stale K8s/Docker references.
 - ✅ Secrets management: all env vars in single `.env` on server; encrypted LLM keys at rest (AES-256-GCM KEK verified in code); rotation process documented.
-- ✅ Observability: `/metrics` endpoint exposed and reachable via https (verified `curl https://rag.prateeq.in/metrics` → 200); **Sentry configured** (DSN live, EU region, test error ingested 2026-07-31); uptime monitoring ⬜ unverifiable (external service).
+- ✅ Observability: `/metrics` endpoint exposed and reachable via https (verified `curl http://localhost:8000/metrics` → 200); **Sentry configured** (DSN live, EU region, test error ingested 2026-07-31); uptime monitoring ⬜ unverifiable (external service).
 - ✅ Basic alerting: `scripts/quota-alert.sh` — daily cron check of LLM key usage (OpenRouter `/auth/key`), ntfy.sh push + optional webhook when remaining < 20%/10%. ⚠️ Platform key is currently free-tier → reports "not monitorable"; monitorable once a prepaid key is used.
 - ✅ Backup automation: `scripts/backup-db.sh` — nightly cron (02:30 UTC), per-table gzipped CSV over the Supabase pooler (pg_dump incompatible with pgbouncer), 14-day retention, manifest per run. Verified: 20 tables backed up. Restore procedure in DEPLOYMENT.md (schema rebuilt via Alembic).
 - ✅ CI/CD: GitHub Actions workflow for deploy (`deploy-api.yml` — SSH + `systemctl restart` + post-deploy smoke test); all secrets configured (verified `ORACLE_HOST/USER/SSH_KEY/PORT` in GitHub secrets).
@@ -763,7 +763,7 @@
 - ✅ `apps/web/.env.local` scrubbed from git history (commit `53c6286`, all 148 commits, branches `main` + `decompose-main-py`) via `git-filter-repo` + force-push (2026-07-31). Token verified expired on its own (2026-07-18, `exp` claim + Vercel API 403) — rotation unnecessary. Server git objects purged (`reflog expire` + `gc --prune=now`); root `.gitignore` hardened to `.env*`.
 - ✅ `@model_validator(mode="after")` in `config.py` crashes FastAPI startup with `ValueError` if `ENVIRONMENT == "production"` and `ADMIN_MASTER_KEY` or `KEY_ENCRYPTION_KEY` still have their default development values (config.py:66-84).
 - ✅ SSH into Oracle VM: `ADMIN_MASTER_KEY` and `KEY_ENCRYPTION_KEY` in production `.env` are **not** default values (verified on server).
-- ✅ Remove port 8000 ingress rule from Oracle Cloud security group — verified: `nc` to `130.210.35.134:8000` from external host times out (filtered); API only reachable via nginx 443/80.
+- ✅ Remove port 8000 ingress rule from Oracle Cloud security group — verified: `nc` to `YOUR_SERVER_IP:8000` from external host times out (filtered); API only reachable via nginx 443/80.
 - ✅ `proxy.ts`: validates `admin_key` cookie against backend `GET /v1/admin/verify-key` (5-min validated cookie cache); invalid keys are cleared and redirected to `/login` (apps/web/src/proxy.ts).
 
 **Acceptance Criteria:**
@@ -788,10 +788,10 @@
   - ✅ Set `tenantId` default to `""` (empty — force entry).
   - ✅ Set `userId` default to `""` (empty — force entry).
   - ✅ Change API key placeholder from `sk_live_...` to `ret_live_...`.
-  - ✅ Keep `apiUrl` default as `https://rag.prateeq.in`.
+  - ✅ Keep `apiUrl` default as `http://localhost:8000`.
 - ⬜ **Simplify tenant and user IDs:** Frontend done (relaxed `isUuid()` to accept `tn_`/`usr_` short IDs). **Backend deferred:** add short ID columns, accept short IDs in API paths, keep UUID as internal primary key — not built.
 - ✅ **Show internal User ID in Users tab:** Add a "User ID" column to `tenant-users.tsx` table with a copy-to-clipboard action so admins can easily provide it to clients.
-- ✅ **Hide API Base URL field:** In `ConfigPanel`, show the API URL field only when an "Advanced" toggle is enabled. Default value stays as `https://rag.prateeq.in`.
+- ✅ **Hide API Base URL field:** In `ConfigPanel`, show the API URL field only when an "Advanced" toggle is enabled. Default value stays as `http://localhost:8000`.
 
 **Documents to Update:**
 - ✅ `ONBOARDING_WORKFLOW.md` — reflect the new 4-step wizard with user creation.
@@ -802,7 +802,7 @@
 
 **Acceptance Criteria:**
 - ✅ Onboarding a new client through the admin wizard produces a Tenant ID, User ID, and API Key — all usable immediately without visiting a separate tab.
-- ✅ Client connects at `prateeq.in/rag` by entering only Tenant ID, User ID, and API Key (URL is pre-filled and can be changed via Advanced toggle).
+- ✅ Client connects at `retriever.run/rag` by entering only Tenant ID, User ID, and API Key (URL is pre-filled and can be changed via Advanced toggle).
 - ⬜ Short IDs (`tn_X7kM2p`, `usr_Qp3N8w`) are accepted by both admin and client apps — partial: client accepts, backend API paths still UUID-only (deferred).
 - ✅ Admin Users tab displays the internal short User ID with one-click copy.
 
@@ -848,7 +848,7 @@
 **Targets:**
 - ✅ **GitHub Actions auto-deploy to Oracle VM:** `.github/workflows/deploy-api.yml` exists — triggers on push to `main` affecting `apps/api/` or `packages/`, SSHes into the Oracle VM (deploy key in GitHub Secrets), pulls + restarts `retriever-api`, runs post-deploy smoke tests. All secrets configured (verified: `ORACLE_HOST/USER/SSH_KEY/PORT` in GitHub secrets).
 - ✅ **Configure Sentry:** `SENTRY_DSN` set in production `.env` (EU region), app restarted, test error ingested and confirmed. ⚠️ Required fix during enablement: server had older `sentry-sdk` whose OTel integration re-export changed — import now uses `sentry_sdk.integrations.opentelemetry.integration` (main.py:40).
-- ⬜ **Uptime monitoring:** Configure UptimeRobot or Better Uptime to check `https://rag.prateeq.in/health/liveness` every 5 minutes — external service, unverifiable.
+- ⬜ **Uptime monitoring:** Configure UptimeRobot or Better Uptime to check `http://localhost:8000/health/liveness` every 5 minutes — external service, unverifiable.
 - ✅ **Add pagination to `useAllTenants`:** hardcoded `?limit=1000` replaced with configurable `limit` param, default 50 (`apps/web/src/hooks/use-tenants.ts`).
 
 **Documents to Update:**
@@ -860,7 +860,7 @@
 **Acceptance Criteria:**
 - ⬜ Pushing a change to `apps/api/src/main.py` triggers the deploy workflow and restarts the API on Oracle VM within 2 minutes — workflow + secrets present, end-to-end run unverified.
 - ✅ A deliberate `raise Exception("test")` in a route handler appears in Sentry within 60 seconds — verified via `sentry_sdk.capture_exception()` one-off (error "Sentry wiring test from retriever-oracle-vm" ingested).
-- ⬜ UptimeRobot dashboard shows green status for `rag.prateeq.in` with 5-minute check intervals — external, unverifiable.
+- ⬜ UptimeRobot dashboard shows green status for `localhost:8000` with 5-minute check intervals — external, unverifiable.
 - ✅ `useAllTenants` no longer fetches 1000 records in a single query — verified (default 50).
 
 ---
@@ -949,7 +949,7 @@
   - Fail startup (or warn loudly) when `RATE_LIMIT_ENABLED=False` in production.
   - Add RLS policies for `eval_datasets`, `eval_questions`, `eval_runs`, `eval_run_results`, and `graph_triples` (`src/adapters/database/setup.py`).
   - Redact tracebacks from the global exception handler (`src/main.py:99-103`).
-- **Demo credential resolution:** provision a server-side guest tenant + read-only API key for the `prateeq.in/rag` live demo (or remove the demo) so the public sandbox either works or is not advertised.
+- **Demo credential resolution:** provision a server-side guest tenant + read-only API key for the `retriever.run/rag` live demo (or remove the demo) so the public sandbox either works or is not advertised.
 
 **Documents to Update:**
 - `PROJECT_STATUS.md` — correct the "RLS active on all customer-data tables" and "`/v1/auth/google` verifies Google JWKS tokens" claims.
@@ -1174,12 +1174,12 @@
 
 ---
 
-### [Completed] Milestone 63: Multimodal Discovery & Dogfooding Tenant (`prateeq_scoping`)
+### [Completed] Milestone 63: Multimodal Discovery & Dogfooding Tenant (`demo_tenant`)
 
 **Objective:** Onboard authentic dogfooding tenant with engineering rate cards and embed widget chatbox for live scoping.
 
 **Target Deliverables:**
-- **Authentic Scoping Tenant**: Dedicated `prateeq_scoping` tenant on Retriever with catalog documents and system prompt.
+- **Authentic Scoping Tenant**: Dedicated `demo_tenant` tenant on Retriever with catalog documents and system prompt.
 - **Scoping AI Prompt & RFP Dropzone**: Multimodal natural language intent bar (`AiScopingPromptBar.tsx`) and PDF RFP dropzone (`RfpUploaderModal.tsx`).
 
 ---

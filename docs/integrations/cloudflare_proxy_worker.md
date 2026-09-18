@@ -27,7 +27,7 @@ invariants:
 flowchart LR
     Browser[Client Web Application] -->|Public Request + User JWT| Worker[Cloudflare Edge Worker]
     Worker -->|Validate Supabase RS256 JWT| Worker
-    Worker -->|Inject Server Secret API Key| Origin[Retriever Core API Origin (rag.prateeq.in)]
+    Worker -->|Inject Server Secret API Key| Origin[Retriever Core API Origin (localhost:8000)]
     Origin -->|SSE Token Stream| Worker
     Worker -->|Forward SSE Stream + CORS Headers| Browser
 ```
@@ -52,7 +52,7 @@ export default {
 
     // 2. Clone request and inject Tenant Service Secret
     const url = new URL(request.url);
-    url.hostname = "rag.prateeq.in";
+    url.hostname = "localhost:8000";
 
     const modifiedHeaders = new Headers(request.headers);
     modifiedHeaders.set("X-API-Key", env.RETRIEVER_SERVER_API_KEY);

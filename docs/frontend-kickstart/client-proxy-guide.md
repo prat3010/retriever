@@ -2,12 +2,13 @@
 
 This guide details how to securely connect public frontend applications (such as iOS/Android mobile apps or web clients) to your **Retriever** RAG backend.
 
-The current production deployment runs entirely on free-tier infrastructure:
-- **API**: Render (free web service, Docker)
-- **Database**: Supabase (free tier, PostgreSQL + pgvector)
-- **Embeddings**: HuggingFace Inference API (free, `BAAI/bge-base-en-v1.5`, 768-dim)
-- **LLM**: Client BYOK (tenant provides their own API key)
-- **Proxy**: Cloudflare Workers (free, 100k req/day)
+The current production deployment runs on production-grade infrastructure:
+- **API**: Oracle Cloud VPS (`https://rag.prateeq.in` at `130.210.35.134`, Ubuntu 24.04, FastAPI, systemd)
+- **Database**: Supabase (PostgreSQL + pgvector)
+- **Embeddings**: Local Ollama (`nomic-embed-text` on `http://localhost:11434`, 768-dim) to eliminate API rate limits and external costs
+- **LLM**: Client BYOK / Tenant configured keys (Gemini, OpenAI, Anthropic, or local)
+- **Mobile Proxy**: Cloudflare Workers edge proxy (`packages/client-proxy-worker/`)
+- **Web Proxy**: Next.js API Route Handlers / Server Actions (Backend-for-Frontend / BFF pattern)
 
 ---
 
@@ -30,17 +31,23 @@ Mobile app binaries (IPAs and APKs) can be decompiled in seconds using standard 
 
 ## 2. The Solution: The Safe Proxy Architecture
 
-Instead of direct connection, route client traffic through an edge-based **Cloudflare Worker Proxy**. The proxy validates your user's auth token, injects the hidden API key from environment secrets, and forwards the request to your live Retriever engine.
+Instead of direct connection, route client traffic through an edge-based **Cloudflare Worker Proxy** (for mobile apps) or **Next.js Route Handlers** (for web apps). The proxy validates your user's auth token, injects the hidden API key from environment secrets, and forwards the request to your live Retriever engine.
 
 ```
-Client App → Cloudflare Proxy (JWT auth, key injection) → Render (API) → Supabase (DB, vectors, RLS)
-                                                                         → HuggingFace (embeddings)
-                                                                         → Tenant's LLM
+Client App (Mobile) ───────→ Cloudflare Proxy (JWT auth, key injection) ──┐
+                                                                           ├──→ Oracle VPS (FastAPI: https://rag.prateeq.in)
+Client App (Web/Next.js) ──→ Next.js Route Handler (BFF pattern) ─────────┘        ├──→ Local Ollama (nomic-embed-text)
+                                                                                   ├──→ Supabase (DB, vectors, RLS)
+                                                                                   └──→ Tenant's LLM
 ```
+
+> **Architecture Note:**
+> - **Native Mobile Apps (React Native / Expo / Flutter):** Must route through the Cloudflare Worker proxy (`packages/client-proxy-worker`) because client app binaries cannot keep secrets safe.
+> - **Web Apps (Next.js / SvelteKit / Remix):** Do **not** need Cloudflare Workers. Your Next.js server route handlers (e.g. `src/app/api/chat/route.ts`) act as the secure BFF proxy directly on Vercel/Node.js, keeping `RETRIEVER_API_KEY` safe in `.env.local`.
 
 ---
 
-## 3. How to Deploy the Proxy Worker
+## 3. How to Deploy the Proxy Worker (for Mobile Apps)
 
 We have packaged a ready-to-deploy proxy worker template under `packages/client-proxy-worker/`.
 
@@ -51,11 +58,12 @@ npm install
 ```
 
 ### Step 2: Configure Environment
-Open `wrangler.toml` and set `RETRIEVER_API_URL` to the production API URL:
+Open `wrangler.toml` and verify `RETRIEVER_API_URL` points to the production API URL:
 ```toml
 [vars]
-RETRIEVER_API_URL = "https://retriever-1vjx.onrender.com"
+RETRIEVER_API_URL = "https://rag.prateeq.in"
 ```
+
 
 ### Step 3: Set Your API Key Secret
 ```bash
@@ -246,44 +254,61 @@ If the user navigates away or walks into a cellular dead-zone, active HTTP reque
 
 ## 7. Production Deployment & Connection Checklist
 
-### Current Stack (Free Tier)
+### Current Stack
 
-| Component | Provider | URL |
-|-----------|----------|-----|
-| API | Render | `https://retriever-1vjx.onrender.com` |
-| Database | Supabase (us-west-2) | Session pooler via `aws-1-us-west-2.pooler.supabase.com` |
-| Embeddings | HuggingFace Inference API | `BAAI/bge-base-en-v1.5` via `router.huggingface.co/hf-inference/models/{model}` |
-| Proxy | Cloudflare Workers | `https://retriever-client-proxy.retriever.workers.dev` |
+| Component | Provider | URL / Endpoint |
+|---|---|---|
+| **API Engine** | Oracle Cloud VPS | `https://rag.prateeq.in` (IP: `130.210.35.134`) |
+| **Admin Dashboard** | Vercel | `https://admin.rag.prateeq.in` (`retriever/apps/web`) |
+| **SaaS App Studio** | Vercel | `https://prateeq.in/rag/app` (`Prateek_website`) |
+| **Database** | Supabase (us-west-2) | PostgreSQL + pgvector session pooler |
+| **Embeddings** | Local Ollama VPS | `nomic-embed-text` (768-dim) on `http://localhost:11434` |
+| **Mobile Proxy** | Cloudflare Workers | Edge Worker template (`packages/client-proxy-worker`) |
 
-### Step 1: Deploy the API on Render
-- Push the repo to GitHub (Render auto-deploys from `main`).
-- Set the following env vars in Render dashboard:
-  - `DATABASE_URL` — Supabase pooler connection string
-  - `HF_API_TOKEN` — your HuggingFace API token (free, optional)
-- The code auto-detects Render via the `RENDER` env var (set automatically) and switches to `production` mode.
-
-### Step 2: Onboard Tenant
-- Run the Admin Dashboard locally, or use the API directly.
-- Create a Tenant, generate an API Key, configure prompts.
-
-### Step 3: Deploy the Proxy Worker
+### Step 1: Verify Live API Health
+The live engine runs 24/7 on Oracle Cloud VPS managed via systemd:
 ```bash
-cd packages/client-proxy-worker
-npx wrangler secret put RETRIEVER_API_KEY  # paste tenant API key
-npx wrangler deploy
+curl https://rag.prateeq.in/health/readiness
+# Returns: {"status":"ready"}
+
+curl https://rag.prateeq.in/v1/admin/platform/batteries
+# Returns: {"total":38,"active":36}
 ```
 
-### Step 4: Configure Frontend
-```env
-EXPO_PUBLIC_API_URL=https://retriever-client-proxy.retriever.workers.dev
+### Step 2: Onboard Tenant & Issue Credentials
+- Navigate to **[`https://admin.rag.prateeq.in/onboard`](https://admin.rag.prateeq.in/onboard)**.
+- Create a Tenant (e.g. `tn_evolution_story`), generate a Client API Key (`ret_live_...`), and configure initial prompt templates.
+
+### Step 3: Choose Integration Strategy
+
+#### Path A: Web Application (Next.js / SvelteKit / Remix)
+- **Do not deploy the Cloudflare Worker.**
+- Store secrets securely in `.env.local`:
+  ```env
+  RETRIEVER_API_URL=https://rag.prateeq.in
+  RETRIEVER_TENANT_ID=your-tenant-uuid
+  RETRIEVER_API_KEY=your-client-api-key
+  ```
+- Make server-side calls directly via Next.js Route Handlers (e.g. `/api/chat/route.ts`) or use the `@prat3010/retriever-client-js` SDK in Node.js server context.
+
+#### Path B: Mobile Application (React Native / Expo / Flutter)
+- Deploy the Cloudflare Worker proxy to guard the API key from binary decompilation:
+  ```bash
+  cd packages/client-proxy-worker
+  npx wrangler secret put RETRIEVER_API_KEY  # Paste target tenant API key
+  npx wrangler deploy
+  ```
+- Configure your mobile app environment:
+  ```env
+  EXPO_PUBLIC_API_URL=https://retriever-client-proxy.your-account.workers.dev
+  ```
+- Pass the user's authenticated session JWT with `sub` (User ID) and `tenant_id` (Tenant UUID).
+
+### Step 4: Ingest Story / Domain Knowledge
+Upload knowledge documents using the Admin Dashboard at `https://admin.rag.prateeq.in/tenants/{tenantId}` or via API:
+```bash
+POST /v1/admin/tenants/{tenantId}/documents/upload
 ```
 
-### Step 5: Issue User JWT Tokens
-JWT must contain:
-- `sub`: user UUID (maps to `X-User-ID`)
-- `tenant_id`: tenant UUID (routes to correct tenant)
-
-### Step 6: Ingest Documents
-Upload via `POST /v1/admin/tenants/{tenantId}/documents/ingest`. Processing is synchronous (no Celery).
 
 

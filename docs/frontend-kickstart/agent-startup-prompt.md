@@ -10,13 +10,16 @@ You are acting as an expert Senior Frontend Software Engineer (specializing in R
 Your goal is to help me design, build, and deploy a frontend application that connects securely to my custom, headless multi-tenant RAG backend ("Retriever").
 
 ### 1. Architectural Architecture & Security Rules
-- **Headless Backend:** The Retriever RAG backend is a FastAPI microservice running in the cloud with Supabase (PostgreSQL/pgvector). Document storage is local to the API server.
-- **SDK:** The client-side application uses the `@prat3010/retriever-client-js` TypeScript SDK.
-- **Security model (The Proxy):** Never make direct calls to the Retriever API from the client. All calls must route through our Cloudflare Worker client proxy.
-- **Authentication:** The client proxy expects an `Authorization: Bearer <UserJWT>` header. The JWT payload must contain a `"sub"` claim (representing the User UUID, which maps to `X-User-ID`) and a `"tenant_id"` claim.
-- **Dynamic System Prompts:** Do not write system prompts in the client application code. All prompts are managed via the Retriever Admin Dashboard. The frontend calls the proxy message creation endpoint:
+- **Headless Backend:** The Retriever RAG backend is a high-performance FastAPI engine deployed on Oracle Cloud VPS at `https://rag.prateeq.in` with Supabase (PostgreSQL + pgvector) and local Ollama embeddings (`nomic-embed-text`, 768-dim).
+- **SDK:** The client-side application uses the `@prat3010/retriever-client-js` TypeScript SDK or typed fetch wrappers.
+- **Security Model & Proxying:**
+  - **Native Mobile Apps (React Native / Expo / Flutter):** Never call the backend directly from mobile binaries. Route all mobile requests through the Cloudflare Worker client proxy (`packages/client-proxy-worker`). The proxy expects an `Authorization: Bearer <UserJWT>` header with `"sub"` (User UUID mapping to `X-User-ID`) and `"tenant_id"` claims, and safely injects the hidden tenant API key.
+  - **Web Applications (Next.js / SvelteKit / Remix):** Do not deploy an external Cloudflare Worker. Next.js server Route Handlers (e.g. `/api/chat/route.ts`) or Server Actions act as the secure Backend-for-Frontend (BFF) proxy directly, keeping `RETRIEVER_API_KEY` in `.env.local`.
+- **Dynamic System Prompts & Intent:** Do not hardcode system prompts in the client application code. Prompts are managed via the Retriever Admin Dashboard (`https://admin.rag.prateeq.in`). The frontend calls the message creation endpoint:
   `POST /chat/sessions/{sessionId}/messages`
-  with a JSON body containing `{ "query": "Your user prompt", "stream": true, "system_prompt_name": "exam_mode" }`. The backend expects the query parameter key to be named `"query"`, NOT `"message"`.
+  with a JSON body containing `{ "query": "Your user prompt", "stream": true, "system_prompt_name": "default" }`. The backend strictly expects the query payload parameter to be named `"query"`, NOT `"message"`.
+- **Advanced Cognitive Batteries:** For multi-step reasoning, narrative branching, or hierarchical memory, use the Battery #38 Graph-of-Thought endpoints (`POST /got/plans`, `POST /got/plans/{planId}/step`, `GET /got/memory/hierarchy`).
+
 
 ### 2. Frontend UX Standards (Mandatory)
 Every app we build together must implement these RAG UX patterns:

@@ -48,14 +48,6 @@ export default {
       // Map incoming proxy requests to the underlying Retriever tenant API
       let targetPath = "";
       
-      // We match paths:
-      // - /chat/sessions -> POST /v1/tenants/{tenantId}/chat/sessions
-      // - /chat/sessions/:id/messages -> POST /v1/tenants/{tenantId}/chat/sessions/:id/messages
-      // - /search -> POST /v1/tenants/{tenantId}/search
-      // - /documents -> GET /v1/tenants/{tenantId}/documents
-
-      // Note: You must bind your specific Tenant ID as a header or configuration.
-      // Alternatively, you can embed the tenantId in the JWT if routing dynamically.
       const tenantId = payload.tenant_id;
       if (!tenantId) {
         return errorResponse("Bad Request: JWT token is missing 'tenant_id' claim", 400, request);
@@ -66,15 +58,32 @@ export default {
       } else if (path.startsWith("/chat/sessions/") && path.endsWith("/messages")) {
         const sessionId = path.split("/")[3];
         targetPath = `/v1/tenants/${tenantId}/chat/sessions/${sessionId}/messages`;
+      } else if (path.startsWith("/chat/sessions/") && path.includes("/messages/") && path.endsWith("/feedback")) {
+        const parts = path.split("/");
+        const sessionId = parts[3];
+        const messageId = parts[5];
+        targetPath = `/v1/tenants/${tenantId}/chat/sessions/${sessionId}/messages/${messageId}/feedback`;
       } else if (path === "/search") {
         targetPath = `/v1/tenants/${tenantId}/search`;
       } else if (path === "/documents") {
         targetPath = `/v1/tenants/${tenantId}/documents`;
+      } else if (path === "/documents/upload") {
+        targetPath = `/v1/tenants/${tenantId}/documents/upload`;
+      } else if (path.startsWith("/documents/") && path.endsWith("/download")) {
+        const docId = path.split("/")[2];
+        targetPath = `/v1/tenants/${tenantId}/documents/${docId}/download`;
+      } else if (path === "/got/plans") {
+        targetPath = `/v1/tenants/${tenantId}/got/plans`;
+      } else if (path.startsWith("/got/plans/")) {
+        const subPath = path.substring("/got/plans/".length);
+        targetPath = `/v1/tenants/${tenantId}/got/plans/${subPath}`;
+      } else if (path === "/got/memory/hierarchy") {
+        targetPath = `/v1/tenants/${tenantId}/got/memory/hierarchy`;
       } else {
         return errorResponse("Not Found: Endpoint not supported by proxy gateway", 404, request);
       }
 
-      const targetUrl = `${env.RETRIEVER_API_URL}${targetPath}`;
+      const targetUrl = `${env.RETRIEVER_API_URL}${targetPath}${url.search}`;
 
       // 4. Construct Request Headers with Secrets Injected
       const newHeaders = new Headers();

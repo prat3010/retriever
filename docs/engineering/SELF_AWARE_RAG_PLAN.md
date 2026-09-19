@@ -436,6 +436,6 @@ gantt
 
 ## **Related Architecture & Cross-References**
 
-- [2026 Cognitive Engine Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)
+- [Product & Architecture Roadmap](../../ROADMAP.md)
 - [System Architecture Blueprint](../architecture.md)
 - [Technical Debt Profiling](../operations/TECH_DEBT.md)

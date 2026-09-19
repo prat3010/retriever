@@ -74,7 +74,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Supports synchronous and asynchronous workflows (`RetrieverClient`, `AsyncRetrieverClient`).
   - Models for vector search, context compression, streaming chat completions, and tenant administration.
   - 100% test coverage with Pytest and Ruff compliance.
-- **Open-Source Launch Matrix & Battery Reconciliation** (`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`):
+- **Open-Source Launch Matrix & Battery Reconciliation**:
   - Reconciled all 26 platform batteries across 8 categories (Retrieval, Graph, Guardrails, Evaluators, Rerankers, Embeddings, Orchestration, Context Engine).
   - Pinned open-source licensing (Apache 2.0), contributor code of conduct, bug reporting, and GitHub community discussions.
 

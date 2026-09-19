@@ -622,6 +622,6 @@ Deferred architecture, test, security, migration, and product items: see `TECH_D
 
 - [Open-Source Product Roadmap](../../ROADMAP.md)
 - [Milestone History & Verification Matrix](../engineering/MILESTONES_HISTORY.md)
-- [RAG Engine Architecture Specification](../RAG_2026_PRODUCT_ROADMAP.md)
+- [RAG Engine Architecture Blueprint](../architecture.md)
 - [Technical Debt & Deferred Items](TECH_DEBT.md)
 - [Production Deployment Reference](../infrastructure/DEPLOYMENT.md)

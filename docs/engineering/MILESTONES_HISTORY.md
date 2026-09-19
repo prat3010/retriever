@@ -1,8 +1,8 @@
 # Product Roadmap (Retriever Backend)
 
-> 📌 **Master Cross-Platform Roadmap (SSoT):** For the unified sequential timeline (M1 to M112) connecting `retriever` and the `retriever.run` control plane, see: [`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md).
+> 📌 **Open-Source Product Roadmap (SSoT):** For the platform roadmap and batteries matrix, see [`ROADMAP.md`](../../ROADMAP.md).
 > 
-> This document tracks the backend and unified cross-platform engineering milestones (M1–M112) for the Retriever AI engine and control plane.
+> This document tracks the historical backend engineering milestones (M1–M123) for the Retriever AI engine.
 
 ---
 
@@ -135,12 +135,9 @@
 | **M116** | Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling | Power-of-Two-Choices (P2C), EWMA latency decay ($\alpha = 0.2$), scale-to-zero enclave provisioning, 95% load shedding & Battery #31 | **Completed** (Phase P / v1.6.0-alpha1) |
 | **M117** | Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus | 32-bit FNV-1a consistent hash ring (64 vnodes/shard), Raft leader election & AppendEntries log replication, scatter-gather query with RRF rank fusion, 2-phase online rebalancing & Battery #32 | **Completed** (Phase P / v1.7.0-alpha1) |
 
-> 📌 **Dashboard Architecture & Strategic 2026 RAG Roadmaps:**  
-> - For the Master 2026 RAG Engine Architecture Blueprint, see **[RAG 2026 Product & Architecture Roadmap](../RAG_2026_PRODUCT_ROADMAP.md)**.
-> - For the Platform Admin Control Panel (`apps/web`), see **[Admin Dashboard Architecture & Operational Roadmap](../ADMIN_DASHBOARD_ROADMAP.md)**.  
-> - For the Client Portal & SaaS Studio (`retriever.run/dashboard` & `retriever.run/rag/app`), see **[Client Dashboard Ecosystem Roadmap](../../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)**.
-> - For the Master Unified Cross-Platform Roadmap (M1–M109), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md`](../UNIFIED_MASTER_ROADMAP.md)**.
-> - For the Active **Phase J.7** (M85.11–M85.16: Honest AI Wiring, Trust Hardening & FDE Hiring Credibility), see **[`Prateek_website/docs/UNIFIED_MASTER_ROADMAP.md` §Phase J.7](../UNIFIED_MASTER_ROADMAP.md)**.
+> 📌 **Platform Architecture & Roadmap:**  
+> - For the Master Platform Architecture Blueprint, see **[Architecture Design Blueprint](../architecture.md)**.
+> - For the Open-Source Product Roadmap & Batteries Matrix, see **[Product Roadmap](../../ROADMAP.md)**.
 
 ---
 
@@ -1877,9 +1874,9 @@
   - Synchronous `RetrieverClient` and asynchronous `AsyncRetrieverClient` built on `httpx` and `pydantic`.
   - SSE streaming generators yielding typed `ReActEvent` objects.
   - Pytest test suite: 4/4 tests passing.
-- **Launch Collateral Reconciled (`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md` & `README.md`)**:
+- **Launch Collateral Reconciled (`README.md` & Public Assets)**:
   - Upgraded from legacy 16-battery baseline to the full **26 Platform Batteries Matrix**.
-  - Finalized "Show HN" copy, 7-tweet visual launch thread, and sub-10ms ColBERT benchmarks.
+  - Finalized launch collateral and sub-10ms ColBERT benchmarks.
 
 ### Milestone 111: Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline (v1.1.0-alpha1) — **Completed**
 - **Relational Database Change-Data-Capture (CDC) Connector (`apps/api/src/domain/connectors/database_cdc.py`)**:
@@ -2001,9 +1998,7 @@ These are tracked across all milestones and are not individual deliverables:
 
 ## **Related Architecture & Cross-References**
 
-- [Master Cross-Platform Roadmap (SSoT)](../UNIFIED_MASTER_ROADMAP.md)
+- [Open-Source Product Roadmap (SSoT)](../../ROADMAP.md)
+- [System Architecture Blueprint](../architecture.md)
 - [Project Health & Test Status](../operations/PROJECT_STATUS.md)
-- [2026 RAG Engine Architecture Blueprint](../RAG_2026_PRODUCT_ROADMAP.md)
-- [Admin Dashboard Operational Roadmap](../ADMIN_DASHBOARD_ROADMAP.md)
-- [Client Dashboard & SaaS Studio Roadmap](../../../Prateek_website/docs/CLIENT_DASHBOARD_ROADMAP.md)
 - [Technical Debt Ledger](../operations/TECH_DEBT.md)

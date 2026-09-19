@@ -67,7 +67,7 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Public GitHub Repositories:** Both [`retriever`](https://github.com/prat3010/retriever) and [`Prateek_website`](https://github.com/prat3010/Prateek_website) published public with Apache 2.0 open-source licensing.
 - [x] **1-Line Quickstart Script:** `curl -fsSL https://get.retriever.run | bash` with automated environment sensing (Apple Silicon MPS / NVIDIA CUDA / CPU) and 1-click Docker Compose launch.
 - [x] **Decoupled API Client SDKs:** Standalone `@prat3010/retriever-client` on npm (TypeScript/ESM/CJS) and `retriever-python` on PyPI (Sync/Async) covering all 38 platform batteries.
-- [x] **Hacker News & X Launch:** Reconciled 38-battery launch playbook ([`docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md`](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md)).
+- [x] **Hacker News & X Launch:** Complete 38-battery open-source collateral, release notes, and community benchmarks.
 
 ### Milestone 111: Community Connectors Ecosystem (v1.1.0-alpha1) — **Completed**
 - [x] **Enterprise Data Connectors:**

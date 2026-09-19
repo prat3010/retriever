@@ -963,4 +963,4 @@ When adding a new LLM provider key:
 - [Engineering Constitution](constitution/master-vision.md)
 - [Physical System Design & Endpoints](implementation/system-design.md)
 - [Engineering Standards & Boundaries](engineering/engineering-playbook.md)
-- [2026 Architecture Blueprint](RAG_2026_PRODUCT_ROADMAP.md)
+- [Product & Architectural Roadmap](../ROADMAP.md)

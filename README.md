@@ -312,7 +312,8 @@ Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding g
 
 ## 📚 Complete Technical Documentation
 
-- **[Open-Source Launch Playbook](docs/OPEN_SOURCE_LAUNCH_PLAYBOOK.md):** 10k-Star viral launch execution strategy.
+- **[Hexagonal Extensibility & Adapters Guide](docs/guides/EXTENDING_RETRIEVER_ADAPTERS.md):** How to customize or swap vector stores, LLMs, chunkers, and guardrails.
+- **[Production Deployment & Frontend Integration](docs/guides/DEPLOYMENT_AND_FRONTEND_INTEGRATION.md):** Docker Compose, Nginx SSL, and React/Next.js/Node recipes.
 - **[Enterprise Security Whitepaper](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md):** PostgreSQL RLS isolation, AES-256 envelope encryption, and zero PII retention.
 - **[REST API Reference](docs/api/):** Complete specifications for all 25+ REST/SSE endpoints.
 - **[Architecture Decision Records (ADRs)](docs/decisions/):** 32 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice, MCP Mesh, Vector Sharding).

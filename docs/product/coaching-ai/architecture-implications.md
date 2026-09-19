@@ -14,7 +14,7 @@
 | Evaluation, online tracing, feedback | Monitor tutor/generation quality. | Strong base | Education rubrics/gold sets and human review workflow. |
 | Agentic engine, approvals, n8n | Future reviewable assistants/integrations. | Partial | Narrow tools, action approvals, idempotency, business rules. |
 
-Sources: [constitution](../../constitution/master-vision.md), [architecture](../../architecture.md), [feature catalogue](../../RETRIEVER_FEATURE_CATALOG.md), and [roadmap](../../../ROADMAP.md).
+Sources: [constitution](../../constitution/master-vision.md), [architecture](../../architecture.md), and [roadmap](../../../ROADMAP.md).
 
 ## What remains Retriever core
 

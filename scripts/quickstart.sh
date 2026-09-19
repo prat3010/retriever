@@ -27,7 +27,7 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 echo -e "${BOLD}Enterprise Cognitive Engine — 1-Click Launch (v1.0.0-rc1)${NC}"
-echo "26 Batteries Included • PostgreSQL RLS • Scale-to-Zero Serving"
+echo "38 Batteries Included • PostgreSQL RLS • Scale-to-Zero Serving"
 echo "----------------------------------------------------------------------"
 
 # 1. Environment & Hardware Sensing

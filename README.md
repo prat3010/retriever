@@ -95,6 +95,50 @@ curl -X POST http://localhost:8000/v1/search \
 
 ---
 
+## 🛠️ Instant Developer Tools (Zero Boilerplate)
+
+Retriever ships with out-of-the-box CLI, IDE, and browser tools so you can test and ingest knowledge in seconds:
+
+### 1. 💬 Terminal Chat REPL
+Chat directly with your vector knowledge base from your shell with grounded citations:
+```bash
+python3 scripts/chat_repl.py
+```
+*Auto-discovers registered tenants, issues ephemeral session keys, and displays token-level ColBERT MaxSim citations.*
+
+### 2. 📂 Batch Directory Ingestion
+Recursively crawl and vector-index an entire directory of PDFs, Markdown, TXT, or JSON files in one command:
+```bash
+python3 scripts/ingest_directory.py --tenant <tenantId> --dir ./docs
+```
+
+### 3. 🌐 1-Line Embeddable Chat Widget
+Drop an enterprise AI concierge into **any** website or landing page with zero external npm dependencies:
+```html
+<script 
+  src="http://localhost:8000/v1/integrations/extension/bundle" 
+  data-tenant="YOUR_TENANT_ID" 
+  data-key="YOUR_API_KEY" 
+  data-title="Retriever Concierge"
+  data-color="#2563eb">
+</script>
+```
+
+### 4. 🤖 AI Agent MCP Integration (Cursor / Windsurf / Claude)
+Connect your AI coding assistant directly to Retriever's hybrid search and document ingestion tools:
+```json
+{
+  "mcpServers": {
+    "retriever": {
+      "command": "npx",
+      "args": ["-y", "@prat3010/retriever-mcp"]
+    }
+  }
+}
+```
+
+---
+
 ## 📦 Decoupled Client SDKs
 
 Integrate Retriever natively into your applications with our official client SDKs:

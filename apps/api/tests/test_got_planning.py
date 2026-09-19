@@ -43,7 +43,9 @@ def test_battery_38_registration() -> None:
 
 def test_hexagonal_architecture_conformance() -> None:
     """Verify that got_planner domain abstraction contains no forbidden framework imports."""
-    domain_file = Path("apps/api/src/domain/abstractions/got_planner.py")
+    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/got_planner.py"
+    if not domain_file.exists():
+        domain_file = Path("apps/api/src/domain/abstractions/got_planner.py")
     assert domain_file.exists()
 
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))
@@ -94,6 +96,7 @@ def test_thought_scoring_heuristics() -> None:
 
     assert score_good > score_poor
     assert g1 > g2
+    assert c1 > c2
     assert s1 > s2
     assert 0.0 <= score_good <= 1.0
     assert 0.0 <= score_poor <= 1.0

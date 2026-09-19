@@ -190,6 +190,35 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 
 ---
 
+## 🔮 Upcoming Horizons: Closing the Ecosystem & Adoption Gaps (2026–2027)
+
+Following an architectural and community reality check against viral open-source ecosystems (LangChain, LlamaIndex, Dify, Danswer/Onyx), the following upcoming milestones are targeted to systematically eliminate ecosystem gaps while preserving our strict Hexagonal boundary invariants:
+
+### Milestone 124: Turn-Key Enterprise SaaS Connectors & OAuth Permission Sync (v2.3.0) — **Planned**
+- [ ] **Google Workspace Connector (Drive & Docs):** High-throughput folder tree crawler supporting Service Accounts and User OAuth 2.0 PKCE, with incremental delta tokens (`changes.list`) for real-time document synchronization.
+- [ ] **Notion Enterprise Workspace Connector:** Recursive page and database block extractor with incremental webhook updates (`last_edited_time` cursor) and markdown AST table preservation.
+- [ ] **Atlassian Confluence & Jira Knowledge Sync:** Spaces, pages, attachments, and ticket thread sync parameterized by Confluence Query Language (CQL) and JQL change cursors.
+- [ ] **Microsoft 365 (SharePoint & OneDrive):** Enterprise Microsoft Graph API delta crawler with tenant-level application permissions and automated file conversion.
+- [ ] **Document-Level Access Control List (ACL) Inheritance:** Propagate Google/Notion/SharePoint read permissions into PostgreSQL RLS chunk ACLs (`user_id` / `group_ids`), ensuring search queries only return documents the requesting user is legally authorized to see.
+
+### Milestone 125: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Planned**
+- [ ] **Interactive Visual Workflow Studio:** React Flow / SVG-powered interactive drag-and-drop web studio in `apps/web`, allowing non-developer architects and product managers to visually assemble and test cognitive RAG pipelines.
+- [ ] **Declarative Workflow Compiler:** Compiles visually composed DAG pipelines into strict JSON-Schema execution graphs executed by Retriever's existing ReAct / GoT state machine.
+- [ ] **Real-Time Step-by-Step Execution Stepper & Debugger:** Real-time token streaming, intermediate thought inspection, and token cost attribution at each node in the DAG.
+- [ ] **Pre-Configured Enterprise Template Library:** 1-Click templates for Legal Document Analyzer, Customer Support Copilot, Technical Codebase Assistant, and Multimodal Schematic Inspector.
+
+### Milestone 126: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Planned**
+- [ ] **Single Distroless Edge Container:** Self-contained Docker / OCI image bundling SQLite FTS5, embedded quantized Ollama, and Retriever engine with zero internet connectivity requirements.
+- [ ] **Hardware-Rooted Micro-Enclave Encryption:** Automatic AES-256-GCM vector sealing using host hardware TPM 2.0 / Apple Secure Enclave seeds.
+- [ ] **Full-Duplex Offline Voice & Whisper:** Integrated local Whisper.cpp ASR + Piper neural TTS for sovereign voice interactions with zero third-party API dependencies.
+
+### Milestone 127: Instant Cloud Playground & Multi-Region Sandbox Hub (v2.6.0) — **Planned**
+- [ ] **Ephemeral 1-Click Sandbox Tenants:** Instant, zero-sign-up 30-minute sandbox tenants with pre-ingested demo corpora (Kubernetes docs, SEC 10-K filings, ArXiv papers) for instant browser testing before local cloning.
+- [ ] **Interactive Rate-Limited REST & REPL Playground:** Interactive Swagger UI + Web Chat with instant API key generation and live cURL generation.
+- [ ] **Community Leaderboard & Hallucination Benchmark Hub:** Public benchmark showcasing empirical latency, NDCG, and faithfulness scores comparing Retriever against LangChain and Pinecone.
+
+---
+
 ## 📚 Technical Documentation Hub
 
 - 🏛️ **Architecture & ADRs:** [`docs/architecture.md`](docs/architecture.md) • [`docs/decisions/`](docs/decisions/)

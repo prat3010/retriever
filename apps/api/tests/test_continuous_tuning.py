@@ -323,7 +323,7 @@ def test_battery_35_registration() -> None:
 
 def test_continuous_tuning_architecture_boundaries() -> None:
     """Hexagonal boundary gate ensuring 0 framework imports in dpo_orpo_tuning.py."""
-    source_path = Path("apps/api/src/domain/abstractions/dpo_orpo_tuning.py")
+    source_path = Path(__file__).resolve().parent.parent / "src/domain/abstractions/dpo_orpo_tuning.py"
     assert source_path.exists(), "Domain file must exist"
 
     tree = ast.parse(source_path.read_text())

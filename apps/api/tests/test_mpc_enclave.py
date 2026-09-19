@@ -326,10 +326,7 @@ def test_battery_36_registration() -> None:
 
 def test_hexagonal_architecture_domain_isolation() -> None:
     """Verify that mpc_enclave domain abstraction imports zero infrastructure frameworks."""
-    domain_file = Path("apps/api/src/domain/abstractions/mpc_enclave.py")
-    if not domain_file.exists():
-        domain_file = Path("/Users/prateeksharma/Developer/retriever/apps/api/src/domain/abstractions/mpc_enclave.py")
-
+    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/mpc_enclave.py"
     assert domain_file.exists(), f"Domain file not found: {domain_file}"
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))
 

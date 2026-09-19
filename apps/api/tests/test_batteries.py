@@ -14,12 +14,12 @@ from src.main import app
 
 
 def test_platform_batteries_inventory_completeness():
-    """Verify that all 29 platform batteries exist, have valid fields, and active status."""
+    """Verify that all 38 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 29
+    assert resp.total_batteries == 38
     assert resp.active_count >= 23
-    assert len(resp.batteries) == 29
+    assert len(resp.batteries) == 38
 
     # Check key expected battery IDs
     expected_ids = {
@@ -52,6 +52,15 @@ def test_platform_batteries_inventory_completeness():
         "cdc_community_connectors",
         "kubernetes_native_operator",
         "multimodal_vision_graphrag",
+        "distributed_mcp_mesh",
+        "mesh_load_balancer",
+        "vector_raft_sharding",
+        "zkp_vector_attestation",
+        "enterprise_identity_federation",
+        "continuous_preference_tuning",
+        "confidential_mpc_enclave",
+        "autonomous_benchmark_gatekeeper",
+        "hierarchical_memory_got_planner",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -86,9 +95,9 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 29
+        assert data["total_batteries"] == 38
         assert data["active_count"] >= 23
-        assert len(data["batteries"]) == 29
+        assert len(data["batteries"]) == 38
 
 
 def test_multimodal_vision_graphrag_battery():

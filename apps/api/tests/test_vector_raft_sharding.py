@@ -10,9 +10,12 @@ Verifies:
 - FastAPI REST endpoints in apps/api/src/routers/vector_sharding.py.
 """
 
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
+from src.container import container
 from src.domain.abstractions.exceptions import (
     RaftQuorumNotReachedError,
     ShardNotFoundError,
@@ -48,7 +51,9 @@ def sharding_service() -> VectorRaftShardingService:
 
 @pytest.fixture
 def client() -> TestClient:
-    """Provide a TestClient for API router testing."""
+    """Provide a TestClient for API router testing with fresh node heartbeats."""
+    for node in container.vector_raft_sharding_service.nodes.values():
+        node.heartbeat_timestamp = time.time()
     return TestClient(app)
 
 
@@ -268,6 +273,9 @@ def test_shard_snapshot(sharding_service: VectorRaftShardingService):
 
 def test_fastapi_endpoints(client: TestClient):
     """Verify REST API endpoints under /v1/shards/*."""
+    for node in container.vector_raft_sharding_service.nodes.values():
+        node.heartbeat_timestamp = time.time()
+
     # 1. GET /v1/shards/topology
     r_topo = client.get("/v1/shards/topology")
     assert r_topo.status_code == 200

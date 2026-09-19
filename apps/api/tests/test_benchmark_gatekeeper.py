@@ -299,7 +299,7 @@ def test_battery_37_registration() -> None:
 
 def test_hexagonal_architecture_conformance() -> None:
     """Verify that domain abstraction contains no forbidden framework imports."""
-    domain_file = Path("apps/api/src/domain/abstractions/benchmark_gatekeeper.py")
+    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/benchmark_gatekeeper.py"
     assert domain_file.exists()
 
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))

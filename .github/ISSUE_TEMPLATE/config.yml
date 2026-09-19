@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Community Support
+    url: https://github.com/prat3010/retriever/discussions
+    about: Ask questions, discuss deployment topologies, or share custom connectors with the community.
+  - name: 🔒 Security Vulnerability Disclosures
+    url: https://github.com/prat3010/retriever/security/advisories
+    about: Report potential security vulnerabilities privately as detailed in SECURITY.md.

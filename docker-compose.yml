@@ -1,6 +1,6 @@
 # ==============================================================================
 # Retriever — Official Open-Source Docker Compose Stack (v1.0.0-rc1)
-# 26 Batteries Included • Scale-to-Zero Architecture • Local Ollama Embeddings
+# 38 Batteries Included • Scale-to-Zero Architecture • Local Ollama Embeddings
 # ==============================================================================
 
 services:

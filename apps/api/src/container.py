@@ -177,12 +177,25 @@ class Container:
             )
 
         # --- LLM / Embedding ---
+        # Sync cognitive keys from settings to os.environ for LiteLLM / external inference SDKs
+        for key_name in (
+            "OPENAI_API_KEY",
+            "GEMINI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "GROQ_API_KEY",
+            "MISTRAL_API_KEY",
+            "COHERE_API_KEY",
+        ):
+            val = getattr(settings, key_name, "")
+            if val and not os.environ.get(key_name):
+                os.environ[key_name] = val
+
         openai_adapter = OpenAILLMAdapter(
             api_key=settings.OPENAI_API_KEY,
             base_url=settings.OPENAI_BASE_URL,
         )
         anthropic_adapter = AnthropicLLMAdapter(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+            api_key=settings.ANTHROPIC_API_KEY or os.environ.get("ANTHROPIC_API_KEY", ""),
         )
         serverless_gpu_client = ServerlessGpuClientAdapter(
             endpoint_url=settings.MODAL_ENDPOINT_URL or settings.BENTOML_ENDPOINT_URL,

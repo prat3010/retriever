@@ -255,6 +255,8 @@ Dumping raw 500-page corporate repositories directly into an LLM's context windo
 Retriever's core domain layer (`src/domain/`) enforces strictly **zero external framework or vendor SDK imports** (`0` imports from OpenAI, Anthropic, or proprietary APIs).  
 Every model interaction executes across abstract domain protocols (`LLMProviderProtocol`, `EmbeddingProviderProtocol`). When a new frontier model (GPT-6, Claude 4, or open-weights Llama 5) is released, swapping models requires editing **one adapter class** without modifying business logic, memory systems, or database schemas.
 
+👉 *Want to swap vector databases, LLMs, chunkers, or guardrails? See our complete step-by-step tutorial:* **[Hexagonal Architecture Extension & Adapter Guide](docs/guides/EXTENDING_RETRIEVER_ADAPTERS.md)**.
+
 ### 3. The 30-Year PostgreSQL Foundation
 While specialized vector database startups (Pinecone, Chroma, Milvus) face commercial volatility, acquisition risks, and aggressive pricing shifts, Retriever is anchored on **PostgreSQL 16 with `pgvector`**:
 - The world's most battle-tested, ACID-compliant relational engine running in global production for over 30 years.

@@ -132,18 +132,155 @@ def sense_ports() -> dict:
     return status
 
 
+PROVIDER_MAP = {
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "google": "GEMINI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "claude": "ANTHROPIC_API_KEY",
+    "groq": "GROQ_API_KEY",
+    "mistral": "MISTRAL_API_KEY",
+    "cohere": "COHERE_API_KEY",
+    "tavily": "TAVILY_API_KEY",
+}
+
+
+def mask_key(key: str) -> str:
+    """Masks secret key for safe display in logs and terminal."""
+    if not key:
+        return ""
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}...{key[-4:]}"
+
+
+def detect_provider(key: str, hint: str | None = None) -> tuple[str, str]:
+    """Detects provider and environment variable name from key string and optional hint."""
+    hint_clean = (hint or "").strip().lower()
+    if hint_clean in PROVIDER_MAP:
+        return (hint_clean, PROVIDER_MAP[hint_clean])
+
+    # Auto-detect by key prefix
+    if key.startswith("sk-ant-"):
+        return ("anthropic", "ANTHROPIC_API_KEY")
+    elif key.startswith("gsk_"):
+        return ("groq", "GROQ_API_KEY")
+    elif key.startswith("AIza"):
+        return ("gemini", "GEMINI_API_KEY")
+    elif key.startswith("sk-") or key.startswith("org-"):
+        return ("openai", "OPENAI_API_KEY")
+    elif key.startswith("mistral_"):
+        return ("mistral", "MISTRAL_API_KEY")
+
+    if hint_clean:
+        var_name = hint_clean.upper() if hint_clean.endswith("_API_KEY") else f"{hint_clean.upper()}_API_KEY"
+        return (hint_clean, var_name)
+    return ("openai", "OPENAI_API_KEY")
+
+
+def init_env(root_dir: Path) -> dict:
+    """Initializes .env from .env.docker.example if not already created."""
+    import shutil
+
+    env_file = root_dir / ".env"
+    example_file = root_dir / ".env.docker.example"
+    if env_file.is_file():
+        return {"success": True, "created": False, "message": ".env file already exists."}
+    if example_file.is_file():
+        shutil.copy(example_file, env_file)
+        return {"success": True, "created": True, "message": "Created .env from .env.docker.example."}
+    env_file.write_text("# Retriever Environment Configuration\n", encoding="utf-8")
+    return {"success": True, "created": True, "message": "Created blank .env file."}
+
+
+def inject_key(root_dir: Path, provider_or_hint: str, raw_key: str | None = None) -> dict:
+    """Safely initializes .env (if missing) and injects/updates the API key."""
+    import shutil
+
+    if raw_key is None:
+        key = provider_or_hint.strip()
+        provider, env_var = detect_provider(key)
+    else:
+        hint = provider_or_hint.strip()
+        key = raw_key.strip()
+        provider, env_var = detect_provider(key, hint)
+
+    if not key:
+        return {"success": False, "error": "API key cannot be empty."}
+
+    env_file = root_dir / ".env"
+    example_file = root_dir / ".env.docker.example"
+
+    # Ensure .env exists
+    if not env_file.is_file():
+        if example_file.is_file():
+            shutil.copy(example_file, env_file)
+        else:
+            env_file.write_text("# Retriever Environment Configuration\n", encoding="utf-8")
+
+    lines = env_file.read_text(encoding="utf-8").splitlines()
+    replaced = False
+    new_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if (
+            stripped.startswith(f"{env_var}=")
+            or stripped.startswith(f"# {env_var}=")
+            or stripped.startswith(f"#{env_var}=")
+        ):
+            new_lines.append(f"{env_var}={key}")
+            replaced = True
+        else:
+            new_lines.append(line)
+
+    if not replaced:
+        new_lines.append("")
+        new_lines.append("# Cognitive Provider Keys (Configured by Agent Setup)")
+        new_lines.append(f"{env_var}={key}")
+
+    env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
+    return {
+        "success": True,
+        "provider": provider,
+        "env_var": env_var,
+        "masked_key": mask_key(key),
+        "env_file": str(env_file),
+    }
+
+
 def sense_environment(root_dir: Path) -> dict:
-    """Checks if .env is populated or ready to initialize."""
+    """Checks if .env is populated or ready to initialize, and detects configured LLM keys."""
     env_file = root_dir / ".env"
     example_file = root_dir / ".env.docker.example"
     exists = env_file.is_file()
     ready = False
+    configured_keys: dict[str, str] = {}
 
     if exists:
         try:
             content = env_file.read_text(encoding="utf-8")
             if "POSTGRES_PASSWORD" in content:
                 ready = True
+            for line in content.splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip().strip("'\"")
+                    if (
+                        k
+                        in (
+                            "OPENAI_API_KEY",
+                            "GEMINI_API_KEY",
+                            "ANTHROPIC_API_KEY",
+                            "GROQ_API_KEY",
+                            "MISTRAL_API_KEY",
+                            "COHERE_API_KEY",
+                        )
+                        and v
+                    ):
+                        configured_keys[k] = mask_key(v)
         except Exception:
             pass
 
@@ -151,6 +288,7 @@ def sense_environment(root_dir: Path) -> dict:
         "has_env": exists,
         "is_configured": ready,
         "template_available": example_file.is_file(),
+        "configured_keys": configured_keys,
     }
 
 
@@ -221,14 +359,25 @@ def print_pretty(data: dict):
         else:
             print(f"  • Port {port:5d} ({info['service']:<27}): {YELLOW}Active / Occupied{NC}")
 
-    # Environment & Launch
+    # Environment & LLM Inference
     env = data["environment"]
     rec = data["recommendation"]
-    print(f"\n{BOLD}[4/4] Environment & Launch Readiness:{NC}")
+    print(f"\n{BOLD}[4/4] Environment & LLM Inference Readiness:{NC}")
     if env["has_env"]:
         print(f"  • Environment:    {GREEN}.env file present & configured{NC}")
     else:
         print(f"  • Environment:    {YELLOW}.env will be auto-generated from template{NC}")
+
+    print(f"  • Embeddings:     {GREEN}Local Ollama (nomic-embed-text) — $0 Cost{NC}")
+
+    cfg_keys = env.get("configured_keys", {})
+    if cfg_keys:
+        keys_summary = ", ".join(f"{k.replace('_API_KEY', '')} ({v})" for k, v in cfg_keys.items())
+        print(f"  • Chat Inference: {GREEN}Cloud Key Configured [{keys_summary}]{NC}")
+    else:
+        print(
+            f"  • Chat Inference: {CYAN}Local Ollama ($0 cost) OR Cloud BYOK (none configured){NC}"
+        )
 
     print("\n----------------------------------------------------------------------")
     if rec["can_auto_launch_docker"]:
@@ -241,6 +390,59 @@ def print_pretty(data: dict):
 
 
 def main():
+    root_dir = Path(__file__).resolve().parent.parent
+
+    # Check for --help / -h
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(
+            f"\n{BOLD}Retriever Agent Preflight Diagnostic & Key Configuration Tool{NC}\n\n"
+            "Usage:\n"
+            "  python3 scripts/agent_preflight.py                  # Run diagnostic and check environment\n"
+            "  python3 scripts/agent_preflight.py --json           # Output machine-readable JSON diagnostic\n"
+            "  python3 scripts/agent_preflight.py --init-env       # Initialize .env from template\n"
+            "  python3 scripts/agent_preflight.py --set-key <key>  # Auto-detect provider & inject key into .env\n"
+            "  python3 scripts/agent_preflight.py --set-key <provider> <key>  # Explicit provider key injection\n\n"
+            "Supported Providers:\n"
+            "  openai, gemini, anthropic, groq, mistral, cohere\n"
+        )
+        sys.exit(0)
+
+    # Check for --init-env
+    if "--init-env" in sys.argv:
+        res = init_env(root_dir)
+        if "--json" in sys.argv:
+            print(json.dumps(res, indent=2))
+        else:
+            status_color = GREEN if res["success"] else RED
+            print(f"{status_color}{BOLD}{res['message']}{NC}")
+        sys.exit(0 if res["success"] else 1)
+
+    # Check for --set-key
+    if "--set-key" in sys.argv:
+        idx = sys.argv.index("--set-key")
+        args = [a for a in sys.argv[idx + 1 :] if not a.startswith("--")]
+        if not args:
+            print(
+                f"{RED}{BOLD}Error:{NC} Missing key. Usage: python3 scripts/agent_preflight.py --set-key [provider] <key>"
+            )
+            sys.exit(1)
+
+        if len(args) == 1:
+            res = inject_key(root_dir, args[0])
+        else:
+            res = inject_key(root_dir, args[0], args[1])
+
+        if "--json" in sys.argv:
+            print(json.dumps(res, indent=2))
+        else:
+            if res["success"]:
+                print(
+                    f"{GREEN}{BOLD}✓ Successfully configured {res['env_var']} ({res['masked_key']}) in .env{NC}"
+                )
+            else:
+                print(f"{RED}{BOLD}Error: {res.get('error', 'Failed to inject key')}{NC}")
+        sys.exit(0 if res["success"] else 1)
+
     data = run_preflight()
     if "--json" in sys.argv:
         print(json.dumps(data, indent=2))

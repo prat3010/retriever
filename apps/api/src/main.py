@@ -278,5 +278,18 @@ app.include_router(swarm_admin_router)
 app.include_router(swarm_tenant_router)
 app.include_router(vision_router)
 
+from pathlib import Path
+
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+
+_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
+@app.api_route("/widget.js", methods=["GET", "HEAD"], include_in_schema=False)
+@app.api_route("/static/widget.js", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_widget() -> FileResponse:
+    widget_file = _STATIC_DIR / "widget.js"
+    if widget_file.exists():
+        return FileResponse(widget_file, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="widget.js not found")

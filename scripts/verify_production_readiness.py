@@ -48,7 +48,11 @@ def probe_http(
     start = time.perf_counter()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
-            raw = response.read().decode("utf-8", errors="replace")
+            content_type = response.headers.get("content-type", "").lower()
+            if "text/event-stream" in content_type:
+                raw = response.readline().decode("utf-8", errors="replace")
+            else:
+                raw = response.read().decode("utf-8", errors="replace")
             latency = (time.perf_counter() - start) * 1000.0
             resp_headers = dict(response.headers)
             try:

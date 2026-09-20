@@ -4,11 +4,20 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, API_BASE } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useTenants } from "@/hooks/use-tenants";
 import { Topbar } from "@/components/topbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   HardDrive,
   Cpu,
@@ -79,7 +88,11 @@ interface EdgeSearchResult {
 }
 
 export default function SovereignEdgePage() {
-  const [selectedTenantId] = useState("00000000-0000-0000-0000-000000000001");
+  const { data: tenantsData } = useTenants("", 50, 0);
+  const tenants = tenantsData?.items || [];
+  const [selectedTenantId, setSelectedTenantId] = useState<string>("");
+  const activeTenantId = selectedTenantId || tenants[0]?.tenantId || "";
+
   const [simQuery, setSimQuery] = useState("Sovereign edge offline agent SQLite");
   const [isGeneratingBundle, setIsGeneratingBundle] = useState(false);
 
@@ -109,8 +122,8 @@ export default function SovereignEdgePage() {
   // Sealing Mutation (M101)
   const sealMutation = useMutation({
     mutationFn: (text: string) =>
-      api.post<any>(`/v1/tenants/${selectedTenantId}/edge/seal`, {
-        tenant_id: selectedTenantId,
+      api.post<any>(`/v1/tenants/${activeTenantId}/edge/seal`, {
+        tenant_id: activeTenantId,
         plaintext: text,
         aad: "confidential_edge_payload",
       }),
@@ -127,9 +140,12 @@ export default function SovereignEdgePage() {
   // Unsealing Mutation (M101)
   const unsealMutation = useMutation({
     mutationFn: (payload: any) =>
-      api.post<any>(`/v1/tenants/${selectedTenantId}/edge/unseal`, {
-        tenant_id: selectedTenantId,
-        sealed_payload: payload,
+      api.post<any>(`/v1/tenants/${activeTenantId}/edge/unseal`, {
+        tenant_id: activeTenantId,
+        ciphertext_b64: payload.ciphertext_b64,
+        nonce_b64: payload.nonce_b64,
+        tag_b64: payload.tag_b64,
+        aad: payload.aad,
       }),
     onSuccess: (data) => {
       setUnsealedText(data.plaintext);
@@ -154,7 +170,7 @@ export default function SovereignEdgePage() {
   // 2. Simulated Edge Search Mutation
   const searchMutation = useMutation<EdgeSearchResult, Error, string>({
     mutationFn: (queryText) =>
-      api.post<EdgeSearchResult>(`/v1/tenants/${selectedTenantId}/edge/search`, {
+      api.post<EdgeSearchResult>(`/v1/tenants/${activeTenantId}/edge/search`, {
         query: queryText,
         top_k: 4,
         use_hybrid: true,
@@ -170,11 +186,15 @@ export default function SovereignEdgePage() {
 
   // 3. 1-Click Standalone SQLite Bundle Exporter
   const handleDownloadBundle = async () => {
+    if (!activeTenantId) {
+      toast.error("Please select a tenant before exporting edge bundle.");
+      return;
+    }
     try {
       setIsGeneratingBundle(true);
       toast.info("Compiling standalone SQLite bundle (FTS5 + binary vector blobs)...");
       const key = useAuthStore.getState().adminKey || "";
-      const res = await fetch(`${API_BASE}/v1/tenants/${selectedTenantId}/edge/bundle?download=true`, {
+      const res = await fetch(`${API_BASE}/v1/tenants/${activeTenantId}/edge/bundle?download=true`, {
         method: "POST",
         headers: {
           "X-Admin-Master-Key": key,
@@ -187,7 +207,7 @@ export default function SovereignEdgePage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `retriever-edge-${selectedTenantId.slice(0, 8)}.sqlite`);
+      link.setAttribute("download", `retriever-edge-${activeTenantId.slice(0, 8)}.sqlite`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -206,7 +226,7 @@ export default function SovereignEdgePage() {
 
       <main className="flex-1 space-y-6 p-6">
         {/* Header */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
               <HardDrive className="h-7 w-7 text-primary" />
@@ -216,7 +236,23 @@ export default function SovereignEdgePage() {
               Milestone 98 (Platform Battery #18): Distributed embedded SQLite databases with FTS5, binary float32 vector storage, and differential sequence synchronization.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Tenant Selector */}
+            <div className="flex items-center gap-2">
+              <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">Tenant:</Label>
+              <Select value={activeTenantId} onValueChange={setSelectedTenantId}>
+                <SelectTrigger className="w-[220px] h-9 text-xs">
+                  <SelectValue placeholder="Select Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tenants.map((t) => (
+                    <SelectItem key={t.tenantId} value={t.tenantId} className="text-xs">
+                      {t.name || t.tenantId.slice(0, 12)} ({t.tier || "standard"})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
@@ -224,7 +260,7 @@ export default function SovereignEdgePage() {
             <Button
               size="sm"
               onClick={handleDownloadBundle}
-              disabled={isGeneratingBundle}
+              disabled={isGeneratingBundle || !activeTenantId}
               className="gap-2 bg-primary font-medium text-primary-foreground hover:bg-primary/90"
             >
               <Download className="h-4 w-4" />

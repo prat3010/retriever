@@ -91,6 +91,8 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_inference_logs_session_id ON inference_logs (session_id)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_inference_logs_user_id ON inference_logs (user_id)")
 
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+
     op.execute("""
         CREATE TABLE IF NOT EXISTS vector_records (
             chunk_id UUID PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,

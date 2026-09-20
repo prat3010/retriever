@@ -36,11 +36,7 @@ class SqlIdentityProvider(IdentityProvider):
                 .where(ApiKeyDb.key_hash == key_hash)
             )
             result = await session.execute(stmt)
-            row = result.first() if hasattr(result, "first") else None
-            if not row and hasattr(result, "scalar_one_or_none"):
-                val = result.scalar_one_or_none()
-                if val:
-                    row = (val, getattr(val, "tenant_status", "active"))
+            row = result.first()
 
             if not row:
                 raise AuthenticationError("Invalid, inactive, or suspended API key token.")

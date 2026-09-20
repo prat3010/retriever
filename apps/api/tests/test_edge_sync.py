@@ -521,3 +521,37 @@ def test_tenant_edge_simulated_search_endpoint():
         assert "results" in search_res
         assert "latency_ms" in search_res
         assert "execution_tier" in search_res
+
+
+def test_sqlite_edge_engine_tenant_isolated_synced_sequence():
+    """Verify SqliteEdgeEngine tracks and reports high watermark sequence isolated per tenant."""
+    engine = SqliteEdgeEngine()
+    tenant_a = "00000000-0000-0000-0000-00000000000a"
+    tenant_b = "00000000-0000-0000-0000-00000000000b"
+
+    delta_a = EdgeSyncDelta(
+        tenant_id=tenant_a,
+        checkpoint_sequence=42,
+        previous_sequence=0,
+        added_chunks=[],
+        added_vectors=[],
+        deleted_chunk_ids=[],
+        checksum_sha256="11" * 32,
+    )
+    delta_b = EdgeSyncDelta(
+        tenant_id=tenant_b,
+        checkpoint_sequence=99,
+        previous_sequence=0,
+        added_chunks=[],
+        added_vectors=[],
+        deleted_chunk_ids=[],
+        checksum_sha256="22" * 32,
+    )
+
+    engine.apply_delta(delta_a)
+    engine.apply_delta(delta_b)
+
+    # Isolated queries return each tenant's specific sequence
+    assert engine.get_synced_sequence(tenant_id=tenant_a) == 42
+    assert engine.get_synced_sequence(tenant_id=tenant_b) == 99
+

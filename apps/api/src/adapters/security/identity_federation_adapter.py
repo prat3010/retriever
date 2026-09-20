@@ -1,10 +1,15 @@
 import base64
+import copy
 import secrets
 import time
 import uuid
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from typing import Any
+
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 from src.domain.abstractions.identity_federation import (
     AccessControlContext,
@@ -96,6 +101,101 @@ class IdentityFederationAdapter(IdentityFederationPort):
         )
         return metadata_xml
 
+    def _verify_saml_signature(self, root: ET.Element, cert_pem_or_der: str) -> bool:
+        """Verify XML Digital Signature (XMLDSig) over SAML response/assertion against IdP certificate."""
+        ds_ns = {"ds": "http://www.w3.org/2000/09/xmldsig#"}
+        sig_node = root.find(".//ds:Signature", ds_ns)
+        if sig_node is None:
+            raise ValueError("SAML response is missing required XMLDSig Signature")
+
+        si_node = sig_node.find("ds:SignedInfo", ds_ns)
+        sig_val_node = sig_node.find("ds:SignatureValue", ds_ns)
+        if si_node is None or sig_val_node is None or not sig_val_node.text:
+            raise ValueError("SAML signature is malformed: missing SignedInfo or SignatureValue")
+
+        # 1. Load Certificate
+        clean_cert = cert_pem_or_der.strip()
+        try:
+            if "-----BEGIN CERTIFICATE-----" in clean_cert:
+                cert = x509.load_pem_x509_certificate(clean_cert.encode("utf-8"))
+            else:
+                pem_formatted = f"-----BEGIN CERTIFICATE-----\n{clean_cert}\n-----END CERTIFICATE-----"
+                try:
+                    cert = x509.load_pem_x509_certificate(pem_formatted.encode("utf-8"))
+                except Exception:
+                    cert = x509.load_der_x509_certificate(base64.b64decode(clean_cert))
+        except Exception as err:
+            raise ValueError(f"Invalid IdP X.509 certificate: {err}") from err
+
+        # 2. Canonicalize SignedInfo and verify RSA signature
+        ET.register_namespace("ds", "http://www.w3.org/2000/09/xmldsig#")
+        ET.register_namespace("saml", "urn:oasis:names:tc:SAML:2.0:assertion")
+        ET.register_namespace("samlp", "urn:oasis:names:tc:SAML:2.0:protocol")
+
+        c14n_signed_info = ET.canonicalize(ET.tostring(si_node))
+        sig_bytes = base64.b64decode(sig_val_node.text.strip())
+
+        sig_method_node = si_node.find("ds:SignatureMethod", ds_ns)
+        sig_algo = sig_method_node.get("Algorithm", "").lower() if sig_method_node is not None else ""
+        if "sha1" in sig_algo:
+            hash_algo = hashes.SHA1()
+        elif "sha384" in sig_algo:
+            hash_algo = hashes.SHA384()
+        elif "sha512" in sig_algo:
+            hash_algo = hashes.SHA512()
+        else:
+            hash_algo = hashes.SHA256()
+
+        try:
+            cert.public_key().verify(
+                sig_bytes,
+                c14n_signed_info.encode("utf-8"),
+                padding.PKCS1v15(),
+                hash_algo,
+            )
+        except Exception as err:
+            raise ValueError(f"SAML XMLDSig signature verification failed: {err}") from err
+
+        # 3. Verify Reference digest if present
+        ref_node = si_node.find("ds:Reference", ds_ns)
+        if ref_node is not None:
+            digest_val_node = ref_node.find("ds:DigestValue", ds_ns)
+            if digest_val_node is not None and digest_val_node.text:
+                expected_digest = digest_val_node.text.strip()
+                uri = ref_node.get("URI", "").lstrip("#")
+                target_el = root.find(f".//*[@ID='{uri}']") if uri else root
+                if target_el is not None:
+                    target_copy = copy.deepcopy(target_el)
+                    sig_in_target = target_copy.find(".//ds:Signature", ds_ns)
+                    if sig_in_target is not None:
+                        for parent in target_copy.iter():
+                            if sig_in_target in list(parent):
+                                parent.remove(sig_in_target)
+                                break
+                    c14n_target = ET.canonicalize(ET.tostring(target_copy))
+                    digest_method_node = ref_node.find("ds:DigestMethod", ds_ns)
+                    digest_algo = (
+                        digest_method_node.get("Algorithm", "").lower()
+                        if digest_method_node is not None
+                        else ""
+                    )
+                    if "sha1" in digest_algo:
+                        d_hash = hashes.SHA1()
+                    elif "sha384" in digest_algo:
+                        d_hash = hashes.SHA384()
+                    elif "sha512" in digest_algo:
+                        d_hash = hashes.SHA512()
+                    else:
+                        d_hash = hashes.SHA256()
+                    hasher = hashes.Hash(d_hash)
+                    hasher.update(c14n_target.encode("utf-8"))
+                    actual_digest = base64.b64encode(hasher.finalize()).decode("utf-8")
+                    if actual_digest != expected_digest:
+                        raise ValueError(
+                            f"SAML reference digest mismatch (expected {expected_digest}, computed {actual_digest})"
+                        )
+        return True
+
     async def process_saml_response(
         self, tenant_id: str, saml_response_b64: str
     ) -> SamlAssertionPayload:
@@ -112,6 +212,10 @@ class IdentityFederationAdapter(IdentityFederationPort):
             root = ET.fromstring(raw_xml)
         except Exception as err:
             raise ValueError(f"Invalid SAML XML structure: {err}") from err
+
+        # Cryptographic XMLDSig verification against configured IdP certificate
+        if config.idp_x509_cert and config.idp_x509_cert.strip():
+            self._verify_saml_signature(root, config.idp_x509_cert)
 
         # Namespace map for standard SAML 2.0 assertions
         ns = {

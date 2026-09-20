@@ -20,10 +20,11 @@ This chart deploys high-availability FastAPI API pods, Next.js Web Studio, Horiz
 git clone https://github.com/prat3010/retriever.git
 cd retriever
 
-# Install release
+# Install release with secure generated credentials
 helm install retriever ./deploy/helm/retriever \
   --namespace retriever \
-  --create-namespace
+  --create-namespace \
+  --set postgresql.auth.password="$(openssl rand -base64 24)"
 ```
 
 ### 2. Verify Installation

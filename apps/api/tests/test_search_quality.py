@@ -161,3 +161,27 @@ class TestSearchQualityMetrics:
         assert calls["search_mrr"] == 1.0
         assert 0 < calls["search_ndcg_at_10"] <= 1.0
         assert calls["search_hit_rate_at_10"] == 1.0
+
+
+def test_search_metrics_direct_computation() -> None:
+    import math
+
+    from src.domain.evaluation.search_metrics import compute_search_metrics, ndcg_at_k
+
+    # Test ideal vs degraded ranking
+    retrieved = ["doc1", "doc2", "doc3", "doc4"]
+    relevant = {"doc1", "doc2"}
+
+    # Perfect ranking: relevant docs at rank 1 and rank 2 -> nDCG == 1.0
+    perfect_ndcg = ndcg_at_k(retrieved, relevant, k=4)
+    assert math.isclose(perfect_ndcg, 1.0, rel_tol=1e-5)
+
+    # Inverted ranking: relevant docs at rank 3 and rank 4 -> nDCG < 1.0
+    inverted = ["doc3", "doc4", "doc1", "doc2"]
+    inverted_ndcg = ndcg_at_k(inverted, relevant, k=4)
+    assert inverted_ndcg < 1.0
+
+    metrics = compute_search_metrics(retrieved, ["doc1", "doc2"], k=10)
+    assert metrics.mrr == 1.0
+    assert metrics.hit_rate_at_10 == 1.0
+    assert math.isclose(metrics.ndcg_at_10, 1.0, rel_tol=1e-5)

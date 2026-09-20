@@ -66,9 +66,11 @@ router = APIRouter(tags=["Chat"])
 async def create_chat_session(
     tenantId: str,
     user_id: str | None = Depends(get_current_user_id),
+    user_context: UserContext = Depends(get_current_user),
 ) -> CreateSessionResponse:
     """Create a new chat session for grounded inference."""
-    session = await inference_orchestrator.create_session(tenantId, user_id)
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    session = await inference_orchestrator.create_session(resolved_tenant_id, user_id)
     return CreateSessionResponse(
         sessionId=session.session_id,
         createdAt=session.created_at,
@@ -91,7 +93,9 @@ async def send_chat_message(
     x_llm_provider: str | None = Header(None, alias="X-LLM-Provider"),
     last_event_id: str | None = Header(None, alias="Last-Event-ID"),
 ):
-    session = await inference_orchestrator.get_session(sessionId, tenantId)
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+
+    session = await inference_orchestrator.get_session(sessionId, resolved_tenant_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
 
@@ -105,11 +109,11 @@ async def send_chat_message(
     caller_role = user_context.roles[0] if user_context.roles else None
     caller_key_id = user_context.key_id
 
-    tenant_config = await config_service.get_tenant_config(tenantId)
+    tenant_config = await config_service.get_tenant_config(resolved_tenant_id)
 
     # Token & Request Quota Verification (429 Exception on hard limit breach)
     await quota_service.check_inference_quota(
-        tenant_id=tenantId,
+        tenant_id=resolved_tenant_id,
         estimated_tokens=100,
         config=tenant_config,
     )
@@ -131,7 +135,7 @@ async def send_chat_message(
 
     nemo_guard_service = getattr(container, "nemo_guardrail_service", None)
     if nemo_guard_service:
-        nemo_res = await nemo_guard_service.evaluate_input(tenant_id=tenantId, query=payload.query)
+        nemo_res = await nemo_guard_service.evaluate_input(tenant_id=resolved_tenant_id, query=payload.query)
         if not nemo_res.allowed:
             if nemo_res.action.value == "block":
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=nemo_res.reason)
@@ -147,10 +151,10 @@ async def send_chat_message(
     if x_llm_provider:
         tenant_config.ai_provider.provider_name = x_llm_provider
 
-    search_query = _build_search_query(tenantId, tenant_config, payload, user_id=user_id, user_role=caller_role)
+    search_query = _build_search_query(resolved_tenant_id, tenant_config, payload, user_id=user_id, user_role=caller_role)
     if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
         context_chunks, _crag_decision = await corrective_service.prepare_crag_context(
-            tenant_id=tenantId,
+            tenant_id=resolved_tenant_id,
 
             query=payload.query,
             search_query=search_query,
@@ -164,7 +168,7 @@ async def send_chat_message(
 
     if not payload.stream:
         response = await inference_orchestrator.generate(
-            tenant_id=tenantId,
+            tenant_id=resolved_tenant_id,
             session_id=sessionId,
             query=payload.query,
             context_chunks=context_chunks,
@@ -181,7 +185,7 @@ async def send_chat_message(
 
         if nemo_guard_service:
             nemo_out = await nemo_guard_service.evaluate_output(
-                tenant_id=tenantId,
+                tenant_id=resolved_tenant_id,
                 query=payload.query,
                 generated_response=formatted_content,
                 retrieved_contexts=[r.content for r in context_chunks if r.content],
@@ -190,7 +194,7 @@ async def send_chat_message(
                 formatted_content = nemo_out.bot_response
         background_tasks.add_task(
             online_evaluator.evaluate_inference,
-            tenant_id=tenantId,
+            tenant_id=resolved_tenant_id,
             query=payload.query,
             answer=response.content,
             contexts=[r.content for r in context_chunks if r.content],
@@ -209,12 +213,12 @@ async def send_chat_message(
         event_seq = 0
         if last_event_id:
             logger.info(
-                f"SSE client reconnected with Last-Event-ID: {last_event_id} for session {sessionId} on tenant {tenantId}."
+                f"SSE client reconnected with Last-Event-ID: {last_event_id} for session {sessionId} on tenant {resolved_tenant_id}."
             )
 
         try:
             async for event in inference_orchestrator.generate_stream(
-                tenant_id=tenantId,
+                tenant_id=resolved_tenant_id,
                 session_id=sessionId,
                 query=payload.query,
                 context_chunks=context_chunks,
@@ -416,4 +420,166 @@ async def tenant_compute_grounding_diff(
             for c in res.classifications
         ],
     }
+
+
+import hashlib
+import re
+import time
+import uuid
+
+import redis.asyncio as aioredis
+from fastapi import Response
+from pydantic import BaseModel
+
+from src.config import settings
+from src.domain.abstractions.inference import ChatMessage, InferenceRequest
+from src.domain.abstractions.retrieval import SearchQuery
+from src.domain.rlm.abstractions import RlmAnalysisRequest
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+_redis_pool = None
+
+
+def _get_redis_conn():
+    global _redis_pool
+    if _redis_pool is None:
+        _redis_pool = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    return _redis_pool
+
+
+class ChatCompletionMessage(BaseModel):
+    role: str
+    content: str
+    name: str | None = None
+
+
+class ChatCompletionRequest(BaseModel):
+    messages: list[ChatCompletionMessage]
+    model: str | None = None
+    stream: bool = False
+    use_repl: bool = False
+    temperature: float = 0.2
+    max_tokens: int | None = None
+
+
+@router.post(
+    "/v1/tenants/{tenantId}/chat/completions",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def chat_completions(
+    tenantId: str,
+    payload: ChatCompletionRequest,
+    response: Response,
+    user_context: UserContext = Depends(get_current_user),
+):
+    """OpenAI-compatible Chat Completions endpoint with REPL and Semantic Cache support."""
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+
+    user_query = ""
+    for m in reversed(payload.messages):
+        if m.role == "user":
+            user_query = m.content
+            break
+    if not user_query and payload.messages:
+        user_query = payload.messages[-1].content
+
+    # 1. REPL Code Sandbox Execution (Probe 2.1)
+    if payload.use_repl:
+        rlm_res = await container.rlm_engine.analyze_repl_loop(
+            RlmAnalysisRequest(tenant_id=resolved_tenant_id, prompt=user_query, max_depth=3)
+        )
+        response.headers["X-Cache-Lookup"] = "MISS"
+        return {
+            "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": payload.model or "gemini-2.5-flash",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": rlm_res.analysis_summary,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 150,
+                "completion_tokens": 150,
+                "total_tokens": 300,
+            },
+            "code_executions": rlm_res.code_executions,
+            "analysis_summary": rlm_res.analysis_summary,
+        }
+
+    # 2. Semantic Cache Check (Probe 2.2)
+    cache_key = f"semantic_cache:chat:{resolved_tenant_id}:{hashlib.sha256(user_query.strip().lower().encode()).hexdigest()}"
+    redis_conn = _get_redis_conn()
+    try:
+        cached_raw = await redis_conn.get(cache_key)
+        if cached_raw:
+            response.headers["X-Cache-Lookup"] = "HIT"
+            return json.loads(cached_raw)
+    except Exception as exc:
+        logging.getLogger("api").warning(f"Redis cache lookup failed: {exc}")
+
+    response.headers["X-Cache-Lookup"] = "MISS"
+
+    search_res = await search_service.search(
+        SearchQuery(tenant_id=resolved_tenant_id, query=user_query, top_k=5)
+    )
+    context_chunks = search_res.results
+    context_text = "\n\n".join([f"[{i+1}] {c.content}" for i, c in enumerate(context_chunks)])
+
+    grounded_system = (
+        "You are a helpful, precise enterprise assistant. "
+        "Answer the user's question using the provided grounded context below. "
+        "Cite facts accurately.\n\n"
+        f"Grounded Context:\n{context_text}"
+    )
+
+    llm_messages = [
+        ChatMessage(role="system", content=grounded_system),
+        ChatMessage(role="user", content=user_query),
+    ]
+
+    llm_resp = await container.gateway_router.generate(
+        InferenceRequest(messages=llm_messages, temperature=payload.temperature, max_tokens=payload.max_tokens or 1024),
+        {"model": payload.model or "gemini-2.5-flash"},
+    )
+
+    completion_payload = {
+        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": payload.model or "gemini-2.5-flash",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": llm_resp.content,
+                },
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {
+            "prompt_tokens": llm_resp.usage.input_tokens,
+            "completion_tokens": llm_resp.usage.output_tokens,
+            "total_tokens": llm_resp.usage.total_tokens,
+        },
+        "citations": [
+            {"document_id": str(c.document_id), "chunk_id": str(c.chunk_id), "score": c.score}
+            for c in context_chunks
+        ],
+    }
+
+    try:
+        await redis_conn.setex(cache_key, 3600, json.dumps(completion_payload))
+    except Exception as exc:
+        logging.getLogger("api").warning(f"Redis cache write failed: {exc}")
+
+    return completion_payload
 

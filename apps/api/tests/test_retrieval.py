@@ -347,3 +347,50 @@ async def test_keyword_repository_sets_rls(mock_session_ctx) -> None:
     )
 
     mock_session_ctx.assert_called_once_with(tenant_id=tenant_id)
+
+
+def test_bm25_reranker_immutability_and_scoring() -> None:
+    from src.domain.retrieval.bm25_reranker import bm25_rerank
+
+    doc1 = _make_result("c1", 0.9, content="Postgres vector database with HNSW indexing")
+    doc2 = _make_result("c2", 0.8, content="Unrelated recipe for baking chocolate cookies")
+    candidates = [doc1, doc2]
+
+    # Run bm25 rerank
+    query = "Postgres vector database indexing"
+    reranked = bm25_rerank(query, candidates)
+
+    # Input candidates must NOT be mutated in-place
+    assert doc1.score == 0.9
+    assert doc2.score == 0.8
+
+    # Reranked list contains copies with new BM25 scores
+    assert len(reranked) == 2
+    assert reranked[0].chunk_id == "c1"
+    assert reranked[0].score > reranked[1].score
+    assert reranked[1].chunk_id == "c2"
+
+
+def test_fusion_strategy_selection() -> None:
+    service = HybridSearchService(
+        vector_search=MagicMock(),
+        keyword_search=MagicMock(),
+        embedder=MagicMock(),
+        reranker=None,
+    )
+    v_results = [_make_result("c1", 0.9)]
+    k_results = [_make_result("c2", 0.8)]
+
+    # 1. Default is hybrid_convex
+    q_default = SearchQuery(query="test", tenant_id="t1")
+    assert service._determine_strategy(q_default, v_results, k_results) == "hybrid_convex"
+
+    # 2. Explicit rrf strategy
+    q_rrf = SearchQuery(query="test", tenant_id="t1", fusion_strategy="rrf")
+    assert service._determine_strategy(q_rrf, v_results, k_results) == "hybrid_rrf"
+
+    # 3. Explicit normalized strategy
+    q_norm = SearchQuery(query="test", tenant_id="t1", fusion_strategy="normalized")
+    assert service._determine_strategy(q_norm, v_results, k_results) == "normalized_hybrid"
+
+

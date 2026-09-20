@@ -8,6 +8,7 @@ Create Date: 2026-07-15 18:00:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -37,7 +38,7 @@ def upgrade() -> None:
         sa.Column("dataset_id", sa.UUID(), nullable=False),
         sa.Column("question", sa.Text(), nullable=False),
         sa.Column("ground_truth_answer", sa.Text(), nullable=False),
-        sa.Column("relevant_chunk_ids", sa.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("relevant_chunk_ids", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["dataset_id"], ["eval_datasets.dataset_id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("question_id"),
@@ -51,7 +52,7 @@ def upgrade() -> None:
         sa.Column("dataset_id", sa.UUID(), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default=sa.text("'pending'")),
         sa.Column("trigger", sa.String(20), nullable=False, server_default=sa.text("'manual'")),
-        sa.Column("aggregate_scores", sa.JSONB(), nullable=True),
+        sa.Column("aggregate_scores", postgresql.JSONB(), nullable=True),
         sa.Column("question_count", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("completed_count", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
@@ -68,8 +69,8 @@ def upgrade() -> None:
         sa.Column("run_id", sa.UUID(), nullable=False),
         sa.Column("question_id", sa.UUID(), nullable=False),
         sa.Column("generated_answer", sa.Text(), nullable=True),
-        sa.Column("retrieved_chunk_ids", sa.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")),
-        sa.Column("scores", sa.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("retrieved_chunk_ids", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("scores", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("latency_ms", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["run_id"], ["eval_runs.run_id"], ondelete="CASCADE"),

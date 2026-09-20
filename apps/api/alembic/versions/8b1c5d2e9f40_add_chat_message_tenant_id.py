@@ -19,6 +19,12 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Backfill tenant ownership from the parent session before enforcing RLS."""
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    tables = insp.get_table_names()
+    if "chat_messages" not in tables:
+        return
+
     op.add_column("chat_messages", sa.Column("tenant_id", sa.UUID(), nullable=True))
     op.execute(
         """

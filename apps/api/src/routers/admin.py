@@ -433,6 +433,11 @@ async def admin_upload_document(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
+@router.post(
+    "/tenants/{tenantId}/documents/upload",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def admin_ingest_document_sync(
     tenantId: str,
     file: UploadFile = File(...),

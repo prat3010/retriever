@@ -233,12 +233,22 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
 
         return count
 
-    def get_synced_sequence(self, db_path: str | None = None) -> int:
+    def get_synced_sequence(
+        self,
+        db_path: str | None = None,
+        tenant_id: str | None = None,
+    ) -> int:
         """Fetch current high watermark synced sequence number from edge_config."""
         self.initialize_schema(db_path)
         conn = self._get_connection(db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT last_sync_seq FROM edge_config ORDER BY updated_at DESC LIMIT 1")
+        if tenant_id:
+            cursor.execute(
+                "SELECT last_sync_seq FROM edge_config WHERE tenant_id = ? LIMIT 1",
+                (tenant_id,),
+            )
+        else:
+            cursor.execute("SELECT last_sync_seq FROM edge_config ORDER BY updated_at DESC LIMIT 1")
         row = cursor.fetchone()
         seq = row[0] if row else 0
         if db_path and db_path != ":memory:" and conn != self._memory_conn:

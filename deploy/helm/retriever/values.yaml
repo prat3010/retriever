@@ -95,7 +95,8 @@ postgresql:
     storageClass: ""
   auth:
     database: retriever_db
-    username: postgres
+    # WARNING: Do NOT use this default password in production. Supply a secure secret
+    # via Helm '--set postgresql.auth.password=<SECRET>' or configure existingSecret.
     password: "change-me-in-production"
   resources:
     limits:

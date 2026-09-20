@@ -181,7 +181,7 @@ class HybridSearchService:
         # 4b. Optional BM25 re-ranking (Stage 2) — re-scores fused candidates
         if query.enable_bm25 and fused:
             from src.domain.retrieval.bm25_reranker import bm25_rerank
-            bm25_rerank(query.query, fused)
+            fused = bm25_rerank(query.query, fused)
 
         # 5. Optional reranking pass
         if query.enable_reranking and fused:
@@ -268,11 +268,7 @@ class HybridSearchService:
                 provider = self.web_search_factory(provider_name, api_key)
                 if provider is not None:
                     return provider
-            if provider_name == "brave":
-                from src.adapters.cognitive.brave_adapter import BraveSearchAdapter
-                return BraveSearchAdapter(api_key=api_key)
-            from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
-            return TavilySearchAdapter(api_key=api_key)
+            return None
         if provider_name == "brave" and self.brave_search is not None:
             return self.brave_search
         return self.web_search
@@ -336,7 +332,14 @@ class HybridSearchService:
         if not query.enable_hybrid:
             return "vector_only"
         if vector_results and keyword_results:
-            return "hybrid_convex" if hasattr(query, "hybrid_alpha") and 0.0 <= query.hybrid_alpha <= 1.0 else "hybrid_rrf"
+            strat = getattr(query, "fusion_strategy", "convex")
+            if strat == "rrf":
+                return "hybrid_rrf"
+            if strat in ("normalized", "normalized_hybrid"):
+                return "normalized_hybrid"
+            if hasattr(query, "hybrid_alpha") and query.hybrid_alpha is not None and 0.0 <= query.hybrid_alpha <= 1.0:
+                return "hybrid_convex"
+            return "hybrid_rrf"
         if vector_results:
             return "vector_only_degraded"
         if keyword_results:

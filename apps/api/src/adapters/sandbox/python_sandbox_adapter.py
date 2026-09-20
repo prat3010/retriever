@@ -6,8 +6,12 @@ to safely execute data-processing Python scripts with execution timeouts.
 
 import ast
 import asyncio
+import datetime
 import io
+import json
 import logging
+import math
+import re
 import sys
 import time
 from typing import Any
@@ -63,14 +67,21 @@ SAFE_BUILTINS: dict[str, Any] = {
 }
 
 
+SAFE_MODULES: set[str] = {"math", "re", "json", "datetime"}
+
+
 class RestrictedASTValidator(ast.NodeVisitor):
     """AST visitor that raises SecurityError if prohibited nodes or names are encountered."""
 
     def visit_Import(self, node: ast.Import) -> None:
-        raise SecurityError("Imports are prohibited inside the REPL sandbox.")
+        for alias in node.names:
+            base_mod = alias.name.split(".")[0]
+            if base_mod not in SAFE_MODULES:
+                raise SecurityError(f"Import of module '{alias.name}' is prohibited inside the REPL sandbox.")
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        raise SecurityError("Imports are prohibited inside the REPL sandbox.")
+        if not node.module or node.module.split(".")[0] not in SAFE_MODULES:
+            raise SecurityError(f"Import from module '{node.module}' is prohibited inside the REPL sandbox.")
 
     def visit_Name(self, node: ast.Name) -> None:
         if node.id in PROHIBITED_NAMES:
@@ -121,8 +132,24 @@ class RestrictedPythonSandboxAdapter(ReplSandboxProvider):
             msg = sep.join(str(a) for a in args) + end
             stdout_capture.write(msg)
 
+        def _safe_import(name: str, *args: Any, **kwargs: Any) -> Any:
+            base_name = name.split(".")[0]
+            if base_name not in SAFE_MODULES:
+                raise ImportError(f"Import of module '{name}' is prohibited in the sandbox.")
+            return __import__(name, *args, **kwargs)
+
+        safe_builtins = {
+            **SAFE_BUILTINS,
+            "print": _custom_print,
+            "__import__": _safe_import,
+        }
+
         safe_globals = {
-            "__builtins__": {**SAFE_BUILTINS, "print": _custom_print},
+            "__builtins__": safe_builtins,
+            "math": math,
+            "re": re,
+            "json": json,
+            "datetime": datetime,
         }
 
         local_vars: dict[str, Any] = {}

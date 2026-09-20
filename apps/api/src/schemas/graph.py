@@ -10,8 +10,13 @@ from src.domain.abstractions.graph import EntityTriple
 class GraphQueryRequest(BaseModel):
     """Request model for GraphRAG multi-hop query endpoint."""
 
-    entity: str = Field(..., description="Root entity to start multi-hop traversal")
+    entity: str | None = Field(default=None, description="Root entity to start multi-hop traversal")
+    query: str | None = Field(default=None, description="Root entity or query string")
     max_hops: int = Field(default=2, ge=1, le=5, description="Maximum graph depth traversal hops")
+
+    @property
+    def target_entity(self) -> str:
+        return self.entity or self.query or ""
 
 
 class GraphEngineSwitchRequest(BaseModel):

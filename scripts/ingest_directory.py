@@ -207,12 +207,23 @@ def main():
 
     ext_set = {f".{e.strip().lstrip('.').lower()}" for e in args.ext.split(",") if e.strip()}
 
+    tenant_id = args.tenant
+    if tenant_id:
+        test_tenants_file = Path(__file__).resolve().parent.parent / "data" / "test_tenants.json"
+        if test_tenants_file.is_file():
+            try:
+                mapping = json.loads(test_tenants_file.read_text())
+                if tenant_id in mapping and "tenant_id" in mapping[tenant_id]:
+                    tenant_id = mapping[tenant_id]["tenant_id"]
+            except Exception:
+                pass
+
     print(f"\n{CYAN}{BOLD}Retriever Batch Directory Ingestion Engine{NC}")
     print(f"  • Source Directory: {target_dir}")
     print(f"  • Included Exts:    {', '.join(sorted(ext_set))}")
     print(f"  • Recursive Crawl:  {'No' if args.no_recursive else 'Yes'}")
     if not args.dry_run:
-        print(f"  • Target Tenant:    {args.tenant}")
+        print(f"  • Target Tenant:    {tenant_id} (input: {args.tenant})")
         print(f"  • API Gateway:      {args.api_url}")
     print("----------------------------------------------------------------------")
 
@@ -231,7 +242,7 @@ def main():
         print(f"\n{GREEN}Scan complete. Remove --dry-run to start ingestion.{NC}")
         return
 
-    upload_url = f"{args.api_url.rstrip('/')}/v1/admin/tenants/{args.tenant}/documents/upload"
+    upload_url = f"{args.api_url.rstrip('/')}/v1/admin/tenants/{tenant_id}/documents/upload"
     success_count = 0
     fail_count = 0
 

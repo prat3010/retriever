@@ -25,11 +25,14 @@ async def _enable_rls_on_tables(conn) -> None:
         "telemetry_anomalies", "agent_checkpoints",
         "compiled_prompt_programs", "workflow_executions",
         "workflow_step_checkpoints",
+        "tenant_lora_adapters", "custom_plugins",
+        "edge_nodes", "edge_sync_checkpoints",
+        "voice_sessions", "voice_turns",
     ]
-
 
     for table in tables:
         await conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;"))
+        await conn.execute(text(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY;"))
         await conn.execute(text(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table};"))
         await conn.execute(text(f"""
             CREATE POLICY tenant_isolation_policy ON {table}
@@ -42,6 +45,7 @@ async def _enable_rls_on_tables(conn) -> None:
 
 async def _enable_rls_for_configurations(conn) -> None:
     await conn.execute(text("ALTER TABLE configurations ENABLE ROW LEVEL SECURITY;"))
+    await conn.execute(text("ALTER TABLE configurations FORCE ROW LEVEL SECURITY;"))
     await conn.execute(text("DROP POLICY IF EXISTS tenant_isolation_policy ON configurations;"))
     await conn.execute(text("""
         CREATE POLICY tenant_isolation_policy ON configurations
@@ -100,7 +104,7 @@ async def _create_hnsw_indices(conn) -> None:
     """))
     await conn.execute(text("""
         CREATE INDEX IF NOT EXISTS idx_vector_records_3072_embedding
-        ON vector_records_3072 USING hnsw (embedding vector_cosine_ops)
+        ON vector_records_3072 USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops)
         WITH (m = 16, ef_construction = 200);
     """))
     await conn.execute(text("""

@@ -35,7 +35,7 @@ export default function GatewayRouterPage() {
   const tenants = tenantsData?.items || [];
   const [selectedTenantId, setSelectedTenantId] = useState<string>("");
 
-  const tenantId = selectedTenantId || tenants[0]?.tenantId || "00000000-0000-0000-0000-000000000000";
+  const tenantId = selectedTenantId || tenants[0]?.tenantId || "";
 
   // Data Queries
   const { data: models = [] } = useGatewayModels();

@@ -1,9 +1,14 @@
 """Search routes."""
 from fastapi import APIRouter, Depends, Header, Security, status
 
-from src.adapters.api.security import verify_scopes, verify_tenant_isolation
+from src.adapters.api.security import (
+    get_current_user,
+    verify_scopes,
+    verify_tenant_isolation,
+)
 from src.adapters.telemetry.rate_limiter_dep import rate_limit
 from src.container import config_service, search_service
+from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.retrieval import SearchQuery
 from src.domain.retrieval.experiment_service import apply_overrides, assign_variant
 from src.schemas.search import (
@@ -14,6 +19,11 @@ from src.schemas.search import (
 )
 
 router = APIRouter(tags=["Search"])
+
+
+import re
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 
 
 @router.post(
@@ -27,9 +37,11 @@ async def search_documents(
     payload: SearchRequest,
     x_user_id: str | None = Header(None, alias="X-User-ID"),
     x_user_role: str | None = Header(None, alias="X-User-Role"),
+    user_context: UserContext = Depends(get_current_user),
 ) -> SearchResponseDto:
     """Execute hybrid search across tenant document vectors and keyword indexes."""
-    tenant_config = await config_service.get_tenant_config(tenantId)
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    tenant_config = await config_service.get_tenant_config(resolved_tenant_id)
 
     if tenant_config.experiments:
         for exp in tenant_config.experiments:
@@ -60,7 +72,7 @@ async def search_documents(
 
     query = SearchQuery(
         query=payload.query,
-        tenant_id=tenantId,
+        tenant_id=resolved_tenant_id,
         collection_id=payload.collection_id,
         user_id=x_user_id,
         user_role=x_user_role,

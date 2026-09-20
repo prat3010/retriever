@@ -97,11 +97,13 @@ def test_domain_does_not_import_infrastructure() -> None:
     other infrastructure frameworks."""
     violations: list[str] = []
     for path in sorted(_iter_py_files(DOMAIN_DIR)):
-        mods = _parse_imports(path)
-        bad = FORBIDDEN_DOMAIN_IMPORTS & set(mods)
-        if bad:
-            rel = path.relative_to(DOMAIN_DIR)
-            violations.append(f"{rel}: imports {', '.join(sorted(bad))}")
+        full_mods = _parse_full_imports(path)
+        for mod in full_mods:
+            parts = set(mod.split("."))
+            bad = FORBIDDEN_DOMAIN_IMPORTS & parts
+            if bad:
+                rel = path.relative_to(DOMAIN_DIR)
+                violations.append(f"{rel}: imports {mod} (forbidden: {', '.join(sorted(bad))})")
 
     assert not violations, (
         "Domain layer imports infrastructure:\n" + "\n".join(violations)

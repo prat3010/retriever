@@ -1,6 +1,7 @@
 """Neo4j implementation of GraphRepository for Knowledge Graph storage."""
 
 import logging
+import uuid
 from typing import Any
 
 from src.adapters.database.graph_repository import PgGraphRepository
@@ -90,13 +91,13 @@ class Neo4jGraphRepository(BaseGraphRepository):
         """
         batch = [
             {
-                "triple_id": t.triple_id,
+                "triple_id": getattr(t, "triple_id", None) or str(uuid.uuid4()),
                 "subject": t.subject.strip(),
                 "predicate": t.predicate.strip().upper(),
                 "object": t.object.strip(),
-                "chunk_id": t.chunk_id,
-                "document_id": t.document_id or (t.metadata.get("document_id") if t.metadata else None),
-                "confidence": t.confidence,
+                "chunk_id": getattr(t, "chunk_id", None) or (t.metadata.get("chunk_id") if getattr(t, "metadata", None) else None),
+                "document_id": getattr(t, "document_id", None) or (t.metadata.get("document_id") if getattr(t, "metadata", None) else None),
+                "confidence": getattr(t, "confidence", 1.0),
             }
             for t in triples
         ]

@@ -21,6 +21,7 @@ class SqlTenantRegistry(TenantRegistry):
                 name=name,
                 status="active",
                 tier=tier,
+                isolation_level=isolation_level,
             )
             session.add(db_tenant)
 

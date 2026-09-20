@@ -47,44 +47,51 @@ def upgrade() -> None:
         sa.Column("llm_api_key_encrypted", sa.Text(), nullable=True),
     )
 
-    # Add user_id to chat_sessions
-    op.add_column(
-        "chat_sessions",
-        sa.Column("user_id", sa.UUID(), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_chat_sessions_user_id",
-        "chat_sessions", "users",
-        ["user_id"], ["user_id"],
-        ondelete="SET NULL",
-    )
-    op.create_index("ix_chat_sessions_user_id", "chat_sessions", ["user_id"])
+    # Add user_id to chat_sessions and chat_messages if they exist
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    tables = insp.get_table_names()
+
+    if "chat_sessions" in tables:
+        op.add_column(
+            "chat_sessions",
+            sa.Column("user_id", sa.UUID(), nullable=True),
+        )
+        op.create_foreign_key(
+            "fk_chat_sessions_user_id",
+            "chat_sessions", "users",
+            ["user_id"], ["user_id"],
+            ondelete="SET NULL",
+        )
+        op.create_index("ix_chat_sessions_user_id", "chat_sessions", ["user_id"])
 
     # Add user_id to chat_messages
-    op.add_column(
-        "chat_messages",
-        sa.Column("user_id", sa.UUID(), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_chat_messages_user_id",
-        "chat_messages", "users",
-        ["user_id"], ["user_id"],
-        ondelete="SET NULL",
-    )
-    op.create_index("ix_chat_messages_user_id", "chat_messages", ["user_id"])
+    if "chat_messages" in tables:
+        op.add_column(
+            "chat_messages",
+            sa.Column("user_id", sa.UUID(), nullable=True),
+        )
+        op.create_foreign_key(
+            "fk_chat_messages_user_id",
+            "chat_messages", "users",
+            ["user_id"], ["user_id"],
+            ondelete="SET NULL",
+        )
+        op.create_index("ix_chat_messages_user_id", "chat_messages", ["user_id"])
 
     # Add user_id to inference_logs
-    op.add_column(
-        "inference_logs",
-        sa.Column("user_id", sa.UUID(), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_inference_logs_user_id",
-        "inference_logs", "users",
-        ["user_id"], ["user_id"],
-        ondelete="SET NULL",
-    )
-    op.create_index("ix_inference_logs_user_id", "inference_logs", ["user_id"])
+    if "inference_logs" in tables:
+        op.add_column(
+            "inference_logs",
+            sa.Column("user_id", sa.UUID(), nullable=True),
+        )
+        op.create_foreign_key(
+            "fk_inference_logs_user_id",
+            "inference_logs", "users",
+            ["user_id"], ["user_id"],
+            ondelete="SET NULL",
+        )
+        op.create_index("ix_inference_logs_user_id", "inference_logs", ["user_id"])
 
 
 def downgrade() -> None:

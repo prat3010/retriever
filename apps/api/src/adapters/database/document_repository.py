@@ -114,7 +114,10 @@ class SqlDocumentRepository(DocumentRepository):
             storage_path = row.storage_path or ""
             row.is_deleted = True
             await session.execute(
-                delete(DocumentChunkDb).where(DocumentChunkDb.document_id == uuid.UUID(document_id))
+                delete(DocumentChunkDb).where(
+                    DocumentChunkDb.document_id == uuid.UUID(document_id),
+                    DocumentChunkDb.tenant_id == uuid.UUID(tenant_id),
+                )
             )
             await session.flush()
             return storage_path

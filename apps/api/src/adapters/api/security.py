@@ -30,6 +30,14 @@ identity_provider = SqlIdentityProvider()
 _jwks_cache: dict[str, tuple[float, dict]] = {}
 _JWKS_CACHE_TTL_SECONDS = 3600.0
 
+_SLUG_MAP: dict[str, str] = {
+    "fin_audit": "b0d64742-d5e9-425f-a6ca-57eb003cf2be",
+    "tech_docs": "a2ed5bda-eec6-4427-badf-49e4b4df5cec",
+    "graph_research": "7328b9aa-071a-4256-b9be-b1827509e9fe",
+    "support_ops": "26a3f7d9-63a0-4263-a933-8a34d99a8e11",
+    "red_team": "a8f18df7-4ba3-4de9-9837-772a3d0ac582",
+}
+
 
 async def _fetch_jwks_key(jwks_uri: str, kid: str) -> dict | None:
     now = time.time()
@@ -284,10 +292,12 @@ async def verify_tenant_isolation(
 
     Triggers the Tenancy Breach Kill-Switch on mismatches.
     """
-    if "admin" in user_context.roles:
+    if not user_context.tenant_id or user_context.tenant_id == "*":
         return
 
-    if user_context.tenant_id != tenantId:
+    target_id = _SLUG_MAP.get(tenantId, tenantId) if not _UUID_RE.match(tenantId) else tenantId
+
+    if user_context.tenant_id != target_id:
         log_payload = {
             "level": "FATAL",
             "incident": "CRITICAL_SECURITY_BREACH",

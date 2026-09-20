@@ -56,6 +56,7 @@ class EdgeSyncAdapter(EdgeSyncAdapterProtocol):
                 select(DocumentChunkDb)
                 .where(DocumentChunkDb.tenant_id == t_uuid)
                 .order_by(DocumentChunkDb.created_at.asc())
+                .offset(max(0, since_seq))
                 .limit(limit)
             )
             res_chunks = await session.execute(stmt_chunks)

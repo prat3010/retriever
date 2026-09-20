@@ -11,15 +11,17 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
         self,
         base_url: str = DEFAULT_BASE_URL,
         model: str = DEFAULT_MODEL,
+        timeout: float = 30.0,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
+        self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
 
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(timeout=120.0)
+            self._client = httpx.AsyncClient(timeout=httpx.Timeout(self._timeout, connect=5.0))
         return self._client
 
     async def embed_text(self, text: str) -> list[float]:
@@ -34,6 +36,11 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
             raise RuntimeError(
                 f"Ollama server is not reachable at {self._base_url}. "
                 "Ensure 'ollama serve' is running and model is pulled: 'ollama pull nomic-embed-text'."
+            ) from e
+        except httpx.TimeoutException as e:
+            raise TimeoutError(
+                f"Ollama embedding request timed out after {self._timeout}s at {self._base_url}. "
+                "Ensure Ollama is responsive and has sufficient compute resources."
             ) from e
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:

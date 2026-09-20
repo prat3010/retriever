@@ -6,6 +6,7 @@ circuit-breaker cooldowns, and multi-provider model routing.
 
 import asyncio
 import logging
+import os
 import time
 from collections.abc import AsyncIterator
 from typing import Any
@@ -109,6 +110,16 @@ CATALOG_MODELS: list[GatewayModelInfo] = [
         description="Top-tier European multilingual reasoning and compliance model.",
     ),
     GatewayModelInfo(
+        model_id="ollama/qwen2.5:1.5b",
+        provider="ollama",
+        name="Ollama Qwen 2.5 1.5B (Local)",
+        input_cost_per_1k=0.0,
+        output_cost_per_1k=0.0,
+        capabilities=["chat", "tools", "json"],
+        is_local=True,
+        description="Ultra-fast local CPU-friendly edge model for free local inference.",
+    ),
+    GatewayModelInfo(
         model_id="ollama/qwen2.5:14b",
         provider="ollama",
         name="Ollama Qwen 2.5 14B (Local)",
@@ -208,12 +219,12 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
             or config.get("default_model")
             or default_primary
         )
-        fallbacks: list[str] = config.get("fallback_models") or []
+        fallbacks: list[str] = list(config.get("fallback_models") or [])
         if not fallbacks and config.get("fallback_model"):
             fallbacks = [config["fallback_model"]]
-        if not fallbacks:
-            # Sane default emergency fallback
-            fallbacks = ["openai/gpt-4o-mini", "ollama/qwen2.5:14b"]
+        # Ensure local Ollama 1.5b is always present in fallback sequence
+        if "ollama/qwen2.5:1.5b" not in fallbacks and "ollama/qwen2.5:1.5b" != primary:
+            fallbacks.append("ollama/qwen2.5:1.5b")
 
         sequence: list[str] = [primary]
         for fb in fallbacks:
@@ -228,23 +239,52 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
         if model.startswith("bentoml"):
             return "bentoml"
         if "/" in model:
-            return model.split("/", 1)[0]
+            prefix = model.split("/", 1)[0]
+            if prefix in ("ollama", "gemini", "anthropic", "openai", "groq", "mistral"):
+                return prefix
         if "gemini" in model.lower():
             return "gemini"
         if "claude" in model.lower():
             return "anthropic"
+        if "qwen" in model.lower() or "ollama" in model.lower() or "nomic" in model.lower():
+            return "ollama"
         if "gpt" in model.lower():
             return "openai"
         return "openai"
+
+    def _prepare_provider_config(
+        self, model: str, configuration: dict[str, Any]
+    ) -> tuple[str, dict[str, Any]]:
+        """Resolve provider-specific credentials, base URLs, and model aliases."""
+        provider = self._resolve_provider_for_model(model)
+        cfg = dict(configuration)
+        cfg["model"] = model
+        cfg["provider_name"] = provider
+
+        if provider == "gemini":
+            cfg["api_key"] = os.environ.get("GEMINI_API_KEY", "") or cfg.get("api_key", "")
+            cfg["base_url"] = "https://generativelanguage.googleapis.com/v1beta/openai/"
+            if cfg["model"].startswith("gemini/"):
+                cfg["model"] = cfg["model"].split("gemini/", 1)[1]
+        elif provider == "ollama":
+            cfg["api_key"] = "ollama"
+            base_ollama = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+            cfg["base_url"] = f"{base_ollama}/v1"
+            if cfg["model"].startswith("ollama/"):
+                cfg["model"] = cfg["model"].split("ollama/", 1)[1]
+            if cfg["model"] in ("qwen2.5:14b", "llama3.2:3b", "qwen2.5", "llama3.2", "meta-llama/llama-3.3-70b-instruct"):
+                cfg["model"] = "qwen2.5:1.5b"
+        elif provider == "openai":
+            cfg["api_key"] = cfg.get("api_key") or os.environ.get("OPENAI_API_KEY", "")
+            if os.environ.get("OPENAI_BASE_URL"):
+                cfg["base_url"] = cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
+        return provider, cfg
 
     async def _execute_generate(
         self, model: str, request: InferenceRequest, configuration: dict[str, Any]
     ) -> InferenceResponse:
         """Dispatch inference request to appropriate adapter or LiteLLM."""
-        provider = self._resolve_provider_for_model(model)
-        cfg = dict(configuration)
-        cfg["model"] = model
-        cfg["provider_name"] = provider
+        provider, cfg = self._prepare_provider_config(model, configuration)
 
         # 0. Check for Serverless GPU runtime (Modal / BentoML)
         if provider in ("modal", "bentoml") and self.serverless_gpu_client:
@@ -360,10 +400,7 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                 continue
 
             attempted.append(model)
-            provider = self._resolve_provider_for_model(model)
-            cfg = dict(configuration)
-            cfg["model"] = model
-            cfg["provider_name"] = provider
+            provider, cfg = self._prepare_provider_config(model, configuration)
 
             if len(attempted) > 1:
                 yield {"event": "info", "message": f"Smart router failing over to {model}"}

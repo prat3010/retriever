@@ -1,9 +1,14 @@
 """Tests for Enterprise Identity Federation (SAML 2.0 / SCIM 2.0) & RB-VAC (M119, Battery #34)."""
 
 import base64
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.x509.oid import NameOID
 from httpx import ASGITransport, AsyncClient
 
 from src.container import battery_service, identity_federation_adapter
@@ -19,6 +24,62 @@ from src.main import app
 @pytest.fixture
 def test_tenant_id() -> str:
     return "tn_enterprise_corp_99"
+
+
+@pytest.fixture(scope="session")
+def saml_test_key_and_cert():
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "idp.okta.com")])
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(UTC) - timedelta(days=1))
+        .not_valid_after(datetime.now(UTC) + timedelta(days=365))
+        .sign(key, hashes.SHA256())
+    )
+    cert_pem = cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+    return key, cert_pem
+
+
+def sign_saml_response(raw_xml: str, private_key: rsa.RSAPrivateKey) -> str:
+    ET.register_namespace("ds", "http://www.w3.org/2000/09/xmldsig#")
+    ET.register_namespace("saml", "urn:oasis:names:tc:SAML:2.0:assertion")
+    ET.register_namespace("samlp", "urn:oasis:names:tc:SAML:2.0:protocol")
+
+    root = ET.fromstring(raw_xml)
+    assertion = root.find(".//{urn:oasis:names:tc:SAML:2.0:assertion}Assertion")
+    if assertion is None:
+        raise ValueError("Assertion not found in XML")
+    assertion_id = assertion.get("ID", "_assert_default")
+
+    c14n_assertion = ET.canonicalize(ET.tostring(assertion))
+    hasher = hashes.Hash(hashes.SHA256())
+    hasher.update(c14n_assertion.encode("utf-8"))
+    digest = base64.b64encode(hasher.finalize()).decode("utf-8")
+
+    signed_info_xml = f"""<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+<ds:Reference URI="#{assertion_id}">
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+<ds:DigestValue>{digest}</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>"""
+
+    c14n_si = ET.canonicalize(signed_info_xml)
+    sig_bytes = private_key.sign(c14n_si.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
+    sig_b64 = base64.b64encode(sig_bytes).decode("utf-8")
+
+    sig_xml = f"""<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+{signed_info_xml}
+<ds:SignatureValue>{sig_b64}</ds:SignatureValue>
+</ds:Signature>"""
+
+    assertion.append(ET.fromstring(sig_xml))
+    return ET.tostring(root, encoding="utf-8").decode("utf-8")
 
 
 @pytest.fixture
@@ -85,18 +146,22 @@ async def test_saml_configuration_and_sp_metadata(test_tenant_id: str):
 
 
 @pytest.mark.asyncio
-async def test_saml_assertion_validation(test_tenant_id: str, sample_saml_xml: str):
-    """Verify cryptographic SAML assertion attribute extraction and security group mapping."""
+async def test_saml_assertion_validation(
+    test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert
+):
+    """Verify cryptographic SAML assertion attribute extraction, signature verification, and security group mapping."""
+    key, cert_pem = saml_test_key_and_cert
     config = SamlIdpConfig(
         tenant_id=test_tenant_id,
         idp_entity_id="https://idp.okta.com/exk12345",
         sso_url="https://idp.okta.com/exk12345/sso/saml",
-        idp_x509_cert="CERT_DATA",
+        idp_x509_cert=cert_pem,
         default_groups=["all_staff"],
     )
     await identity_federation_adapter.configure_saml_idp(config)
 
-    b64_xml = base64.b64encode(sample_saml_xml.encode("utf-8")).decode("utf-8")
+    signed_xml = sign_saml_response(sample_saml_xml, key)
+    b64_xml = base64.b64encode(signed_xml.encode("utf-8")).decode("utf-8")
     payload = await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
 
     assert payload.name_id == "lead_engineer@enterprise.internal"
@@ -108,17 +173,70 @@ async def test_saml_assertion_validation(test_tenant_id: str, sample_saml_xml: s
 
 
 @pytest.mark.asyncio
-async def test_saml_expired_assertion(test_tenant_id: str):
+async def test_saml_unsigned_assertion_rejected(test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert):
+    """Verify unsigned SAML assertions are rejected when IdP certificate is configured."""
+    _, cert_pem = saml_test_key_and_cert
+    config = SamlIdpConfig(
+        tenant_id=test_tenant_id,
+        idp_entity_id="https://idp.okta.com/exk12345",
+        sso_url="https://idp.okta.com/exk12345/sso/saml",
+        idp_x509_cert=cert_pem,
+        default_groups=["all_staff"],
+    )
+    await identity_federation_adapter.configure_saml_idp(config)
+
+    # Unsigned XML
+    b64_xml = base64.b64encode(sample_saml_xml.encode("utf-8")).decode("utf-8")
+    with pytest.raises(ValueError, match="missing required XMLDSig Signature"):
+        await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
+
+
+@pytest.mark.asyncio
+async def test_saml_tampered_assertion_rejected(test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert):
+    """Verify tampered SAML assertions fail cryptographic signature verification."""
+    key, cert_pem = saml_test_key_and_cert
+    config = SamlIdpConfig(
+        tenant_id=test_tenant_id,
+        idp_entity_id="https://idp.okta.com/exk12345",
+        sso_url="https://idp.okta.com/exk12345/sso/saml",
+        idp_x509_cert=cert_pem,
+        default_groups=["all_staff"],
+    )
+    await identity_federation_adapter.configure_saml_idp(config)
+
+    signed_xml = sign_saml_response(sample_saml_xml, key)
+    # Tamper with NameID after signing
+    tampered_xml = signed_xml.replace("lead_engineer@enterprise.internal", "attacker@evil.com")
+    b64_xml = base64.b64encode(tampered_xml.encode("utf-8")).decode("utf-8")
+
+    with pytest.raises(ValueError, match="(signature verification failed|digest mismatch)"):
+        await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
+
+
+@pytest.mark.asyncio
+async def test_saml_expired_assertion(test_tenant_id: str, saml_test_key_and_cert):
     """Verify expired SAML assertions raise security validation error."""
+    key, cert_pem = saml_test_key_and_cert
+    config = SamlIdpConfig(
+        tenant_id=test_tenant_id,
+        idp_entity_id="https://idp.okta.com/exk12345",
+        sso_url="https://idp.okta.com/exk12345/sso/saml",
+        idp_x509_cert=cert_pem,
+        default_groups=["all_staff"],
+    )
+    await identity_federation_adapter.configure_saml_idp(config)
+
     past = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
     expired_xml = f"""<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
       <saml:Issuer>https://idp.okta.com/exk12345</saml:Issuer>
       <saml:Assertion ID="_exp" Version="2.0">
+        <saml:Issuer>https://idp.okta.com/exk12345</saml:Issuer>
         <saml:Subject><saml:NameID>test@domain.com</saml:NameID></saml:Subject>
         <saml:Conditions NotOnOrAfter="{past}" />
       </saml:Assertion>
     </samlp:Response>"""
-    b64_xml = base64.b64encode(expired_xml.encode("utf-8")).decode("utf-8")
+    signed_expired_xml = sign_saml_response(expired_xml, key)
+    b64_xml = base64.b64encode(signed_expired_xml.encode("utf-8")).decode("utf-8")
 
     with pytest.raises(ValueError, match="expired"):
         await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)

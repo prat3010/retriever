@@ -373,7 +373,7 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
 
     def list_suites(self, tenant_id: str) -> list[BenchmarkSuite]:
         with self._lock:
-            return [s for s in self._suites.values() if s.tenant_id == tenant_id or s.tenant_id == "tn_enterprise_corp"]
+            return [s for s in self._suites.values() if s.tenant_id == tenant_id]
 
     def create_suite(
         self,
@@ -403,7 +403,7 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
         with self._lock:
             runs = [
                 r for r in self._runs.values()
-                if (r.tenant_id == tenant_id or r.tenant_id == "tn_enterprise_corp")
+                if (r.tenant_id == tenant_id)
                 and (suite_id is None or r.suite_id == suite_id)
             ]
             return sorted(runs, key=lambda x: x.created_at, reverse=True)
@@ -411,7 +411,7 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
     def get_run(self, tenant_id: str, run_id: str) -> BenchmarkRun | None:
         with self._lock:
             run = self._runs.get(run_id)
-            if run and (run.tenant_id == tenant_id or run.tenant_id == "tn_enterprise_corp"):
+            if run and (run.tenant_id == tenant_id):
                 return run
             return None
 

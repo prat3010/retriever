@@ -36,6 +36,7 @@ def bm25_rerank(
             if qt in tokens:
                 df[qt] += 1
 
+    reranked: list[SearchResult] = []
     for i, r in enumerate(candidates):
         doc_tokens = _tokenize(r.content)
         tf_counter = Counter(doc_tokens)
@@ -51,7 +52,7 @@ def bm25_rerank(
             denominator = tf + k1 * (1 - b + b * doc_len / avgdl)
             score += idf * numerator / denominator
 
-        r.score = score
+        reranked.append(r.model_copy(update={"score": score}))
 
-    candidates.sort(key=lambda x: x.score, reverse=True)
-    return candidates
+    reranked.sort(key=lambda x: x.score, reverse=True)
+    return reranked

@@ -13,7 +13,7 @@
 **The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
 *Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, multi-agent swarm quorum debate, and cognitive long-horizon memory.*
 
-[📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [🚀 Deploy & Connect Frontend](docs/guides/DEPLOYMENT_AND_FRONTEND_INTEGRATION.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine)
+[🎯 Production Archetypes](#-what-can-you-build-with-retriever-production-archetypes) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [🚀 Deploy & Connect Frontend](docs/guides/DEPLOYMENT_AND_FRONTEND_INTEGRATION.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine)
 
 </div>
 
@@ -57,6 +57,47 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 
 ---
 
+## 🎯 What Can You Build with Retriever? (Production Archetypes)
+
+Retriever is not a toy "chat-with-a-PDF" wrapper. It is an enterprise cognitive substrate designed for high-consequence workloads where data leaks, hallucinated numbers, and runaway GPU bills are unacceptable:
+
+### 1. 🏢 Zero-Leak B2B Multi-Tenant AI SaaS
+* **The Nightmare:** In Pinecone or naive vector setups, one missing `metadata.filter(tenant_id=...)` line in application code leaks Client A's confidential trade secrets to Client B.
+* **The Retriever Reality:** Strict **PostgreSQL Row-Level Security (RLS)** is enforced at the database connection layer (`SET LOCAL app.current_tenant = ...`). It is mathematically impossible for vector data or cross-attention spans to cross tenant boundaries, even if application code fails.
+* **Batteries Activated:** `dense_vector_hnsw` • `edge_token_shield` • `enterprise_identity_federation` (SCIM 2.0 / SAML SSO).
+
+### 2. 📊 High-Stakes Financial & Legal Due Diligence
+* **The Nightmare:** Naive text splitters shred 10-K balance sheets, income statements, and credit agreements, turning multi-column tables into scrambled nonsense and causing LLMs to hallucinate critical earnings numbers.
+* **The Retriever Reality:** Vision-native **Docling OCR** reconstructs tabular Markdown geometry with sub-millimeter precision. **ColBERT MaxSim** late interaction runs token-level cross-attention over footnote numbers, and a **sandboxed Python REPL** calculates verified audit math before answering.
+* **Batteries Activated:** `docling_ocr_parser` • `colbert_maxsim_reranker` • `rlm_repl_sandbox`.
+
+### 3. 🏥 Air-Gapped Sovereign Defense & Healthcare Intelligence
+* **The Nightmare:** Defense contractors, hospitals, and national agencies are legally prohibited under HIPAA, ITAR, and the EU AI Act from streaming sensitive data to public cloud AI APIs.
+* **The Retriever Reality:** 100% sovereign, air-gapped, and zero-egress. Runs local **Ollama** embeddings (`nomic-embed-text`), embedded **SQLite 3 FTS5 + binary float vectors**, and hardware-sealed AES-256-GCM memory enclaves with Zero-Knowledge Merkle leaf attestation.
+* **Batteries Activated:** `sovereign_edge_sync` • `zero_trust_kms_enclave` • `zkp_vector_attestation`.
+
+### 4. 🕸️ Multi-Hop Regulatory & Supply Chain Graph Discovery
+* **The Nightmare:** Dense vector search is blind to relational structure: *"Find all tier-2 suppliers in Munich that share corporate directors with sanctioned entities under Contract X."*
+* **The Retriever Reality:** **Dual-Engine GraphRAG** traverses entity-relation-entity triples via Neo4j Cypher and recursive PostgreSQL CTEs, resolving multi-hop causal chains across thousands of disconnected PDF filings and schematic diagrams.
+* **Batteries Activated:** `graphrag_topology` • `neo4j_cypher_engine` • `multimodal_vision_graphrag`.
+
+### 5. 🎙️ Full-Duplex Sovereign Voice Concierge (<300ms Latency)
+* **The Nightmare:** Cloud voice agents (OpenAI Realtime / ElevenLabs) incur 2–4 second roundtrip latency, charge exorbitant per-minute rates, and pipe private customer voice biometrics into third-party cloud logs.
+* **The Retriever Reality:** Full-duplex WebRTC streaming audio agent with local **Whisper ASR**, RMS/ZCR voice activity detection, sub-second vector grounding, and on-device neural TTS for conversational telephony and dispatch.
+* **Batteries Activated:** `sovereign_edge_voice`.
+
+### 6. ⚖️ Autonomous Multi-Agent Swarm Due Diligence
+* **The Nightmare:** Single-agent LLMs hallucinate or succumb to prompt sycophancy when analyzing complex technical trade-offs or RFP compliance matrices.
+* **The Retriever Reality:** A **4-agent dialectic debate swarm** (Proponent, Skeptic, Compliance Officer, Synthesizer) engages in multi-round quorum debate, resolving conflicts via weighted voting, backed by **Ebbinghaus exponential memory decay** and Graph-of-Thought backtracking.
+* **Batteries Activated:** `multi_agent_swarm_quorum` • `cognitive_agent_memory` • `hierarchical_memory_got_planner` • `react_execution_loop`.
+
+### 7. 💰 Scale-to-Zero Dedicated Model Serving ($720/mo → $12/mo)
+* **The Nightmare:** Provisioning dedicated A10G/H100 instances for 50 enterprise customers costs \$36,000/month in idle compute just to keep weights warm.
+* **The Retriever Reality:** Serverless **vLLM** scales to absolute zero when idle and swaps customer-specific fine-tuned LoRA adapters dynamically in milliseconds upon incoming HTTP/SSE requests.
+* **Batteries Activated:** `serverless_gpu_vllm` • `continuous_preference_tuning`.
+
+---
+
 ## ⚡ Quick Start (30-Second Dopamine)
 
 Spin up the entire platform locally with zero external API dependencies (runs 100% free with local Ollama embeddings):
@@ -84,7 +125,7 @@ curl http://localhost:8000/health/readiness
 # {"status":"ready","environment":"production"}
 
 # 3. Query the auto-seeded demo workspace
-curl -X POST http://localhost:8000/v1/search \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/search \
   -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
   -H "Content-Type: application/json" \
   -d '{"query": "How does ColBERT late interaction work?"}'
@@ -232,9 +273,9 @@ Retriever ships with **38 production-grade batteries** pre-wired through Hexagon
 | **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
 | **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 Identity Provider SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
 | **35** | `continuous_preference_tuning` | ML Intelligence | Continuous DPO / ORPO Preference Fine-Tuning + Automated Validation Gate & Hot LoRA Rollback |
-| **36** | `ephemeral_federated_sandbox` | Security | Ephemeral multi-tenant code execution sandbox with hard resource limits |
-| **37** | `distributed_task_memoizer` | Resiliency | Step-memoized async task checkpointing with deterministic crash resumption |
-| **38** | `graph_of_thought_engine` | Cognitive Reasoning | Autonomous Graph-of-Thought (GoT) cognitive reasoning, multi-path exploration & backtracking |
+| **36** | `confidential_mpc_enclave` | Safety & Defense | Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves with Additive Secret Sharing |
+| **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Autonomous Continuous Benchmark & Regression Gatekeeper with Two-Sample Welch's t-test |
+| **38** | `hierarchical_memory_got_planner` | Cognitive Reasoning | Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) DAG Reasoning & Ebbinghaus Decay |
 
 ---
 

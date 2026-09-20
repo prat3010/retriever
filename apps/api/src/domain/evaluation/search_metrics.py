@@ -7,10 +7,13 @@ def _dcg_at_k(relevance: list[float], k: int) -> float:
     k = min(k, len(relevance))
     if k == 0:
         return 0.0
-    result = relevance[0]
-    for i in range(1, k):
-        result += relevance[i] / math.log2(i + 1)
-    return result
+    dcg = 0.0
+    for i, rel in enumerate(relevance[:k]):
+        rank = i + 1
+        gain = (2.0 ** rel) - 1.0
+        discount = math.log2(rank + 1)
+        dcg += gain / discount
+    return dcg
 
 
 def ndcg_at_k(retrieved: list[str], relevant: set[str], k: int = 10) -> float:

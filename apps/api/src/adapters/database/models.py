@@ -34,7 +34,9 @@ class TenantDb(Base):
     name = Column(String(255), nullable=False)
     status = Column(String(50), nullable=False, default="active")
     tier = Column(String(50), nullable=False, default="standard")
+    isolation_level = Column(String(50), nullable=False, default="logical")
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
 
     # Relationships
     config = relationship(
@@ -67,6 +69,10 @@ class TenantConfigDb(Base):
     hybrid_alpha = Column(Float, nullable=False, default=0.7)
     active_lora_adapter = Column(String(255), nullable=True)
     reranker_engine = Column(String(50), nullable=False, default="cohere")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     # Relationships
     tenant = relationship("TenantDb", back_populates="config")
@@ -134,7 +140,11 @@ class ApiKeyDb(Base):
     key_hash = Column(String(255), unique=True, nullable=False, index=True)
     role = Column(String(50), nullable=False, default="client")
     status = Column(String(50), nullable=False, default="active")
+    scopes = Column(JSONB, nullable=False, default=list)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
     expires_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships

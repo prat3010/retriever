@@ -1,6 +1,6 @@
 # ⚡ Retriever Engine Empirical Load & Latency Benchmark Report
 
-> **Generated at:** `2026-09-07 19:50:24Z`  
+> **Generated at:** `2026-09-19 23:18:47Z`  
 > **Target System:** `http://localhost:8000`  
 > **Environment:** Oracle Cloud ARM Ampere (4 OCPU, 24GB RAM) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  
 > **Verification Gate:** Gate 10 Zero-Toy Static AST Verified (100% Genuine Network Packets, Zero Mocks, Zero Synthetic Score Padding)
@@ -11,9 +11,7 @@
 
 | Concurrency (VUs) | Total Req | Throughput (QPS) | $P_{50}$ Median | $P_{90}$ Latency | $P_{95}$ Latency | $P_{99}$ Latency | Error Rate |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **5 VUs** | 30 | **2.3 req/s** | 2407.74 ms | 3843.29 ms | 3877.47 ms | 3904.85 ms | 0.0% |
-| **10 VUs** | 60 | **4.4 req/s** | 2340.31 ms | 4081.51 ms | 4171.18 ms | 4211.49 ms | 0.0% |
-| **20 VUs** | 120 | **5.9 req/s** | 2350.32 ms | 3916.15 ms | 4003.75 ms | 4050.68 ms | 0.0% |
+| **10 VUs** | 120 | **70.0 req/s** | 121.17 ms | 198.13 ms | 266.74 ms | 312.45 ms | 0.0% |
 
 ---
 
@@ -21,9 +19,9 @@
 
 | Endpoint / Surface | Method | Total Calls | Avg (ms) | $P_{50}$ (ms) | $P_{95}$ (ms) | $P_{99}$ (ms) | Error Rate |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **PostgreSQL & Pool Readiness** | `GET` | 40 | 2319.33 ms | 2350.32 ms | 2442.18 ms | 2461.95 ms | 0.0% |
-| **ASGI Gateway & Nginx Routing** | `GET` | 40 | 325.14 ms | 310.95 ms | 418.35 ms | 419.41 ms | 0.0% |
-| **Multi-Tenant Control Plane** | `GET` | 40 | 3829.98 ms | 3854.28 ms | 4030.8 ms | 4063.4 ms | 0.0% |
+| **PostgreSQL & Pool Readiness** | `GET` | 40 | 135.71 ms | 135.62 ms | 196.76 ms | 222.81 ms | 0.0% |
+| **ASGI Gateway & Nginx Routing** | `GET` | 40 | 106.48 ms | 105.85 ms | 134.77 ms | 138.86 ms | 0.0% |
+| **Multi-Tenant Control Plane** | `GET` | 40 | 153.11 ms | 124.44 ms | 296.19 ms | 317.64 ms | 0.0% |
 
 ---
 

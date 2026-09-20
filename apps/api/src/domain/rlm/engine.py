@@ -26,15 +26,16 @@ Context Data Available:
 - `chunks`: A list of document chunk objects with attributes: `.content`, `.document_id`, `.score`, `.metadata`.
 
 INSTRUCTIONS:
-Write a simple Python script to process `chunks` and calculate/aggregate relevant data.
+Write a Python script to process `chunks` and calculate/aggregate relevant data.
 Store your final computed answer in a variable named `result`.
+You may use standard Python built-ins, `math`, and `re`. Do not use external libraries, file access, or system calls.
 
 Example:
 ```python
 total_score = sum(c.score for c in chunks)
 result = f"Analyzed {len(chunks)} chunks with total score {total_score:.2f}"
 ```
-Output ONLY the raw Python code block enclosed in ```python ... ```.
+Output ONLY valid executable Python code enclosed in ```python ... ```. Do not output conversational text outside the code block.
 """
 
 
@@ -86,7 +87,7 @@ class RlmExecutionEngine:
             ),
         ]
         llm_code_resp = await self.llm.generate(
-            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=600),
+            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=2048),
             {},
         )
         raw_code = llm_code_resp.content.strip()
@@ -123,7 +124,7 @@ REPL Code Analysis Output: {sandbox_res.return_value}
 Console Output: {sandbox_res.output}
 
 Extracted Evidence Highlights:
-""" + "\n".join([f"- Document {c.document_id}: {c.content[:200]}" for c in chunks[:5]])
+""" + "\n".join([f"- Document {c.document_id}: {c.content[:2000]}" for c in chunks[:5]])
 
         synth_messages = [
             ChatMessage(
@@ -181,7 +182,7 @@ Extracted Evidence Highlights:
         while turn < max_turns:
             turn += 1
             llm_resp = await self.llm.generate(
-                InferenceRequest(messages=messages, temperature=0.1, max_tokens=600),
+                InferenceRequest(messages=messages, temperature=0.1, max_tokens=2048),
                 {},
             )
             raw_code = llm_resp.content.strip()
@@ -218,11 +219,33 @@ Extracted Evidence Highlights:
             messages.append(ChatMessage(role="user", content=f"Execution result: {sandbox_res.output}\nError: {err_detail}. Refine your script."))
 
         final_val = last_sandbox_res.return_value if last_sandbox_res else "Analysis complete"
+
+        # Synthesize final analytical summary combining REPL output and document evidence
+        synthesis_prompt = f"""Target Goal: {request.prompt}
+REPL Code Analysis Output: {final_val}
+Console Output: {last_sandbox_res.output if last_sandbox_res else ''}
+
+Extracted Evidence Highlights:
+""" + "\n".join([f"- Document {c.document_id}: {c.content[:2000]}" for c in chunks[:5]])
+
+        synth_messages = [
+            ChatMessage(
+                role="system",
+                content="Synthesize a comprehensive, executive analytical response based on the programmatic REPL code analysis and document evidence. Clearly state the exact verified numbers and mathematical percentage calculation.",
+            ),
+            ChatMessage(role="user", content=synthesis_prompt),
+        ]
+        synth_resp = await self.llm.generate(
+            InferenceRequest(messages=synth_messages, temperature=0.2, max_tokens=1000),
+            {},
+        )
+        summary_text = synth_resp.content.strip()
+
         elapsed_ms = (time.monotonic() - start_time) * 1000
         return RlmAnalysisResult(
             tenant_id=request.tenant_id,
             prompt=request.prompt,
-            analysis_summary=f"Multi-turn REPL loop completed in {turn} turn(s). Output: {final_val}",
+            analysis_summary=summary_text,
             code_executions=code_executions,
             subcalls_count=turn + 1,
             execution_time_ms=round(elapsed_ms, 2),

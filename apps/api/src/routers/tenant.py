@@ -7,6 +7,8 @@ import openai
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 
 from src.adapters.api.security import (
+    UserContext,
+    get_current_user,
     verify_admin_key,
     verify_scopes,
     verify_tenant_isolation,
@@ -20,6 +22,7 @@ from src.container import (
     config_service,
     identity_provider,
     inference_orchestrator,
+    template_registry,
     tenant_registry,
 )
 from src.domain.abstractions.batteries import PlatformBatteriesResponse
@@ -72,6 +75,20 @@ async def create_tenant(
         tier=payload.tier,
         isolation_level=payload.isolation_level,
     )
+    try:
+        from src.domain.abstractions.inference import PromptTemplate
+        await template_registry.save_template(
+            tenant.tenant_id,
+            PromptTemplate(
+                tenant_id=tenant.tenant_id,
+                name="default",
+                content="You are a helpful and accurate enterprise AI assistant. Always ground your responses in the provided context and preserve conversation memory across turns.",
+                is_system_prompt=True,
+            ),
+            bypass_rls=True,
+        )
+    except Exception as e:
+        logger.warning(f"Could not seed default prompt template: {e}")
     await audit_logger.write(tenant.tenant_id, "tenant.created", f"Tenant '{payload.name}' created")
     return TenantListItem(
         tenantId=tenant.tenant_id,
@@ -323,13 +340,19 @@ async def project_tenant_embeddings(
     dependencies=[Depends(verify_tenant_or_admin)],
     response_model=GraphSummaryResponse,
 )
-async def get_tenant_knowledge_graph_summary(tenantId: str) -> GraphSummaryResponse:
+async def get_tenant_knowledge_graph_summary(
+    tenantId: str,
+    user_context: UserContext = Depends(get_current_user),
+) -> GraphSummaryResponse:
     """Fetch Knowledge Graph metrics and active storage engine for the tenant."""
+    from src.adapters.api.security import _UUID_RE
     from src.container import container
 
-    summary = await container.graph_repository.get_graph_summary(tenantId)
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+
+    summary = await container.graph_repository.get_graph_summary(resolved_tenant_id)
     return GraphSummaryResponse(
-        tenant_id=tenantId,
+        tenant_id=resolved_tenant_id,
         total_triples=summary.get("total_triples", 0),
         unique_entities=summary.get("unique_entities", 0),
         storage_engine=summary.get("storage_engine", "postgres"),
@@ -343,13 +366,21 @@ async def get_tenant_knowledge_graph_summary(tenantId: str) -> GraphSummaryRespo
     dependencies=[Depends(verify_tenant_or_admin)],
     response_model=GraphQueryResponse,
 )
-async def query_tenant_knowledge_graph(tenantId: str, payload: GraphQueryRequest) -> GraphQueryResponse:
+async def query_tenant_knowledge_graph(
+    tenantId: str,
+    payload: GraphQueryRequest,
+    user_context: UserContext = Depends(get_current_user),
+) -> GraphQueryResponse:
     """Execute recursive multi-hop entity traversal on tenant's knowledge graph."""
+    from src.adapters.api.security import _UUID_RE
     from src.container import container
 
+    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    target_entity = payload.target_entity or payload.entity or payload.query or ""
+
     res = await container.graph_repository.search_triples(
-        tenant_id=tenantId,
-        entity=payload.entity,
+        tenant_id=resolved_tenant_id,
+        entity=target_entity,
         max_hops=payload.max_hops,
     )
     return GraphQueryResponse(

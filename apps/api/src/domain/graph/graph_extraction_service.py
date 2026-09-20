@@ -5,17 +5,9 @@ enabling multi-hop entity graph traversal and GraphRAG evidence fusion.
 """
 
 import re
-from dataclasses import dataclass, field
 from typing import Any
 
-
-@dataclass
-class EntityTriple:
-    subject: str
-    predicate: str
-    object: str
-    confidence: float = 1.0
-    metadata: dict[str, Any] = field(default_factory=dict)
+from src.domain.abstractions.graph import EntityTriple
 
 
 class GraphExtractionService:
@@ -49,6 +41,8 @@ class GraphExtractionService:
                         subject=sub,
                         predicate=pred,
                         object=obj,
+                        chunk_id=chunk_id,
+                        document_id=document_id,
                         confidence=0.85,
                         metadata=meta,
                     )

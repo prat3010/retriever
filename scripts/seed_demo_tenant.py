@@ -115,6 +115,7 @@ async def seed_database():
         DocumentDb,
         TenantConfigDb,
         TenantDb,
+        VectorRecordDb,
     )
 
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
@@ -132,6 +133,7 @@ async def seed_database():
                 name="Demo Enterprise Workspace",
                 status="active",
                 tier="enterprise",
+                isolation_level="logical",
             )
             session.add(tenant)
             await session.flush()
@@ -203,16 +205,24 @@ async def seed_database():
             logger.info("Generating embeddings and indexing %d chunks...", len(SAMPLE_CHUNKS))
             for idx, item in enumerate(SAMPLE_CHUNKS):
                 chunk_vector = await generate_embedding(item["content"], ollama_url)
+                chunk_id = uuid.uuid4()
+                content = f"## {item['title']}\n\n{item['content']}"
                 chunk = DocumentChunkDb(
-                    chunk_id=uuid.uuid4(),
+                    chunk_id=chunk_id,
                     document_id=doc.document_id,
                     tenant_id=DEMO_TENANT_ID,
                     chunk_index=idx,
-                    content=f"## {item['title']}\n\n{item['content']}",
-                    embedding=chunk_vector,
-                    meta_info={"title": item["title"], "tags": item["tags"]},
+                    content=content,
+                    token_count=len(content.split()),
+                    meta_data={"title": item["title"], "tags": item["tags"]},
                 )
                 session.add(chunk)
+                vec_rec = VectorRecordDb(
+                    chunk_id=chunk_id,
+                    tenant_id=DEMO_TENANT_ID,
+                    embedding=chunk_vector,
+                )
+                session.add(vec_rec)
 
             await session.flush()
             logger.info("Sample whitepaper indexed successfully.")

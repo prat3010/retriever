@@ -68,6 +68,10 @@ Once Docker services boot:
 - **Enforced Codebase Patterns:** Always follow the learned architectural conventions documented in `.agents/rules/patterns.md`.
 - **Hexagonal Boundary Rule:** Code under `src/domain/` MUST ONLY import abstract interfaces from `src/domain/abstractions/` or standard Python libraries. **NEVER** import infrastructure adapters (`src/adapters/`), API routers (`src/routers/`), database frameworks (`sqlalchemy`), or external API SDKs directly in domain files.
 - **Multi-Tenancy Isolation Rule:** Every database entity, query method, and backend API MUST strictly scope operations by `tenant_id`. Frontend components MUST NOT hardcode fallback tenant UUIDs or silently default unauthenticated requests to guest UUIDs.
+- **Retriever Purity & Consumer Decoupling Invariant Rule:**
+  - **Zero Consumer Domain References:** The source code of `retriever` (`apps/api/src/`, `apps/web/src/`, `packages/`, etc.) MUST NEVER contain references, hardcoded URLs, or naming couplings to consumer applications, external client domains, or personal portfolio websites (e.g., `prateeq.in`, `prateeq.in/rag`).
+  - **Zero Marketing Pollution in Core Engine:** Never add consumer-specific marketing calculators (such as ad-hoc competitor pricing comparison formulas) or promotional facades into `retriever`. All algorithms, routers, and services must serve genuine, multi-tenant enterprise RAG use cases.
+  - **Generic Multi-Tenant Isolation:** All consumer platforms (including portfolio sites or enterprise clients) are strictly treated as standard, decoupled tenants identified only by generic UUIDs or slugs (`tenant_id`), consuming the platform via public REST, SSE, or embeddable widget interfaces.
 
 ## Embedding Constraints
 - **Always use a local model for generating embeddings.** (e.g., local Ollama using `nomic-embed-text` on `http://host.docker.internal:11434/v1`).

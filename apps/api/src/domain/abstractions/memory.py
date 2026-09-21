@@ -14,7 +14,7 @@ from __future__ import annotations
 import time
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -147,3 +147,33 @@ class CognitiveMemoryProtocol(ABC):
     async def get_stats(self, tenant_id: str) -> MemoryStats:
         """Retrieve aggregate memory statistics for a tenant."""
         raise NotImplementedError
+
+
+@runtime_checkable
+class CognitiveMemoryRepositoryProtocol(Protocol):
+    """Protocol for persistent storage and retrieval of cognitive memory nodes."""
+
+    async def save_node(self, node: EpisodicMemoryNode) -> None:
+        """Persist an episodic memory node."""
+        ...
+
+    async def get_nodes(
+        self, tenant_id: str, memory_type: MemoryType | None = None
+    ) -> list[EpisodicMemoryNode]:
+        """Fetch all stored memory nodes for a tenant."""
+        ...
+
+    async def delete_node(self, tenant_id: str, node_id: str) -> bool:
+        """Delete a memory node by ID."""
+        ...
+
+    async def update_access(
+        self,
+        tenant_id: str,
+        node_id: str,
+        stability_score: float,
+        last_accessed_at: float,
+        access_count: int,
+    ) -> None:
+        """Update node access telemetry and reinforced stability score."""
+        ...

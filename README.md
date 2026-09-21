@@ -38,7 +38,8 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 |:---|:---:|:---:|:---:|:---:|:---:|
 | **Architecture** | **Pure Hexagonal (0-lockin)** | Proprietary Cloud | Spaghetti Wrappers | Routing Proxy | Monolith App |
 | **Multi-Tenancy** | **PostgreSQL RLS (DB-Level)** | Namespace only | Application-level filter | Virtual keys only | Basic workspace |
-| **Hybrid Search & Fusion** | **HNSW + BM25 + ColBERT MaxSim** | Dense only | Manual glue code | N/A | Dense only |
+| **Hybrid Search & Fusion** | **Concurrent HNSW + BM25 Fan-Out + ONNX ColBERT** | Dense only | Manual glue code | N/A | Dense only |
+| **Resilient Local Embeddings**| **Circuit Breaker + Deterministic Failover (M124)**| None | Manual try/catch | Basic retry | None |
 | **Layout OCR & Tables** | **Docling Vision OCR (Built-in)** | None | Paid API integration | N/A | Basic text extract |
 | **Knowledge Graph** | **Dual GraphRAG (Neo4j / CTEs)** | None | Add-on package | N/A | None |
 | **Prompt Optimization** | **DSPy Teleprompter (M92)** | None | Manual prompt tweaking | N/A | None |
@@ -50,8 +51,9 @@ Most RAG setups in 2026 are fragile glue code: developers stitch together LangCh
 | **Sovereign Edge Voice** | **Local Whisper + Neural TTS (M100)** | None | None | None | None |
 | **Autonomous ReAct Loop**| **Cyclic State Machine & Anti-Loop (M104)**| None | Fragile wrappers | N/A | Simple chains |
 | **Multi-Model Orchestrator**| **Dynamic Escalation & Savings Ledger (M105)**| None | None | Basic fallback | None |
-| **Cognitive Agent Memory**| **Ebbinghaus Retention Decay (M108)**| None | None | None | None |
-| **Multi-Agent Swarm Quorum**| **Dialectic Debate Consensus (M109)**| None | Complex graph DAGs | None | None |
+| **Cognitive Agent Memory**| **Ebbinghaus Decay + Postgres RLS (M108/M124)**| None | None | None | None |
+| **Multi-Agent Swarm Quorum**| **Dialectic Debate + Dynamic LLM (M109/M124)**| None | Complex graph DAGs | None | None |
+| **Graph-of-Thoughts Planner**| **DAG Reasoning + Postgres RLS (M123/M124)**| None | Complex code | None | None |
 | **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
 | **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
 

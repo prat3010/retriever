@@ -4,6 +4,28 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [1.3.0-alpha1] - 2026-09-21 - Agent-Native Modernization & Resilient Dual-Channel Architecture
+
+### Added
+- **Database Persistence & RLS for Cognitive Memory & GoT Planning** (`apps/api/src/adapters/database/`):
+  - Added `CognitiveMemoryDb`, `GoTGraphDb`, and `GoTThoughtDb` models with UUID tenant relations, pgvector HNSW cosine index, and tenant RLS policies (`SET LOCAL app.current_tenant`).
+  - Added Alembic migration `o1p2q3r4s5t6_add_cognitive_memory_and_got_tables.py`.
+  - Implemented `PgCognitiveMemoryRepository` and `PgGoTRepository` implementing domain protocols `CognitiveMemoryRepositoryProtocol` and `GoTRepositoryProtocol`.
+  - Integrated write-through persistence and lazy tenant store hydration in `CognitiveMemoryEngine` and `GoTPlannerAdapter`.
+- **Dual-Channel Concurrent Retrieval Fan-Out** (`apps/api/src/domain/retrieval/search_service.py`):
+  - Upgraded `HybridSearchService._fan_out_search` and strategy resolution to trigger concurrent keyword retrieval (`search_keywords`) across the full document corpus whenever `enable_hybrid` or `enable_bm25` is active.
+  - Unified Reciprocal Rank Fusion (RRF) and convex hybrid scoring across dense and keyword result channels.
+- **Dynamic Frontier LLM Generation for GoT & Swarm Quorum** (`apps/api/src/adapters/cognitive/got_planner_adapter.py`, `apps/api/src/domain/agentic/swarm/engine.py`):
+  - Upgraded Graph-of-Thoughts successor expansion (`_generate_successors`) to perform dynamic LLM inference with structured JSON array output and transparent fallback to domain hypotheses.
+  - Upgraded Multi-Agent Swarm Quorum opening turn (`_generate_opening_turn`) and critique turn (`_generate_critique_turn`) to execute dynamic LLM inference with structured schemas, hallucination pruning, and deterministic template fallback.
+- **Neural ColBERT ONNX Late-Interaction Engine** (`apps/api/src/domain/retrieval/colbert_onnx_engine.py`):
+  - Added `NeuralColbertEngine` with FastEmbed late interaction embeddings (`colbert-ir/colbertv2.0`), matrix-level MaxSim similarity computation, candidate reranking, and seamless fallback to deterministic term MaxSim.
+- **Resilient Embedding Adapter with Circuit Breaker** (`apps/api/src/adapters/cognitive/resilient_embedder.py`):
+  - Implemented `ResilientEmbeddingAdapter` wrapping primary embedding engines (e.g. Ollama) with a stateful circuit breaker (`CLOSED` $\rightarrow$ `OPEN` $\rightarrow$ `HALF_OPEN`), configurable failure thresholds, and cooldown timers.
+  - Added `DeterministicLocalEmbedder` feature hashing projection with sublinear term-frequency weighting and L2 unit-norm normalization for zero-crash in-process failover during Ollama warmup or network blips.
+- **Automated Verification Suites** (`apps/api/tests/`):
+  - Added `test_cognitive_memory_persistence.py`, `test_got_dynamic_planning.py`, `test_swarm_dynamic_debate.py`, `test_dual_channel_retrieval.py`, `test_colbert_onnx.py`, and `test_resilient_embedder.py` (28 tests passing).
+
 ## [1.2.0-alpha1] - 2026-09-15 - Milestone 112: Kubernetes Native Operator & Production Helm Charts
 
 ### Added

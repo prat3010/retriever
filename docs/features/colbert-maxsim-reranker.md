@@ -68,11 +68,14 @@ In Retriever, the ColBERT MaxSim reranker operates as the second stage in a two-
 
 ## 4. Implementation Details
 
+- **Core Engine (M124):** `apps/api/src/domain/retrieval/colbert_onnx_engine.py` (`NeuralColbertEngine`)
 - **Adapters:** `apps/api/src/adapters/cognitive/local_reranker_adapter.py` and `tei_reranker_adapter.py`
-- **Supported Backends:** Local PyTorch CUDA/MPS runtime or remote Text Embeddings Inference (TEI) microservice.
+- **Supported Backends:** Local ONNX Runtime (`onnxruntime`), Local PyTorch CUDA/MPS runtime, or remote Text Embeddings Inference (TEI) microservice.
 - **Precision:** FP32 or FP16 tensor acceleration.
 - **Candidate Pool Size:** Evaluates top 50 candidates from Stage 1.
 - **Health Check Endpoint:** `GET /v1/search/rerank`
+- **Neural Token Embeddings:** Extracts 128-d or 384-d token representations with punctuation stripping (`[CLS]`, `[SEP]`, punctuation filtered from query tokens) and matrix dot product MaxSim:
+  $$\text{MaxSim}(Q, D) = \frac{1}{|Q|}\sum_{i=1}^{|Q|} \max_{j=1}^{|D|} (q_i \cdot d_j^\top)$$
 
 ---
 
@@ -81,3 +84,5 @@ In Retriever, the ColBERT MaxSim reranker operates as the second stage in a two-
 1. **Normalized Embeddings:** All token vectors must be $L_2$-normalized prior to matrix multiplication so dot products correspond strictly to cosine similarities $[-1.0, 1.0]$.
 2. **Punctuation Masking:** Query punctuation tokens (e.g. `?`, `!`, `,`) are masked out during MaxSim aggregation to prevent irrelevant syntax from dominating semantic alignment scores.
 3. **Hard Latency Timeout:** Reranking carries a strict 45ms timeout; if exceeded, the pipeline gracefully falls back to Stage 1 RRF candidate rankings without failing the user request.
+4. **Resilient Fallback:** If ONNX Runtime or GPU libraries are uninstalled or missing, `NeuralColbertEngine` provides deterministic multi-token representations to preserve system availability without unhandled crashes.
+

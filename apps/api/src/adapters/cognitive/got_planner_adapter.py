@@ -12,10 +12,13 @@ Implements GoTPlannerProtocol:
 from __future__ import annotations
 
 import collections
+import json
+import logging
 import math
 import re
 import time
 import uuid
+from typing import Any
 
 from src.domain.abstractions.got_planner import (
     DistillationRequest,
@@ -26,6 +29,7 @@ from src.domain.abstractions.got_planner import (
     GoTGraph,
     GoTPlannerProtocol,
     GoTPlanRequest,
+    GoTRepositoryProtocol,
     GoTSimulateRequest,
     GoTSimulateResponse,
     GoTStepRequest,
@@ -36,6 +40,9 @@ from src.domain.abstractions.got_planner import (
     HierarchicalMemoryView,
     MemoryLayer,
 )
+
+logger = logging.getLogger(__name__)
+
 
 
 def compute_ebbinghaus_retention(created_at: float, stability_days: float, current_time: float | None = None) -> float:
@@ -95,7 +102,13 @@ def score_thought_heuristics(query: str, content: str, parent_scores: list[float
 class GoTPlannerAdapter(GoTPlannerProtocol):
     """Production-grade in-memory Graph-of-Thoughts reasoning engine and hierarchical memory store."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        repository: GoTRepositoryProtocol | None = None,
+        llm_provider: Any | None = None,
+    ) -> None:
+        self._repo = repository
+        self._llm = llm_provider
         self._graphs: dict[str, GoTGraph] = {}
         self._memory_l1: dict[str, list[HierarchicalMemoryNode]] = collections.defaultdict(list)
         self._memory_l2: dict[str, list[HierarchicalMemoryNode]] = collections.defaultdict(list)
@@ -144,6 +157,13 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
 
         self._graphs[graph_id] = graph
 
+        if self._repo:
+            try:
+                await self._repo.save_graph(graph)
+                await self._repo.save_thought(root_node)
+            except Exception as ex:
+                logger.warning("Failed to persist new GoT graph: %s", ex)
+
         # Seed L1 working scratchpad
         l1_node = HierarchicalMemoryNode(
             id=f"mem_l1_{uuid.uuid4().hex[:8]}",
@@ -167,25 +187,73 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         graph = self._graphs.get(graph_id)
         if graph and graph.tenant_id == tenant_id:
             return graph
+        if self._repo:
+            try:
+                persisted = await self._repo.get_graph(tenant_id, graph_id)
+                if persisted:
+                    self._graphs[graph_id] = persisted
+                    return persisted
+            except Exception as ex:
+                logger.warning("Failed to load GoT graph from repo: %s", ex)
         return None
 
-    def _generate_successors(self, graph: GoTGraph, parent_id: str, k: int) -> list[GoTThoughtNode]:
-        """Branch k successor thoughts from parent."""
+    async def _generate_successors(self, graph: GoTGraph, parent_id: str, k: int) -> list[GoTThoughtNode]:
+        """Branch k successor thoughts from parent using dynamic LLM reasoning or fallback heuristics."""
         parent = graph.nodes.get(parent_id)
         if not parent:
             return []
 
-        domain_hypotheses = [
-            ("Partitioning Strategy", "Horizontally partition dense vectors across sovereign nodes using consistent virtual-node hashing, reducing shard query scatter.", 0.88),
-            ("Speculative Caching", "Pre-warm high-probability embedding subspaces into L1 memory via spreading activation, slashing retrieval P95 latency.", 0.92),
-            ("Token Pruning", "Apply statistical entropy filtering to prune low-information tokens before cross-encoder reranking, reducing inference compute.", 0.84),
-            ("Consensus Reranking", "Execute asynchronous scatter-gather with dynamic reciprocal rank fusion across candidate shards for optimal accuracy.", 0.89),
-            ("Adaptive Fan-in", "Throttle concurrent thread workers dynamically based on EWMA queue latency, preventing resource starvation.", 0.81),
-        ]
+        generated_hypotheses: list[tuple[str, str, float]] = []
+
+        if self._llm:
+            try:
+                from src.domain.abstractions.inference import (
+                    ChatMessage,
+                    InferenceRequest,
+                )
+                prompt = (
+                    f"Objective: {graph.query}\n"
+                    f"Current Reasoning Step: {parent.content}\n\n"
+                    f"Generate {k} distinct, specialized technical hypotheses advancing towards resolving this objective.\n"
+                    f"Output strictly a JSON list of objects matching: [{{'title': 'Title', 'description': 'Details'}}]"
+                )
+                resp = await self._llm.generate(
+                    InferenceRequest(
+                        messages=[
+                            ChatMessage(role="system", content="You are a Graph-of-Thoughts reasoning planner. Output strictly valid JSON array."),
+                            ChatMessage(role="user", content=prompt),
+                        ],
+                        temperature=0.3,
+                        max_tokens=600,
+                    )
+                )
+                raw = resp.content.strip()
+                if raw.startswith("```json"):
+                    raw = raw.strip("`").removeprefix("json").strip()
+                elif raw.startswith("```"):
+                    raw = raw.strip("`").strip()
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    for item in parsed[:k]:
+                        if isinstance(item, dict) and "title" in item and "description" in item:
+                            generated_hypotheses.append((str(item["title"]), str(item["description"]), 0.90))
+            except Exception as ex:
+                logger.debug("LLM dynamic thought generation fallback to domain heuristics: %s", ex)
+
+        if len(generated_hypotheses) < k:
+            domain_hypotheses = [
+                ("Partitioning Strategy", "Horizontally partition dense vectors across sovereign nodes using consistent virtual-node hashing, reducing shard query scatter.", 0.88),
+                ("Speculative Caching", "Pre-warm high-probability embedding subspaces into L1 memory via spreading activation, slashing retrieval P95 latency.", 0.92),
+                ("Token Pruning", "Apply statistical entropy filtering to prune low-information tokens before cross-encoder reranking, reducing inference compute.", 0.84),
+                ("Consensus Reranking", "Execute asynchronous scatter-gather with dynamic reciprocal rank fusion across candidate shards for optimal accuracy.", 0.89),
+                ("Adaptive Fan-in", "Throttle concurrent thread workers dynamically based on EWMA queue latency, preventing resource starvation.", 0.81),
+            ]
+            for i in range(k - len(generated_hypotheses)):
+                idx = (parent.iteration_depth + i + len(generated_hypotheses)) % len(domain_hypotheses)
+                generated_hypotheses.append(domain_hypotheses[idx])
 
         successors: list[GoTThoughtNode] = []
-        for i in range(k):
-            hyp_title, hyp_desc, bias = domain_hypotheses[(parent.iteration_depth + i) % len(domain_hypotheses)]
+        for i, (hyp_title, hyp_desc, bias) in enumerate(generated_hypotheses):
             node_id = f"node_{uuid.uuid4().hex[:8]}"
             content = f"{hyp_title}: {hyp_desc} Specifically addressing: {graph.query}."
             score, g_score, c_score, s_score = score_thought_heuristics(graph.query, content, [parent.score])
@@ -239,7 +307,7 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             k = int(request.parameters.get("branching_factor", 3))
             for target_id in target_ids:
                 if target_id in graph.nodes and graph.nodes[target_id].status != GoTThoughtStatus.PRUNED:
-                    self._generate_successors(graph, target_id, k)
+                    await self._generate_successors(graph, target_id, k)
 
         elif action == "prune":
             threshold = float(request.parameters.get("pruning_threshold", 0.40))
@@ -286,6 +354,13 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
 
         self._update_graph_convergence_and_path(graph)
         graph.updated_at = time.time()
+        if self._repo:
+            try:
+                await self._repo.save_graph(graph)
+                for node in graph.nodes.values():
+                    await self._repo.save_thought(node)
+            except Exception as ex:
+                logger.warning("Failed to persist GoT graph on step: %s", ex)
         return graph
 
     async def aggregate_thoughts(self, tenant_id: str, graph_id: str, request: GoTAggregateRequest) -> GoTGraph:
@@ -349,6 +424,12 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         graph.total_latency_ms += latency
         self._update_graph_convergence_and_path(graph)
         graph.updated_at = time.time()
+        if self._repo:
+            try:
+                await self._repo.save_graph(graph)
+                await self._repo.save_thought(agg_node)
+            except Exception as ex:
+                logger.warning("Failed to persist GoT graph on aggregate: %s", ex)
         return graph
 
     def _update_graph_convergence_and_path(self, graph: GoTGraph) -> None:
@@ -417,7 +498,7 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             raise ValueError(f"GoT Plan '{graph_id}' not found.")
 
         # Step 1: Generate initial generation from root
-        successors = self._generate_successors(graph, graph.root_id, k=3)
+        successors = await self._generate_successors(graph, graph.root_id, k=3)
 
         # Step 2: Prune weak branches
         for succ in successors:
@@ -455,6 +536,12 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             tags=["got_converged", "trajectory"],
         )
         self._memory_l2[tenant_id].append(l2_node)
+
+        if self._repo:
+            try:
+                await self._repo.save_graph(graph)
+            except Exception as ex:
+                logger.warning("Failed to persist GoT graph on execute: %s", ex)
 
         return graph
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 import time
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -247,3 +247,19 @@ class GoTPlannerProtocol(ABC):
     @abstractmethod
     def simulate(self, request: GoTSimulateRequest) -> GoTSimulateResponse:
         """Run self-contained mathematical GoT simulation."""
+
+
+class GoTRepositoryProtocol(Protocol):
+    """Port interface for persistent storage and retrieval of GoT reasoning graphs."""
+
+    async def save_graph(self, graph: GoTGraph) -> None:
+        """Persist or update a complete GoTGraph and its thought vertices."""
+        ...
+
+    async def get_graph(self, tenant_id: str, graph_id: str) -> GoTGraph | None:
+        """Fetch a GoTGraph by ID for a specific tenant."""
+        ...
+
+    async def list_graphs(self, tenant_id: str, limit: int = 50) -> list[GoTGraph]:
+        """List GoT graphs for a tenant."""
+        ...

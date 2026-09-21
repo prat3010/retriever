@@ -97,3 +97,7 @@ Once Docker services boot:
   python3 scripts/query_architecture.py --target <entity_or_api>
   ```
   to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
+
+## Autonomous Execution & Zero Unnecessary Manual Delegation
+- **Rule:** The agent MUST autonomously execute all actionable operational and configuration steps (e.g., applying database DDL migrations via MCP tools `apply_migration`/`execute_sql`, running local migration scripts, syncing cache revalidations, executing seed scripts, and verifying schemas) using the tools available. NEVER delegate or defer executable steps to the user as "manual tasks" if the agent has the capability, permissions, or tools to execute them directly. ONLY surface manual actions to the user if they are strictly impossible for the agent to execute autonomously (e.g., configuring external OAuth credentials in Google Cloud / Razorpay web consoles, hardware actions, or providing secret credentials known only to the human).
+

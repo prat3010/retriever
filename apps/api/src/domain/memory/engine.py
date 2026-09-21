@@ -11,6 +11,7 @@ Implements:
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import time
@@ -18,6 +19,7 @@ from uuid import uuid4
 
 from src.domain.abstractions.memory import (
     CognitiveMemoryProtocol,
+    CognitiveMemoryRepositoryProtocol,
     ConsolidationRequest,
     ConsolidationResult,
     DistilledGuidance,
@@ -26,6 +28,9 @@ from src.domain.abstractions.memory import (
     MemoryStats,
     MemoryType,
 )
+
+logger = logging.getLogger(__name__)
+
 
 
 def _tokenize(text: str) -> list[str]:
@@ -62,10 +67,30 @@ def _cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
 class CognitiveMemoryEngine(CognitiveMemoryProtocol):
     """Core domain engine managing episodic memory consolidation and experience distillation."""
 
-    def __init__(self, vector_dim: int = 128) -> None:
+    def __init__(
+        self,
+        vector_dim: int = 128,
+        repository: CognitiveMemoryRepositoryProtocol | None = None,
+    ) -> None:
         self._vector_dim = vector_dim
+        self._repo = repository
         # Tenant-isolated storage: {tenant_id: {node_id: EpisodicMemoryNode}}
         self._stores: dict[str, dict[str, EpisodicMemoryNode]] = {}
+
+    async def _ensure_tenant_store(self, tenant_id: str) -> dict[str, EpisodicMemoryNode]:
+        if tenant_id not in self._stores:
+            self._stores[tenant_id] = {}
+            if self._repo:
+                try:
+                    persisted = await self._repo.get_nodes(tenant_id)
+                    for node in persisted:
+                        if not node.embedding:
+                            tokens = _tokenize(f"{node.query} {node.distilled_insight} {' '.join(node.tool_chain)}")
+                            node.embedding = _build_term_vector(tokens, self._vector_dim)
+                        self._stores[tenant_id][node.id] = node
+                except Exception as ex:
+                    logger.warning("Failed to hydrate tenant memory store: %s", ex)
+        return self._stores[tenant_id]
 
     def _get_tenant_store(self, tenant_id: str) -> dict[str, EpisodicMemoryNode]:
         if tenant_id not in self._stores:
@@ -82,7 +107,7 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         self, tenant_id: str, request: ConsolidationRequest
     ) -> ConsolidationResult:
         """Consolidate a ReAct execution trace into an episodic memory node."""
-        store = self._get_tenant_store(tenant_id)
+        store = await self._ensure_tenant_store(tenant_id)
         now = time.time()
 
         # Extract tool names and inspect self-healing behavior
@@ -155,6 +180,11 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         )
 
         store[node_id] = node
+        if self._repo:
+            try:
+                await self._repo.save_node(node)
+            except Exception as ex:
+                logger.warning("Cognitive memory persistence failed: %s", ex)
 
         return ConsolidationResult(
             node_id=node_id,
@@ -169,7 +199,7 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         self, tenant_id: str, query: str, limit: int = 3, min_similarity: float = 0.65
     ) -> DistilledGuidance:
         """Retrieve relevant past experiences and format distilled guidance."""
-        store = self._get_tenant_store(tenant_id)
+        store = await self._ensure_tenant_store(tenant_id)
         if not store:
             return DistilledGuidance(relevant_nodes=[], guidance_prompt="", matched_tool_chains=[])
 
@@ -213,6 +243,18 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
             # Ebbinghaus stability reinforcement formula
             node.stability_score = round(node.stability_score * 1.5 + 0.5, 3)
 
+            if self._repo:
+                try:
+                    await self._repo.update_access(
+                        tenant_id=tenant_id,
+                        node_id=node.id,
+                        stability_score=node.stability_score,
+                        last_accessed_at=node.last_accessed_at,
+                        access_count=node.access_count,
+                    )
+                except Exception as ex:
+                    logger.debug("Cognitive memory update_access failed: %s", ex)
+
             matched_tool_chains.append(node.tool_chain)
             tools_repr = " -> ".join(node.tool_chain) if node.tool_chain else "analytical synthesis"
             guidance_lines.append(
@@ -237,7 +279,7 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         limit: int = 50,
     ) -> list[EpisodicMemoryNode]:
         """List and search cognitive memories for a tenant."""
-        store = self._get_tenant_store(tenant_id)
+        store = await self._ensure_tenant_store(tenant_id)
         nodes = list(store.values())
 
         if memory_type:
@@ -255,15 +297,20 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
 
     async def delete_memory(self, tenant_id: str, node_id: str) -> bool:
         """Delete a specific cognitive memory node."""
-        store = self._get_tenant_store(tenant_id)
-        if node_id in store:
+        store = await self._ensure_tenant_store(tenant_id)
+        existed = node_id in store
+        if existed:
             del store[node_id]
-            return True
-        return False
+        if self._repo:
+            try:
+                await self._repo.delete_node(tenant_id, node_id)
+            except Exception as ex:
+                logger.warning("Cognitive memory persistent delete failed: %s", ex)
+        return existed
 
     async def prune_memories(self, tenant_id: str, min_retention: float = 0.15) -> int:
         """Prune decayed memories whose Ebbinghaus retention falls below threshold."""
-        store = self._get_tenant_store(tenant_id)
+        store = await self._ensure_tenant_store(tenant_id)
         now = time.time()
         to_delete: list[str] = []
 
@@ -274,12 +321,17 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
 
         for nid in to_delete:
             del store[nid]
+            if self._repo:
+                try:
+                    await self._repo.delete_node(tenant_id, nid)
+                except Exception:
+                    pass
 
         return len(to_delete)
 
     async def get_stats(self, tenant_id: str) -> MemoryStats:
         """Retrieve aggregate memory statistics for a tenant."""
-        store = self._get_tenant_store(tenant_id)
+        store = await self._ensure_tenant_store(tenant_id)
         total = len(store)
         if total == 0:
             return MemoryStats()

@@ -28,6 +28,7 @@ async def _enable_rls_on_tables(conn) -> None:
         "tenant_lora_adapters", "custom_plugins",
         "edge_nodes", "edge_sync_checkpoints",
         "voice_sessions", "voice_turns",
+        "cognitive_memories", "got_graphs", "got_thoughts",
     ]
 
     for table in tables:

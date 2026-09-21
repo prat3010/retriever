@@ -7,6 +7,7 @@ they start blocking you — not before.
 
 | Item | Commit |
 |------|--------|
+| PostgreSQL RLS persistence for Cognitive Agent Memory (`cognitive_memories`) and Graph-of-Thoughts DAGs (`got_graphs`, `got_thoughts`), true dual-channel concurrent retrieval fan-out (`asyncio.gather`), dynamic LLM dialectic generation for Swarm Quorum & GoT planning, Neural ColBERT ONNX late-interaction token embeddings, and resilient embedder circuit breaker | M124 (v1.3.0-alpha1) |
 | Implemented unsupervised `HDBSCAN` + `KMeans` chunk clustering, `c-TF-IDF` topic modeling, and `GET /v1/tenants/{tenantId}/clusters/knowledge-gaps` coverage diagnostics | M81 (v0.66.0) |
 | Built zero-downtime release deployment pipeline (`scripts/deploy_release.sh`), atomic symlinks (`/opt/retriever/current`), and instant 1-second automated rollback on health failure (`scripts/rollback.sh`) | M85.7 (DevOps) |
 | Implemented multi-tenant Locust concurrent load testing suite (`tests/load/locustfile.py`) and automated latency percentile report generator (`scripts/run_load_benchmark.py`) | M85.10 (Benchmarks) |

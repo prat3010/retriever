@@ -1034,6 +1034,117 @@ class VoiceTurnDb(Base):
     )
 
 
+class CognitiveMemoryDb(Base):
+    """Consolidated cognitive agent episodic and procedural memory (M108)."""
+
+    __tablename__ = "cognitive_memories"
+
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    memory_type = Column(String(50), nullable=False, default="episodic")
+    query = Column(Text, nullable=False)
+    distilled_insight = Column(Text, nullable=False, default="")
+    tool_chain = Column(JSONB, nullable=False, default=list)
+    success = Column(Boolean, nullable=False, default=True)
+    turns_count = Column(Integer, nullable=False, default=1)
+    importance_score = Column(Float, nullable=False, default=0.5)
+    stability_score = Column(Float, nullable=False, default=1.0)
+    last_accessed_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    access_count = Column(Integer, nullable=False, default=0)
+    embedding = Column(Vector(768), nullable=True)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    tenant = relationship("TenantDb")
+
+    __table_args__ = (
+        Index("ix_cognitive_memories_tenant_type", "tenant_id", "memory_type"),
+    )
+
+
+class GoTGraphDb(Base):
+    """Persistent Graph-of-Thoughts Reasoning Plan Graph (M123)."""
+
+    __tablename__ = "got_graphs"
+
+    graph_id = Column(String(64), primary_key=True)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    query = Column(Text, nullable=False)
+    root_id = Column(String(64), nullable=False)
+    is_converged = Column(Boolean, nullable=False, default=False)
+    best_score = Column(Float, nullable=False, default=0.0)
+    optimal_path = Column(JSONB, nullable=False, default=list)
+    total_tokens = Column(Integer, nullable=False, default=0)
+    total_latency_ms = Column(Float, nullable=False, default=0.0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+    tenant = relationship("TenantDb")
+    thoughts = relationship(
+        "GoTThoughtDb", back_populates="graph", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("ix_got_graphs_tenant_converged", "tenant_id", "is_converged"),
+    )
+
+
+class GoTThoughtDb(Base):
+    """Discrete reasoning thought vertex in persistent GoT Graph (M123)."""
+
+    __tablename__ = "got_thoughts"
+
+    thought_id = Column(String(64), primary_key=True)
+    graph_id = Column(
+        String(64),
+        ForeignKey("got_graphs.graph_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    prompt = Column(Text, nullable=False)
+    content = Column(Text, nullable=False)
+    thought_type = Column(String(50), nullable=False, default="generation")
+    status = Column(String(50), nullable=False, default="scored")
+    parent_ids = Column(JSONB, nullable=False, default=list)
+    child_ids = Column(JSONB, nullable=False, default=list)
+    score = Column(Float, nullable=False, default=0.0)
+    grounding_score = Column(Float, nullable=False, default=0.0)
+    coherence_score = Column(Float, nullable=False, default=0.0)
+    constraint_score = Column(Float, nullable=False, default=0.0)
+    token_cost = Column(Integer, nullable=False, default=0)
+    latency_ms = Column(Float, nullable=False, default=0.0)
+    iteration_depth = Column(Integer, nullable=False, default=0)
+    is_optimal_path = Column(Boolean, nullable=False, default=False)
+    meta_data = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    graph = relationship("GoTGraphDb", back_populates="thoughts")
+    tenant = relationship("TenantDb")
+
+    __table_args__ = (
+        Index("ix_got_thoughts_graph_depth", "graph_id", "iteration_depth"),
+    )
+
+
+
 
 
 

@@ -304,7 +304,7 @@ class HybridSearchService:
         except Exception as exc:
             logger.warning(f"Vector search leg failed for tenant '{query.tenant_id}': {exc}")
 
-        if query.enable_hybrid:
+        if query.enable_hybrid or query.enable_bm25:
             try:
                 keyword_results = await self.keyword_search.search_keywords(
                     tenant_id=query.tenant_id,
@@ -329,7 +329,7 @@ class HybridSearchService:
         keyword_results: list[SearchResult],
     ) -> str:
         """Label the search strategy based on which legs succeeded."""
-        if not query.enable_hybrid:
+        if not query.enable_hybrid and not query.enable_bm25:
             return "vector_only"
         if vector_results and keyword_results:
             strat = getattr(query, "fusion_strategy", "convex")

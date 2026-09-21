@@ -80,7 +80,7 @@ Consolidating verbose reasoning steps into dense, associative semantic represent
                       FastAPI Router: /v1/got/* & /v1/tenants/{tenant_id}/got/*
                                              │
                                              ▼
-                 Domain Abstraction Interface: GoTPlannerAbstraction
+                 Domain Abstraction Interface: GoTPlannerProtocol
                       (apps/api/src/domain/abstractions/got_planner.py)
                                              │
                                              ▼
@@ -89,10 +89,64 @@ Consolidating verbose reasoning steps into dense, associative semantic represent
                                  ┌───────────┴───────────┐
                                  ▼                       ▼
                         GoT DAG Reasoning      3-Tier Memory Hierarchy
-                        - Kahn's Topo Sort     - L1 Scratchpad
-                        - Aggregation M->1     - L2 Episodic (Ebbinghaus)
-                        - Refinement 1->1      - L3 Semantic (Distilled)
-                        - DP Optimal Path      - Spreading Activation
+                        - Dynamic LLM Expansion- L1 Scratchpad
+                        - Kahn's Topo Sort     - L2 Episodic (Ebbinghaus)
+                        - Aggregation M->1     - L3 Semantic (Distilled)
+                        - Refinement 1->1      - Spreading Activation
+                        - DP Optimal Path
+                                 │
+                                 ▼
+                     Repository: GoTRepositoryProtocol
+                     Adapter: PgGoTRepository
+                     (apps/api/src/adapters/database/got_repository.py)
+                                 │
+                                 ▼
+                   PostgreSQL Tables (with Row-Level Security):
+                   - got_graphs (graph metadata, query, optimal path)
+                   - got_thoughts (vertices, scores, parents/children)
+```
+
+### 3.1 PostgreSQL Persistence Schema (`got_graphs` & `got_thoughts`)
+```sql
+CREATE TABLE got_graphs (
+    id VARCHAR(64) PRIMARY KEY,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    query TEXT NOT NULL,
+    root_id VARCHAR(64) NOT NULL,
+    best_score FLOAT NOT NULL DEFAULT 0.0,
+    is_converged BOOLEAN NOT NULL DEFAULT FALSE,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    total_latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    optimal_path JSONB NOT NULL DEFAULT '[]'::jsonb,
+    edges JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at DOUBLE PRECISION NOT NULL,
+    updated_at DOUBLE PRECISION NOT NULL
+);
+
+CREATE TABLE got_thoughts (
+    id VARCHAR(64) PRIMARY KEY,
+    graph_id VARCHAR(64) NOT NULL REFERENCES got_graphs(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    prompt TEXT NOT NULL,
+    content TEXT NOT NULL,
+    thought_type VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    score FLOAT NOT NULL DEFAULT 0.0,
+    grounding_score FLOAT NOT NULL DEFAULT 0.0,
+    coherence_score FLOAT NOT NULL DEFAULT 0.0,
+    constraint_score FLOAT NOT NULL DEFAULT 0.0,
+    token_cost INTEGER NOT NULL DEFAULT 0,
+    latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    iteration_depth INTEGER NOT NULL DEFAULT 0,
+    is_optimal_path BOOLEAN NOT NULL DEFAULT FALSE,
+    parent_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    child_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at DOUBLE PRECISION NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+ALTER TABLE got_graphs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE got_thoughts ENABLE ROW LEVEL SECURITY;
 ```
 
 ---

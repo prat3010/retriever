@@ -306,6 +306,53 @@ export interface IdentityProvider {
 }
 ```
 
+#### 3.5 Cognitive Memory & Graph-of-Thoughts Persistence Interfaces
+```typescript
+export interface CognitiveMemoryNode {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly memoryType: 'episodic' | 'semantic' | 'procedural';
+  readonly query: string;
+  readonly distilledInsight: string;
+  readonly toolChain: readonly string[];
+  readonly success: boolean;
+  readonly importanceScore: number;
+  readonly stabilityScore: number;
+  readonly lastAccessedAt: number;
+  readonly accessCount: number;
+  readonly embedding?: readonly number[];
+  readonly metadata: Record<string, any>;
+}
+
+export interface CognitiveMemoryRepositoryProtocol {
+  saveNode(node: CognitiveMemoryNode): Promise<void>;
+  getNodes(tenantId: string, memoryType?: string): Promise<readonly CognitiveMemoryNode[]>;
+  deleteNode(tenantId: string, nodeId: string): Promise<boolean>;
+  updateAccess(tenantId: string, nodeId: string, stability: number, accessedAt: number, count: number): Promise<void>;
+}
+
+export interface GoTThoughtNode {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly graphId: string;
+  readonly prompt: string;
+  readonly content: string;
+  readonly thoughtType: 'root' | 'generation' | 'refinement' | 'aggregation' | 'pruned';
+  readonly status: 'pending' | 'evaluating' | 'exploring' | 'scored' | 'pruned' | 'converged';
+  readonly score: number;
+  readonly parentIds: readonly string[];
+  readonly childIds: readonly string[];
+  readonly isOptimalPath: boolean;
+}
+
+export interface GoTRepositoryProtocol {
+  saveGraph(graph: any): Promise<void>;
+  getGraph(tenantId: string, graphId: string): Promise<any | null>;
+  saveThought(thought: GoTThoughtNode): Promise<void>;
+  getThoughts(tenantId: string, graphId: string): Promise<readonly GoTThoughtNode[]>;
+}
+```
+
 ---
 
 ### 4. CQRS Read/Write Path Separation
@@ -334,10 +381,12 @@ To optimize system resource usage and ensure performance budgets are met, Retrie
 #### 4.2 Read Path (Queries Pipeline)
 1.  **Inquiry Request:** Client issues `ResolveQuery` via HTTP/SSE.
 2.  **Context Resolution:** The API resolves the active tenant's `TenantConfig` dynamically from database cache memory.
-3.  **Parallel Query Execution:**
-    *   **Vector Search Port:** The query is vectorized, and the system executes similarity search on the vector database.
-    *   **Keyword Search Port:** Relational tables run keyword matching against chunk content.
-4.  **Merging & Reranking:** The retrieval engine merges matches using Reciprocal Rank Fusion (RRF), filters by tenant metadata, and routes candidates to the reranking model adapter.
+3.  **True Dual-Channel Concurrent Query Execution:**
+    *   **Vector Search Port:** The query is vectorized via the resilient embedding adapter, executing parallel similarity search on the pgvector HNSW index.
+    *   **Keyword Search Port:** The query is concurrently fanned out to PostgreSQL full-text search (`tsvector`/`tsquery`) across the complete document corpus.
+4.  **Merging & Late-Interaction Reranking:**
+    *   The retrieval engine fuses candidate streams via Reciprocal Rank Fusion (RRF) and convex hybrid scoring ($\alpha \in [0, 1]$).
+    *   Candidates are routed to the **Neural ColBERT ONNX Engine** (`NeuralColbertEngine`) for token-level MaxSim late-interaction scoring, boosting exact technical terms and acronyms before cross-encoder reranking.
 5.  **Prompt Construction:** The system merges the top candidates into prompt templates resolved from the tenant configuration registry.
 6.  **Model Dispatch:** The prompt is dispatched to the active `LlmProvider` adapter.
 7.  **Stream Validation:** Generations stream via Server-Sent Events (SSE). The validation engine checks citations and JSON formatting constraints on the fly.

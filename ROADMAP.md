@@ -21,8 +21,8 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
 | **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW cosine indexing with dynamic dimensionality (768, 1536, 3072) | ✅ Production |
-| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL full-text search with English stemming & RRF fusion | ✅ Production |
-| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-level late interaction computing cross-attention similarity | ✅ Production |
+| **2** | `sparse_lexical_bm25` | Core Retrieval | True dual-channel concurrent full-text search with English stemming, GIN indexing & RRF fusion | ✅ Production |
+| **3** | `colbert_maxsim_reranker` | Late Interaction | ONNX FastEmbed neural late-interaction (`colbert-ir/colbertv2.0`) & MaxSim matrix scoring with term fallback | ✅ Production |
 | **4** | `docling_ocr_parser` | Multimodal Ingestion | Vision layout parsing, markdown table reconstruction, bounding-box citations | ✅ Production |
 | **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model document synthesis with sandboxed Python REPL | ✅ Production |
 | **6** | `graphrag_topology` | Graph Reasoning | Dual-engine GraphRAG with Neo4j Cypher and PostgreSQL recursive CTEs | ✅ Production |
@@ -44,8 +44,8 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 | **22** | `autonomous_swarm_mesh` | Edge Distribution | SWIM failure detection, epidemic P2P gossip & vector clock reconciliation | ✅ Production |
 | **23** | `universal_mcp_server` | Tool Protocols | JSON-RPC 2.0 & SSE Model Context Protocol server exposing all platform batteries | ✅ Production |
 | **24** | `react_execution_loop` | Agentic Workflows | Autonomous multi-turn ReAct reasoning loop with self-healing error recovery | ✅ Production |
-| **25** | `cognitive_agent_memory` | Agent Memory | Ebbinghaus decay retention & episodic/procedural experience distillation | ✅ Production |
-| **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, weighted quorum voting & hallucination pruning | ✅ Production |
+| **25** | `cognitive_agent_memory` | Agent Memory | PostgreSQL RLS persistence (`cognitive_memories`), pgvector index, Ebbinghaus decay & write-through cache | ✅ Production |
+| **26** | `multi_agent_swarm_quorum` | Multi-Agent Systems | Dialectic debate DAG, dynamic frontier LLM synthesis, weighted quorum voting & hallucination pruning | ✅ Production |
 | **27** | `cdc_community_connectors` | System Extensibility | Relational PostgreSQL/MySQL high-watermark CDC, S3/R2 watchers & GitHub/Slack | ✅ Production |
 | **28** | `kubernetes_native_operator` | System Extensibility | Level-triggered state reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 | ✅ Production |
 | **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural schematic parsing, normalized bounding-box coordinates & cross-modal GraphRAG | ✅ Production |
@@ -57,7 +57,7 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 | **35** | `continuous_preference_tuning` | ML Intelligence | Continuous user feedback harvesting, DPO / ORPO preference optimization & LoRA rollback | ✅ Production |
 | **36** | `confidential_mpc_enclave` | Safety & Defense | Additive secret sharing over Q16.16 fixed-point arithmetic & Beaver multiplication triples | ✅ Production |
 | **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Empirical NDCG/MRR/Faithfulness evaluation, Two-Sample Welch's t-test regression gating | ✅ Production |
-| **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with multi-parent thought aggregation, Kahn's topological sort & 3-tier memory | ✅ Production |
+| **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with dynamic LLM generation, PostgreSQL RLS persistence, Kahn's sort & 3-tier memory | ✅ Production |
 
 ---
 
@@ -188,13 +188,23 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Decoupled API Client SDKs Extended:** Added full GoT plan, step, aggregate, execution, memory, distillation, and simulation parity to `@prat3010/retriever-client` (npm) and `retriever-python` (PyPI).
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/GotPlanningPanel.tsx` in `/rag/app` under Design System 2.0 (Graph Topology DAG Canvas, Hierarchical Memory Pyramid L1/L2/L3, Thought Transformation Ledger, Interactive GoT & Aggregation Math Simulator).
 
+
+### Milestone 124: Agent-Native Enterprise Modernization & Resilient Dual-Channel Architecture (v2.3.0-alpha1) — **Completed**
+- [x] **PostgreSQL Persistence for Cognitive Memory & GoT Planning:** Added `CognitiveMemoryDb`, `GoTGraphDb`, and `GoTThoughtDb` models with UUID tenant relations, pgvector HNSW cosine index, JSONB metadata, and database-level Row-Level Security (`app.current_tenant`). Created Alembic migration `o1p2q3r4s5t6`.
+- [x] **Repository Adapters & Write-Through Caching:** Built `PgCognitiveMemoryRepository` and `PgGoTRepository` conforming to domain protocols. Wired write-through persistence and lazy tenant store hydration into `CognitiveMemoryEngine` and `GoTPlannerAdapter`.
+- [x] **Dual-Channel Concurrent Retrieval Fan-Out:** Upgraded `HybridSearchService._fan_out_search` and strategy resolution to execute full-corpus keyword retrieval (`search_keywords`) whenever `enable_hybrid` or `enable_bm25` is active, seamlessly fusing dense HNSW and keyword BM25/FTS candidates via Reciprocal Rank Fusion (RRF) and convex mixture.
+- [x] **Dynamic LLM Generation for GoT & Swarm Quorum:** Upgraded GoT successor thought generation (`_generate_successors`) and Swarm Quorum opening/critique turns to execute dynamic structured LLM inference via `InferenceRequest`, with automatic hallucination detection and transparent fallback to deterministic domain templates.
+- [x] **Neural ColBERT ONNX Late-Interaction Engine:** Built `NeuralColbertEngine` with FastEmbed token-level late interaction (`colbert-ir/colbertv2.0`), matrix-level MaxSim dot products, candidate reranking, and technical term MaxSim fallback.
+- [x] **Resilient Embedding Adapter with Circuit Breaker:** Implemented `ResilientEmbeddingAdapter` with stateful circuit breaker (`CLOSED` $\to$ `OPEN` $\to$ `HALF_OPEN`), cooldown timers, and `DeterministicLocalEmbedder` feature hashing projection for zero-crash in-process failover during Ollama warmup or network outages.
+- [x] **Automated Verification Suites:** 28 automated tests passing across 6 new test suites (`test_cognitive_memory_persistence.py`, `test_got_dynamic_planning.py`, `test_swarm_dynamic_debate.py`, `test_dual_channel_retrieval.py`, `test_colbert_onnx.py`, `test_resilient_embedder.py`).
+
 ---
 
 ## 🔮 Upcoming Horizons: Closing the Ecosystem & Adoption Gaps (2026–2027)
 
 Following an architectural and community reality check against viral open-source ecosystems (LangChain, LlamaIndex, Dify, Danswer/Onyx), the following upcoming milestones are targeted to systematically eliminate ecosystem gaps while preserving our strict Hexagonal boundary invariants:
 
-### Milestone 124: Turn-Key Enterprise SaaS Connectors & OAuth Permission Sync (v2.3.0) — **Planned**
+### Milestone 125: Turn-Key Enterprise SaaS Connectors & OAuth Permission Sync (v2.4.0) — **Planned**
 - [ ] **Google Workspace Connector (Drive & Docs):** High-throughput folder tree crawler supporting Service Accounts and User OAuth 2.0 PKCE, with incremental delta tokens (`changes.list`) for real-time document synchronization.
 - [ ] **Notion Enterprise Workspace Connector:** Recursive page and database block extractor with incremental webhook updates (`last_edited_time` cursor) and markdown AST table preservation.
 - [ ] **Atlassian Confluence & Jira Knowledge Sync:** Spaces, pages, attachments, and ticket thread sync parameterized by Confluence Query Language (CQL) and JQL change cursors.

@@ -42,6 +42,7 @@ Where:
 - **Latency Profile:** `<45ms` multi-agent debate synthesis overhead
 - **Algorithm Foundation:** Dialectic DAG Debate + Weighted Quorum Voting & Hallucination Elimination
 - **Health Check Endpoint:** `/v1/consensus/swarm`
+- **Dynamic LLM Debate Synthesis (M124):** In addition to heuristic arbitration, `MultiAgentSwarmQuorumEngine` now binds an optional `LLMInferenceProvider` (`src/domain/abstractions/inference.py`). When configured, agent arguments, dialectic counter-arguments, and consensus synthesis are generated dynamically through structured LLM calls with persona-grounded system prompts, eliminating static template heuristics while strictly preserving quorum voting math.
 
 ### Active Parameters
 | Parameter | Type | Default | Description |
@@ -50,3 +51,5 @@ Where:
 | `agents_count` | `int` | `3` | Number of active debating agents |
 | `dialectic_rounds` | `int` | `2` | Number of critique and rebuttal rounds |
 | `prune_unverified` | `bool` | `true` | Quarantines claims without document citation grounding |
+| `llm_provider` | `Optional[LLMInferenceProvider]` | `None` | Pluggable LLM inference engine for dynamic multi-turn dialectic generation |
+

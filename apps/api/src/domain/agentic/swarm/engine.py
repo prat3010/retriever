@@ -9,6 +9,7 @@ and consolidates consensus into cognitive memory.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import AsyncIterator
@@ -472,6 +473,79 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         turn_index: int,
     ) -> DebateTurn:
         """Formulate specialized opening proposition with individual candidate claims."""
+        if self.llm and hasattr(self.llm, "generate"):
+            try:
+                from src.domain.abstractions.inference import (
+                    ChatMessage,
+                    InferenceRequest,
+                )
+
+                role_profile = self._profiles.get(role, DEFAULT_ROLE_PROFILES.get(role))
+                mandate = role_profile.mandate if role_profile else "Provide specialized domain reasoning."
+                system_prompt = (
+                    f"You are the specialized AI persona '{role.value.replace('_', ' ').title()}' in a dialectic agent debate swarm.\n"
+                    f"Your Mandate: {mandate}\n"
+                    "Formulate a sharp, specialized opening thesis addressing the task objective.\n"
+                    "Output strictly a JSON object matching:\n"
+                    "{\n"
+                    '  "content": "Your strategic opening statement...",\n'
+                    '  "confidence_score": 0.90,\n'
+                    '  "claims": [\n'
+                    '    {"statement": "Specific technical assertion...", "evidence_basis": ["evidence 1", "evidence 2"], "confidence_score": 0.92}\n'
+                    "  ]\n"
+                    "}"
+                )
+                user_msg = f"Task: {prompt}\n"
+                if domain_context:
+                    user_msg += f"Domain Context: {domain_context}\n"
+                if memory_context:
+                    user_msg += f"{memory_context}\n"
+
+                resp = await self.llm.generate(
+                    InferenceRequest(
+                        messages=[
+                            ChatMessage(role="system", content=system_prompt),
+                            ChatMessage(role="user", content=user_msg),
+                        ],
+                        temperature=0.3,
+                        max_tokens=500,
+                    )
+                )
+                raw = resp.content.strip()
+                if raw.startswith("```json"):
+                    raw = raw.strip("`").removeprefix("json").strip()
+                elif raw.startswith("```"):
+                    raw = raw.strip("`").strip()
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict) and "content" in parsed:
+                    c_text = str(parsed["content"])
+                    c_conf = float(parsed.get("confidence_score", 0.90))
+                    claims_list: list[CandidateClaim] = []
+                    for c_raw in parsed.get("claims", []):
+                        if isinstance(c_raw, dict) and "statement" in c_raw:
+                            claims_list.append(
+                                CandidateClaim(
+                                    claim_id=f"clm_{uuid4().hex[:8]}",
+                                    agent_role=role,
+                                    statement=str(c_raw["statement"]),
+                                    evidence_basis=[str(e) for e in c_raw.get("evidence_basis", ["Analytical synthesis"])],
+                                    confidence_score=float(c_raw.get("confidence_score", 0.90)),
+                                )
+                            )
+                    if claims_list:
+                        return DebateTurn(
+                            turn_index=turn_index,
+                            round_index=1,
+                            agent_role=role,
+                            stance=DebateStance.PROPOSAL,
+                            content=c_text,
+                            claims_proposed=claims_list,
+                            confidence_score=c_conf,
+                            timestamp=time.time(),
+                        )
+            except Exception as ex:
+                logger.debug("Swarm dynamic opening turn LLM fallback: %s", ex)
+
         if role == SwarmAgentRole.PLANNER:
             content = (
                 f"Strategic execution requires decoupling '{prompt}' into 3 phased milestones: "
@@ -594,6 +668,75 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         pruned: list[CandidateClaim] = []
         target_turn = next((t for t in round_1_turns if t.agent_role == target_role), None)
         target_snippet = target_turn.content[:100] if target_turn else "peer arguments"
+
+        if self.llm and hasattr(self.llm, "generate"):
+            try:
+                from src.domain.abstractions.inference import (
+                    ChatMessage,
+                    InferenceRequest,
+                )
+
+                role_profile = self._profiles.get(role, DEFAULT_ROLE_PROFILES.get(role))
+                mandate = role_profile.mandate if role_profile else "Provide specialized dialectic critique."
+                system_prompt = (
+                    f"You are '{role.value.replace('_', ' ').title()}' cross-examining {target_role.value.replace('_', ' ').title()} in a dialectic swarm debate.\n"
+                    f"Your Mandate: {mandate}\n"
+                    "Evaluate the candidate claims. Flag any ungrounded, risky, or hallucinated claims.\n"
+                    "Output strictly a JSON object matching:\n"
+                    "{\n"
+                    '  "critique": "Detailed critique of target arguments...",\n'
+                    '  "confidence_score": 0.92,\n'
+                    '  "pruned_claim_statements": ["exact statement of any claim that must be rejected"],\n'
+                    '  "prune_rationale": "Why pruned..."\n'
+                    "}"
+                )
+                claims_str = "\n".join(f"- {c.statement}" for c in candidate_claims)
+                user_msg = (
+                    f"Objective: {prompt}\n"
+                    f"Target Role ({target_role.value}) Argument: {target_snippet}\n"
+                    f"Candidate Claims Under Review:\n{claims_str}\n"
+                )
+                resp = await self.llm.generate(
+                    InferenceRequest(
+                        messages=[
+                            ChatMessage(role="system", content=system_prompt),
+                            ChatMessage(role="user", content=user_msg),
+                        ],
+                        temperature=0.2,
+                        max_tokens=500,
+                    )
+                )
+                raw = resp.content.strip()
+                if raw.startswith("```json"):
+                    raw = raw.strip("`").removeprefix("json").strip()
+                elif raw.startswith("```"):
+                    raw = raw.strip("`").strip()
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict) and "critique" in parsed:
+                    pruned_stmts = [str(s).lower() for s in parsed.get("pruned_claim_statements", [])]
+                    for claim in candidate_claims:
+                        if any(ps in claim.statement.lower() for ps in pruned_stmts):
+                            claim.is_audited = True
+                            claim.is_verified = False
+                            claim.rejection_reason = parsed.get("prune_rationale", "Rejected during dialectic peer review.")
+                            pruned.append(claim)
+
+                    return (
+                        DebateTurn(
+                            turn_index=turn_index,
+                            round_index=2,
+                            agent_role=role,
+                            stance=DebateStance.CRITIQUE,
+                            content=str(parsed["critique"]),
+                            claims_proposed=[],
+                            target_role=target_role,
+                            confidence_score=float(parsed.get("confidence_score", 0.90)),
+                            timestamp=time.time(),
+                        ),
+                        pruned,
+                    )
+            except Exception as ex:
+                logger.debug("Swarm dynamic critique turn LLM fallback: %s", ex)
 
         if role == SwarmAgentRole.FORENSIC_AUDITOR:
             # Audit candidate claims: identify any unsubstantiated assertion

@@ -21,6 +21,8 @@ class SearchQuery(BaseModel):
     collection_id: str | None = None
     user_id: str | None = None
     user_role: str | None = None
+    user_groups: list[str] = Field(default_factory=list)
+    enable_acl_filter: bool = True
     top_k: int = 10
     filters: list[MetadataFilter] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
@@ -83,6 +85,8 @@ class VectorSearchProvider(ABC):
         collection_id: str | None = None,
         user_id: str | None = None,
         user_role: str | None = None,
+        user_groups: list[str] | None = None,
+        enable_acl_filter: bool = True,
     ) -> list[SearchResult]:
         pass
 
@@ -100,6 +104,8 @@ class KeywordSearchProvider(ABC):
         collection_id: str | None = None,
         user_id: str | None = None,
         user_role: str | None = None,
+        user_groups: list[str] | None = None,
+        enable_acl_filter: bool = True,
     ) -> list[SearchResult]:
         pass
 

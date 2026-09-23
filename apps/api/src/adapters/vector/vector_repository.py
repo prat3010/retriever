@@ -25,12 +25,21 @@ class PgVectorSearchAdapter(VectorSearchProvider):
         collection_id: str | None = None,
         user_id: str | None = None,
         user_role: str | None = None,
+        user_groups: list[str] | None = None,
+        enable_acl_filter: bool = True,
     ) -> list[SearchResult]:
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
         table_name = get_vector_table_name(len(embedding))
 
         filter_clause, filter_params, join_clause = build_filter_clause(
-            filters, tags, "dc", collection_id=collection_id, user_id=user_id, user_role=user_role
+            filters,
+            tags,
+            "dc",
+            collection_id=collection_id,
+            user_id=user_id,
+            user_role=user_role,
+            user_groups=user_groups,
+            enable_acl_filter=enable_acl_filter,
         )
 
 

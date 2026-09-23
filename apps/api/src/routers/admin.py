@@ -1634,12 +1634,19 @@ async def admin_trigger_connector_sync(
         for doc in discovered:
             if doc.is_deleted:
                 continue
+            doc_metadata = {
+                "allowed_users": doc.allowed_users,
+                "allowed_groups": doc.allowed_groups,
+                "is_public": doc.is_public,
+                **doc.metadata,
+            }
             await ingest_file_sync(
                 tenant_id=tenantId,
                 filename=doc.filename,
                 content_bytes=doc.content.encode("utf-8"),
                 mime_type=doc.mime_type,
                 tags=["connector", target.connector_type, target.id],
+                doc_metadata=doc_metadata,
             )
             ingested_count += 1
 

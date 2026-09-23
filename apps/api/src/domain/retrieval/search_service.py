@@ -300,6 +300,8 @@ class HybridSearchService:
                 collection_id=query.collection_id,
                 user_id=query.user_id,
                 user_role=query.user_role,
+                user_groups=query.user_groups,
+                enable_acl_filter=query.enable_acl_filter,
             )
         except Exception as exc:
             logger.warning(f"Vector search leg failed for tenant '{query.tenant_id}': {exc}")
@@ -315,6 +317,8 @@ class HybridSearchService:
                     collection_id=query.collection_id,
                     user_id=query.user_id,
                     user_role=query.user_role,
+                    user_groups=query.user_groups,
+                    enable_acl_filter=query.enable_acl_filter,
                 )
             except Exception as exc:
                 logger.warning(f"Keyword search leg failed for tenant '{query.tenant_id}': {exc}")

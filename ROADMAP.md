@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 38 Platform Batteries Matrix
+## 🔋 The 39 Platform Batteries Matrix
 
-All 38 batteries are wired through strict Hexagonal dependency injection:
+All 39 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -58,6 +58,7 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 | **36** | `confidential_mpc_enclave` | Safety & Defense | Additive secret sharing over Q16.16 fixed-point arithmetic & Beaver multiplication triples | ✅ Production |
 | **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Empirical NDCG/MRR/Faithfulness evaluation, Two-Sample Welch's t-test regression gating | ✅ Production |
 | **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with dynamic LLM generation, PostgreSQL RLS persistence, Kahn's sort & 3-tier memory | ✅ Production |
+| **39** | `enterprise_saas_connectors_acl` | System Extensibility | Recursive Folder & Block Tree Crawlers + Atlassian XHTML/Markdown & Microsoft Graph Delta Stream + JSONB Array Containment (?|) ACL Filtering | ✅ Production |
 
 ---
 
@@ -204,25 +205,26 @@ All 38 batteries are wired through strict Hexagonal dependency injection:
 
 Following an architectural and community reality check against viral open-source ecosystems (LangChain, LlamaIndex, Dify, Danswer/Onyx), the following upcoming milestones are targeted to systematically eliminate ecosystem gaps while preserving our strict Hexagonal boundary invariants:
 
-### Milestone 125: Turn-Key Enterprise SaaS Connectors & OAuth Permission Sync (v2.4.0) — **Planned**
-- [ ] **Google Workspace Connector (Drive & Docs):** High-throughput folder tree crawler supporting Service Accounts and User OAuth 2.0 PKCE, with incremental delta tokens (`changes.list`) for real-time document synchronization.
-- [ ] **Notion Enterprise Workspace Connector:** Recursive page and database block extractor with incremental webhook updates (`last_edited_time` cursor) and markdown AST table preservation.
-- [ ] **Atlassian Confluence & Jira Knowledge Sync:** Spaces, pages, attachments, and ticket thread sync parameterized by Confluence Query Language (CQL) and JQL change cursors.
-- [ ] **Microsoft 365 (SharePoint & OneDrive):** Enterprise Microsoft Graph API delta crawler with tenant-level application permissions and automated file conversion.
-- [ ] **Document-Level Access Control List (ACL) Inheritance:** Propagate Google/Notion/SharePoint read permissions into PostgreSQL RLS chunk ACLs (`user_id` / `group_ids`), ensuring search queries only return documents the requesting user is legally authorized to see.
+### Milestone 125: Turn-Key Enterprise SaaS Connectors & Document-Level ACL Inheritance (v2.3.0) — **Completed (2026-09-23)**
+- [x] **Google Workspace Connector (Drive & Docs):** High-throughput recursive folder tree crawler supporting Service Accounts and User OAuth 2.0 PKCE, automated plain-text doc export, permissions ACL extraction (`allowed_users`, `allowed_groups`, `is_public`), and incremental delta tokens (`modifiedTime` cursor) for real-time document synchronization.
+- [x] **Notion Enterprise Workspace Connector:** Recursive page and database block extractor with table block (`table`, `table_row`) rendering to Markdown AST tables, subpage crawling, and incremental delta updates (`last_edited_time` cursor filter).
+- [x] **Atlassian Confluence & Jira Knowledge Sync:** Dual connector for Confluence Cloud (CQL spaces, pages, XHTML macro conversion to clean Markdown, and read restrictions extraction) and Jira Cloud (JQL issues, sprint threads, status/priority/assignee/reporter metadata, and comments) with incremental modified cursors.
+- [x] **Microsoft 365 (SharePoint & OneDrive):** Enterprise Microsoft Graph API v1.0 delta crawler (`/root/delta`) with Azure AD client credentials, `@odata.deltaLink` change tracking, and Azure AD user/security group ACL mapping.
+- [x] **Document-Level Access Control List (ACL) Inheritance & Pre-Retrieval Enforcement:** Propagated `allowed_users`, `allowed_groups`, and `is_public` directly into PostgreSQL `document_chunks.meta_data`. Updated `build_filter_clause`, `vector_repository`, `keyword_repository`, `splade_sparse_adapter`, and `HybridSearchService` with JSONB array containment (`?` and `?|`) with tenant admin bypass, ensuring search queries filter unauthorized chunks prior to LLM synthesis.
+- [x] **Platform Battery #39 Registration:** Registered `enterprise_saas_connectors_acl` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
 
-### Milestone 125: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Planned**
+### Milestone 126: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Planned**
 - [ ] **Interactive Visual Workflow Studio:** React Flow / SVG-powered interactive drag-and-drop web studio in `apps/web`, allowing non-developer architects and product managers to visually assemble and test cognitive RAG pipelines.
 - [ ] **Declarative Workflow Compiler:** Compiles visually composed DAG pipelines into strict JSON-Schema execution graphs executed by Retriever's existing ReAct / GoT state machine.
 - [ ] **Real-Time Step-by-Step Execution Stepper & Debugger:** Real-time token streaming, intermediate thought inspection, and token cost attribution at each node in the DAG.
 - [ ] **Pre-Configured Enterprise Template Library:** 1-Click templates for Legal Document Analyzer, Customer Support Copilot, Technical Codebase Assistant, and Multimodal Schematic Inspector.
 
-### Milestone 126: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Planned**
+### Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Planned**
 - [ ] **Single Distroless Edge Container:** Self-contained Docker / OCI image bundling SQLite FTS5, embedded quantized Ollama, and Retriever engine with zero internet connectivity requirements.
 - [ ] **Hardware-Rooted Micro-Enclave Encryption:** Automatic AES-256-GCM vector sealing using host hardware TPM 2.0 / Apple Secure Enclave seeds.
 - [ ] **Full-Duplex Offline Voice & Whisper:** Integrated local Whisper.cpp ASR + Piper neural TTS for sovereign voice interactions with zero third-party API dependencies.
 
-### Milestone 127: Instant Cloud Playground & Multi-Region Sandbox Hub (v2.6.0) — **Planned**
+### Milestone 128: Instant Cloud Playground & Multi-Region Sandbox Hub (v2.6.0) — **Planned**
 - [ ] **Ephemeral 1-Click Sandbox Tenants:** Instant, zero-sign-up 30-minute sandbox tenants with pre-ingested demo corpora (Kubernetes docs, SEC 10-K filings, ArXiv papers) for instant browser testing before local cloning.
 - [ ] **Interactive Rate-Limited REST & REPL Playground:** Interactive Swagger UI + Web Chat with instant API key generation and live cURL generation.
 - [ ] **Community Leaderboard & Hallucination Benchmark Hub:** Public benchmark showcasing empirical latency, NDCG, and faithfulness scores comparing Retriever against LangChain and Pinecone.
@@ -244,6 +246,7 @@ Following an architectural and community reality check against viral open-source
 - 🛡️ **Confidential MPC Privacy Enclaves Feature Guide:** [`docs/features/confidential-mpc-enclaves.md`](docs/features/confidential-mpc-enclaves.md)
 - 🎯 **Autonomous Continuous Benchmark Feature Guide:** [`docs/features/autonomous-benchmark-gatekeeper.md`](docs/features/autonomous-benchmark-gatekeeper.md)
 - 🕸️ **Hierarchical Memory & GoT Planning Feature Guide:** [`docs/features/hierarchical-memory-got-planning.md`](docs/features/hierarchical-memory-got-planning.md)
+- 🔌 **Enterprise SaaS Connectors & ACL Feature Guide:** [`docs/features/enterprise-saas-connectors-acl.md`](docs/features/enterprise-saas-connectors-acl.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 

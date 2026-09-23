@@ -76,11 +76,20 @@ class SpladeSparseSearchAdapter(KeywordSearchProvider):
         collection_id: str | None = None,
         user_id: str | None = None,
         user_role: str | None = None,
+        user_groups: list[str] | None = None,
+        enable_acl_filter: bool = True,
     ) -> list[SearchResult]:
         """Execute learned sparse keyword search using term expansion."""
         expanded_query = self.build_expanded_query_string(query_text)
         filter_clause, filter_params, join_clause = build_filter_clause(
-            filters, tags, "dc", collection_id=collection_id, user_id=user_id, user_role=user_role
+            filters,
+            tags,
+            "dc",
+            collection_id=collection_id,
+            user_id=user_id,
+            user_role=user_role,
+            user_groups=user_groups,
+            enable_acl_filter=enable_acl_filter,
         )
 
         async with tenant_session(tenant_id=tenant_id) as session:

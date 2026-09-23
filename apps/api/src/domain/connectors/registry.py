@@ -3,10 +3,12 @@ from typing import ClassVar, TypeVar
 
 from src.domain.abstractions.connector import BaseConnector, ConnectorManifest
 from src.domain.connectors.cloud_storage import S3StorageConnector
+from src.domain.connectors.confluence_jira import ConfluenceConnector, JiraConnector
 from src.domain.connectors.database_cdc import DatabaseCdcConnector
 from src.domain.connectors.github import GitHubConnector
 from src.domain.connectors.google_drive import GoogleDriveConnector
 from src.domain.connectors.local_folder import LocalFolderConnector
+from src.domain.connectors.microsoft365 import Microsoft365Connector
 from src.domain.connectors.notion import NotionConnector
 from src.domain.connectors.slack import SlackConnector
 from src.domain.connectors.web_crawler import WebCrawlerConnector
@@ -19,6 +21,7 @@ class ConnectorRegistry:
 
     _db_cdc = DatabaseCdcConnector()
     _s3_storage = S3StorageConnector()
+    _m365 = Microsoft365Connector()
 
     _connectors: ClassVar[dict[str, BaseConnector]] = {
         "web_crawler": WebCrawlerConnector(),
@@ -33,6 +36,10 @@ class ConnectorRegistry:
         "gcs": _s3_storage,
         "github": GitHubConnector(),
         "slack": SlackConnector(),
+        "confluence": ConfluenceConnector(),
+        "jira": JiraConnector(),
+        "microsoft365": _m365,
+        "sharepoint": _m365,
     }
 
     @classmethod

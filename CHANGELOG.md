@@ -4,6 +4,27 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-23 - Milestone 125: Turn-Key Enterprise SaaS Connectors & Document-Level ACL Inheritance
+
+### Added
+- **Turn-Key Enterprise SaaS Connectors** (`apps/api/src/domain/connectors/`):
+  - **Google Workspace (Drive & Docs):** Production crawler supporting Service Account JWT and OAuth 2.0 PKCE, recursive folder hierarchy crawling up to configurable `max_depth`, automated plain text export for `application/vnd.google-apps.document`, permissions ACL parsing (`allowed_users`, `allowed_groups`, `is_public`), and incremental sync via `modifiedTime` cursor.
+  - **Notion Enterprise Workspace:** Recursive child page extractor, table block (`table` and `table_row`) parser rendering standard Markdown tables, and differential change tracking using database `last_edited_time` query filters.
+  - **Atlassian Confluence Cloud:** Spaces and documentation hierarchies crawler with CQL filtering, full XHTML storage format conversion (macros, info/tip/warning callouts, tables, code blocks), and space/page read restrictions mapping.
+  - **Atlassian Jira Software Cloud:** Issue thread compiler pulling key, summary, status, assignee, reporter, priority, description, and full comment threads formatted to Markdown, with JQL incremental change cursors and issue security level / project ACL extraction.
+  - **Microsoft 365 (SharePoint & OneDrive):** Enterprise Microsoft Graph API v1.0 delta crawler (`/root/delta`) with Azure AD client credentials grant, `@odata.deltaLink` change tracking, and Azure AD user/security group ACL mapping.
+  - **Connector Registry Catalog:** Registered `confluence`, `jira`, `microsoft365`, and `sharepoint` in `ConnectorRegistry`.
+- **Document-Level Access Control List (ACL) Inheritance & Pre-Retrieval Enforcement**:
+  - Extended `DiscoveredDocument` and `DocumentChunkDb.meta_data` with `allowed_users: list[str]`, `allowed_groups: list[str]`, and `is_public: bool`.
+  - Upgraded `build_filter_clause` (`src/adapters/vector/filter_builder.py`) with unified sublinear JSONB array containment (`?` and `?|`) with tenant `admin` role bypass.
+  - Forwarded `user_groups` and `enable_acl_filter` across `VectorRepository`, `KeywordRepository`, `SpladeSparseAdapter`, and `HybridSearchService._fan_out_search`.
+  - Updated `ingest_file_sync` to merge `doc_metadata` ACL fields into chunk metadata and persisted them in PostgreSQL.
+- **Platform Battery #39 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+  - Registered `enterprise_saas_connectors_acl` under `BatteryCategory.SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
+- **Automated Verification Suites** (`apps/api/tests/`):
+  - Added `test_enterprise_saas_connectors.py` (12 tests) and `test_document_acl_retrieval.py` (8 tests), plus updated `test_batteries.py` (9 tests), all passing in 0.15s–2.0s with 0 violations.
+
+
 ## [1.3.0-alpha1] - 2026-09-21 - Agent-Native Modernization & Resilient Dual-Channel Architecture
 
 ### Added

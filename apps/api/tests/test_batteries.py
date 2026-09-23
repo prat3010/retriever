@@ -17,9 +17,9 @@ def test_platform_batteries_inventory_completeness():
     """Verify that all 38 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 38
-    assert resp.active_count >= 23
-    assert len(resp.batteries) == 38
+    assert resp.total_batteries == 39
+    assert resp.active_count >= 24
+    assert len(resp.batteries) == 39
 
     # Check key expected battery IDs
     expected_ids = {
@@ -61,6 +61,7 @@ def test_platform_batteries_inventory_completeness():
         "confidential_mpc_enclave",
         "autonomous_benchmark_gatekeeper",
         "hierarchical_memory_got_planner",
+        "enterprise_saas_connectors_acl",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -95,9 +96,24 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 38
-        assert data["active_count"] >= 23
-        assert len(data["batteries"]) == 38
+        assert data["total_batteries"] == 39
+        assert data["active_count"] >= 24
+        assert len(data["batteries"]) == 39
+
+
+def test_enterprise_saas_connectors_acl_battery():
+    """Verify Battery #39: Turn-Key Enterprise SaaS Connectors with Document-Level ACL Inheritance."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "enterprise_saas_connectors_acl"), None)
+    assert battery is not None
+    assert "Enterprise SaaS Connectors" in battery.name
+    assert battery.category == BatteryCategory.SYSTEM_EXTENSIBILITY
+    assert battery.status == BatteryStatus.ACTIVE
+    assert "M125" in battery.milestone
+    assert "confluence" in battery.active_parameters["supported_connectors"]
+    assert "jira" in battery.active_parameters["supported_connectors"]
+    assert "microsoft365" in battery.active_parameters["supported_connectors"]
+    assert battery.active_parameters["zero_toy_verified"] is True
 
 
 def test_multimodal_vision_graphrag_battery():

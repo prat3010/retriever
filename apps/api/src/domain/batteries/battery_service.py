@@ -573,6 +573,34 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/got/health",
             ),
+            PlatformBatteryDTO(
+                id="enterprise_saas_connectors_acl",
+                name="Turn-Key Enterprise SaaS Connectors with Document-Level ACL Inheritance",
+                category=BatteryCategory.SYSTEM_EXTENSIBILITY,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Recursive Folder & Block Tree Crawlers + Atlassian XHTML/Markdown & Microsoft Graph Delta Stream + JSONB Array Containment (?|) ACL Filtering",
+                milestone="M125 (v2.3.0)",
+                latency_profile="<2ms pre-retrieval ACL filtering / sub-second differential sync",
+                description="Turn-key enterprise connectors for Google Workspace (Drive & Docs), Notion, Atlassian Confluence & Jira, and Microsoft 365 SharePoint/OneDrive with native document-level ACL extraction and pre-retrieval JSONB filtering.",
+                active_parameters={
+                    "supported_connectors": [
+                        "google_drive",
+                        "notion",
+                        "confluence",
+                        "jira",
+                        "microsoft365",
+                        "sharepoint",
+                        "github",
+                        "slack",
+                        "web_crawler",
+                    ],
+                    "acl_attributes": ["allowed_users", "allowed_groups", "is_public"],
+                    "filter_clause": "JSONB array containment (?|) with admin role bypass",
+                    "incremental_sync_enabled": True,
+                    "zero_toy_verified": True,
+                },
+                health_check_endpoint="/v1/admin/connectors",
+            ),
         ]
 
 

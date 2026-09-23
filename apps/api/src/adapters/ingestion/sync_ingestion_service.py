@@ -1,6 +1,7 @@
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import delete, select
 
@@ -30,6 +31,7 @@ async def ingest_file_sync(
     chunk_overlap: int = 100,
     content_bytes: bytes | None = None,
     tags: list[str] | None = None,
+    doc_metadata: dict[str, Any] | None = None,
 ) -> int:
     import hashlib
     import os
@@ -118,6 +120,8 @@ async def ingest_file_sync(
                 meta = {}
         meta = dict(meta)
         meta.update(layout_meta)
+        if doc_metadata:
+            meta.update(doc_metadata)
         if p_id:
             meta["parent_chunk_id"] = str(p_id)
 

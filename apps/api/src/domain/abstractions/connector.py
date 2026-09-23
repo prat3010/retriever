@@ -11,6 +11,9 @@ class DiscoveredDocument(BaseModel):
     source_url: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     is_deleted: bool = False
+    allowed_users: list[str] = Field(default_factory=list)
+    allowed_groups: list[str] = Field(default_factory=list)
+    is_public: bool = True
 
 
 class ConnectorSyncState(BaseModel):
@@ -46,6 +49,10 @@ class ConnectorConfig(BaseModel):
         "mysql_cdc",
         "database_cdc",
         "github",
+        "confluence",
+        "jira",
+        "microsoft365",
+        "sharepoint",
     ] = "web_crawler"
     status: Literal["idle", "syncing", "failed", "disabled"] = "idle"
     sync_interval_minutes: int = 1440

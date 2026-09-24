@@ -14,9 +14,9 @@ See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTO
 
 ---
 
-## 🔋 The 39 Platform Batteries Matrix
+## 🔋 The 40 Platform Batteries Matrix
 
-All 39 batteries are wired through strict Hexagonal dependency injection:
+All 40 batteries are wired through strict Hexagonal dependency injection:
 
 | Battery # | Battery Identifier | Category | Architectural Foundation | Status |
 |:---:|:---|:---|:---|:---:|
@@ -59,6 +59,7 @@ All 39 batteries are wired through strict Hexagonal dependency injection:
 | **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Empirical NDCG/MRR/Faithfulness evaluation, Two-Sample Welch's t-test regression gating | ✅ Production |
 | **38** | `hierarchical_memory_got_planner` | Computation Graph | Non-linear DAG reasoning with dynamic LLM generation, PostgreSQL RLS persistence, Kahn's sort & 3-tier memory | ✅ Production |
 | **39** | `enterprise_saas_connectors_acl` | System Extensibility | Recursive Folder & Block Tree Crawlers + Atlassian XHTML/Markdown & Microsoft Graph Delta Stream + JSONB Array Containment (?|) ACL Filtering | ✅ Production |
+| **40** | `visual_dag_workflow_composer` | System Extensibility | Declarative DAG Compilation + Kahn's Topological Sort Cycle Detection + Step-Level Streaming Event Bus & Cost Attribution | ✅ Production |
 
 ---
 
@@ -213,11 +214,17 @@ Following an architectural and community reality check against viral open-source
 - [x] **Document-Level Access Control List (ACL) Inheritance & Pre-Retrieval Enforcement:** Propagated `allowed_users`, `allowed_groups`, and `is_public` directly into PostgreSQL `document_chunks.meta_data`. Updated `build_filter_clause`, `vector_repository`, `keyword_repository`, `splade_sparse_adapter`, and `HybridSearchService` with JSONB array containment (`?` and `?|`) with tenant admin bypass, ensuring search queries filter unauthorized chunks prior to LLM synthesis.
 - [x] **Platform Battery #39 Registration:** Registered `enterprise_saas_connectors_acl` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
 
-### Milestone 126: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Planned**
-- [ ] **Interactive Visual Workflow Studio:** React Flow / SVG-powered interactive drag-and-drop web studio in `apps/web`, allowing non-developer architects and product managers to visually assemble and test cognitive RAG pipelines.
-- [ ] **Declarative Workflow Compiler:** Compiles visually composed DAG pipelines into strict JSON-Schema execution graphs executed by Retriever's existing ReAct / GoT state machine.
-- [ ] **Real-Time Step-by-Step Execution Stepper & Debugger:** Real-time token streaming, intermediate thought inspection, and token cost attribution at each node in the DAG.
-- [ ] **Pre-Configured Enterprise Template Library:** 1-Click templates for Legal Document Analyzer, Customer Support Copilot, Technical Codebase Assistant, and Multimodal Schematic Inspector.
+### Milestone 126: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Completed (2026-09-24)**
+- [x] **Interactive Visual Workflow Studio in `apps/web`:** React 19 / Next.js 16 SVG-powered interactive canvas (`VisualDagCanvas.tsx`) in the Retriever Admin Dashboard with pan/zoom viewport navigation, draggable typed nodes, cubic Bézier spline connectors with directional arrowheads, real-time node parameter inspector drawer, and step-level telemetry.
+- [x] **Declarative Workflow Compiler & Kahn's Cycle Detection:** Built `DAGWorkflowCompiler` implementing Kahn's topological sort algorithm, cycle isolation with explicit `CyclicWorkflowError` raising, level-based parallel stage partitioning for concurrent sub-branch execution, and variable input-output contract verification.
+- [x] **Real-Time Step-by-Step Execution Stepper & Token Cost Attribution:** Built `DAGWorkflowExecutor` supporting concurrent topological stage execution, authentic node actions (input, hybrid retrieval, regex PII guardrails, context compression, string template prompts, LLM synthesis, faithfulness evaluator, conditional router), and step-level token cost attribution ($/token rate tables).
+- [x] **Pre-Configured Enterprise Template Library:** Integrated 4 production templates into `src/domain/workflow/templates.py`:
+  1. *Legal Document & Contract Analyzer* (`tpl_legal_analyzer`)
+  2. *Customer Support & FAQ Copilot* (`tpl_customer_support`)
+  3. *Technical Codebase Assistant* (`tpl_codebase_assistant`)
+  4. *Multimodal Schematic Inspector* (`tpl_multimodal_inspector`)
+- [x] **FastAPI REST Endpoints:** Mounted 4 tenant-scoped endpoints under `/v1/tenants/{tenantId}/workflows/dag/*` covering compilation, execution, and enterprise template inspection.
+- [x] **Platform Battery #40 Registration:** Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata, health check endpoint, and zero-toy verification.
 
 ### Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Planned**
 - [ ] **Single Distroless Edge Container:** Self-contained Docker / OCI image bundling SQLite FTS5, embedded quantized Ollama, and Retriever engine with zero internet connectivity requirements.
@@ -247,6 +254,7 @@ Following an architectural and community reality check against viral open-source
 - 🎯 **Autonomous Continuous Benchmark Feature Guide:** [`docs/features/autonomous-benchmark-gatekeeper.md`](docs/features/autonomous-benchmark-gatekeeper.md)
 - 🕸️ **Hierarchical Memory & GoT Planning Feature Guide:** [`docs/features/hierarchical-memory-got-planning.md`](docs/features/hierarchical-memory-got-planning.md)
 - 🔌 **Enterprise SaaS Connectors & ACL Feature Guide:** [`docs/features/enterprise-saas-connectors-acl.md`](docs/features/enterprise-saas-connectors-acl.md)
+- 🎨 **Visual DAG Workflow Canvas Feature Guide:** [`docs/features/visual-dag-workflow-canvas.md`](docs/features/visual-dag-workflow-canvas.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 

@@ -4,6 +4,41 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-24 - Milestone 126: Visual DAG Workflow Canvas & Agentic Graph Composer
+
+### Added
+- **Visual DAG Workflow Studio in `apps/web`** (`apps/web/src/components/`):
+  - Interactive SVG and CSS-powered drag-and-drop workflow studio (`visual-dag-canvas.tsx`) with pan, zoom (40% to 180%), reset view, and grid coordinate tracking.
+  - Draggable typed nodes (Input, Retrieval, Guardrail, Transform, Prompt, LLM, Evaluator, Router, Output) with status rings (`pending`, `running`, `completed`, `failed`, `skipped`).
+  - Dynamic cubic Bézier spline connectors with directional arrowheads and router condition labels.
+  - Node Inspector drawer for editing parameters, prompt templates, models, and viewing per-node telemetry.
+  - Step-level execution stepper with real-time glowing node states, token cost attribution ($ USD), and latency telemetry.
+  - Modernized `TenantWorkflowTab` with 3 sub-views: Visual DAG Studio (default), Durable Workflows (M95), and Outbound n8n Webhook.
+- **Declarative Workflow Compiler & Kahn's Cycle Detection** (`src/domain/workflow/dag_compiler.py`):
+  - Strict graph structural validation and unique node ID checking.
+  - Kahn's algorithm for topological sorting and cycle detection, isolating cyclic subgraphs and raising `CyclicWorkflowError`.
+  - Level-based parallel stage partitioning for concurrent execution of independent branches via `asyncio.gather`.
+  - Variable contract verification validating antecedent outputs against descendant input requirements.
+- **DAG Workflow Execution Engine with Token Cost Attribution** (`src/domain/workflow/dag_executor.py`):
+  - Stage-by-stage pipeline executor with authentic node handlers (hybrid retrieval, regex PII guardrails, LongLLMLingua compression, prompt assembly, LLM synthesis, faithfulness evaluator, conditional branch router, output formatter).
+  - Fine-grained token tracking ($T_{\text{in}}$, $T_{\text{out}}$) and USD cost calculation based on production pricing tables.
+  - Strict tenant boundary isolation enforcing `tenant_id` on all executions.
+- **Pre-Configured Enterprise Templates Catalog** (`src/domain/workflow/templates.py`):
+  - Added 4 verified 1-click enterprise production templates:
+    1. *Legal Document & Contract Analyzer* (`tpl_legal_analyzer`)
+    2. *Customer Support & FAQ Copilot* (`tpl_customer_support`)
+    3. *Technical Codebase Assistant* (`tpl_codebase_assistant`)
+    4. *Multimodal Schematic Inspector* (`tpl_multimodal_inspector`)
+- **FastAPI REST Endpoints** (`apps/api/src/routers/workflow_dag.py`):
+  - `POST /v1/tenants/{tenantId}/workflows/dag/compile`: Validates DAG and returns topological stages.
+  - `POST /v1/tenants/{tenantId}/workflows/dag/execute`: Executes DAG stage-by-stage with telemetry.
+  - `GET /v1/tenants/{tenantId}/workflows/dag/templates`: Lists enterprise templates.
+  - `GET /v1/tenants/{tenantId}/workflows/dag/templates/{templateId}`: Retrieves full template graph.
+- **Platform Battery #40 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+  - Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- **Automated Verification Suites** (`apps/api/tests/`):
+  - Created `test_dag_workflow.py` (9 tests) covering topological sort, cycle detection, execution, branching, templates, and hexagonal boundaries. Updated `test_batteries.py` (10 tests) asserting 40 batteries. All 19 tests passed.
+
 ## [2.3.0] - 2026-09-23 - Milestone 125: Turn-Key Enterprise SaaS Connectors & Document-Level ACL Inheritance
 
 ### Added

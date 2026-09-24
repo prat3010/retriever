@@ -225,6 +225,7 @@ from src.routers.voice import admin_router as voice_admin_router
 from src.routers.voice import stream_router as voice_stream_router
 from src.routers.voice import tenant_router as voice_tenant_router
 from src.routers.workflow import router as workflow_router
+from src.routers.workflow_dag import router as workflow_dag_router
 from src.routers.zkp import router as zkp_router
 
 app.include_router(health_router)
@@ -243,6 +244,7 @@ app.include_router(payments_router)
 app.include_router(workflow_router)
 app.include_router(durable_workflow_router)
 app.include_router(durable_workflow_admin_router)
+app.include_router(workflow_dag_router)
 app.include_router(admin_router)
 app.include_router(agentic_router)
 app.include_router(memory_router)

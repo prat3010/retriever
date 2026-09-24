@@ -17,9 +17,9 @@ def test_platform_batteries_inventory_completeness():
     """Verify that all 38 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 39
+    assert resp.total_batteries == 40
     assert resp.active_count >= 24
-    assert len(resp.batteries) == 39
+    assert len(resp.batteries) == 40
 
     # Check key expected battery IDs
     expected_ids = {
@@ -62,6 +62,7 @@ def test_platform_batteries_inventory_completeness():
         "autonomous_benchmark_gatekeeper",
         "hierarchical_memory_got_planner",
         "enterprise_saas_connectors_acl",
+        "visual_dag_workflow_composer",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -96,9 +97,9 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 39
+        assert data["total_batteries"] == 40
         assert data["active_count"] >= 24
-        assert len(data["batteries"]) == 39
+        assert len(data["batteries"]) == 40
 
 
 def test_enterprise_saas_connectors_acl_battery():
@@ -164,6 +165,20 @@ def test_neo4j_cypher_graph_battery():
     assert battery.latency_profile == "<5ms"
     assert battery.active_parameters["fallback_engine"] == "postgres_recursive_cte"
     assert "capabilities" in (battery.health_check_endpoint or "")
+
+
+def test_visual_dag_workflow_composer_battery():
+    """Verify Battery #40: Visual DAG Workflow Canvas & Agentic Graph Composer properties."""
+    resp = battery_service.get_platform_batteries()
+    battery = next((b for b in resp.batteries if b.id == "visual_dag_workflow_composer"), None)
+    assert battery is not None
+    assert battery.name == "Visual DAG Workflow Canvas & Agentic Graph Composer"
+    assert battery.category == BatteryCategory.SYSTEM_EXTENSIBILITY
+    assert battery.status == BatteryStatus.ACTIVE
+    assert "kahn_topological_sort" in battery.active_parameters["compiler_algorithm"]
+    assert battery.active_parameters["enterprise_templates_count"] == 4
+    assert battery.active_parameters["zero_toy_verified"] is True
+    assert "/workflows/dag/templates" in (battery.health_check_endpoint or "")
 
 
 def test_hexagonal_architecture_batteries():

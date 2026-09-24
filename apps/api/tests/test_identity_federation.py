@@ -209,7 +209,7 @@ async def test_saml_tampered_assertion_rejected(test_tenant_id: str, sample_saml
     tampered_xml = signed_xml.replace("lead_engineer@enterprise.internal", "attacker@evil.com")
     b64_xml = base64.b64encode(tampered_xml.encode("utf-8")).decode("utf-8")
 
-    with pytest.raises(ValueError, match="(signature verification failed|digest mismatch)"):
+    with pytest.raises(ValueError, match=r"(signature verification failed|digest mismatch)"):
         await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
 
 

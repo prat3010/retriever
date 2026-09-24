@@ -601,6 +601,36 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/admin/connectors",
             ),
+            PlatformBatteryDTO(
+                id="visual_dag_workflow_composer",
+                name="Visual DAG Workflow Canvas & Agentic Graph Composer",
+                category=BatteryCategory.SYSTEM_EXTENSIBILITY,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Declarative Directed Acyclic Graph (DAG) Compilation + Kahn's Topological Sort Cycle Detection + Step-Level Streaming Event Bus & Cost Attribution",
+                milestone="M126 (v2.4.0)",
+                latency_profile="<1ms DAG compile / <15ms stage execution / real-time cost attribution",
+                description="Visual drag-and-drop workflow canvas and declarative DAG execution compiler enabling non-developer architects and AI engineers to visually assemble, cycle-check, debug, and execute complex cognitive RAG pipelines with step-level token cost attribution and out-of-the-box enterprise templates.",
+                active_parameters={
+                    "supported_node_types": [
+                        "input",
+                        "retrieval",
+                        "guardrail",
+                        "transform",
+                        "prompt",
+                        "llm",
+                        "evaluator",
+                        "router",
+                        "output",
+                    ],
+                    "compiler_algorithm": "kahn_topological_sort",
+                    "cycle_detection_guarantee": True,
+                    "parallel_stage_execution": True,
+                    "token_cost_attribution": True,
+                    "enterprise_templates_count": 4,
+                    "zero_toy_verified": True,
+                },
+                health_check_endpoint="/v1/tenants/{tenantId}/workflows/dag/templates",
+            ),
         ]
 
 

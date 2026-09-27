@@ -14,6 +14,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: SLM Judge LLM JSON Parsing ─────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_slm_judge_llm_json_parsing():
     """Verify SlmJudgeEngine parses structured JSON output from model correctly."""
@@ -50,10 +51,14 @@ async def test_slm_judge_llm_json_parsing():
     assert res.faithfulness_score == 0.95
     assert len(res.claim_analyses) == 1
     assert res.claim_analyses[0].status == "supported"
-    assert res.claim_analyses[0].evidence_span == "Authentication requires Bearer JWT in request headers."
+    assert (
+        res.claim_analyses[0].evidence_span
+        == "Authentication requires Bearer JWT in request headers."
+    )
 
 
 # ── 2. Unit Test: Structural Fallback Judge ───────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_slm_judge_structural_fallback():
@@ -88,6 +93,7 @@ async def test_slm_judge_fail_on_contradiction():
 
 
 # ── 3. API Tests: Admin Evaluation Endpoints ─────────────────────────────────
+
 
 def test_admin_nli_endpoint():
     """Verify POST /v1/admin/eval/nli endpoint."""

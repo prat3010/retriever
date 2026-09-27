@@ -59,9 +59,11 @@ def load_env():
                 pass
 
     # Aliases
-    if "ADMIN_MASTER_KEY" in os.environ and "RETRIEVER_ADMIN_MASTER_KEY" not in os.environ:
+    if (
+        "ADMIN_MASTER_KEY" in os.environ
+        and "RETRIEVER_ADMIN_MASTER_KEY" not in os.environ
+    ):
         os.environ["RETRIEVER_ADMIN_MASTER_KEY"] = os.environ["ADMIN_MASTER_KEY"]
-
 
 
 def api_request(
@@ -165,9 +167,13 @@ def print_banner():
     print(f"\n{CYAN}{BOLD}")
     print("  ____      _       _                          ____  _____ ____  _     ")
     print(" |  _ \\ ___| |_ _ _(_) _____   _____ _ __     |  _ \\| ____|  _ \\| |    ")
-    print(" | |_) / _ \\ __| '__| |/ _ \\ \\ / / _ \\ '__|    | |_) |  _| | |_) | |    ")
+    print(
+        " | |_) / _ \\ __| '__| |/ _ \\ \\ / / _ \\ '__|    | |_) |  _| | |_) | |    "
+    )
     print(" |  _ <  __/ |_| |  | |  __/\\ V /  __/ |       |  _ <| |___|  __/| |___ ")
-    print(" |_| \\_\\___|\\__|_|  |_|\\___| \\_/ \\___|_|       |_| \\_\\_____|_|   |_____|")
+    print(
+        " |_| \\_\\___|\\__|_|  |_|\\___| \\_/ \\___|_|       |_| \\_\\_____|_|   |_____|"
+    )
     print(f"{NC}")
     print(f"{BOLD}Interactive Cognitive Terminal REPL (v1.0){NC}")
     print(f"{DIM}Commands: /docs, /tenant, /clear, /help, /exit{NC}")
@@ -216,7 +222,9 @@ def main():
                 tid = t.get("tenantId", t.get("id", ""))
                 name = t.get("name", "Unnamed")
                 print(f"  [{i}] {BOLD}{name}{NC} {DIM}({tid}){NC}")
-            choice = input(f"\nSelect tenant number [1-{len(tenants)}] (or enter UUID): ").strip()
+            choice = input(
+                f"\nSelect tenant number [1-{len(tenants)}] (or enter UUID): "
+            ).strip()
             if choice.isdigit() and 1 <= int(choice) <= len(tenants):
                 selected = tenants[int(choice) - 1]
                 tenant_id = selected.get("tenantId", selected.get("id"))
@@ -268,7 +276,9 @@ def main():
 
         elif query == "/docs":
             if not admin_key:
-                print(f"{YELLOW}Admin master key required to inspect document library.{NC}\n")
+                print(
+                    f"{YELLOW}Admin master key required to inspect document library.{NC}\n"
+                )
                 continue
             docs = list_documents(api_url, tenant_id, admin_key)
             if not docs:
@@ -279,7 +289,9 @@ def main():
                     fname = d.get("filename", "unnamed")
                     status = d.get("status", "unknown")
                     chunks = d.get("chunkCount", d.get("chunks", 0))
-                    print(f"  • {BOLD}{fname}{NC} {DIM}[status: {status}, chunks: {chunks}]{NC}")
+                    print(
+                        f"  • {BOLD}{fname}{NC} {DIM}[status: {status}, chunks: {chunks}]{NC}"
+                    )
                 print()
             continue
 
@@ -297,7 +309,9 @@ def main():
 
         # Execute Search Query
         print(f"{DIM}Thinking & searching knowledge base...{NC}")
-        ok, results = search_tenant(api_url, tenant_id, query, api_key, admin_key, top_k=3)
+        ok, results = search_tenant(
+            api_url, tenant_id, query, api_key, admin_key, top_k=3
+        )
 
         if not ok:
             err = results.get("error", "Search failed")
@@ -315,7 +329,9 @@ def main():
             meta = hit.get("metadata") or {}
             doc_name = meta.get("filename", hit.get("documentId", "Document"))
 
-            print(f"  {MAGENTA}[Citation #{i}] {BOLD}{doc_name}{NC} {DIM}(Similarity Score: {score:.4f}){NC}")
+            print(
+                f"  {MAGENTA}[Citation #{i}] {BOLD}{doc_name}{NC} {DIM}(Similarity Score: {score:.4f}){NC}"
+            )
             # Indent snippet
             wrapped = "\n".join(f"    {line}" for line in content.splitlines()[:6])
             print(f"{wrapped}")

@@ -56,7 +56,9 @@ class HttpMultiCloudHealthProbeAdapter(MultiCloudHealthProbeProtocol):
                 )
         except Exception as exc:
             latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
-            logger.warning("Probe failed for region %s (%s): %s", node.region, probe_url, exc)
+            logger.warning(
+                "Probe failed for region %s (%s): %s", node.region, probe_url, exc
+            )
             return RegionHealthProbe(
                 node_id=node.node_id,
                 region=node.region,
@@ -69,7 +71,9 @@ class HttpMultiCloudHealthProbeAdapter(MultiCloudHealthProbeProtocol):
                 is_simulated=False,
             )
 
-    async def probe_all_regions(self, nodes: list[CloudRegionNode]) -> list[RegionHealthProbe]:
+    async def probe_all_regions(
+        self, nodes: list[CloudRegionNode]
+    ) -> list[RegionHealthProbe]:
         """Concurrently executes health probes across all cloud region nodes."""
         tasks = [self.probe_node(node) for node in nodes]
         return await asyncio.gather(*tasks)

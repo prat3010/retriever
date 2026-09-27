@@ -27,17 +27,32 @@ def upgrade() -> None:
         sa.Column("user_id", sa.UUID(), nullable=True),
         sa.Column("rating", sa.Integer(), nullable=False),
         sa.Column("feedback_text", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["message_id"], ["chat_messages.message_id"], ondelete="CASCADE"),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(
+            ["message_id"], ["chat_messages.message_id"], ondelete="CASCADE"
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("feedback_id"),
     )
-    
+
     # Create indices
-    op.create_index("ix_chat_message_feedback_tenant_id", "chat_message_feedback", ["tenant_id"])
-    op.create_index("ix_chat_message_feedback_message_id", "chat_message_feedback", ["message_id"])
-    op.create_index("ix_chat_message_feedback_user_id", "chat_message_feedback", ["user_id"])
+    op.create_index(
+        "ix_chat_message_feedback_tenant_id", "chat_message_feedback", ["tenant_id"]
+    )
+    op.create_index(
+        "ix_chat_message_feedback_message_id", "chat_message_feedback", ["message_id"]
+    )
+    op.create_index(
+        "ix_chat_message_feedback_user_id", "chat_message_feedback", ["user_id"]
+    )
 
     # Enable Row-Level Security (RLS)
     op.execute("ALTER TABLE chat_message_feedback ENABLE ROW LEVEL SECURITY;")
@@ -53,13 +68,15 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop RLS Policy
-    op.execute("DROP POLICY IF EXISTS tenant_isolation_policy ON chat_message_feedback;")
+    op.execute(
+        "DROP POLICY IF EXISTS tenant_isolation_policy ON chat_message_feedback;"
+    )
     op.execute("ALTER TABLE chat_message_feedback DISABLE ROW LEVEL SECURITY;")
-    
+
     # Drop indices
     op.drop_index("ix_chat_message_feedback_user_id", "chat_message_feedback")
     op.drop_index("ix_chat_message_feedback_message_id", "chat_message_feedback")
     op.drop_index("ix_chat_message_feedback_tenant_id", "chat_message_feedback")
-    
+
     # Drop table
     op.drop_table("chat_message_feedback")

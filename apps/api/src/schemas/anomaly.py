@@ -8,22 +8,32 @@ from pydantic import BaseModel, Field
 class ScanTelemetryRequest(BaseModel):
     """Payload to trigger an on-demand telemetry anomaly detection scan."""
 
-    lookback_minutes: int = Field(default=60, ge=5, le=1440, description="Window duration in minutes")
-    tenant_id: str | None = Field(default=None, description="Optional tenant UUID filter")
-    auto_quarantine: bool = Field(default=True, description="Automatically quarantine CRITICAL risk keys")
+    lookback_minutes: int = Field(
+        default=60, ge=5, le=1440, description="Window duration in minutes"
+    )
+    tenant_id: str | None = Field(
+        default=None, description="Optional tenant UUID filter"
+    )
+    auto_quarantine: bool = Field(
+        default=True, description="Automatically quarantine CRITICAL risk keys"
+    )
 
 
 class ResolveAnomalyRequest(BaseModel):
     """Payload to resolve or dismiss a flagged security anomaly."""
 
-    notes: str | None = Field(default=None, description="Resolution notes or justification")
+    notes: str | None = Field(
+        default=None, description="Resolution notes or justification"
+    )
 
 
 class QuarantineKeyRequest(BaseModel):
     """Payload to manually quarantine an API key."""
 
     tenant_id: str = Field(..., description="Owning tenant UUID")
-    reason: str = Field(default="Manual administrator quarantine", description="Justification")
+    reason: str = Field(
+        default="Manual administrator quarantine", description="Justification"
+    )
     level: Literal["HIGH", "CRITICAL"] = Field(default="CRITICAL")
 
 

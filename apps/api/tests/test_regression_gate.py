@@ -17,6 +17,7 @@ client = TestClient(app)
 
 # ── 1. Unit Tests: Regression Gate Engine ────────────────────────────────────
 
+
 def test_regression_gate_pass():
     """Verify gate passes when all quality metrics meet or exceed thresholds."""
     engine = RegressionGateEngine()
@@ -55,7 +56,9 @@ def test_regression_gate_fail_faithfulness():
     report = engine.evaluate_gate(scores)
     assert report.passed is False
     assert len(report.violations) == 1
-    assert "Faithfulness score (0.820) is below required minimum" in report.violations[0]
+    assert (
+        "Faithfulness score (0.820) is below required minimum" in report.violations[0]
+    )
     assert "BLOCKED" in report.summary_markdown
     assert "❌ VIOLATION" in report.summary_markdown
 
@@ -77,7 +80,9 @@ def test_regression_gate_fail_hallucination():
     report = engine.evaluate_gate(scores)
     assert report.passed is False
     assert len(report.violations) == 1
-    assert "Hallucination Index (0.180) exceeds maximum allowable" in report.violations[0]
+    assert (
+        "Hallucination Index (0.180) exceeds maximum allowable" in report.violations[0]
+    )
 
 
 def test_regression_gate_custom_thresholds():
@@ -104,6 +109,7 @@ def test_regression_gate_custom_thresholds():
 
 
 # ── 2. API Tests: Admin Regression Gate Endpoint ─────────────────────────────
+
 
 def test_admin_regression_gate_endpoint():
     """Verify POST /v1/admin/tenants/{tenantId}/eval/regression-gate endpoint."""

@@ -16,6 +16,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: PiiAnonymizer Token Redaction ───────────────────────────────
 
+
 def test_pii_anonymizer_redacts_tokens():
     """Verify SSNs, credit cards, emails, phone numbers, and custom regex are masked."""
     anonymizer = PiiAnonymizer()
@@ -39,6 +40,7 @@ def test_pii_anonymizer_redacts_tokens():
 
 
 # ── 2. Unit Test: HardPurgeService Document & Tenant Purge ───────────────────
+
 
 @pytest.mark.asyncio
 async def test_hard_purge_service():
@@ -70,15 +72,21 @@ async def test_hard_purge_service():
 
 # ── 3. Unit Test: RetentionWorker Expired Document Purge ─────────────────────
 
+
 @pytest.mark.asyncio
 async def test_retention_worker_scans_expired():
     """Verify retention worker identifies expired documents and triggers purge."""
     mock_purge_service = AsyncMock()
     mock_purge_service.hard_purge_document.return_value = {"document_purged": 1}
     mock_repo = AsyncMock()
-    mock_repo.get_expired_document_ids.return_value = [str(uuid.uuid4()), str(uuid.uuid4())]
+    mock_repo.get_expired_document_ids.return_value = [
+        str(uuid.uuid4()),
+        str(uuid.uuid4()),
+    ]
 
-    worker = RetentionWorker(purge_service=mock_purge_service, compliance_repo=mock_repo)
+    worker = RetentionWorker(
+        purge_service=mock_purge_service, compliance_repo=mock_repo
+    )
     tenant_id = str(uuid.uuid4())
 
     res = await worker.scan_and_purge_expired_documents(tenant_id, retention_days=30)
@@ -90,12 +98,22 @@ async def test_retention_worker_scans_expired():
 
 # ── 4. Integration Test: Compliance Admin API Endpoints ─────────────────────
 
-@patch("src.routers.admin.hard_purge_service.hard_purge_document", new_callable=AsyncMock)
-@patch("src.routers.admin.hard_purge_service.hard_purge_tenant_data", new_callable=AsyncMock)
-@patch("src.routers.admin.retention_worker.scan_and_purge_expired_documents", new_callable=AsyncMock)
+
+@patch(
+    "src.routers.admin.hard_purge_service.hard_purge_document", new_callable=AsyncMock
+)
+@patch(
+    "src.routers.admin.hard_purge_service.hard_purge_tenant_data",
+    new_callable=AsyncMock,
+)
+@patch(
+    "src.routers.admin.retention_worker.scan_and_purge_expired_documents",
+    new_callable=AsyncMock,
+)
 def test_admin_compliance_endpoints(mock_retention, mock_forget, mock_purge_doc):
     """Verify admin endpoints for hard purge, tenant forget, anonymization, and retention purge."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:

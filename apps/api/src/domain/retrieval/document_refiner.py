@@ -5,6 +5,7 @@ and strips noisy boilerplate, returning high-signal factual propositions.
 
 Hexagonal boundary rule: Pure domain logic. Zero external DB/framework imports.
 """
+
 import re
 
 from src.domain.abstractions.retrieval import SearchResult
@@ -53,7 +54,26 @@ def refine_document_content(query: str, content: str, max_sentences: int = 6) ->
 
     query_terms = set(re.findall(r"\w+", query.lower()))
     # Remove ultra-common stop words
-    query_terms -= {"the", "a", "an", "is", "in", "of", "and", "or", "to", "for", "with", "on", "at", "by", "what", "how", "why", "who"}
+    query_terms -= {
+        "the",
+        "a",
+        "an",
+        "is",
+        "in",
+        "of",
+        "and",
+        "or",
+        "to",
+        "for",
+        "with",
+        "on",
+        "at",
+        "by",
+        "what",
+        "how",
+        "why",
+        "who",
+    }
 
     if not query_terms:
         return " ".join(sentences[:max_sentences])
@@ -81,16 +101,22 @@ def refine_document_content(query: str, content: str, max_sentences: int = 6) ->
     return " ".join(refined_sentences)
 
 
-def refine_search_results(query: str, results: list[SearchResult], max_sentences_per_chunk: int = 5) -> list[SearchResult]:
+def refine_search_results(
+    query: str, results: list[SearchResult], max_sentences_per_chunk: int = 5
+) -> list[SearchResult]:
     """Refine all chunks in a SearchResult list, stripping noisy sentences."""
     if not results or not query.strip():
         return results
 
     refined: list[SearchResult] = []
     for res in results:
-        refined_text = refine_document_content(query, res.content, max_sentences=max_sentences_per_chunk)
+        refined_text = refine_document_content(
+            query, res.content, max_sentences=max_sentences_per_chunk
+        )
         meta = dict(res.metadata)
         meta["is_refined"] = True
-        refined.append(res.model_copy(update={"content": refined_text, "metadata": meta}))
+        refined.append(
+            res.model_copy(update={"content": refined_text, "metadata": meta})
+        )
 
     return refined

@@ -20,6 +20,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: SelfTuningEngine Calculations ──────────────────────────────
 
+
 def test_self_tuning_on_hallucination_spike():
     """Verify self-tuner raises rerank threshold and tightens RRF on faithfulness drop."""
     tuner = SelfTuningEngine()
@@ -36,8 +37,12 @@ def test_self_tuning_on_hallucination_spike():
 
     # Low faithfulness metrics (hallucination spike)
     metrics = [
-        QualityMetrics(context_precision=0.40, answer_relevance=0.70, faithfulness=0.45),
-        QualityMetrics(context_precision=0.50, answer_relevance=0.60, faithfulness=0.50),
+        QualityMetrics(
+            context_precision=0.40, answer_relevance=0.70, faithfulness=0.45
+        ),
+        QualityMetrics(
+            context_precision=0.50, answer_relevance=0.60, faithfulness=0.50
+        ),
     ]
 
     report = tuner.calculate_tuning(tenant_id, metrics, current_settings)
@@ -62,7 +67,9 @@ def test_self_tuning_on_low_precision():
 
     # Low precision metrics
     metrics = [
-        QualityMetrics(context_precision=0.20, answer_relevance=0.80, faithfulness=0.85),
+        QualityMetrics(
+            context_precision=0.20, answer_relevance=0.80, faithfulness=0.85
+        ),
     ]
 
     report = tuner.calculate_tuning(tenant_id, metrics, current_settings)
@@ -86,17 +93,22 @@ def test_self_tuning_safety_bounds():
 
     # Even with low precision and faithfulness, cannot breach minimum top_k or max threshold
     metrics = [
-        QualityMetrics(context_precision=0.10, answer_relevance=0.30, faithfulness=0.20),
+        QualityMetrics(
+            context_precision=0.10, answer_relevance=0.30, faithfulness=0.20
+        ),
     ]
 
     report = tuner.calculate_tuning(tenant_id, metrics, current_settings)
 
     assert report.recommended_settings["top_k"] >= tuner.MIN_TOP_K
-    assert report.recommended_settings["reranking_threshold"] <= tuner.MAX_RERANK_THRESHOLD
+    assert (
+        report.recommended_settings["reranking_threshold"] <= tuner.MAX_RERANK_THRESHOLD
+    )
     assert report.recommended_settings["rrf_k"] >= tuner.MIN_RRF_K
 
 
 # ── 2. Unit Test: tune_and_apply Hot-Reload ──────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_tune_and_apply_updates_config_service():
@@ -113,7 +125,9 @@ async def test_tune_and_apply_updates_config_service():
     mock_config_service.update_tenant_config = AsyncMock()
 
     metrics = [
-        QualityMetrics(context_precision=0.30, answer_relevance=0.50, faithfulness=0.40),
+        QualityMetrics(
+            context_precision=0.30, answer_relevance=0.50, faithfulness=0.40
+        ),
     ]
 
     report = await tuner.tune_and_apply(tenant_id, metrics, mock_config_service)
@@ -125,6 +139,7 @@ async def test_tune_and_apply_updates_config_service():
 
 
 # ── 3. Unit Test: OnlineHallucinationEvaluator Closed Loop ───────────────────
+
 
 @pytest.mark.asyncio
 async def test_evaluator_closed_loop_trigger():
@@ -141,7 +156,9 @@ async def test_evaluator_closed_loop_trigger():
     query = "What is the warranty period?"
     # Hallucinated answer with zero grounding in context
     answer = "Astronauts launch interplanetary spacecraft from orbital stations around Jupiter."
-    contexts = ["The domestic refrigerator includes a 12-month standard hardware warranty."]
+    contexts = [
+        "The domestic refrigerator includes a 12-month standard hardware warranty."
+    ]
 
     res = await evaluator.evaluate_inference(
         tenant_id=tenant_id,
@@ -157,6 +174,7 @@ async def test_evaluator_closed_loop_trigger():
 
 
 # ── 4. API Test: Admin Endpoints ─────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 @patch("src.container.container")
@@ -210,5 +228,3 @@ async def test_admin_self_tune_endpoint(mock_container):
     assert data["tenant_id"] == tenant_id
     assert "recommended_settings" in data
     assert "adjustments" in data
-
-

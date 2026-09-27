@@ -1,4 +1,5 @@
 """Unit and integration tests for Milestone 90 Universal Ecosystem Plugins."""
+
 import hashlib
 import hmac
 import io
@@ -24,22 +25,35 @@ def test_slack_signature_verification():
 
     # Compute authentic signature
     sig_basestring = f"v0:{current_time}:{body.decode('utf-8')}".encode()
-    computed_hash = hmac.new(secret.encode("utf-8"), sig_basestring, hashlib.sha256).hexdigest()
+    computed_hash = hmac.new(
+        secret.encode("utf-8"), sig_basestring, hashlib.sha256
+    ).hexdigest()
     valid_sig = f"v0={computed_hash}"
 
     # 1. Authentic request should pass
-    assert SlackService.verify_slack_signature(secret, current_time, valid_sig, body) is True
+    assert (
+        SlackService.verify_slack_signature(secret, current_time, valid_sig, body)
+        is True
+    )
 
     # 2. Tampered signature should fail
     tampered_sig = "v0=invalid_signature_hash_0000000000000"
-    assert SlackService.verify_slack_signature(secret, current_time, tampered_sig, body) is False
+    assert (
+        SlackService.verify_slack_signature(secret, current_time, tampered_sig, body)
+        is False
+    )
 
     # 3. Expired request (>300s old) should fail
     expired_time = str(int(time.time()) - 600)
-    assert SlackService.verify_slack_signature(secret, expired_time, valid_sig, body) is False
+    assert (
+        SlackService.verify_slack_signature(secret, expired_time, valid_sig, body)
+        is False
+    )
 
     # 4. Missing parameters should fail
-    assert SlackService.verify_slack_signature("", current_time, valid_sig, body) is False
+    assert (
+        SlackService.verify_slack_signature("", current_time, valid_sig, body) is False
+    )
     assert SlackService.verify_slack_signature(secret, None, valid_sig, body) is False
 
 
@@ -49,7 +63,11 @@ def test_slack_block_kit_response_composition():
     answer = "All production releases require CI/CD passing tests and code review."
     citations = [
         {"title": "Deployment SOP", "url": "https://wiki.corp/deploy", "score": 0.95},
-        {"title": "Security Guidelines", "url": "https://wiki.corp/security", "score": 0.88},
+        {
+            "title": "Security Guidelines",
+            "url": "https://wiki.corp/security",
+            "score": 0.88,
+        },
     ]
 
     response = SlackService.build_slack_block_response(
@@ -110,10 +128,25 @@ async def test_notion_connector_markdown_parsing():
     connector = NotionConnector()
 
     sample_blocks = [
-        {"type": "heading_1", "heading_1": {"rich_text": [{"plain_text": "Architecture Overview"}]}},
-        {"type": "paragraph", "paragraph": {"rich_text": [{"plain_text": "This is our primary stack."}]}},
-        {"type": "bulleted_list_item", "bulleted_list_item": {"rich_text": [{"plain_text": "FastAPI"}]}},
-        {"type": "code", "code": {"language": "python", "rich_text": [{"plain_text": "print('hello')"}]}},
+        {
+            "type": "heading_1",
+            "heading_1": {"rich_text": [{"plain_text": "Architecture Overview"}]},
+        },
+        {
+            "type": "paragraph",
+            "paragraph": {"rich_text": [{"plain_text": "This is our primary stack."}]},
+        },
+        {
+            "type": "bulleted_list_item",
+            "bulleted_list_item": {"rich_text": [{"plain_text": "FastAPI"}]},
+        },
+        {
+            "type": "code",
+            "code": {
+                "language": "python",
+                "rich_text": [{"plain_text": "print('hello')"}],
+            },
+        },
     ]
 
     md_output = "".join([connector._parse_block_to_markdown(b) for b in sample_blocks])
@@ -171,6 +204,12 @@ def test_hexagonal_architecture_integrations():
 
     for mod in (gd_mod, nt_mod, sl_mod):
         source = inspect.getsource(mod)
-        assert "from fastapi" not in source, f"{mod.__name__} violates Hexagonal boundary by importing FastAPI"
-        assert "from sqlalchemy" not in source, f"{mod.__name__} violates Hexagonal boundary by importing SQLAlchemy"
-        assert "from src.routers" not in source, f"{mod.__name__} violates Hexagonal boundary by importing routers"
+        assert "from fastapi" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing FastAPI"
+        )
+        assert "from sqlalchemy" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing SQLAlchemy"
+        )
+        assert "from src.routers" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing routers"
+        )

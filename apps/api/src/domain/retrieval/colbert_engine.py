@@ -4,6 +4,7 @@ Hexagonal boundary rule: Pure mathematical domain logic.
 Only standard library modules and vectorized tensor mathematical operations allowed.
 Zero database, framework, or HTTP imports.
 """
+
 import hashlib
 import math
 import re
@@ -79,7 +80,9 @@ def compute_colbert_maxsim(query_tokens: list[str], doc_tokens: list[str]) -> fl
         return 0.0
 
     doc_token_set = set(doc_tokens)
-    doc_vectors = [_token_to_vector(d) for d in doc_tokens[:256]]  # Cap at 256 tokens for speed
+    doc_vectors = [
+        _token_to_vector(d) for d in doc_tokens[:256]
+    ]  # Cap at 256 tokens for speed
 
     query_scores: list[float] = []
 
@@ -109,7 +112,9 @@ def compute_colbert_maxsim(query_tokens: list[str], doc_tokens: list[str]) -> fl
 class BatchColbertMaxSimEngine:
     """Hardware-aware batch ColBERT MaxSim late-interaction tensor reranker."""
 
-    def __init__(self, dim: int = 128, max_query_len: int = 32, max_doc_len: int = 256) -> None:
+    def __init__(
+        self, dim: int = 128, max_query_len: int = 32, max_doc_len: int = 256
+    ) -> None:
         self.dim = dim
         self.max_query_len = max_query_len
         self.max_doc_len = max_doc_len

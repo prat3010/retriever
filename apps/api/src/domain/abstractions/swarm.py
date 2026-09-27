@@ -128,12 +128,19 @@ class SwarmNode(BaseModel):
     state: SwarmNodeState = Field(default=SwarmNodeState.HEALTHY)
     address: str = Field(default="127.0.0.1", description="IP address or hostname")
     port: int = Field(default=7946, description="Gossip listener port")
-    incarnation: int = Field(default=0, description="Monotonic incarnation number for refuting suspect rumors")
+    incarnation: int = Field(
+        default=0,
+        description="Monotonic incarnation number for refuting suspect rumors",
+    )
     vector_clock: VectorClock = Field(default_factory=VectorClock)
-    rtt_ms: float = Field(default=5.0, description="Observed round-trip ping latency in milliseconds")
+    rtt_ms: float = Field(
+        default=5.0, description="Observed round-trip ping latency in milliseconds"
+    )
     last_heartbeat_at: datetime = Field(default_factory=_utc_now)
     last_state_change_at: datetime = Field(default_factory=_utc_now)
-    suspect_by_node_id: str | None = Field(default=None, description="Node that originated suspicion")
+    suspect_by_node_id: str | None = Field(
+        default=None, description="Node that originated suspicion"
+    )
     meta_data: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -143,7 +150,9 @@ class GossipMessage(BaseModel):
     message_id: str = Field(..., description="Unique message UUID")
     msg_type: GossipMessageType
     sender_id: str
-    target_id: str | None = Field(default=None, description="Target peer if direct or ping-req; None if broadcast")
+    target_id: str | None = Field(
+        default=None, description="Target peer if direct or ping-req; None if broadcast"
+    )
     tenant_id: str
     incarnation: int = Field(default=0)
     vector_clock: VectorClock = Field(default_factory=VectorClock)

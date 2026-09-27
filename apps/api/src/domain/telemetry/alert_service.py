@@ -68,8 +68,16 @@ class AlertService(BaseAlertService):
                     "description": alert.description,
                     "color": color,
                     "fields": [
-                        {"name": "Tenant ID", "value": f"`{alert.tenant_id}`", "inline": True},
-                        {"name": "Trigger Rule", "value": f"`{alert.rule_name}`", "inline": True},
+                        {
+                            "name": "Tenant ID",
+                            "value": f"`{alert.tenant_id}`",
+                            "inline": True,
+                        },
+                        {
+                            "name": "Trigger Rule",
+                            "value": f"`{alert.rule_name}`",
+                            "inline": True,
+                        },
                     ],
                     "footer": {"text": f"Retriever SLA Engine • {alert.timestamp}"},
                 }
@@ -99,7 +107,10 @@ class AlertService(BaseAlertService):
     ) -> list[AlertPayload]:
         """Evaluate real-time metrics and construct incident alerts."""
         alerts: list[AlertPayload] = []
-        rules = set(enabled_rules or ["hallucination_spike", "token_quota_threshold", "latency_spike"])
+        rules = set(
+            enabled_rules
+            or ["hallucination_spike", "token_quota_threshold", "latency_spike"]
+        )
         now_str = datetime.now(UTC).isoformat()
 
         # Rule 1: Hallucination Spike (> 30%)
@@ -126,7 +137,9 @@ class AlertService(BaseAlertService):
 
         # Rule 2: Token Quota Threshold (>= 90% or >= 100%)
         if "token_quota_threshold" in rules and token_quota_max > 0:
-            usage_pct = round((telemetry.monthly_tokens_used / token_quota_max) * 100, 1)
+            usage_pct = round(
+                (telemetry.monthly_tokens_used / token_quota_max) * 100, 1
+            )
             if telemetry.monthly_tokens_used >= token_quota_max:
                 alerts.append(
                     AlertPayload(
@@ -199,7 +212,9 @@ class AlertService(BaseAlertService):
     ) -> list[AlertPayload]:
         """Evaluate telemetry rules, filter via debounce, and dispatch alerts."""
         cfg = config or TenantAlertConfig(tenant_id=tenant_id)
-        raw_alerts = self.evaluate_rules(tenant_id, telemetry, token_quota_max, cfg.enabled_rules)
+        raw_alerts = self.evaluate_rules(
+            tenant_id, telemetry, token_quota_max, cfg.enabled_rules
+        )
 
         dispatched: list[AlertPayload] = []
         now = time.monotonic()
@@ -223,11 +238,17 @@ class AlertService(BaseAlertService):
                 if self.http_client is not None:
                     try:
                         if cfg.slack_webhook_url:
-                            await self.http_client.post(cfg.slack_webhook_url, json=slack_body)
+                            await self.http_client.post(
+                                cfg.slack_webhook_url, json=slack_body
+                            )
                         if cfg.discord_webhook_url:
-                            await self.http_client.post(cfg.discord_webhook_url, json=discord_body)
+                            await self.http_client.post(
+                                cfg.discord_webhook_url, json=discord_body
+                            )
                         if cfg.custom_webhook_url:
-                            await self.http_client.post(cfg.custom_webhook_url, json=custom_body)
+                            await self.http_client.post(
+                                cfg.custom_webhook_url, json=custom_body
+                            )
                     except Exception:
                         pass
 
@@ -270,21 +291,29 @@ class AlertService(BaseAlertService):
         return {
             "status": "dispatched" if delivered else "failed",
             "channel": channel,
-            "webhook_url": webhook_url[:35] + "..." if len(webhook_url) > 35 else webhook_url,
+            "webhook_url": webhook_url[:35] + "..."
+            if len(webhook_url) > 35
+            else webhook_url,
             "formatted_payload": payload,
             "timestamp": now_str,
         }
 
-    def get_alert_history(self, tenant_id: str | None = None, limit: int = 50) -> list[AlertPayload]:
+    def get_alert_history(
+        self, tenant_id: str | None = None, limit: int = 50
+    ) -> list[AlertPayload]:
         """Retrieve recent alert history filtered optionally by tenant."""
         if tenant_id:
-            return [a for a in reversed(self._alert_history) if a.tenant_id == tenant_id][:limit]
+            return [
+                a for a in reversed(self._alert_history) if a.tenant_id == tenant_id
+            ][:limit]
         return list(reversed(self._alert_history))[:limit]
 
     async def dispatch_anomaly_alert(self, anomaly_score: Any) -> AlertPayload:
         """Construct and record/dispatch a security incident alert for an AnomalyScore."""
         now_str = datetime.now(UTC).isoformat()
-        factors_str = "\n• " + "\n• ".join(getattr(anomaly_score, "contributing_factors", [])[:3])
+        factors_str = "\n• " + "\n• ".join(
+            getattr(anomaly_score, "contributing_factors", [])[:3]
+        )
         alert = AlertPayload(
             alert_id=f"sec_{uuid.uuid4().hex[:12]}",
             tenant_id=str(getattr(anomaly_score, "tenant_id", "unknown")),
@@ -300,11 +329,12 @@ class AlertService(BaseAlertService):
             metrics={
                 "anomaly_score": getattr(anomaly_score, "anomaly_score", 0.0),
                 "risk_level": getattr(anomaly_score, "risk_level", "HIGH"),
-                "algorithm_used": getattr(anomaly_score, "algorithm_used", "isolation_forest"),
+                "algorithm_used": getattr(
+                    anomaly_score, "algorithm_used", "isolation_forest"
+                ),
                 **(getattr(anomaly_score, "features", {}) or {}),
             },
             timestamp=now_str,
         )
         self._alert_history.append(alert)
         return alert
-

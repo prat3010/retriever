@@ -21,7 +21,10 @@ def test_sparse_vectorizer_bm25_scoring():
     engine = SublinearSparseEngine(sublinear_tf=True)
 
     docs = [
-        ("doc-1", "FastAPI microservices architecture with pgvector similarity search."),
+        (
+            "doc-1",
+            "FastAPI microservices architecture with pgvector similarity search.",
+        ),
         ("doc-2", "Commercial legal escrow contracts and milestone deliverables SOW."),
         ("doc-3", "PostgreSQL database indexing and sublinear BM25 ranking algorithm."),
     ]

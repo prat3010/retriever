@@ -141,7 +141,9 @@ async def test_search_skips_self_query_when_disabled() -> None:
     service._fuse_results = MagicMock(return_value=[])
     service._determine_strategy = MagicMock(return_value="vector_only")
 
-    query = SearchQuery(query="invoices from 2025", tenant_id="t1", enable_self_query=False)
+    query = SearchQuery(
+        query="invoices from 2025", tenant_id="t1", enable_self_query=False
+    )
     await service.search(query)
 
     mock_self_query.parse_query.assert_not_called()
@@ -160,7 +162,9 @@ async def test_search_skips_when_no_provider() -> None:
     service._fuse_results = MagicMock(return_value=[])
     service._determine_strategy = MagicMock(return_value="vector_only")
 
-    query = SearchQuery(query="invoices from 2025", tenant_id="t1", enable_self_query=True)
+    query = SearchQuery(
+        query="invoices from 2025", tenant_id="t1", enable_self_query=True
+    )
     await service.search(query)
 
     # No error thrown — gracefully skips

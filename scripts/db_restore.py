@@ -35,7 +35,9 @@ logger = logging.getLogger("db_restore")
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Restore an encrypted cloud database snapshot.")
+    parser = argparse.ArgumentParser(
+        description="Restore an encrypted cloud database snapshot."
+    )
     parser.add_argument(
         "--snapshot",
         type=str,
@@ -81,7 +83,9 @@ async def main() -> None:
         print(f"✅ RESTORE STATUS: {res.status.upper()}")
         print("=" * 60)
         print(f"Snapshot ID     : {res.snapshot_id}")
-        print(f"Tables Restored : {len(res.tables_restored)} ({', '.join(res.tables_restored)})")
+        print(
+            f"Tables Restored : {len(res.tables_restored)} ({', '.join(res.tables_restored)})"
+        )
         print(f"Total Records   : {res.total_rows_restored:,}")
         print(f"Duration        : {res.duration_seconds}s")
         print(f"Details         : {res.message}")

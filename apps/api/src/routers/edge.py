@@ -52,15 +52,25 @@ tenant_router = APIRouter(
 class RegisterEdgeNodeRequest(BaseModel):
     """Payload to register an edge device or update its liveness heartbeat."""
 
-    node_id: str = Field(..., min_length=2, max_length=128, description="Unique client machine/device ID")
-    device_name: str = Field(..., min_length=1, max_length=255, description="Human-readable node alias")
-    platform: str = Field(default="darwin_arm64", description="OS / architecture target")
+    node_id: str = Field(
+        ..., min_length=2, max_length=128, description="Unique client machine/device ID"
+    )
+    device_name: str = Field(
+        ..., min_length=1, max_length=255, description="Human-readable node alias"
+    )
+    platform: str = Field(
+        default="darwin_arm64", description="OS / architecture target"
+    )
     tier: OfflineExecutionTier = Field(
         default=OfflineExecutionTier.HYBRID_CACHE,
         description="Local edge capability tier",
     )
-    client_version: str = Field(default="0.83.0", description="Retriever edge client SDK version")
-    hardware_specs: dict[str, Any] = Field(default_factory=dict, description="RAM, CPU, vector storage capacity")
+    client_version: str = Field(
+        default="0.83.0", description="Retriever edge client SDK version"
+    )
+    hardware_specs: dict[str, Any] = Field(
+        default_factory=dict, description="RAM, CPU, vector storage capacity"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +118,9 @@ async def get_edge_overview() -> dict[str, Any]:
                     }
                 )
 
-            res_ckpt = await session.execute(select(func.count(EdgeSyncCheckpointDb.checkpoint_id)))
+            res_ckpt = await session.execute(
+                select(func.count(EdgeSyncCheckpointDb.checkpoint_id))
+            )
             ckpt_count = res_ckpt.scalar() or 0
 
         battery = container.battery_service.get_battery("sovereign_edge_sync")
@@ -149,7 +161,11 @@ async def list_tenant_edge_nodes(tenantId: str) -> list[EdgeNodeMetadata]:
     now = datetime.now(UTC)
 
     async with tenant_session(tenantId) as session:
-        stmt = select(EdgeNodeDb).where(EdgeNodeDb.tenant_id == t_uuid).order_by(EdgeNodeDb.last_heartbeat_at.desc())
+        stmt = (
+            select(EdgeNodeDb)
+            .where(EdgeNodeDb.tenant_id == t_uuid)
+            .order_by(EdgeNodeDb.last_heartbeat_at.desc())
+        )
         res = await session.execute(stmt)
         records = list(res.scalars().all())
 
@@ -165,19 +181,25 @@ async def list_tenant_edge_nodes(tenantId: str) -> list[EdgeNodeMetadata]:
                     tenant_id=str(r.tenant_id),
                     device_name=r.device_name,
                     platform=r.platform,
-                    status=EdgeNodeStatus.ONLINE if is_active else EdgeNodeStatus.OFFLINE,
+                    status=EdgeNodeStatus.ONLINE
+                    if is_active
+                    else EdgeNodeStatus.OFFLINE,
                     tier=tier_val,
                     last_synced_seq=r.last_synced_seq,
                     last_heartbeat_at=r.last_heartbeat_at.isoformat(),
                     vector_dimension=(r.meta_data or {}).get("vector_dimension", 768),
-                    capabilities=(r.meta_data or {}).get("capabilities", ["fts5", "vector_blob"]),
+                    capabilities=(r.meta_data or {}).get(
+                        "capabilities", ["fts5", "vector_blob"]
+                    ),
                 )
             )
         return results
 
 
 @tenant_router.post("/nodes/register", response_model=EdgeNodeMetadata)
-async def register_edge_node(tenantId: str, payload: RegisterEdgeNodeRequest) -> EdgeNodeMetadata:
+async def register_edge_node(
+    tenantId: str, payload: RegisterEdgeNodeRequest
+) -> EdgeNodeMetadata:
     """Register or refresh heartbeat for an edge node device."""
     t_uuid = uuid.UUID(tenantId)
     now = datetime.now(UTC)
@@ -244,9 +266,15 @@ async def register_edge_node(tenantId: str, payload: RegisterEdgeNodeRequest) ->
 @tenant_router.get("/delta", response_model=EdgeSyncDelta)
 async def get_edge_delta(
     tenantId: str,
-    since_seq: int = Query(default=0, ge=0, description="Highest sequence number acknowledged by edge"),
-    limit: int = Query(default=1000, ge=1, le=5000, description="Maximum chunks per batch"),
-    node_id: str | None = Query(default=None, description="Optional requesting node ID to update checkpoint"),
+    since_seq: int = Query(
+        default=0, ge=0, description="Highest sequence number acknowledged by edge"
+    ),
+    limit: int = Query(
+        default=1000, ge=1, le=5000, description="Maximum chunks per batch"
+    ),
+    node_id: str | None = Query(
+        default=None, description="Optional requesting node ID to update checkpoint"
+    ),
 ) -> EdgeSyncDelta:
     """Fetch sequence delta changes since given sequence number for tenant."""
     delta = await container.edge_sync_adapter.get_delta_for_tenant(
@@ -261,7 +289,9 @@ async def get_edge_delta(
             async with tenant_session(tenantId) as session:
                 node = await session.get(EdgeNodeDb, node_id)
                 if node and node.tenant_id == t_uuid:
-                    node.last_synced_seq = max(node.last_synced_seq, delta.high_watermark_seq)
+                    node.last_synced_seq = max(
+                        node.last_synced_seq, delta.high_watermark_seq
+                    )
                     node.last_heartbeat_at = datetime.now(UTC)
 
                 ckpt = EdgeSyncCheckpointDb(
@@ -281,11 +311,17 @@ async def get_edge_delta(
 @tenant_router.post("/bundle")
 async def generate_edge_bundle(
     tenantId: str,
-    download: bool = Query(default=False, description="Stream .sqlite binary file directly if true"),
+    download: bool = Query(
+        default=False, description="Stream .sqlite binary file directly if true"
+    ),
 ) -> Any:
     """Generate standalone self-contained SQLite edge database bundle."""
     try:
-        manifest: EdgeBundleManifest = await container.edge_sync_adapter.create_standalone_bundle(tenant_id=tenantId)
+        manifest: EdgeBundleManifest = (
+            await container.edge_sync_adapter.create_standalone_bundle(
+                tenant_id=tenantId
+            )
+        )
         if download:
             headers = {
                 "X-Manifest-Checksum": manifest.checksum_sha256,
@@ -302,7 +338,10 @@ async def generate_edge_bundle(
             )
         return manifest.model_dump()
     except Exception as e:
-        logger.error(f"Failed to generate SQLite edge bundle for tenant {tenantId}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to generate SQLite edge bundle for tenant {tenantId}: {e}",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Edge bundle compilation failed: {e}",
@@ -321,7 +360,10 @@ async def reconcile_edge_mutations(
             mutations=mutations,
         )
     except Exception as e:
-        logger.error(f"Failed to reconcile edge mutations for tenant {tenantId}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to reconcile edge mutations for tenant {tenantId}: {e}",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Mutation reconciliation failed: {e}",
@@ -335,14 +377,18 @@ async def simulated_edge_search(
 ) -> EdgeSearchResponse:
     """Simulate in-process Sovereign Edge SQLite search with FTS5 BM25 and vector fusion."""
     try:
-        delta = await container.edge_sync_adapter.get_delta_for_tenant(tenant_id=tenantId, since_seq=0, limit=2000)
+        delta = await container.edge_sync_adapter.get_delta_for_tenant(
+            tenant_id=tenantId, since_seq=0, limit=2000
+        )
         engine = container.sqlite_edge_engine
         engine.initialize_schema()
         if delta.chunks:
             engine.apply_delta(delta)
         return engine.search(request)
     except Exception as e:
-        logger.error(f"Simulated edge search failed for tenant {tenantId}: {e}", exc_info=True)
+        logger.error(
+            f"Simulated edge search failed for tenant {tenantId}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Edge search execution failed: {e}",

@@ -34,15 +34,36 @@ def zkp_adapter() -> ZkpAttestationAdapter:
 def sample_chunks() -> list[dict]:
     """Sample chunk documents for Merkle testing."""
     return [
-        {"chunk_id": "chk_0", "chunk_index": 0, "text": "Section 1: Enterprise SLA Guarantees 99.99% uptime."},
-        {"chunk_id": "chk_1", "chunk_index": 1, "text": "Section 2: Data residency restricted to EU-Central-1."},
-        {"chunk_id": "chk_2", "chunk_index": 2, "text": "Section 3: Zero-Knowledge proof attestation verifies grounding."},
-        {"chunk_id": "chk_3", "chunk_index": 3, "text": "Section 4: Penalties for breach shall not exceed 10x monthly fee."},
-        {"chunk_id": "chk_4", "chunk_index": 4, "text": "Section 5: Arbitration venue is Zurich, Switzerland."},
+        {
+            "chunk_id": "chk_0",
+            "chunk_index": 0,
+            "text": "Section 1: Enterprise SLA Guarantees 99.99% uptime.",
+        },
+        {
+            "chunk_id": "chk_1",
+            "chunk_index": 1,
+            "text": "Section 2: Data residency restricted to EU-Central-1.",
+        },
+        {
+            "chunk_id": "chk_2",
+            "chunk_index": 2,
+            "text": "Section 3: Zero-Knowledge proof attestation verifies grounding.",
+        },
+        {
+            "chunk_id": "chk_3",
+            "chunk_index": 3,
+            "text": "Section 4: Penalties for breach shall not exceed 10x monthly fee.",
+        },
+        {
+            "chunk_id": "chk_4",
+            "chunk_index": 4,
+            "text": "Section 5: Arbitration venue is Zurich, Switzerland.",
+        },
     ]
 
 
 # --- Unit Tests: Merkle Tree & Inclusion Proofs ---
+
 
 def test_empty_document_merkle_tree(zkp_adapter: ZkpAttestationAdapter):
     """Test Merkle tree creation with empty chunk list."""
@@ -54,63 +75,108 @@ def test_empty_document_merkle_tree(zkp_adapter: ZkpAttestationAdapter):
 
 def test_single_chunk_merkle_tree(zkp_adapter: ZkpAttestationAdapter):
     """Test Merkle tree creation with single chunk."""
-    chunks = [{"chunk_id": "chk_single", "chunk_index": 0, "text": "Sole clause of contract."}]
+    chunks = [
+        {"chunk_id": "chk_single", "chunk_index": 0, "text": "Sole clause of contract."}
+    ]
     doc_root = zkp_adapter.compute_document_merkle_tree("tn_test", "doc_single", chunks)
     assert doc_root.chunk_count == 1
     assert doc_root.tree_depth == 0
 
-    proof = zkp_adapter.generate_chunk_inclusion_proof("tn_test", "doc_single", "chk_single", chunks)
+    proof = zkp_adapter.generate_chunk_inclusion_proof(
+        "tn_test", "doc_single", "chk_single", chunks
+    )
     assert proof.leaf_hash == doc_root.root_hash
-    assert zkp_adapter.verify_merkle_proof(proof.leaf_hash, proof.merkle_path, doc_root.root_hash) is True
+    assert (
+        zkp_adapter.verify_merkle_proof(
+            proof.leaf_hash, proof.merkle_path, doc_root.root_hash
+        )
+        is True
+    )
 
 
-def test_odd_chunk_count_padding(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+def test_odd_chunk_count_padding(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test that odd chunk count (5 chunks) correctly balances the tree with duplicate leaf padding."""
-    doc_root = zkp_adapter.compute_document_merkle_tree("tn_test", "doc_5", sample_chunks)
+    doc_root = zkp_adapter.compute_document_merkle_tree(
+        "tn_test", "doc_5", sample_chunks
+    )
     assert doc_root.chunk_count == 5
     # 5 leaves -> padded to 6, level 1 has 3 leaves -> padded to 4, level 2 has 2 -> level 3 root
     assert doc_root.tree_depth >= 3
 
     # All 5 chunks must have valid inclusion proofs
     for chunk in sample_chunks:
-        proof = zkp_adapter.generate_chunk_inclusion_proof("tn_test", "doc_5", chunk["chunk_id"], sample_chunks)
+        proof = zkp_adapter.generate_chunk_inclusion_proof(
+            "tn_test", "doc_5", chunk["chunk_id"], sample_chunks
+        )
         assert proof.document_root == doc_root.root_hash
-        valid = zkp_adapter.verify_merkle_proof(proof.leaf_hash, proof.merkle_path, doc_root.root_hash)
+        valid = zkp_adapter.verify_merkle_proof(
+            proof.leaf_hash, proof.merkle_path, doc_root.root_hash
+        )
         assert valid is True, f"Inclusion proof failed for chunk {chunk['chunk_id']}"
 
 
-def test_merkle_proof_tamper_detection(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+def test_merkle_proof_tamper_detection(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test that altered leaf hashes, sibling hashes, or directions fail verification."""
-    doc_root = zkp_adapter.compute_document_merkle_tree("tn_test", "doc_tamper", sample_chunks)
-    proof = zkp_adapter.generate_chunk_inclusion_proof("tn_test", "doc_tamper", "chk_2", sample_chunks)
+    doc_root = zkp_adapter.compute_document_merkle_tree(
+        "tn_test", "doc_tamper", sample_chunks
+    )
+    proof = zkp_adapter.generate_chunk_inclusion_proof(
+        "tn_test", "doc_tamper", "chk_2", sample_chunks
+    )
 
     # 1. Tampered leaf hash
     tampered_leaf = "f" * 64
-    assert zkp_adapter.verify_merkle_proof(tampered_leaf, proof.merkle_path, doc_root.root_hash) is False
+    assert (
+        zkp_adapter.verify_merkle_proof(
+            tampered_leaf, proof.merkle_path, doc_root.root_hash
+        )
+        is False
+    )
 
     # 2. Tampered sibling hash in path
     tampered_steps = [
         MerkleProofStep(sibling_hash="a" * 64, direction=step.direction)
-        if i == 0 else step
+        if i == 0
+        else step
         for i, step in enumerate(proof.merkle_path)
     ]
-    assert zkp_adapter.verify_merkle_proof(proof.leaf_hash, tampered_steps, doc_root.root_hash) is False
+    assert (
+        zkp_adapter.verify_merkle_proof(
+            proof.leaf_hash, tampered_steps, doc_root.root_hash
+        )
+        is False
+    )
 
     # 3. Inverted direction
     inverted_steps = [
         MerkleProofStep(
             sibling_hash=step.sibling_hash,
-            direction=MerkleDirection.LEFT if step.direction == MerkleDirection.RIGHT else MerkleDirection.RIGHT,
+            direction=MerkleDirection.LEFT
+            if step.direction == MerkleDirection.RIGHT
+            else MerkleDirection.RIGHT,
         )
-        if i == 0 else step
+        if i == 0
+        else step
         for i, step in enumerate(proof.merkle_path)
     ]
-    assert zkp_adapter.verify_merkle_proof(proof.leaf_hash, inverted_steps, doc_root.root_hash) is False
+    assert (
+        zkp_adapter.verify_merkle_proof(
+            proof.leaf_hash, inverted_steps, doc_root.root_hash
+        )
+        is False
+    )
 
 
 # --- Unit Tests: Grounding Certificate Issuance & Verification ---
 
-def test_grounding_certificate_lifecycle(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+
+def test_grounding_certificate_lifecycle(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test complete issuance, signing, and verification lifecycle of Grounding Certificates."""
     query = "What is the guaranteed platform uptime?"
     response = "The platform guarantees 99.99% uptime according to Section 1."
@@ -147,7 +213,9 @@ def test_grounding_certificate_lifecycle(zkp_adapter: ZkpAttestationAdapter, sam
     assert result.response_match is True
 
 
-def test_grounding_certificate_tampered_response(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+def test_grounding_certificate_tampered_response(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test that modifying the AI response causes RESPONSE_MISMATCH."""
     query = "What is data residency?"
     response = "Data is stored in EU-Central-1."
@@ -161,12 +229,16 @@ def test_grounding_certificate_tampered_response(zkp_adapter: ZkpAttestationAdap
     )
 
     tampered_response = "Data is stored in US-East-1."
-    result = zkp_adapter.verify_grounding_certificate(certificate=cert, response=tampered_response)
+    result = zkp_adapter.verify_grounding_certificate(
+        certificate=cert, response=tampered_response
+    )
     assert result.is_valid is False
     assert result.status == VerificationStatus.RESPONSE_MISMATCH
 
 
-def test_grounding_certificate_tampered_signature(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+def test_grounding_certificate_tampered_signature(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test that a forged digital signature fails verification."""
     cert = zkp_adapter.issue_grounding_certificate(
         tenant_id="tn_compliance_01",
@@ -184,7 +256,9 @@ def test_grounding_certificate_tampered_signature(zkp_adapter: ZkpAttestationAda
     assert result.status == VerificationStatus.SIGNATURE_INVALID
 
 
-def test_grounding_certificate_expired(zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]):
+def test_grounding_certificate_expired(
+    zkp_adapter: ZkpAttestationAdapter, sample_chunks: list[dict]
+):
     """Test that expired certificates are rejected."""
     cert = zkp_adapter.issue_grounding_certificate(
         tenant_id="tn_compliance_01",
@@ -203,6 +277,7 @@ def test_grounding_certificate_expired(zkp_adapter: ZkpAttestationAdapter, sampl
 
 
 # --- Integration Tests: FastAPI Endpoints ---
+
 
 @pytest.mark.asyncio
 async def test_fastapi_zkp_endpoints(sample_chunks: list[dict]):
@@ -291,6 +366,9 @@ def test_battery_33_registration():
     battery = service.get_battery("zkp_vector_attestation")
     assert battery is not None
     assert battery.id == "zkp_vector_attestation"
-    assert battery.name == "Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Document Grounding"
+    assert (
+        battery.name
+        == "Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Document Grounding"
+    )
     assert battery.milestone == "M118 (v1.8.0-alpha1)"
     assert battery.health_check_endpoint == "/v1/zkp/health"

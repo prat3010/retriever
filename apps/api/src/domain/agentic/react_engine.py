@@ -102,7 +102,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
 
         # Retrieve available tools
         available_tools = self.tools.list_tools(cfg.allowed_tools)
-        tools_schema_str = json.dumps([t.model_dump() for t in available_tools], indent=2)
+        tools_schema_str = json.dumps(
+            [t.model_dump() for t in available_tools], indent=2
+        )
         system_msg = REACT_SYSTEM_PROMPT.format(tools_schema=tools_schema_str)
 
         # Experience Distillation: retrieve relevant past memories (M108)
@@ -116,7 +118,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
 
         messages = [
             ChatMessage(role="system", content=system_msg),
-            ChatMessage(role="user", content=f"Tenant Workspace: {tenant_id}\n\nTask: {query}"),
+            ChatMessage(
+                role="user", content=f"Tenant Workspace: {tenant_id}\n\nTask: {query}"
+            ),
         ]
 
         # Anti-loop signature tracker: signature -> count
@@ -150,7 +154,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
                     event_type=ReActEventType.ERROR,
                     step_index=step_idx,
                     state=ReActState.ERROR,
-                    data={"error": f"Execution timed out after {elapsed_sec:.1f}s. Formulating partial response."},
+                    data={
+                        "error": f"Execution timed out after {elapsed_sec:.1f}s. Formulating partial response."
+                    },
                 )
                 break
 
@@ -167,8 +173,16 @@ class ReActExecutionEngine(ReActLoopProtocol):
                     current_tier = ModelTier.FRONTIER
                     escalated = True
                     escalation_reason = esc_reason
-                    from_mod = getattr(self.orchestrator, "get_model_for_tier", lambda t: "gemini-2.5-flash")(ModelTier.MID_TIER)
-                    to_mod = getattr(self.orchestrator, "get_model_for_tier", lambda t: "claude-3-5-sonnet")(ModelTier.FRONTIER)
+                    from_mod = getattr(
+                        self.orchestrator,
+                        "get_model_for_tier",
+                        lambda t: "gemini-2.5-flash",
+                    )(ModelTier.MID_TIER)
+                    to_mod = getattr(
+                        self.orchestrator,
+                        "get_model_for_tier",
+                        lambda t: "claude-3-5-sonnet",
+                    )(ModelTier.FRONTIER)
                     yield ReActEvent(
                         event_id=f"ev_{uuid4().hex[:8]}",
                         event_type=ReActEventType.MODEL_ESCALATION,
@@ -177,7 +191,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
                         data={
                             "from_model": from_mod,
                             "to_model": to_mod,
-                            "reason": esc_reason.value if hasattr(esc_reason, "value") else str(esc_reason),
+                            "reason": esc_reason.value
+                            if hasattr(esc_reason, "value")
+                            else str(esc_reason),
                             "details": esc_details,
                         },
                     )
@@ -213,7 +229,8 @@ class ReActExecutionEngine(ReActLoopProtocol):
                 raw_text = inference_resp.content.strip()
                 toks = (
                     inference_resp.usage.total_tokens
-                    if getattr(inference_resp, "usage", None) and inference_resp.usage.total_tokens
+                    if getattr(inference_resp, "usage", None)
+                    and inference_resp.usage.total_tokens
                     else (len(raw_text.split()) * 2 + 50)
                 )
                 if current_tier == ModelTier.MID_TIER:
@@ -221,7 +238,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
                 else:
                     frontier_tokens += toks
             except Exception as llm_err:
-                logger.error(f"[ReActEngine] LLM generation failure: {llm_err}", exc_info=True)
+                logger.error(
+                    f"[ReActEngine] LLM generation failure: {llm_err}", exc_info=True
+                )
                 yield ReActEvent(
                     event_id=f"ev_{uuid4().hex[:8]}",
                     event_type=ReActEventType.ERROR,
@@ -394,7 +413,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
             messages.append(
                 ChatMessage(
                     role="assistant",
-                    content=json.dumps({"thought": thought, "tool_calls": tool_calls_raw}),
+                    content=json.dumps(
+                        {"thought": thought, "tool_calls": tool_calls_raw}
+                    ),
                 )
             )
             messages.append(
@@ -405,12 +426,18 @@ class ReActExecutionEngine(ReActLoopProtocol):
             )
 
             # Record turn for cognitive memory consolidation (M108)
-            turn_summaries.append({
-                "step_index": step_idx,
-                "thought": thought,
-                "tools_called": [c.get("tool_name", "") for c in tool_calls_raw if isinstance(c, dict)],
-                "observation": json.dumps(observations, default=str),
-            })
+            turn_summaries.append(
+                {
+                    "step_index": step_idx,
+                    "thought": thought,
+                    "tools_called": [
+                        c.get("tool_name", "")
+                        for c in tool_calls_raw
+                        if isinstance(c, dict)
+                    ],
+                    "observation": json.dumps(observations, default=str),
+                }
+            )
 
         # Fallback if loop ended without explicit final_answer
         if not final_answer:
@@ -424,8 +451,12 @@ class ReActExecutionEngine(ReActLoopProtocol):
 
         # Record economic transaction (M105)
         if self.orchestrator:
-            from_mod = getattr(self.orchestrator, "get_model_for_tier", lambda t: "gemini-2.5-flash")(ModelTier.MID_TIER)
-            to_mod = getattr(self.orchestrator, "get_model_for_tier", lambda t: "claude-3-5-sonnet")(ModelTier.FRONTIER)
+            from_mod = getattr(
+                self.orchestrator, "get_model_for_tier", lambda t: "gemini-2.5-flash"
+            )(ModelTier.MID_TIER)
+            to_mod = getattr(
+                self.orchestrator, "get_model_for_tier", lambda t: "claude-3-5-sonnet"
+            )(ModelTier.FRONTIER)
             self.orchestrator.record_transaction(
                 tenant_id=tenant_id,
                 thread_id=t_id,
@@ -451,7 +482,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
                 )
                 await self.memory_engine.consolidate_trace(tenant_id, consolidation_req)
             except Exception as cons_err:
-                logger.debug("Cognitive memory trace consolidation skipped: %s", cons_err)
+                logger.debug(
+                    "Cognitive memory trace consolidation skipped: %s", cons_err
+                )
 
         yield ReActEvent(
             event_id=f"ev_{uuid4().hex[:8]}",
@@ -483,7 +516,9 @@ class ReActExecutionEngine(ReActLoopProtocol):
         self_healing_count = 0
         total_time_ms = 0.0
 
-        async for ev in self.run_loop_stream(tenant_id, query, config=config, thread_id=t_id):
+        async for ev in self.run_loop_stream(
+            tenant_id, query, config=config, thread_id=t_id
+        ):
             events.append(ev)
             if ev.event_type == ReActEventType.SELF_HEALING:
                 self_healing_count += 1

@@ -37,7 +37,10 @@ class SpeechSynthesisAdapter(SpeechSynthesisProtocol):
         for i in range(sample_count):
             t = float(i) / self.sample_rate_hz
             # Generate harmonic tone simulating human formant resonance
-            sine_val = math.sin(2.0 * math.pi * freq_hz * t) * 0.7 + math.sin(4.0 * math.pi * freq_hz * t) * 0.3
+            sine_val = (
+                math.sin(2.0 * math.pi * freq_hz * t) * 0.7
+                + math.sin(4.0 * math.pi * freq_hz * t) * 0.3
+            )
             sample_val = int(sine_val * volume * 32767.0)
             # Clamp to 16-bit range
             sample_val = max(-32768, min(32767, sample_val))

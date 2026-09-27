@@ -4,8 +4,16 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 Operator = Literal[
-    "eq", "neq", "in", "gt", "gte", "lt", "lte",
-    "exists", "contains", "regex",
+    "eq",
+    "neq",
+    "in",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "exists",
+    "contains",
+    "regex",
 ]
 
 
@@ -73,7 +81,6 @@ class SearchResponse(BaseModel):
 
 
 class VectorSearchProvider(ABC):
-
     @abstractmethod
     async def search_similar(
         self,
@@ -92,7 +99,6 @@ class VectorSearchProvider(ABC):
 
 
 class KeywordSearchProvider(ABC):
-
     @abstractmethod
     async def search_keywords(
         self,
@@ -111,7 +117,6 @@ class KeywordSearchProvider(ABC):
 
 
 class EmbeddingProvider(ABC):
-
     @abstractmethod
     async def embed_text(self, text: str) -> list[float]:
         pass
@@ -122,7 +127,6 @@ class EmbeddingProvider(ABC):
 
 
 class RerankerProvider(ABC):
-
     @abstractmethod
     async def rerank(
         self,
@@ -135,7 +139,6 @@ class RerankerProvider(ABC):
 
 
 class SemanticCacheProvider(ABC):
-
     @abstractmethod
     async def get_cached_search(
         self,
@@ -161,16 +164,13 @@ class SemanticCacheProvider(ABC):
         return {"total_vectors": 0}
 
 
-
 class SelfQueryProvider(ABC):
-
     @abstractmethod
     async def parse_query(self, query: str) -> list[MetadataFilter]:
         pass
 
 
 class QueryRewriterProvider(ABC):
-
     @abstractmethod
     async def rewrite(self, query: str) -> list[str]:
         pass
@@ -187,7 +187,6 @@ class CorrectiveRetrievalDecision(BaseModel):
 
 
 class CorrectiveRetrievalProvider(ABC):
-
     @abstractmethod
     async def evaluate_response(
         self,
@@ -216,7 +215,6 @@ class QueryIntent(BaseModel):
 
 
 class QueryIntentClassifier(ABC):
-
     @abstractmethod
     async def classify(self, query: str) -> QueryIntent:
         pass

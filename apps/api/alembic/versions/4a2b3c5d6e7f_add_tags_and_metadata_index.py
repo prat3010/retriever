@@ -18,9 +18,17 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("documents", sa.Column("tags", sa.ARRAY(sa.String()), nullable=False, server_default="{}"))
+    op.add_column(
+        "documents",
+        sa.Column("tags", sa.ARRAY(sa.String()), nullable=False, server_default="{}"),
+    )
     op.create_index("ix_documents_tags", "documents", ["tags"], postgresql_using="gin")
-    op.create_index("ix_document_chunks_meta_data", "document_chunks", ["meta_data"], postgresql_using="gin")
+    op.create_index(
+        "ix_document_chunks_meta_data",
+        "document_chunks",
+        ["meta_data"],
+        postgresql_using="gin",
+    )
 
 
 def downgrade() -> None:

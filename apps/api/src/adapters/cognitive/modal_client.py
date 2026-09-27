@@ -77,7 +77,9 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
                 base_model=self.base_model,
                 gpu_tier=self.gpu_tier,
                 scaledown_window_sec=self.scaledown_window_sec,
-                last_active_timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                last_active_timestamp=time.strftime(
+                    "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                ),
                 last_boot_latency_ms=self._last_boot_latency_ms,
                 endpoint_url=None,
             )
@@ -141,7 +143,9 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
             self._last_active_time = time.monotonic()
             # Modal / BentoML cold-starts typically take >2000ms when spinning from 0 replicas
             is_cold = elapsed_ms > 2000
-            container_id = resp.headers.get("x-container-id") or f"worker-{int(time.time())}"
+            container_id = (
+                resp.headers.get("x-container-id") or f"worker-{int(time.time())}"
+            )
 
             return WarmBootMetrics(
                 is_cold_boot=is_cold,
@@ -183,7 +187,11 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
             headers["x-lora-id"] = lora_adapter.adapter_id
 
         messages = [
-            {"role": m.role, "content": m.content, **({"name": m.name} if m.name else {})}
+            {
+                "role": m.role,
+                "content": m.content,
+                **({"name": m.name} if m.name else {}),
+            }
             for m in request.messages
         ]
         payload = {
@@ -207,7 +215,8 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
                 usage=Usage(
                     input_tokens=sum(len(m.content.split()) for m in request.messages),
                     output_tokens=len(content.split()),
-                    total_tokens=sum(len(m.content.split()) for m in request.messages) + len(content.split()),
+                    total_tokens=sum(len(m.content.split()) for m in request.messages)
+                    + len(content.split()),
                     cost_usd=0.0001,
                 ),
                 finish_reason="stop",
@@ -240,7 +249,9 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
                 input_tokens=usage_data.get("prompt_tokens", 0),
                 output_tokens=usage_data.get("completion_tokens", 0),
                 total_tokens=usage_data.get("total_tokens", 0),
-                cost_usd=round(duration * (GPU_HOURLY_RATES.get(self.gpu_tier, 1.0) / 3600.0), 6),
+                cost_usd=round(
+                    duration * (GPU_HOURLY_RATES.get(self.gpu_tier, 1.0) / 3600.0), 6
+                ),
             ),
             finish_reason=choice.get("finish_reason", "stop"),
         )
@@ -264,7 +275,11 @@ class ServerlessGpuClientAdapter(LlmProvider, ServerlessGpuClientProtocol):
             headers["x-lora-id"] = lora_adapter.adapter_id
 
         messages = [
-            {"role": m.role, "content": m.content, **({"name": m.name} if m.name else {})}
+            {
+                "role": m.role,
+                "content": m.content,
+                **({"name": m.name} if m.name else {}),
+            }
             for m in request.messages
         ]
         payload = {

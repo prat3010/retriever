@@ -1,4 +1,5 @@
 """Search routes."""
+
 from fastapi import APIRouter, Depends, Header, Security, status
 
 from src.adapters.api.security import (
@@ -23,14 +24,20 @@ router = APIRouter(tags=["Search"])
 
 import re
 
-_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
 
 
 @router.post(
     "/v1/tenants/{tenantId}/search",
     status_code=status.HTTP_200_OK,
     response_model=SearchResponseDto,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"]), Depends(rate_limit(scope="search", max_requests=120))],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+        Depends(rate_limit(scope="search", max_requests=120)),
+    ],
 )
 async def search_documents(
     tenantId: str,
@@ -40,7 +47,9 @@ async def search_documents(
     user_context: UserContext = Depends(get_current_user),
 ) -> SearchResponseDto:
     """Execute hybrid search across tenant document vectors and keyword indexes."""
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
     tenant_config = await config_service.get_tenant_config(resolved_tenant_id)
 
     if tenant_config.experiments:
@@ -66,7 +75,7 @@ async def search_documents(
     if payload.reranker_engine is not None:
         resolved_engine = payload.reranker_engine
 
-    resolved_colbert = (resolved_engine == "colbert")
+    resolved_colbert = resolved_engine == "colbert"
     if payload.enable_colbert_rerank is not None:
         resolved_colbert = payload.enable_colbert_rerank
 
@@ -77,7 +86,6 @@ async def search_documents(
         user_id=x_user_id,
         user_role=x_user_role,
         top_k=payload.limit,
-
         filters=payload.filters,
         tags=payload.tags,
         enable_hybrid=tenant_config.feature_flags.enable_hybrid_search,

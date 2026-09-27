@@ -66,7 +66,7 @@ async def stream_swarm_debate(
                 yield f"data: {event.model_dump_json()}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as err:
-            yield f"event: error\ndata: {{\"error\": \"{err!s}\"}}\n\n"
+            yield f'event: error\ndata: {{"error": "{err!s}"}}\n\n'
 
     return StreamingResponse(
         sse_event_generator(),

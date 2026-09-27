@@ -50,7 +50,7 @@ class ScimMeta(BaseModel):
     created: str
     lastModified: str
     location: str = ""
-    version: str = "W/\"1\""
+    version: str = 'W/"1"'
 
 
 class ScimEmail(BaseModel):
@@ -193,7 +193,11 @@ class IdentityFederationPort(ABC):
 
     @abstractmethod
     async def list_scim_users(
-        self, tenant_id: str, start_index: int = 1, count: int = 20, filter_query: str | None = None
+        self,
+        tenant_id: str,
+        start_index: int = 1,
+        count: int = 20,
+        filter_query: str | None = None,
     ) -> ScimListResponse[ScimUser]:
         """List SCIM users with pagination and optional query filtering."""
         pass
@@ -228,7 +232,9 @@ class IdentityFederationPort(ABC):
         pass
 
     @abstractmethod
-    async def create_scim_group(self, tenant_id: str, group: dict[str, Any]) -> ScimGroup:
+    async def create_scim_group(
+        self, tenant_id: str, group: dict[str, Any]
+    ) -> ScimGroup:
         """Create a new SCIM group."""
         pass
 

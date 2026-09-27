@@ -50,7 +50,9 @@ class IntelligentContextCompressor:
             text_clean = re.sub(pat, "", text_clean, flags=re.IGNORECASE)
 
         # 2. Split into sentences
-        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text_clean) if s.strip()]
+        sentences = [
+            s.strip() for s in re.split(r"(?<=[.!?])\s+", text_clean) if s.strip()
+        ]
 
         if not sentences:
             sentences = [original_text]
@@ -93,15 +95,20 @@ class LongLLMLinguaAdapter:
     while retaining critical proposition spans.
     """
 
-    def __init__(self, fallback_compressor: IntelligentContextCompressor | None = None) -> None:
+    def __init__(
+        self, fallback_compressor: IntelligentContextCompressor | None = None
+    ) -> None:
         self.fallback = fallback_compressor or IntelligentContextCompressor()
         self._llmlingua_client = None
         try:
             from llmlingua import PromptCompressor
+
             self._llmlingua_client = PromptCompressor()
             logger.info("Initialized official PromptCompressor for LongLLMLingua")
         except Exception:
-            logger.debug("PromptCompressor not installed; using token-entropy calibrated compression.")
+            logger.debug(
+                "PromptCompressor not installed; using token-entropy calibrated compression."
+            )
 
     def estimate_tokens(self, text: str) -> int:
         return self.fallback.estimate_tokens(text)
@@ -125,8 +132,12 @@ class LongLLMLinguaAdapter:
                     condition_compare=True,
                 )
                 comp_text = res.get("compressed_prompt", request.text)
-                orig_tokens = res.get("origin_tokens", self.estimate_tokens(request.text))
-                comp_tokens = res.get("compressed_tokens", self.estimate_tokens(comp_text))
+                orig_tokens = res.get(
+                    "origin_tokens", self.estimate_tokens(request.text)
+                )
+                comp_tokens = res.get(
+                    "compressed_tokens", self.estimate_tokens(comp_text)
+                )
                 return CompressionResult(
                     original_text=request.text,
                     compressed_text=comp_text,
@@ -135,7 +146,9 @@ class LongLLMLinguaAdapter:
                     compression_ratio=round(comp_tokens / max(1, orig_tokens), 2),
                 )
             except Exception as err:
-                logger.warning(f"Official PromptCompressor failed, using entropy fallback: {err}")
+                logger.warning(
+                    f"Official PromptCompressor failed, using entropy fallback: {err}"
+                )
 
         # Statistical Perplexity & Entropy Scoring
         original_text = request.text.strip()
@@ -143,14 +156,18 @@ class LongLLMLinguaAdapter:
         if not original_text or request.compression_rate >= 0.95:
             return self.fallback.compress(request)
 
-        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", original_text) if s.strip()]
+        sentences = [
+            s.strip() for s in re.split(r"(?<=[.!?])\s+", original_text) if s.strip()
+        ]
         if not sentences:
             return self.fallback.compress(request)
 
         scored_sentences = []
         for idx, sent in enumerate(sentences):
             words = sent.split()
-            sentence_entropy = sum(self._calculate_token_entropy(w, len(words)) for w in words)
+            sentence_entropy = sum(
+                self._calculate_token_entropy(w, len(words)) for w in words
+            )
             normalized_score = sentence_entropy / max(1, len(words))
             # Positional bias for introduction and conclusion
             pos_bonus = 1.2 if (idx == 0 or idx == len(sentences) - 1) else 1.0

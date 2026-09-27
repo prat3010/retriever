@@ -63,13 +63,27 @@ class VoiceSessionConfig(BaseModel):
     """Configuration parameters for a sovereign edge voice session."""
 
     tenant_id: str = Field(..., description="Tenant workspace identifier")
-    user_id: str = Field(default="usr_anonymous", description="User identifier initiating voice stream")
-    sample_rate_hz: int = Field(default=16000, ge=8000, le=48000, description="Audio sample rate in Hertz")
-    channels: int = Field(default=1, ge=1, le=2, description="Channel count (1=mono, 2=stereo)")
-    vad_sensitivity: float = Field(default=0.65, ge=0.0, le=1.0, description="VAD energy threshold sensitivity")
-    vad_silence_duration_ms: int = Field(default=400, ge=100, le=2000, description="Silence duration for turn endpoint")
-    selected_voice: SpeechTimbre = Field(default=SpeechTimbre.NEURAL_NATURAL, description="Synthesis timbre preset")
-    audio_codec: AudioCodec = Field(default=AudioCodec.PCM16, description="Preferred audio codec")
+    user_id: str = Field(
+        default="usr_anonymous", description="User identifier initiating voice stream"
+    )
+    sample_rate_hz: int = Field(
+        default=16000, ge=8000, le=48000, description="Audio sample rate in Hertz"
+    )
+    channels: int = Field(
+        default=1, ge=1, le=2, description="Channel count (1=mono, 2=stereo)"
+    )
+    vad_sensitivity: float = Field(
+        default=0.65, ge=0.0, le=1.0, description="VAD energy threshold sensitivity"
+    )
+    vad_silence_duration_ms: int = Field(
+        default=400, ge=100, le=2000, description="Silence duration for turn endpoint"
+    )
+    selected_voice: SpeechTimbre = Field(
+        default=SpeechTimbre.NEURAL_NATURAL, description="Synthesis timbre preset"
+    )
+    audio_codec: AudioCodec = Field(
+        default=AudioCodec.PCM16, description="Preferred audio codec"
+    )
 
 
 class VoiceSession(BaseModel):
@@ -91,21 +105,36 @@ class WebRtcSignalingMessage(BaseModel):
     """Signaling payload exchanged during WebRTC session establishment."""
 
     session_id: str = Field(..., description="Target voice session identifier")
-    message_type: str = Field(..., description="Signal type: offer, answer, ice_candidate, hangup")
+    message_type: str = Field(
+        ..., description="Signal type: offer, answer, ice_candidate, hangup"
+    )
     sdp: str | None = Field(default=None, description="SDP session description string")
-    candidate: str | None = Field(default=None, description="ICE candidate descriptor string")
+    candidate: str | None = Field(
+        default=None, description="ICE candidate descriptor string"
+    )
     sdp_mid: str | None = Field(default=None, description="SDP media stream identifier")
-    sdp_mline_index: int | None = Field(default=None, description="SDP media line index")
+    sdp_mline_index: int | None = Field(
+        default=None, description="SDP media line index"
+    )
 
 
 class TranscriptionResult(BaseModel):
     """Speech-to-text recognition output produced by local Whisper engine."""
 
     text: str = Field(..., description="Transcribed textual string")
-    confidence: float = Field(default=0.95, ge=0.0, le=1.0, description="Acoustic model confidence score")
-    language: str = Field(default="en", description="Detected or configured spoken language")
-    duration_ms: float = Field(default=0.0, ge=0.0, description="Audio segment duration in milliseconds")
-    is_final: bool = Field(default=True, description="True if segment is definitive, False if partial preview")
+    confidence: float = Field(
+        default=0.95, ge=0.0, le=1.0, description="Acoustic model confidence score"
+    )
+    language: str = Field(
+        default="en", description="Detected or configured spoken language"
+    )
+    duration_ms: float = Field(
+        default=0.0, ge=0.0, description="Audio segment duration in milliseconds"
+    )
+    is_final: bool = Field(
+        default=True,
+        description="True if segment is definitive, False if partial preview",
+    )
     words_count: int = Field(default=0, ge=0, description="Total recognized words")
 
 
@@ -113,10 +142,19 @@ class SynthesizedAudioChunk(BaseModel):
     """Streaming binary audio packet emitted by speech synthesis adapter."""
 
     audio_bytes: bytes = Field(..., description="Raw binary audio payload")
-    sample_rate_hz: int = Field(default=16000, description="Playback sample rate in Hertz")
-    chunk_index: int = Field(default=0, ge=0, description="Monotonic sequence number of audio chunk")
-    duration_ms: float = Field(default=0.0, ge=0.0, description="Duration represented by this chunk in ms")
-    is_last: bool = Field(default=False, description="True if this chunk terminates the synthesized utterance")
+    sample_rate_hz: int = Field(
+        default=16000, description="Playback sample rate in Hertz"
+    )
+    chunk_index: int = Field(
+        default=0, ge=0, description="Monotonic sequence number of audio chunk"
+    )
+    duration_ms: float = Field(
+        default=0.0, ge=0.0, description="Duration represented by this chunk in ms"
+    )
+    is_last: bool = Field(
+        default=False,
+        description="True if this chunk terminates the synthesized utterance",
+    )
     format: AudioCodec = Field(default=AudioCodec.PCM16, description="Encoding format")
 
 
@@ -128,9 +166,15 @@ class VoiceTurn(BaseModel):
     tenant_id: str
     user_transcript: str
     agent_response_text: str
-    time_to_transcribe_ms: float = Field(default=0.0, description="Latency from turn endpoint to final transcript")
-    time_to_first_audio_byte_ms: float = Field(default=0.0, description="Latency from transcript to first audio chunk")
-    total_turn_duration_ms: float = Field(default=0.0, description="Total conversational round-trip latency")
+    time_to_transcribe_ms: float = Field(
+        default=0.0, description="Latency from turn endpoint to final transcript"
+    )
+    time_to_first_audio_byte_ms: float = Field(
+        default=0.0, description="Latency from transcript to first audio chunk"
+    )
+    total_turn_duration_ms: float = Field(
+        default=0.0, description="Total conversational round-trip latency"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -197,7 +241,9 @@ class WebRtcSignalingProtocol(Protocol):
         """Initializes a new WebRTC voice session."""
         ...
 
-    async def handle_signal(self, payload: WebRtcSignalingMessage) -> WebRtcSignalingMessage:
+    async def handle_signal(
+        self, payload: WebRtcSignalingMessage
+    ) -> WebRtcSignalingMessage:
         """Handles incoming SDP offers/answers or ICE candidates."""
         ...
 
@@ -279,4 +325,3 @@ class VoiceStreamServiceProtocol(Protocol):
     ) -> VoiceInterruptionEvent:
         """Cancels any active speech generation or synthesis task immediately."""
         ...
-

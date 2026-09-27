@@ -49,7 +49,10 @@ class ErasureScope(StrEnum):
 
 
 class ComplianceCertificateDTO(BaseModel):
-    certificate_id: str = Field(..., description="Unique compliance deletion certificate identifier, e.g. 'cert_gdpr_...'")
+    certificate_id: str = Field(
+        ...,
+        description="Unique compliance deletion certificate identifier, e.g. 'cert_gdpr_...'",
+    )
     tenant_id: str
     requester: str
     reason: str

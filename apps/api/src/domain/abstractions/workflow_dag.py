@@ -73,8 +73,12 @@ class DAGEdge(BaseModel):
     id: str = Field(..., description="Unique edge identifier")
     source: str = Field(..., description="Source node ID producing the upstream data")
     target: str = Field(..., description="Target node ID consuming the upstream data")
-    source_handle: str | None = Field(default=None, description="Output port ID on the source")
-    target_handle: str | None = Field(default=None, description="Input port ID on the target")
+    source_handle: str | None = Field(
+        default=None, description="Output port ID on the source"
+    )
+    target_handle: str | None = Field(
+        default=None, description="Input port ID on the target"
+    )
     condition: str | None = Field(
         default=None,
         description="Conditional branch predicate for router nodes (e.g. 'true', 'escalate')",

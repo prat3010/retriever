@@ -90,7 +90,9 @@ class BaseConnector(ABC):
         pass
 
     @abstractmethod
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Fetch/discover documents from external cloud data source."""
         pass
 

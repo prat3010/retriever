@@ -63,10 +63,16 @@ def find_files(
                 if len(matches) >= max_files:
                     break
                 if entry.is_dir():
-                    if recursive and entry.name not in IGNORE_DIRS and not entry.name.startswith("."):
+                    if (
+                        recursive
+                        and entry.name not in IGNORE_DIRS
+                        and not entry.name.startswith(".")
+                    ):
                         scan(entry)
                 elif entry.is_file():
-                    if entry.suffix.lower() in extensions and not entry.name.startswith("."):
+                    if entry.suffix.lower() in extensions and not entry.name.startswith(
+                        "."
+                    ):
                         matches.append(entry)
         except PermissionError:
             pass
@@ -142,7 +148,10 @@ def load_env():
             except Exception:
                 pass
 
-    if "ADMIN_MASTER_KEY" in os.environ and "RETRIEVER_ADMIN_MASTER_KEY" not in os.environ:
+    if (
+        "ADMIN_MASTER_KEY" in os.environ
+        and "RETRIEVER_ADMIN_MASTER_KEY" not in os.environ
+    ):
         os.environ["RETRIEVER_ADMIN_MASTER_KEY"] = os.environ["ADMIN_MASTER_KEY"]
 
 
@@ -198,18 +207,26 @@ def main():
         sys.exit(1)
 
     if not args.dry_run and not args.tenant:
-        print(f"{RED}[ERROR] Missing --tenant ID or RETRIEVER_TENANT_ID env variable.{NC}")
+        print(
+            f"{RED}[ERROR] Missing --tenant ID or RETRIEVER_TENANT_ID env variable.{NC}"
+        )
         sys.exit(1)
 
     if not args.dry_run and not args.admin_key:
-        print(f"{RED}[ERROR] Missing --admin-key or RETRIEVER_ADMIN_MASTER_KEY env variable.{NC}")
+        print(
+            f"{RED}[ERROR] Missing --admin-key or RETRIEVER_ADMIN_MASTER_KEY env variable.{NC}"
+        )
         sys.exit(1)
 
-    ext_set = {f".{e.strip().lstrip('.').lower()}" for e in args.ext.split(",") if e.strip()}
+    ext_set = {
+        f".{e.strip().lstrip('.').lower()}" for e in args.ext.split(",") if e.strip()
+    }
 
     tenant_id = args.tenant
     if tenant_id:
-        test_tenants_file = Path(__file__).resolve().parent.parent / "data" / "test_tenants.json"
+        test_tenants_file = (
+            Path(__file__).resolve().parent.parent / "data" / "test_tenants.json"
+        )
         if test_tenants_file.is_file():
             try:
                 mapping = json.loads(test_tenants_file.read_text())
@@ -227,7 +244,9 @@ def main():
         print(f"  • API Gateway:      {args.api_url}")
     print("----------------------------------------------------------------------")
 
-    files = find_files(target_dir, ext_set, recursive=not args.no_recursive, max_files=args.max_files)
+    files = find_files(
+        target_dir, ext_set, recursive=not args.no_recursive, max_files=args.max_files
+    )
     print(f"Discovered {BOLD}{len(files)}{NC} matching document(s).\n")
 
     if not files:
@@ -242,14 +261,18 @@ def main():
         print(f"\n{GREEN}Scan complete. Remove --dry-run to start ingestion.{NC}")
         return
 
-    upload_url = f"{args.api_url.rstrip('/')}/v1/admin/tenants/{tenant_id}/documents/upload"
+    upload_url = (
+        f"{args.api_url.rstrip('/')}/v1/admin/tenants/{tenant_id}/documents/upload"
+    )
     success_count = 0
     fail_count = 0
 
     for i, file_path in enumerate(files, 1):
         rel = file_path.relative_to(target_dir)
         size_kb = round(file_path.stat().st_size / 1024, 1)
-        sys.stdout.write(f"[{i:02d}/{len(files):02d}] Uploading {rel} ({size_kb} KB)... ")
+        sys.stdout.write(
+            f"[{i:02d}/{len(files):02d}] Uploading {rel} ({size_kb} KB)... "
+        )
         sys.stdout.flush()
 
         ok, resp = upload_file_multipart(upload_url, file_path, args.admin_key)
@@ -264,9 +287,13 @@ def main():
 
     print("\n----------------------------------------------------------------------")
     if fail_count == 0:
-        print(f"{GREEN}{BOLD}✓ ALL {success_count} DOCUMENTS INGESTED SUCCESSFULLY!{NC}")
+        print(
+            f"{GREEN}{BOLD}✓ ALL {success_count} DOCUMENTS INGESTED SUCCESSFULLY!{NC}"
+        )
     else:
-        print(f"{YELLOW}Batch complete: {success_count} succeeded, {fail_count} failed.{NC}")
+        print(
+            f"{YELLOW}Batch complete: {success_count} succeeded, {fail_count} failed.{NC}"
+        )
     print("----------------------------------------------------------------------\n")
 
 

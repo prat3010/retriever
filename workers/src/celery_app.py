@@ -20,9 +20,11 @@ def init_sentry(**kwargs):
     try:
         import sentry_sdk
         from sentry_sdk.integrations.celery import CeleryIntegration
+
         integrations = [CeleryIntegration()]
         try:
             from sentry_sdk.integrations.opentelemetry import OpenTelemetryIntegration
+
             integrations.append(OpenTelemetryIntegration())
         except Exception:
             pass
@@ -38,16 +40,13 @@ def init_sentry(**kwargs):
     except Exception:
         pass
 
-BROKER_URL = os.environ.get(
-    "BROKER_URL"
-) or os.environ.get(
-    "REDIS_URL"
-) or os.environ.get(
-    "RABBITMQ_URL", "redis://localhost:6379/0"
+
+BROKER_URL = (
+    os.environ.get("BROKER_URL")
+    or os.environ.get("REDIS_URL")
+    or os.environ.get("RABBITMQ_URL", "redis://localhost:6379/0")
 )
-REDIS_URL = os.environ.get(
-    "REDIS_URL", "redis://localhost:6379/0"
-)
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 celery_app = Celery(
     "retriever",

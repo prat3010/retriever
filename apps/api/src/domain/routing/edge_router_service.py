@@ -10,32 +10,101 @@ from src.domain.abstractions.edge_router import (
 )
 
 # Continents & ISO-3166-1 Country Code mappings
-AMERICAS_COUNTRIES: frozenset[str] = frozenset({
-    "US", "CA", "MX", "BR", "AR", "CL", "CO", "PE", "VE", "UY", "PY", "BO", "EC", "CR", "PA", "JM", "DO",
-})
+AMERICAS_COUNTRIES: frozenset[str] = frozenset(
+    {
+        "US",
+        "CA",
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "VE",
+        "UY",
+        "PY",
+        "BO",
+        "EC",
+        "CR",
+        "PA",
+        "JM",
+        "DO",
+    }
+)
 
-EUROPE_ME_AFRICA_COUNTRIES: frozenset[str] = frozenset({
-    "GB", "DE", "FR", "IT", "ES", "NL", "SE", "CH", "PL", "NO", "DK", "FI", "IE", "BE", "AT", "PT",
-    "GR", "CZ", "RO", "HU", "AE", "SA", "IL", "ZA", "EG", "TR", "UA", "RU", "NG", "KE", "MA", "QA",
-})
+EUROPE_ME_AFRICA_COUNTRIES: frozenset[str] = frozenset(
+    {
+        "GB",
+        "DE",
+        "FR",
+        "IT",
+        "ES",
+        "NL",
+        "SE",
+        "CH",
+        "PL",
+        "NO",
+        "DK",
+        "FI",
+        "IE",
+        "BE",
+        "AT",
+        "PT",
+        "GR",
+        "CZ",
+        "RO",
+        "HU",
+        "AE",
+        "SA",
+        "IL",
+        "ZA",
+        "EG",
+        "TR",
+        "UA",
+        "RU",
+        "NG",
+        "KE",
+        "MA",
+        "QA",
+    }
+)
 
-APAC_COUNTRIES: frozenset[str] = frozenset({
-    "IN", "SG", "JP", "AU", "NZ", "KR", "ID", "MY", "TH", "VN", "PH", "TW", "HK", "CN", "PK", "BD", "LK", "NP",
-})
+APAC_COUNTRIES: frozenset[str] = frozenset(
+    {
+        "IN",
+        "SG",
+        "JP",
+        "AU",
+        "NZ",
+        "KR",
+        "ID",
+        "MY",
+        "TH",
+        "VN",
+        "PH",
+        "TW",
+        "HK",
+        "CN",
+        "PK",
+        "BD",
+        "LK",
+        "NP",
+    }
+)
 
 # Typical empirical optical round-trip latencies (ms)
 LATENCY_PROFILES: dict[RegionCode, dict[str, float]] = {
     RegionCode.US_EAST: {
         "primary_rtt": 215.0,  # US to AP-South Master
-        "replica_rtt": 18.0,   # US to US-East Replica
+        "replica_rtt": 18.0,  # US to US-East Replica
     },
     RegionCode.EU_CENTRAL: {
         "primary_rtt": 158.0,  # Europe to AP-South Master
-        "replica_rtt": 22.0,   # Europe to EU-Central Replica
+        "replica_rtt": 22.0,  # Europe to EU-Central Replica
     },
     RegionCode.AP_SOUTH: {
-        "primary_rtt": 15.0,   # APAC to AP-South Master
-        "replica_rtt": 15.0,   # APAC local
+        "primary_rtt": 15.0,  # APAC to AP-South Master
+        "replica_rtt": 15.0,  # APAC local
     },
 }
 
@@ -49,16 +118,26 @@ class EdgeRouterService(EdgeRouterInterface):
         primary_region: RegionCode = RegionCode.AP_SOUTH,
     ) -> None:
         self._primary_region = primary_region
-        self._configured_regions: set[RegionCode] = configured_regions or {primary_region}
+        self._configured_regions: set[RegionCode] = configured_regions or {
+            primary_region
+        }
         self._node_health: dict[RegionCode, ReplicaHealthStatus] = {
             RegionCode.AP_SOUTH: ReplicaHealthStatus.HEALTHY,
-            RegionCode.US_EAST: ReplicaHealthStatus.HEALTHY if RegionCode.US_EAST in self._configured_regions else ReplicaHealthStatus.FALLBACK_PRIMARY,
-            RegionCode.EU_CENTRAL: ReplicaHealthStatus.HEALTHY if RegionCode.EU_CENTRAL in self._configured_regions else ReplicaHealthStatus.FALLBACK_PRIMARY,
+            RegionCode.US_EAST: ReplicaHealthStatus.HEALTHY
+            if RegionCode.US_EAST in self._configured_regions
+            else ReplicaHealthStatus.FALLBACK_PRIMARY,
+            RegionCode.EU_CENTRAL: ReplicaHealthStatus.HEALTHY
+            if RegionCode.EU_CENTRAL in self._configured_regions
+            else ReplicaHealthStatus.FALLBACK_PRIMARY,
         }
         self._node_latencies: dict[RegionCode, float] = {
             RegionCode.AP_SOUTH: 14.5,
-            RegionCode.US_EAST: 18.2 if RegionCode.US_EAST in self._configured_regions else 215.0,
-            RegionCode.EU_CENTRAL: 21.8 if RegionCode.EU_CENTRAL in self._configured_regions else 158.0,
+            RegionCode.US_EAST: 18.2
+            if RegionCode.US_EAST in self._configured_regions
+            else 215.0,
+            RegionCode.EU_CENTRAL: 21.8
+            if RegionCode.EU_CENTRAL in self._configured_regions
+            else 158.0,
         }
 
     def set_node_status(
@@ -89,15 +168,21 @@ class EdgeRouterService(EdgeRouterInterface):
             continent = "Global (Default)"
             preferred_region = self._primary_region
 
-        profile = LATENCY_PROFILES.get(preferred_region, LATENCY_PROFILES[RegionCode.AP_SOUTH])
+        profile = LATENCY_PROFILES.get(
+            preferred_region, LATENCY_PROFILES[RegionCode.AP_SOUTH]
+        )
         primary_rtt = profile["primary_rtt"]
         replica_rtt = profile["replica_rtt"]
 
         # Check if the preferred region is configured and healthy
         is_configured = preferred_region in self._configured_regions
-        health = self._node_health.get(preferred_region, ReplicaHealthStatus.FALLBACK_PRIMARY)
+        health = self._node_health.get(
+            preferred_region, ReplicaHealthStatus.FALLBACK_PRIMARY
+        )
 
-        if preferred_region != self._primary_region and (not is_configured or health != ReplicaHealthStatus.HEALTHY):
+        if preferred_region != self._primary_region and (
+            not is_configured or health != ReplicaHealthStatus.HEALTHY
+        ):
             # Fallback to Primary Master
             selected_region = self._primary_region
             is_fallback = True
@@ -108,10 +193,16 @@ class EdgeRouterService(EdgeRouterInterface):
             selected_region = preferred_region
             is_fallback = False
             if primary_rtt > replica_rtt:
-                est_reduction = round(((primary_rtt - replica_rtt) / primary_rtt) * 100.0, 1)
+                est_reduction = round(
+                    ((primary_rtt - replica_rtt) / primary_rtt) * 100.0, 1
+                )
             else:
                 est_reduction = 0.0
-            endpoint = f"https://{preferred_region.value}.api.retriever.run" if preferred_region != self._primary_region else "https://api.retriever.run"
+            endpoint = (
+                f"https://{preferred_region.value}.api.retriever.run"
+                if preferred_region != self._primary_region
+                else "https://api.retriever.run"
+            )
             reason = f"Optimally routed to local {continent} edge replica ({selected_region.value})."
 
         return EdgeRoutingDecision(
@@ -121,7 +212,9 @@ class EdgeRouterService(EdgeRouterInterface):
             target_endpoint=endpoint,
             is_fallback=is_fallback,
             estimated_primary_latency_ms=primary_rtt,
-            estimated_replica_latency_ms=replica_rtt if not is_fallback else primary_rtt,
+            estimated_replica_latency_ms=replica_rtt
+            if not is_fallback
+            else primary_rtt,
             estimated_reduction_pct=est_reduction,
             routing_reason=reason,
         )
@@ -136,7 +229,9 @@ class EdgeRouterService(EdgeRouterInterface):
                 is_primary=True,
                 is_configured=True,
                 endpoint_display="api.retriever.run (Primary Master)",
-                status=self._node_health.get(RegionCode.AP_SOUTH, ReplicaHealthStatus.HEALTHY),
+                status=self._node_health.get(
+                    RegionCode.AP_SOUTH, ReplicaHealthStatus.HEALTHY
+                ),
                 latency_ms=self._node_latencies.get(RegionCode.AP_SOUTH, 14.5),
                 last_probe_at=datetime.now(UTC),
             ),
@@ -146,8 +241,12 @@ class EdgeRouterService(EdgeRouterInterface):
                 city="N. Virginia / New York",
                 is_primary=False,
                 is_configured=RegionCode.US_EAST in self._configured_regions,
-                endpoint_display="us-east.api.retriever.run" if RegionCode.US_EAST in self._configured_regions else "Fallback to Primary Master",
-                status=self._node_health.get(RegionCode.US_EAST, ReplicaHealthStatus.FALLBACK_PRIMARY),
+                endpoint_display="us-east.api.retriever.run"
+                if RegionCode.US_EAST in self._configured_regions
+                else "Fallback to Primary Master",
+                status=self._node_health.get(
+                    RegionCode.US_EAST, ReplicaHealthStatus.FALLBACK_PRIMARY
+                ),
                 latency_ms=self._node_latencies.get(RegionCode.US_EAST, 215.0),
                 last_probe_at=datetime.now(UTC),
             ),
@@ -157,14 +256,20 @@ class EdgeRouterService(EdgeRouterInterface):
                 city="Frankfurt / London",
                 is_primary=False,
                 is_configured=RegionCode.EU_CENTRAL in self._configured_regions,
-                endpoint_display="eu-central.api.retriever.run" if RegionCode.EU_CENTRAL in self._configured_regions else "Fallback to Primary Master",
-                status=self._node_health.get(RegionCode.EU_CENTRAL, ReplicaHealthStatus.FALLBACK_PRIMARY),
+                endpoint_display="eu-central.api.retriever.run"
+                if RegionCode.EU_CENTRAL in self._configured_regions
+                else "Fallback to Primary Master",
+                status=self._node_health.get(
+                    RegionCode.EU_CENTRAL, ReplicaHealthStatus.FALLBACK_PRIMARY
+                ),
                 latency_ms=self._node_latencies.get(RegionCode.EU_CENTRAL, 158.0),
                 last_probe_at=datetime.now(UTC),
             ),
         ]
 
-        configured_count = sum(1 for r in regions_list if r.is_configured and not r.is_primary)
+        configured_count = sum(
+            1 for r in regions_list if r.is_configured and not r.is_primary
+        )
 
         return MultiRegionClusterStatus(
             primary_region=self._primary_region,

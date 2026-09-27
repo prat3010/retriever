@@ -15,9 +15,7 @@ class Tracer(ABC):
     """Port for distributed tracing — OpenTelemetry spans."""
 
     @abstractmethod
-    def start_span(
-        self, name: str, attributes: dict[str, str] | None = None
-    ) -> Any:
+    def start_span(self, name: str, attributes: dict[str, str] | None = None) -> Any:
         """Start a span, returning a context manager."""
         pass
 
@@ -26,23 +24,31 @@ class MetricsRegistry(ABC):
     """Port for application metrics — counters, histograms, gauges."""
 
     @abstractmethod
-    def increment(self, name: str, value: float = 1, labels: dict[str, str] | None = None) -> None:
+    def increment(
+        self, name: str, value: float = 1, labels: dict[str, str] | None = None
+    ) -> None:
         """Increment a counter metric."""
         pass
 
     @abstractmethod
-    def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def observe(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         """Observe a value for a histogram metric."""
         pass
 
     @abstractmethod
-    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def set_gauge(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         """Set a gauge metric to an absolute value."""
         pass
 
 
 class RateLimitResult:
-    def __init__(self, allowed: bool, limit: int, remaining: int, reset_after: int) -> None:
+    def __init__(
+        self, allowed: bool, limit: int, remaining: int, reset_after: int
+    ) -> None:
         self.allowed = allowed
         self.limit = limit
         self.remaining = remaining

@@ -63,7 +63,9 @@ def test_single_vector_scoring():
 
 def test_isolation_forest_outlier_detection():
     """Verify IsolationForest clearly separates nominal traffic from high-velocity prompt extraction attacks."""
-    detector = AnomalyDetectorAdapter(contamination=0.05, n_estimators=50, random_state=42)
+    detector = AnomalyDetectorAdapter(
+        contamination=0.05, n_estimators=50, random_state=42
+    )
 
     # 40 nominal baseline clients (5 - 20 req/min, token_ratio 1 - 3, entropy 3.2 - 3.8)
     dataset: list[AnomalyFeatureVector] = []

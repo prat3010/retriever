@@ -6,7 +6,12 @@ from src.domain.abstractions.config import (
 
 
 class ConfigurationService:
-    def __init__(self, registry: ConfigRegistry, cache: ConfigCache, env_secrets: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        registry: ConfigRegistry,
+        cache: ConfigCache,
+        env_secrets: dict[str, str] | None = None,
+    ) -> None:
         self.registry = registry
         self.cache = cache
         self.env_secrets = env_secrets or {}
@@ -25,7 +30,9 @@ class ConfigurationService:
         else:
             config = TenantConfiguration()
             # Save defaults back to DB for parity
-            await self.registry.save_raw_config(tenant_id=None, config_data=config.model_dump())
+            await self.registry.save_raw_config(
+                tenant_id=None, config_data=config.model_dump()
+            )
 
         # 3. Store to Cache
         await self.cache.set_cached_global_config(config)
@@ -57,13 +64,19 @@ class ConfigurationService:
 
     async def update_global_config(self, config: TenantConfiguration) -> None:
         """Update global configuration in DB and invalidate cache (hot reload)."""
-        await self.registry.save_raw_config(tenant_id=None, config_data=config.model_dump())
+        await self.registry.save_raw_config(
+            tenant_id=None, config_data=config.model_dump()
+        )
         await self.cache.invalidate_global_config()
 
-    async def update_tenant_config(self, tenant_id: str, config: TenantConfiguration) -> None:
+    async def update_tenant_config(
+        self, tenant_id: str, config: TenantConfiguration
+    ) -> None:
         """Update tenant configuration in DB and invalidate cache (hot reload)."""
         config.tenant_id = tenant_id
-        await self.registry.save_raw_config(tenant_id=tenant_id, config_data=config.model_dump())
+        await self.registry.save_raw_config(
+            tenant_id=tenant_id, config_data=config.model_dump()
+        )
         await self.cache.invalidate_config(tenant_id)
 
     async def warm_up_cache(self, tenant_ids: list[str]) -> None:
@@ -75,30 +88,56 @@ class ConfigurationService:
         except Exception:
             pass
 
-    def _resolve_env_variables(self, config: TenantConfiguration) -> TenantConfiguration:
+    def _resolve_env_variables(
+        self, config: TenantConfiguration
+    ) -> TenantConfiguration:
         """Resolve secret placeholder strings from dynamic environment variables."""
         resolved = config.model_copy(deep=True)
 
         # AI provider credentials resolution
-        if resolved.ai_provider.api_key is None or resolved.ai_provider.api_key == "********":
-            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+        if (
+            resolved.ai_provider.api_key is None
+            or resolved.ai_provider.api_key == "********"
+        ):
+            if (
+                resolved.feature_flags.allow_platform_key
+                or resolved.tenant_id == "00000000-0000-0000-0000-000000000000"
+            ):
                 provider = resolved.ai_provider.provider_name.upper()
                 env_key = f"{provider}_API_KEY"
-                resolved.ai_provider.api_key = self.env_secrets.get(env_key, resolved.ai_provider.api_key)
+                resolved.ai_provider.api_key = self.env_secrets.get(
+                    env_key, resolved.ai_provider.api_key
+                )
 
         # Embedding provider credentials resolution
-        if resolved.embedding_provider.api_key is None or resolved.embedding_provider.api_key == "********":
-            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+        if (
+            resolved.embedding_provider.api_key is None
+            or resolved.embedding_provider.api_key == "********"
+        ):
+            if (
+                resolved.feature_flags.allow_platform_key
+                or resolved.tenant_id == "00000000-0000-0000-0000-000000000000"
+            ):
                 provider = resolved.embedding_provider.provider_name.upper()
                 env_key = f"{provider}_API_KEY"
-                resolved.embedding_provider.api_key = self.env_secrets.get(env_key, resolved.embedding_provider.api_key)
+                resolved.embedding_provider.api_key = self.env_secrets.get(
+                    env_key, resolved.embedding_provider.api_key
+                )
 
         # Web search API key resolution — fall back to env var for the configured provider
-        if resolved.retrieval_settings.web_search_api_key is None or resolved.retrieval_settings.web_search_api_key == "********":
-            if resolved.feature_flags.allow_platform_key or resolved.tenant_id == "00000000-0000-0000-0000-000000000000":
+        if (
+            resolved.retrieval_settings.web_search_api_key is None
+            or resolved.retrieval_settings.web_search_api_key == "********"
+        ):
+            if (
+                resolved.feature_flags.allow_platform_key
+                or resolved.tenant_id == "00000000-0000-0000-0000-000000000000"
+            ):
                 provider = resolved.retrieval_settings.web_search_provider.upper()
                 env_key = f"{provider}_API_KEY"
-                resolved.retrieval_settings.web_search_api_key = self.env_secrets.get(env_key, resolved.retrieval_settings.web_search_api_key)
+                resolved.retrieval_settings.web_search_api_key = self.env_secrets.get(
+                    env_key, resolved.retrieval_settings.web_search_api_key
+                )
 
         return resolved
 
@@ -110,7 +149,11 @@ class ConfigurationService:
         override_data = override.model_dump(exclude_unset=True)
 
         for key, value in override_data.items():
-            if isinstance(value, dict) and key in merged_data and isinstance(merged_data[key], dict):
+            if (
+                isinstance(value, dict)
+                and key in merged_data
+                and isinstance(merged_data[key], dict)
+            ):
                 for sub_key, sub_val in value.items():
                     if sub_val is not None:
                         merged_data[key][sub_key] = sub_val

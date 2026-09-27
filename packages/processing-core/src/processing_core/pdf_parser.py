@@ -13,14 +13,16 @@ def convert_table_to_markdown(headers: list[str], rows: list[list[str]]) -> str:
     if not any(clean_headers):
         # Fallback headers if empty
         max_cols = max(len(clean_headers), max((len(r) for r in rows), default=0))
-        clean_headers = [f"Header {i+1}" for i in range(max_cols)]
+        clean_headers = [f"Header {i + 1}" for i in range(max_cols)]
 
     header_line = "| " + " | ".join(clean_headers) + " |"
     separator_line = "| " + " | ".join(["---"] * len(clean_headers)) + " |"
 
     row_lines = []
     for row in rows:
-        clean_row = [str(cell).strip().replace("\n", " ") if cell else "" for cell in row]
+        clean_row = [
+            str(cell).strip().replace("\n", " ") if cell else "" for cell in row
+        ]
         # Pad row cells to match header column count
         if len(clean_row) < len(clean_headers):
             clean_row.extend([""] * (len(clean_headers) - len(clean_row)))
@@ -39,13 +41,17 @@ def extract_tables_from_pdf(storage_path: str) -> list[dict[str, Any]]:
             for table in page.extract_tables():
                 if table and len(table) > 1:
                     headers = [str(h).strip() if h else "" for h in table[0]]
-                    rows = [[str(c).strip() if c else "" for c in row] for row in table[1:]]
-                    tables.append({
-                        "page": page_num + 1,
-                        "headers": headers,
-                        "rows": rows,
-                        "markdown": convert_table_to_markdown(headers, rows),
-                    })
+                    rows = [
+                        [str(c).strip() if c else "" for c in row] for row in table[1:]
+                    ]
+                    tables.append(
+                        {
+                            "page": page_num + 1,
+                            "headers": headers,
+                            "rows": rows,
+                            "markdown": convert_table_to_markdown(headers, rows),
+                        }
+                    )
     return tables
 
 
@@ -59,12 +65,15 @@ def extract_layout_from_pdf(storage_path: str) -> dict[str, Any]:
         for page_num, page in enumerate(pdf.pages):
             page_text = page.extract_text(layout=True) or ""
             raw_tables = page.extract_tables() or []
-            
+
             md_tables = []
             for t in raw_tables:
                 if t and len(t) > 1:
                     headers = [str(cell).strip() if cell else "" for cell in t[0]]
-                    rows = [[str(cell).strip() if cell else "" for cell in row] for row in t[1:]]
+                    rows = [
+                        [str(cell).strip() if cell else "" for cell in row]
+                        for row in t[1:]
+                    ]
                     md = convert_table_to_markdown(headers, rows)
                     if md:
                         md_tables.append(md)
@@ -72,16 +81,22 @@ def extract_layout_from_pdf(storage_path: str) -> dict[str, Any]:
             total_tables += len(md_tables)
             combined_page_content = page_text
             if md_tables:
-                combined_page_content += "\n\n### Document Tables\n" + "\n\n".join(md_tables)
+                combined_page_content += "\n\n### Document Tables\n" + "\n\n".join(
+                    md_tables
+                )
 
             if combined_page_content.strip():
-                page_runs.append(f"--- Page {page_num + 1} ---\n{combined_page_content}")
+                page_runs.append(
+                    f"--- Page {page_num + 1} ---\n{combined_page_content}"
+                )
 
-            pages_meta.append({
-                "page": page_num + 1,
-                "has_text": bool(page_text.strip()),
-                "table_count": len(md_tables),
-            })
+            pages_meta.append(
+                {
+                    "page": page_num + 1,
+                    "has_text": bool(page_text.strip()),
+                    "table_count": len(md_tables),
+                }
+            )
 
     full_text = "\n\n".join(page_runs)
     return {
@@ -100,10 +115,37 @@ def extract_text_from_pdf(storage_path: str) -> str:
 
 
 TEXT_EXTENSIONS = {
-    ".txt", ".py", ".md", ".json", ".yaml", ".yml", ".ini", ".toml", 
-    ".csv", ".xml", ".sh", ".js", ".ts", ".html", ".css", ".go",
-    ".rs", ".c", ".cpp", ".h", ".hpp", ".java", ".kt", ".swift",
-    ".sql", ".properties", ".conf", ".cfg", ".docx", ".xlsx", ".pptx"
+    ".txt",
+    ".py",
+    ".md",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".ini",
+    ".toml",
+    ".csv",
+    ".xml",
+    ".sh",
+    ".js",
+    ".ts",
+    ".html",
+    ".css",
+    ".go",
+    ".rs",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".java",
+    ".kt",
+    ".swift",
+    ".sql",
+    ".properties",
+    ".conf",
+    ".cfg",
+    ".docx",
+    ".xlsx",
+    ".pptx",
 }
 
 
@@ -118,11 +160,15 @@ def extract_text_from_docx(storage_path: str) -> str:
                 return ""
             xml_content = z.read("word/document.xml")
             tree = ET.fromstring(xml_content)
-            
+
             paragraphs = []
             for p in tree.iter():
                 if p.tag.endswith("}p"):
-                    texts = [elem.text for elem in p.iter() if elem.tag.endswith("}t") and elem.text]
+                    texts = [
+                        elem.text
+                        for elem in p.iter()
+                        if elem.tag.endswith("}t") and elem.text
+                    ]
                     p_text = "".join(texts).strip()
                     if p_text:
                         paragraphs.append(p_text)
@@ -145,11 +191,19 @@ def extract_text_from_xlsx(storage_path: str) -> str:
                 sst_tree = ET.fromstring(z.read("xl/sharedStrings.xml"))
                 for si in sst_tree.iter():
                     if si.tag.endswith("}si"):
-                        t_parts = [t.text for t in si.iter() if t.tag.endswith("}t") and t.text]
+                        t_parts = [
+                            t.text for t in si.iter() if t.tag.endswith("}t") and t.text
+                        ]
                         shared_strings.append("".join(t_parts))
 
             # 2. Iterate worksheet XMLs
-            sheet_files = sorted([name for name in z.namelist() if name.startswith("xl/worksheets/sheet") and name.endswith(".xml")])
+            sheet_files = sorted(
+                [
+                    name
+                    for name in z.namelist()
+                    if name.startswith("xl/worksheets/sheet") and name.endswith(".xml")
+                ]
+            )
             sheet_outputs = []
 
             for idx, sheet_file in enumerate(sheet_files):
@@ -169,7 +223,11 @@ def extract_text_from_xlsx(storage_path: str) -> str:
                                 if v_elem is not None and v_elem.text:
                                     if c_type == "s":
                                         s_idx = int(v_elem.text)
-                                        val = shared_strings[s_idx] if s_idx < len(shared_strings) else ""
+                                        val = (
+                                            shared_strings[s_idx]
+                                            if s_idx < len(shared_strings)
+                                            else ""
+                                        )
                                     else:
                                         val = v_elem.text
                                     row_vals.append(str(val).strip())
@@ -179,7 +237,9 @@ def extract_text_from_xlsx(storage_path: str) -> str:
                             rows_data.append(row_vals)
 
                 if rows_data:
-                    md_table = convert_table_to_markdown(rows_data[0], rows_data[1:] if len(rows_data) > 1 else [])
+                    md_table = convert_table_to_markdown(
+                        rows_data[0], rows_data[1:] if len(rows_data) > 1 else []
+                    )
                     sheet_outputs.append(f"--- Sheet {idx + 1} ---\n{md_table}")
 
             return "\n\n".join(sheet_outputs)
@@ -194,14 +254,26 @@ def extract_text_from_pptx(storage_path: str) -> str:
         import xml.etree.ElementTree as ET
 
         with zipfile.ZipFile(storage_path) as z:
-            slide_files = sorted([name for name in z.namelist() if name.startswith("ppt/slides/slide") and name.endswith(".xml")])
+            slide_files = sorted(
+                [
+                    name
+                    for name in z.namelist()
+                    if name.startswith("ppt/slides/slide") and name.endswith(".xml")
+                ]
+            )
             slide_outputs = []
 
             for idx, slide_file in enumerate(slide_files):
                 slide_tree = ET.fromstring(z.read(slide_file))
-                texts = [elem.text for elem in slide_tree.iter() if elem.tag.endswith("}t") and elem.text and elem.text.strip()]
+                texts = [
+                    elem.text
+                    for elem in slide_tree.iter()
+                    if elem.tag.endswith("}t") and elem.text and elem.text.strip()
+                ]
                 if texts:
-                    slide_outputs.append(f"--- Slide {idx + 1} ---\n" + "\n".join(texts))
+                    slide_outputs.append(
+                        f"--- Slide {idx + 1} ---\n" + "\n".join(texts)
+                    )
 
             return "\n\n".join(slide_outputs)
     except Exception:
@@ -217,7 +289,7 @@ def extract_text_from_file(storage_path: str) -> str:
         return extract_text_from_xlsx(storage_path)
     if storage_path.lower().endswith(".pptx"):
         return extract_text_from_pptx(storage_path)
-    
+
     _, ext = os.path.splitext(storage_path.lower())
     if ext not in TEXT_EXTENSIONS:
         return ""

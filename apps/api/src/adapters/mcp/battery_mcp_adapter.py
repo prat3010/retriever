@@ -258,7 +258,9 @@ class BatteryMcpAdapter:
                 )
 
             if tool_name == "list_batteries":
-                batteries_resp = self._container.battery_service.get_platform_batteries()
+                batteries_resp = (
+                    self._container.battery_service.get_platform_batteries()
+                )
                 battery_list = [
                     {
                         "id": b.id,
@@ -284,20 +286,28 @@ class BatteryMcpAdapter:
                         is_error=True,
                     )
                 return McpToolExecutionResult(
-                    content=[McpContentItem(text=json.dumps(battery.model_dump(), indent=2))],
+                    content=[
+                        McpContentItem(text=json.dumps(battery.model_dump(), indent=2))
+                    ],
                     is_error=False,
                 )
 
             if tool_name == "system_metrics":
                 try:
-                    quota = await self._container.quota_service.get_tenant_quota(tenant_id)
+                    quota = await self._container.quota_service.get_tenant_quota(
+                        tenant_id
+                    )
                     metrics_data = {
                         "tenant_id": tenant_id,
                         "status": "operational",
-                        "quota": quota.model_dump() if hasattr(quota, "model_dump") else str(quota),
+                        "quota": quota.model_dump()
+                        if hasattr(quota, "model_dump")
+                        else str(quota),
                     }
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text=json.dumps(metrics_data, indent=2))],
+                        content=[
+                            McpContentItem(text=json.dumps(metrics_data, indent=2))
+                        ],
                         is_error=False,
                     )
                 except Exception:
@@ -308,7 +318,9 @@ class BatteryMcpAdapter:
                         "cache_tier": "semantic_redis",
                     }
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text=json.dumps(metrics_data, indent=2))],
+                        content=[
+                            McpContentItem(text=json.dumps(metrics_data, indent=2))
+                        ],
                         is_error=False,
                     )
 
@@ -317,7 +329,11 @@ class BatteryMcpAdapter:
                 top_k = int(arguments.get("top_k", 5))
                 if not query_text:
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text="Error: 'query' argument cannot be empty.")],
+                        content=[
+                            McpContentItem(
+                                text="Error: 'query' argument cannot be empty."
+                            )
+                        ],
                         is_error=True,
                     )
 
@@ -335,11 +351,18 @@ class BatteryMcpAdapter:
                 else:
                     chunks_repr = []
                     for idx, chunk in enumerate(search_res.results, 1):
-                        score_label = f"{round(chunk.score * 100, 1)}%" if chunk.score <= 1.0 else f"{round(chunk.score, 2)}"
+                        score_label = (
+                            f"{round(chunk.score * 100, 1)}%"
+                            if chunk.score <= 1.0
+                            else f"{round(chunk.score, 2)}"
+                        )
                         chunks_repr.append(
                             f"[{idx}] (Score: {score_label}, DocID: {chunk.document_id}, ChunkID: {chunk.chunk_id}):\n{chunk.content}"
                         )
-                    output_text = f"Retrieved {len(search_res.results)} chunks for '{query_text}':\n\n" + "\n\n---\n\n".join(chunks_repr)
+                    output_text = (
+                        f"Retrieved {len(search_res.results)} chunks for '{query_text}':\n\n"
+                        + "\n\n---\n\n".join(chunks_repr)
+                    )
 
                 return McpToolExecutionResult(
                     content=[McpContentItem(text=output_text)],
@@ -351,19 +374,37 @@ class BatteryMcpAdapter:
                 doc_id = str(arguments.get("document_id", "")).strip()
                 if not doc_id:
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text="Error: 'document_id' argument is required.")],
+                        content=[
+                            McpContentItem(
+                                text="Error: 'document_id' argument is required."
+                            )
+                        ],
                         is_error=True,
                     )
 
-                doc = await self._container.document_repository.get_document(tenant_id, doc_id)
+                doc = await self._container.document_repository.get_document(
+                    tenant_id, doc_id
+                )
                 if not doc:
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text=f"Document '{doc_id}' not found for tenant '{tenant_id}'.")],
+                        content=[
+                            McpContentItem(
+                                text=f"Document '{doc_id}' not found for tenant '{tenant_id}'."
+                            )
+                        ],
                         is_error=True,
                     )
 
-                chunks = await self._container.document_repository.get_document_chunks(tenant_id, doc_id)
-                chunks_text = "\n\n".join(f"[Chunk #{c.chunk_index}]:\n{c.content}" for c in chunks) if chunks else "No chunk spans indexed."
+                chunks = await self._container.document_repository.get_document_chunks(
+                    tenant_id, doc_id
+                )
+                chunks_text = (
+                    "\n\n".join(
+                        f"[Chunk #{c.chunk_index}]:\n{c.content}" for c in chunks
+                    )
+                    if chunks
+                    else "No chunk spans indexed."
+                )
                 doc_repr = (
                     f"Document ID: {doc.id}\n"
                     f"Filename: {doc.filename}\n"
@@ -382,7 +423,11 @@ class BatteryMcpAdapter:
                 max_depth = int(arguments.get("max_depth", 2))
                 if not entity:
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text="Error: 'query' argument cannot be empty.")],
+                        content=[
+                            McpContentItem(
+                                text="Error: 'query' argument cannot be empty."
+                            )
+                        ],
                         is_error=True,
                     )
 
@@ -395,7 +440,8 @@ class BatteryMcpAdapter:
                     out_text = f"No graph triples found matching entity '{entity}' within {max_depth} hops for tenant '{tenant_id}'."
                 else:
                     triples_text = "\n".join(
-                        f"({t.subject}) --[{t.predicate}]--> ({t.object})" for t in triples_res.triples
+                        f"({t.subject}) --[{t.predicate}]--> ({t.object})"
+                        for t in triples_res.triples
                     )
                     out_text = f"Found {len(triples_res.triples)} graph relations for '{entity}':\n\n{triples_text}"
 
@@ -408,7 +454,11 @@ class BatteryMcpAdapter:
                 code = str(arguments.get("code", "")).strip()
                 if not code:
                     return McpToolExecutionResult(
-                        content=[McpContentItem(text="Error: 'code' argument cannot be empty.")],
+                        content=[
+                            McpContentItem(
+                                text="Error: 'code' argument cannot be empty."
+                            )
+                        ],
                         is_error=True,
                     )
 
@@ -416,7 +466,11 @@ class BatteryMcpAdapter:
                     tenant_id=tenant_id,
                     code=code,
                 )
-                out_str = sandbox_res.output or str(sandbox_res.return_value) or "(Execution completed with no stdout)"
+                out_str = (
+                    sandbox_res.output
+                    or str(sandbox_res.return_value)
+                    or "(Execution completed with no stdout)"
+                )
                 return McpToolExecutionResult(
                     content=[McpContentItem(text=out_str)],
                     is_error=sandbox_res.is_error,
@@ -434,7 +488,9 @@ class BatteryMcpAdapter:
                     "text_length": len(text),
                     "passed": not is_injection,
                     "action": "allow" if not is_injection else "block",
-                    "reason": "Safe" if not is_injection else "Disallowed prompt injection detected by Llama Guard 3 sentinel",
+                    "reason": "Safe"
+                    if not is_injection
+                    else "Disallowed prompt injection detected by Llama Guard 3 sentinel",
                 }
                 return McpToolExecutionResult(
                     content=[McpContentItem(text=json.dumps(result_payload, indent=2))],
@@ -450,7 +506,9 @@ class BatteryMcpAdapter:
 
                 compressor = self._container._cache.get("context_compressor")
                 if compressor:
-                    comp_res = compressor.compress(CompressionRequest(text=text, compression_rate=ratio))
+                    comp_res = compressor.compress(
+                        CompressionRequest(text=text, compression_rate=ratio)
+                    )
                     out_str = (
                         f"[LongLLMLingua: {comp_res.original_tokens} -> {comp_res.compressed_tokens} tokens "
                         f"(ratio: {comp_res.compression_ratio:.2f})]:\n\n{comp_res.compressed_text}"
@@ -466,12 +524,19 @@ class BatteryMcpAdapter:
             if tool_name == "swarm_topology":
                 topology = self._container.swarm_mesh_adapter.get_topology(tenant_id)
                 return McpToolExecutionResult(
-                    content=[McpContentItem(text=json.dumps(topology.model_dump(), indent=2, default=str))],
+                    content=[
+                        McpContentItem(
+                            text=json.dumps(
+                                topology.model_dump(), indent=2, default=str
+                            )
+                        )
+                    ],
                     is_error=False,
                 )
 
             if tool_name == "swarm_sync":
                 from src.domain.abstractions.swarm import AntiEntropyDigest
+
                 sender_id = str(arguments.get("sender_id", "node_a"))
                 target_id = str(arguments.get("target_id", "node_b"))
                 digest = AntiEntropyDigest(
@@ -486,7 +551,11 @@ class BatteryMcpAdapter:
                     digest=digest,
                 )
                 return McpToolExecutionResult(
-                    content=[McpContentItem(text=json.dumps(res.model_dump(), indent=2, default=str))],
+                    content=[
+                        McpContentItem(
+                            text=json.dumps(res.model_dump(), indent=2, default=str)
+                        )
+                    ],
                     is_error=False,
                 )
 
@@ -503,11 +572,18 @@ class BatteryMcpAdapter:
                 )
 
             return McpToolExecutionResult(
-                content=[McpContentItem(text=f"Unknown tool '{tool_name}' for tenant '{tenant_id}'.")],
+                content=[
+                    McpContentItem(
+                        text=f"Unknown tool '{tool_name}' for tenant '{tenant_id}'."
+                    )
+                ],
                 is_error=True,
             )
         except Exception as exc:
-            logger.error(f"Error executing MCP tool '{tool_name}' for tenant {tenant_id}: {exc}", exc_info=True)
+            logger.error(
+                f"Error executing MCP tool '{tool_name}' for tenant {tenant_id}: {exc}",
+                exc_info=True,
+            )
             return McpToolExecutionResult(
                 content=[McpContentItem(text=f"Execution error: {exc!s}")],
                 is_error=True,

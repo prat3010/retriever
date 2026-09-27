@@ -1,4 +1,5 @@
 """Slack Web API Data Connector for Channels, Conversations, and Threads."""
+
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -98,17 +99,21 @@ class SlackConnector(BaseConnector):
         ]
 
         if replies:
-            lines.extend([
-                "",
-                "## Thread Replies",
-                "",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Thread Replies",
+                    "",
+                ]
+            )
             for reply in replies:
                 r_user = reply.get("user", "user")
                 r_text = reply.get("text", "")
                 r_ts = reply.get("ts", "")
                 try:
-                    r_time = datetime.fromtimestamp(float(r_ts), tz=UTC).strftime("%H:%M:%S UTC")
+                    r_time = datetime.fromtimestamp(float(r_ts), tz=UTC).strftime(
+                        "%H:%M:%S UTC"
+                    )
                 except Exception:
                     r_time = r_ts
                 lines.append(f"- **@{r_user}** ({r_time}): {r_text}")
@@ -132,7 +137,9 @@ class SlackConnector(BaseConnector):
             },
         )
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Fetch all documents without prior cursor."""
         docs, _ = await self.fetch_incremental(config, ConnectorSyncState())
         return docs
@@ -170,7 +177,10 @@ class SlackConnector(BaseConnector):
                 cursor=f"slack_ts_{highest_watermark}",
                 watermark=highest_watermark,
                 last_sync_at=now_iso,
-                metadata={"channels": channels, "messages_synced": len(discovered_docs)},
+                metadata={
+                    "channels": channels,
+                    "messages_synced": len(discovered_docs),
+                },
             )
             return discovered_docs, new_state
 
@@ -201,7 +211,9 @@ class SlackConnector(BaseConnector):
                         if rep_res.status_code == 200:
                             rep_data = rep_res.json()
                             if rep_data.get("ok"):
-                                replies = rep_data.get("messages", [])[1:]  # Skip parent
+                                replies = rep_data.get("messages", [])[
+                                    1:
+                                ]  # Skip parent
 
                     doc = self._format_thread_to_document(ch, msg, replies)
                     discovered_docs.append(doc)

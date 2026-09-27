@@ -19,8 +19,9 @@ MULTI_QUERY_PROMPT = (
 
 
 class LLMQueryRewriterAdapter(QueryRewriterProvider):
-
-    def __init__(self, llm: LlmProvider, model: str = "meta-llama/llama-3.3-70b-instruct") -> None:
+    def __init__(
+        self, llm: LlmProvider, model: str = "meta-llama/llama-3.3-70b-instruct"
+    ) -> None:
         self.llm = llm
         self.model = model
 
@@ -52,7 +53,9 @@ class LLMQueryRewriterAdapter(QueryRewriterProvider):
 
         request = InferenceRequest(
             messages=[
-                ChatMessage(role="system", content=MULTI_QUERY_PROMPT.format(query=query)),
+                ChatMessage(
+                    role="system", content=MULTI_QUERY_PROMPT.format(query=query)
+                ),
                 ChatMessage(role="user", content=f"Query: {query}"),
             ],
             temperature=0.4,
@@ -62,8 +65,11 @@ class LLMQueryRewriterAdapter(QueryRewriterProvider):
             response = await asyncio.wait_for(
                 self.llm.generate(request, {"model": self.model}), timeout=3.0
             )
-            lines = [line.strip("- ").strip() for line in response.content.strip().split("\n") if line.strip()]
+            lines = [
+                line.strip("- ").strip()
+                for line in response.content.strip().split("\n")
+                if line.strip()
+            ]
             return lines if lines else [query]
         except Exception:
             return [query]
-

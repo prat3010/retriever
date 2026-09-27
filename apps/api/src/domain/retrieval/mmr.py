@@ -16,7 +16,9 @@ def _compute_tfidf(docs: list[str]) -> list[dict[str, float]]:
     df: Counter[str] = Counter()
     for t in tokenized:
         df.update(set(t))
-    idf = {term: math.log(1 + (n - freq + 0.5) / (freq + 0.5)) for term, freq in df.items()}
+    idf = {
+        term: math.log(1 + (n - freq + 0.5) / (freq + 0.5)) for term, freq in df.items()
+    }
     return [{t: tf[t] * idf.get(t, 0) for t in tf} for tf in tfs]
 
 
@@ -46,7 +48,10 @@ def mmr_diversify(
     selected: list[int] = []
     remaining = list(range(len(candidates)))
 
-    sim_matrix = [[_cosine_sim(tfidf_vecs[i], tfidf_vecs[j]) for j in range(len(candidates))] for i in range(len(candidates))]
+    sim_matrix = [
+        [_cosine_sim(tfidf_vecs[i], tfidf_vecs[j]) for j in range(len(candidates))]
+        for i in range(len(candidates))
+    ]
 
     for _ in range(min(top_k, len(candidates))):
         best = -1

@@ -8,7 +8,12 @@ from processing_core.pdf_parser import (
     extract_text_from_pptx,
     extract_text_from_xlsx,
 )
-from processing_core.chunker import chunk_text, tokenize_text, chunk_recursive, chunk_semantic
+from processing_core.chunker import (
+    chunk_text,
+    tokenize_text,
+    chunk_recursive,
+    chunk_semantic,
+)
 from processing_core.embedding import embed_with_retry
 from processing_core.encryption import ConfigEncrypter
 
@@ -28,4 +33,3 @@ __all__ = [
     "embed_with_retry",
     "ConfigEncrypter",
 ]
-

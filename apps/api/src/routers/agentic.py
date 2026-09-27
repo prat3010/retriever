@@ -28,10 +28,16 @@ router = APIRouter(prefix="/v1", tags=["Agentic Workflows"])
 class ReActStreamRequest(BaseModel):
     """Payload to trigger a streaming ReAct agentic reasoning loop."""
 
-    prompt: str = Field(..., min_length=1, description="Goal or multi-step query for the agent")
+    prompt: str = Field(
+        ..., min_length=1, description="Goal or multi-step query for the agent"
+    )
     max_turns: int = Field(default=8, ge=1, le=20, description="Max reasoning turns")
-    timeout_seconds: float = Field(default=30.0, ge=5.0, le=120.0, description="Max execution timeout in seconds")
-    allowed_tools: list[str] | None = Field(default=None, description="Optional whitelist of allowed tool names")
+    timeout_seconds: float = Field(
+        default=30.0, ge=5.0, le=120.0, description="Max execution timeout in seconds"
+    )
+    allowed_tools: list[str] | None = Field(
+        default=None, description="Optional whitelist of allowed tool names"
+    )
 
 
 @router.post(
@@ -193,7 +199,9 @@ class ClassifyComplexityRequest(BaseModel):
     """Payload to classify task complexity and determine starting model tier."""
 
     query: str = Field(..., min_length=1, description="User prompt or task to evaluate")
-    allowed_tools: list[str] | None = Field(default=None, description="Optional list of tools available for the task")
+    allowed_tools: list[str] | None = Field(
+        default=None, description="Optional list of tools available for the task"
+    )
 
 
 @router.get(

@@ -77,5 +77,5 @@ class OpenAIEmbeddingAdapter(EmbeddingProvider):
             except (openai.APIError, openai.APITimeoutError, openai.RateLimitError):
                 if attempt == max_retries:
                     raise
-                sleep_seconds = (2 ** attempt) + random.uniform(0, 1)
+                sleep_seconds = (2**attempt) + random.uniform(0, 1)
                 await asyncio.sleep(sleep_seconds)

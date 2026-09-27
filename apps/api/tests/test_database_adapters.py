@@ -65,7 +65,9 @@ async def test_identity_provider_validate_token_bypasses_rls(mock_session_ctx) -
 
 @pytest.mark.asyncio
 @patch("src.adapters.database.inference_repository.tenant_session", autospec=True)
-async def test_chat_message_repository_scopes_writes_to_tenant(mock_session_ctx) -> None:
+async def test_chat_message_repository_scopes_writes_to_tenant(
+    mock_session_ctx,
+) -> None:
     tenant_id = str(uuid.uuid4())
     session_id = str(uuid.uuid4())
     mock_db_session = MagicMock()
@@ -110,7 +112,7 @@ async def test_chat_message_repository_scopes_reads_to_tenant(mock_session_ctx) 
 async def test_tenant_session_rejects_sql_injection() -> None:
     from src.adapters.database.connection import tenant_session
     from src.domain.abstractions.exceptions import TenantIsolationViolationError
-    
+
     # 1. Valid UUID should not raise TenantIsolationViolationError
     valid_uuid = str(uuid.uuid4())
     try:
@@ -118,11 +120,11 @@ async def test_tenant_session_rejects_sql_injection() -> None:
             pass
     except Exception as e:
         assert not isinstance(e, TenantIsolationViolationError)
-        
+
     # 2. Malicious payload should raise TenantIsolationViolationError
     malicious_payload = "00000000-0000-0000-0000-000000000000'; DROP TABLE tenants; --"
     with pytest.raises(TenantIsolationViolationError) as exc_info:
         async with tenant_session(tenant_id=malicious_payload):
             pass
-            
+
     assert "Invalid tenant ID format" in str(exc_info.value)

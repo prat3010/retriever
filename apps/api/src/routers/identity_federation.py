@@ -33,6 +33,7 @@ router = APIRouter(tags=["Enterprise Identity Federation & RB-VAC"])
 
 # --- Request/Response DTOs ---
 
+
 class IdentityHealthResponse(BaseModel):
     """Health check and parameter status for Platform Battery #34."""
 
@@ -84,6 +85,7 @@ class RbVacSimulateRequest(BaseModel):
 
 # --- 1. Health & Discovery Endpoints ---
 
+
 @router.get(
     "/v1/identity/health",
     response_model=IdentityHealthResponse,
@@ -94,6 +96,7 @@ async def get_identity_health() -> IdentityHealthResponse:
 
 
 # --- 2. SAML 2.0 Endpoints ---
+
 
 @router.post(
     "/v1/tenants/{tenant_id}/identity/saml/config",
@@ -133,7 +136,9 @@ async def get_saml_idp_config(
 async def get_sp_metadata(
     tenant_id: str = Path(..., description="Tenant UUID"),
 ) -> Response:
-    xml_content = await container.identity_federation_adapter.generate_sp_metadata(tenant_id)
+    xml_content = await container.identity_federation_adapter.generate_sp_metadata(
+        tenant_id
+    )
     return Response(content=xml_content, media_type="application/samlmetadata+xml")
 
 
@@ -161,6 +166,7 @@ async def process_saml_acs(
 
 
 # --- 3. SCIM 2.0 Endpoints (RFC 7643 / RFC 7644) ---
+
 
 @router.post(
     "/v1/tenants/{tenant_id}/identity/scim/token",
@@ -312,7 +318,9 @@ async def delete_scim_user(
     tenant_id: str = Path(..., description="Tenant UUID"),
     user_id: str = Path(..., description="User ID"),
 ) -> Response:
-    deleted = await container.identity_federation_adapter.delete_scim_user(tenant_id, user_id)
+    deleted = await container.identity_federation_adapter.delete_scim_user(
+        tenant_id, user_id
+    )
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -362,7 +370,9 @@ async def get_scim_group(
     tenant_id: str = Path(..., description="Tenant UUID"),
     group_id: str = Path(..., description="Group ID"),
 ) -> ScimGroup:
-    group = await container.identity_federation_adapter.get_scim_group(tenant_id, group_id)
+    group = await container.identity_federation_adapter.get_scim_group(
+        tenant_id, group_id
+    )
     if not group:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -403,7 +413,9 @@ async def delete_scim_group(
     tenant_id: str = Path(..., description="Tenant UUID"),
     group_id: str = Path(..., description="Group ID"),
 ) -> Response:
-    deleted = await container.identity_federation_adapter.delete_scim_group(tenant_id, group_id)
+    deleted = await container.identity_federation_adapter.delete_scim_group(
+        tenant_id, group_id
+    )
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -413,6 +425,7 @@ async def delete_scim_group(
 
 
 # --- 4. RB-VAC Pre-Retrieval Filter Simulation ---
+
 
 @router.post(
     "/v1/tenants/{tenant_id}/identity/rbvac/simulate",

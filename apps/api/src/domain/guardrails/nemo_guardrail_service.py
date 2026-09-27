@@ -50,8 +50,18 @@ define flow off topic redirection
   bot redirect to scope
 """,
         "rules": [
-            {"rule_id": "r_pii", "name": "PII Masking", "category": "safety", "enabled": True},
-            {"rule_id": "r_competitor", "name": "Competitor Shielding", "category": "brand", "enabled": True},
+            {
+                "rule_id": "r_pii",
+                "name": "PII Masking",
+                "category": "safety",
+                "enabled": True,
+            },
+            {
+                "rule_id": "r_competitor",
+                "name": "Competitor Shielding",
+                "category": "brand",
+                "enabled": True,
+            },
         ],
     },
     "legal_boundary": {
@@ -71,8 +81,18 @@ define flow legal advice flow
   bot legal disclaimer
 """,
         "rules": [
-            {"rule_id": "r_legal_disclaimer", "name": "Mandatory Legal Disclaimers", "category": "compliance", "enabled": True},
-            {"rule_id": "r_strict_factual", "name": "Strict Evidence Verification", "category": "grounding", "enabled": True},
+            {
+                "rule_id": "r_legal_disclaimer",
+                "name": "Mandatory Legal Disclaimers",
+                "category": "compliance",
+                "enabled": True,
+            },
+            {
+                "rule_id": "r_strict_factual",
+                "name": "Strict Evidence Verification",
+                "category": "grounding",
+                "enabled": True,
+            },
         ],
     },
     "financial_pricing": {
@@ -92,7 +112,12 @@ define flow pricing protection
   bot redirect commercial
 """,
         "rules": [
-            {"rule_id": "r_no_unauth_discounts", "name": "Block Unauthorized Discounts", "category": "pricing", "enabled": True},
+            {
+                "rule_id": "r_no_unauth_discounts",
+                "name": "Block Unauthorized Discounts",
+                "category": "pricing",
+                "enabled": True,
+            },
         ],
     },
     "developer_assistant": {
@@ -112,8 +137,18 @@ define flow protect system internals
   bot protect internals
 """,
         "rules": [
-            {"rule_id": "r_allow_code", "name": "Allow Code Snippets", "category": "developer", "enabled": True},
-            {"rule_id": "r_block_exfil", "name": "Block Prompt Exfiltration", "category": "safety", "enabled": True},
+            {
+                "rule_id": "r_allow_code",
+                "name": "Allow Code Snippets",
+                "category": "developer",
+                "enabled": True,
+            },
+            {
+                "rule_id": "r_block_exfil",
+                "name": "Block Prompt Exfiltration",
+                "category": "safety",
+                "enabled": True,
+            },
         ],
     },
 }

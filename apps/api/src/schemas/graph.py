@@ -10,9 +10,13 @@ from src.domain.abstractions.graph import EntityTriple
 class GraphQueryRequest(BaseModel):
     """Request model for GraphRAG multi-hop query endpoint."""
 
-    entity: str | None = Field(default=None, description="Root entity to start multi-hop traversal")
+    entity: str | None = Field(
+        default=None, description="Root entity to start multi-hop traversal"
+    )
     query: str | None = Field(default=None, description="Root entity or query string")
-    max_hops: int = Field(default=2, ge=1, le=5, description="Maximum graph depth traversal hops")
+    max_hops: int = Field(
+        default=2, ge=1, le=5, description="Maximum graph depth traversal hops"
+    )
 
     @property
     def target_entity(self) -> str:
@@ -57,10 +61,18 @@ class GraphQueryResponse(BaseModel):
 class CommunityDetectRequest(BaseModel):
     """Request model to trigger Leiden community detection for a tenant."""
 
-    max_levels: int = Field(default=3, ge=1, le=5, description="Maximum hierarchy levels")
-    resolution: float = Field(default=1.0, ge=0.1, le=5.0, description="Leiden modularity resolution")
-    min_community_size: int = Field(default=1, ge=1, description="Minimum entities per community")
-    generate_summaries: bool = Field(default=True, description="Whether to synthesize executive summaries")
+    max_levels: int = Field(
+        default=3, ge=1, le=5, description="Maximum hierarchy levels"
+    )
+    resolution: float = Field(
+        default=1.0, ge=0.1, le=5.0, description="Leiden modularity resolution"
+    )
+    min_community_size: int = Field(
+        default=1, ge=1, description="Minimum entities per community"
+    )
+    generate_summaries: bool = Field(
+        default=True, description="Whether to synthesize executive summaries"
+    )
 
 
 class CommunitySummaryDTO(BaseModel):
@@ -83,4 +95,3 @@ class CommunityDetectResponse(BaseModel):
     modularity_score: float
     levels: dict[int, list[CommunitySummaryDTO]]
     metadata: dict[str, Any] = Field(default_factory=dict)
-

@@ -87,7 +87,9 @@ class RlmExecutionEngine:
             ),
         ]
         llm_code_resp = await self.llm.generate(
-            InferenceRequest(messages=code_gen_messages, temperature=0.1, max_tokens=2048),
+            InferenceRequest(
+                messages=code_gen_messages, temperature=0.1, max_tokens=2048
+            ),
             {},
         )
         raw_code = llm_code_resp.content.strip()
@@ -148,7 +150,9 @@ Extracted Evidence Highlights:
             execution_time_ms=round(elapsed_ms, 2),
         )
 
-    async def analyze_repl_loop(self, request: RlmAnalysisRequest, max_turns: int = 3) -> RlmAnalysisResult:
+    async def analyze_repl_loop(
+        self, request: RlmAnalysisRequest, max_turns: int = 3
+    ) -> RlmAnalysisResult:
         """Execute multi-turn REPL loop for complex analytical multi-document tasks."""
         start_time = time.monotonic()
         code_executions: list[dict[str, Any]] = []
@@ -174,7 +178,10 @@ Extracted Evidence Highlights:
 
         messages = [
             ChatMessage(role="system", content=RLM_CODE_GEN_PROMPT),
-            ChatMessage(role="user", content=f"Task: {request.prompt}\nLoaded {len(chunks)} target document chunks."),
+            ChatMessage(
+                role="user",
+                content=f"Task: {request.prompt}\nLoaded {len(chunks)} target document chunks.",
+            ),
         ]
 
         turn = 0
@@ -214,16 +221,27 @@ Extracted Evidence Highlights:
             if not sandbox_res.is_error and sandbox_res.return_value is not None:
                 break
 
-            err_detail = getattr(sandbox_res, "error_message", None) or sandbox_res.output or "Execution error"
+            err_detail = (
+                getattr(sandbox_res, "error_message", None)
+                or sandbox_res.output
+                or "Execution error"
+            )
             messages.append(ChatMessage(role="assistant", content=raw_code))
-            messages.append(ChatMessage(role="user", content=f"Execution result: {sandbox_res.output}\nError: {err_detail}. Refine your script."))
+            messages.append(
+                ChatMessage(
+                    role="user",
+                    content=f"Execution result: {sandbox_res.output}\nError: {err_detail}. Refine your script.",
+                )
+            )
 
-        final_val = last_sandbox_res.return_value if last_sandbox_res else "Analysis complete"
+        final_val = (
+            last_sandbox_res.return_value if last_sandbox_res else "Analysis complete"
+        )
 
         # Synthesize final analytical summary combining REPL output and document evidence
         synthesis_prompt = f"""Target Goal: {request.prompt}
 REPL Code Analysis Output: {final_val}
-Console Output: {last_sandbox_res.output if last_sandbox_res else ''}
+Console Output: {last_sandbox_res.output if last_sandbox_res else ""}
 
 Extracted Evidence Highlights:
 """ + "\n".join([f"- Document {c.document_id}: {c.content[:2000]}" for c in chunks[:5]])
@@ -250,4 +268,3 @@ Extracted Evidence Highlights:
             subcalls_count=turn + 1,
             execution_time_ms=round(elapsed_ms, 2),
         )
-

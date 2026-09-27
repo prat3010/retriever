@@ -5,7 +5,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-ClusterPhase = Literal["Pending", "Provisioning", "Running", "Degraded", "Upgrading", "Failed"]
+ClusterPhase = Literal[
+    "Pending", "Provisioning", "Running", "Degraded", "Upgrading", "Failed"
+]
 
 
 class ClusterGpuConfig(BaseModel):
@@ -25,12 +27,20 @@ class ClusterBackupPolicy(BaseModel):
 
 
 class RetrieverClusterSpec(BaseModel):
-    name: str = Field(..., min_length=1, max_length=63, description="DNS-1123 label for cluster")
+    name: str = Field(
+        ..., min_length=1, max_length=63, description="DNS-1123 label for cluster"
+    )
     namespace: str = Field(default="default", min_length=1, max_length=63)
-    replicas: int = Field(default=2, ge=1, le=50, description="FastAPI API pod replica count")
-    web_replicas: int = Field(default=1, ge=0, le=20, description="Next.js Web Studio replica count")
+    replicas: int = Field(
+        default=2, ge=1, le=50, description="FastAPI API pod replica count"
+    )
+    web_replicas: int = Field(
+        default=1, ge=0, le=20, description="Next.js Web Studio replica count"
+    )
     image_tag: str = Field(default="v1.2.0-alpha1", description="Retriever image tag")
-    postgres_pvc_size: str = Field(default="20Gi", description="PersistentVolumeClaim capacity for pgvector")
+    postgres_pvc_size: str = Field(
+        default="20Gi", description="PersistentVolumeClaim capacity for pgvector"
+    )
     postgres_storage_class: str | None = None
     gpu: ClusterGpuConfig = Field(default_factory=ClusterGpuConfig)
     backup_policy: ClusterBackupPolicy = Field(default_factory=ClusterBackupPolicy)

@@ -44,16 +44,27 @@ def test_multicloud_domain_abstractions_zero_framework_imports():
     with open(domain_path, encoding="utf-8") as f:
         tree = ast.parse(f.read(), filename="multicloud.py")
 
-    disallowed = {"fastapi", "sqlalchemy", "httpx", "redis", "celery", "pydantic_settings"}
+    disallowed = {
+        "fastapi",
+        "sqlalchemy",
+        "httpx",
+        "redis",
+        "celery",
+        "pydantic_settings",
+    }
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for name in node.names:
                 root_pkg = name.name.split(".")[0]
-                assert root_pkg not in disallowed, f"Disallowed import '{root_pkg}' in multicloud abstractions"
+                assert root_pkg not in disallowed, (
+                    f"Disallowed import '{root_pkg}' in multicloud abstractions"
+                )
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 root_pkg = node.module.split(".")[0]
-                assert root_pkg not in disallowed, f"Disallowed import from '{root_pkg}' in multicloud abstractions"
+                assert root_pkg not in disallowed, (
+                    f"Disallowed import from '{root_pkg}' in multicloud abstractions"
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -205,7 +216,9 @@ def test_libsql_replication_lag_and_cycle():
     assert initial_stats.replication_lag_ms < 1.0
 
     # Advance sync cycle
-    updated_stats = service.record_sync_cycle("tenant_beta_02", frames_synced=15, sync_duration_ms=0.72)
+    updated_stats = service.record_sync_cycle(
+        "tenant_beta_02", frames_synced=15, sync_duration_ms=0.72
+    )
     assert updated_stats.primary_wal_frame == 1295
     assert updated_stats.local_wal_frame == 1295
     assert updated_stats.replication_lag_frames == 0
@@ -228,8 +241,12 @@ def test_battery_19_registration():
     battery_service = BatteryService()
     batteries = battery_service.get_platform_batteries().batteries
 
-    battery_19 = next((b for b in batteries if b.id == "multicloud_failover_libsql"), None)
-    assert battery_19 is not None, "Battery #19 'multicloud_failover_libsql' not found in catalog"
+    battery_19 = next(
+        (b for b in batteries if b.id == "multicloud_failover_libsql"), None
+    )
+    assert battery_19 is not None, (
+        "Battery #19 'multicloud_failover_libsql' not found in catalog"
+    )
     assert battery_19.category == BatteryCategory.EDGE_DISTRIBUTION
     assert battery_19.status == BatteryStatus.ACTIVE
     assert "LibSQL" in battery_19.algorithm_foundation
@@ -246,6 +263,7 @@ def test_battery_19_registration():
 async def test_multicloud_rest_api_endpoints():
     """Verifies /v1/admin/multicloud/* and /v1/tenants/{id}/multicloud/* routes."""
     from src.config import settings
+
     transport = ASGITransport(app=app)
     admin_headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
 
@@ -260,14 +278,18 @@ async def test_multicloud_rest_api_endpoints():
         assert data["active_battery"]["id"] == "multicloud_failover_libsql"
 
         # 2. Admin trigger health probes
-        probe_resp = await client.post("/v1/admin/multicloud/probe", headers=admin_headers)
+        probe_resp = await client.post(
+            "/v1/admin/multicloud/probe", headers=admin_headers
+        )
         assert probe_resp.status_code == 200
         probes = probe_resp.json()
         assert len(probes) >= 4
         assert any(p["region"] == "oci-bom" for p in probes)
 
         # 3. Admin replication status
-        repl_resp = await client.get("/v1/admin/multicloud/replication-status", headers=admin_headers)
+        repl_resp = await client.get(
+            "/v1/admin/multicloud/replication-status", headers=admin_headers
+        )
         assert repl_resp.status_code == 200
         repl_data = repl_resp.json()
         assert repl_data["engine"] == "libsql_embedded_wal"

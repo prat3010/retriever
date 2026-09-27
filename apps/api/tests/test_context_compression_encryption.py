@@ -19,6 +19,7 @@ from src.main import app
 
 # ── 1. Context Compression Tests ──────────────────────────────────────────
 
+
 def test_context_compressor_trims_fluff_and_preserves_facts():
     """Verify IntelligentContextCompressor removes filler and keeps factual numbers."""
     compressor = IntelligentContextCompressor()
@@ -37,6 +38,7 @@ def test_context_compressor_trims_fluff_and_preserves_facts():
 
 
 # ── 2. AES-256 Field Encryption Tests ──────────────────────────────────────
+
 
 def test_aes256_field_encryption_roundtrip():
     """Verify AES-256 field encryption and decryption roundtrip."""
@@ -63,9 +65,13 @@ def test_encryption_tenant_isolation():
     tenant_b = str(uuid.uuid4())
     secret_text = "Highly Confidential Data"
 
-    enc_res = encryptor.encrypt(EncryptionRequest(tenant_id=tenant_a, plaintext=secret_text))
+    enc_res = encryptor.encrypt(
+        EncryptionRequest(tenant_id=tenant_a, plaintext=secret_text)
+    )
 
-    dec_req_wrong_tenant = DecryptionRequest(tenant_id=tenant_b, ciphertext=enc_res.ciphertext)
+    dec_req_wrong_tenant = DecryptionRequest(
+        tenant_id=tenant_b, ciphertext=enc_res.ciphertext
+    )
     try:
         encryptor.decrypt(dec_req_wrong_tenant)
         pytest.fail("Should have failed decryption with wrong tenant key")
@@ -74,6 +80,7 @@ def test_encryption_tenant_isolation():
 
 
 # ── 3. Router Endpoints Tests ──────────────────────────────────────────────
+
 
 def test_security_compression_endpoints():
     """Verify API endpoints for context compression, encryption, and decryption."""

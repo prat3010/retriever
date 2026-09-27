@@ -77,7 +77,10 @@ def test_battery_31_registration():
     """Verify Platform Battery #31 (mesh_load_balancer) is actively registered in BatteryService."""
     battery = battery_service.get_battery("mesh_load_balancer")
     assert battery is not None, "Battery #31 'mesh_load_balancer' must be registered."
-    assert battery.name == "Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling"
+    assert (
+        battery.name
+        == "Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling"
+    )
     assert battery.category.value == "system_extensibility"
     assert battery.status.value == "active"
     assert battery.milestone.startswith("M116")
@@ -230,7 +233,9 @@ async def test_autoscaling_scale_up_and_scale_to_zero():
         scale_down_idle_seconds=60.0,
         max_ephemeral_enclaves=3,
     )
-    lb = MeshLoadBalancerService(mesh_service=mesh_service, provisioner=provisioner, policy=policy)
+    lb = MeshLoadBalancerService(
+        mesh_service=mesh_service, provisioner=provisioner, policy=policy
+    )
 
     # Register initial node with 90% utilization in enclave_cluster (triggers scale-up)
     primary_node = MeshPeerNode(
@@ -316,7 +321,9 @@ def test_fastapi_rest_endpoints_load_balancer(client):
             "ephemeral_idle_seconds": 0.0,
         },
     }
-    res_telemetry = client.post("/v1/mesh/load/heartbeat-telemetry", json=telemetry_payload)
+    res_telemetry = client.post(
+        "/v1/mesh/load/heartbeat-telemetry", json=telemetry_payload
+    )
     assert res_telemetry.status_code == 200
     node_resp = res_telemetry.json()
     assert node_resp["capacity"]["cpu_utilization_pct"] == 25.5

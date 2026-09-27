@@ -41,7 +41,9 @@ def engine() -> DurableWorkflowEngine:
 
 
 @pytest.fixture
-def adapter(repo: SqlWorkflowRepository, engine: DurableWorkflowEngine) -> DurableWorkflowAdapter:
+def adapter(
+    repo: SqlWorkflowRepository, engine: DurableWorkflowEngine
+) -> DurableWorkflowAdapter:
     return DurableWorkflowAdapter(repository=repo, engine=engine)
 
 
@@ -127,7 +129,9 @@ async def test_step_retry_with_eventual_success(repo: SqlWorkflowRepository):
         nonlocal attempt_counter
         attempt_counter += 1
         if attempt_counter < 3:
-            raise ConnectionResetError(f"Temporary network blip (attempt {attempt_counter})")
+            raise ConnectionResetError(
+                f"Temporary network blip (attempt {attempt_counter})"
+            )
         return {"connected": True, "final_attempt": attempt_counter}
 
     res = await ctx.run(
@@ -185,7 +189,10 @@ async def test_vault_bulk_ingest_pipeline(adapter: DurableWorkflowAdapter):
     tenant_id = str(uuid.uuid4())
     req = WorkflowRunRequest(
         workflow_name="vault_bulk_ingest",
-        input_payload={"raw_text": "Enterprise knowledge base documentation.", "document_id": "doc-101"},
+        input_payload={
+            "raw_text": "Enterprise knowledge base documentation.",
+            "document_id": "doc-101",
+        },
     )
     record = await adapter.start_workflow(tenant_id, req)
     assert record.workflow_name == "vault_bulk_ingest"
@@ -278,7 +285,6 @@ async def test_replay_failed_workflow_resumes_from_checkpoint(
     assert s1.memoized_output == {"documents_scanned": 12, "total_chunks": 99}
 
 
-
 # ── 6. Idempotency Key De-duplication ─────────────────────────────────────────
 
 
@@ -335,7 +341,9 @@ def test_battery_15_registered():
     resp = battery_svc.get_platform_batteries()
 
     assert resp.total_batteries >= 15
-    wf_battery = next((b for b in resp.batteries if b.id == "durable_workflow_engine"), None)
+    wf_battery = next(
+        (b for b in resp.batteries if b.id == "durable_workflow_engine"), None
+    )
     assert wf_battery is not None
     assert wf_battery.name == "Durable Asynchronous Workflow Execution Engine"
     assert wf_battery.category == BatteryCategory.BACKGROUND_WORKFLOWS
@@ -355,7 +363,9 @@ def test_rest_api_workflow_lifecycle(client: TestClient):
 
     with patch("src.config.settings.ADMIN_MASTER_KEY", "test_admin_key"):
         # 1. Platform Overview
-        overview_resp = client.get("/v1/admin/workflows/overview", headers=admin_headers)
+        overview_resp = client.get(
+            "/v1/admin/workflows/overview", headers=admin_headers
+        )
         assert overview_resp.status_code == 200
         overview_data = overview_resp.json()
         assert overview_data["total_blueprints"] >= 4
@@ -398,4 +408,3 @@ def test_rest_api_workflow_lifecycle(client: TestClient):
         assert cancel_resp.status_code == 200
         cancel_data = cancel_resp.json()
         assert cancel_data["status"] == "cancelled"
-

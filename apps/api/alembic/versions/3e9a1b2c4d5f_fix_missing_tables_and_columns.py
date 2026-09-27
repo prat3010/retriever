@@ -34,13 +34,17 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_sessions_tenant_id ON chat_sessions (tenant_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_chat_sessions_tenant_id ON chat_sessions (tenant_id)"
+    )
     op.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_sessions_session_tenant
         ON chat_sessions (session_id, tenant_id)
     """)
     # user_id index created by M3 migration if table existed, else we create it
-    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_sessions_user_id ON chat_sessions (user_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_chat_sessions_user_id ON chat_sessions (user_id)"
+    )
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS chat_messages (
@@ -55,9 +59,15 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_tenant_id ON chat_messages (tenant_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages (session_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_user_id ON chat_messages (user_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_chat_messages_tenant_id ON chat_messages (tenant_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages (session_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_chat_messages_user_id ON chat_messages (user_id)"
+    )
     op.execute("""
         DO $$
         BEGIN
@@ -87,9 +97,15 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_inference_logs_tenant_id ON inference_logs (tenant_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_inference_logs_session_id ON inference_logs (session_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_inference_logs_user_id ON inference_logs (user_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_inference_logs_tenant_id ON inference_logs (tenant_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_inference_logs_session_id ON inference_logs (session_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_inference_logs_user_id ON inference_logs (user_id)"
+    )
 
     op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
@@ -101,7 +117,9 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_tenant_id ON vector_records (tenant_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_tenant_id ON vector_records (tenant_id)"
+    )
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS prompt_templates (
@@ -113,7 +131,9 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_prompt_templates_tenant_id ON prompt_templates (tenant_id)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_prompt_templates_tenant_id ON prompt_templates (tenant_id)"
+    )
 
     # ── 2. Fix audit_logs column mismatch ──────────────────────────
     # Model has `action`, migration created `event_type`. Rename and drop `actor`.
@@ -158,8 +178,11 @@ def upgrade() -> None:
 
     # ── 4. Add RLS policies for tables missing them ────────────────
     rls_tables = [
-        "chat_sessions", "chat_messages", "inference_logs",
-        "vector_records", "prompt_templates",
+        "chat_sessions",
+        "chat_messages",
+        "inference_logs",
+        "vector_records",
+        "prompt_templates",
     ]
     for table in rls_tables:
         op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;")
@@ -197,7 +220,13 @@ def downgrade() -> None:
     op.execute("ALTER TABLE tenants ALTER COLUMN name TYPE VARCHAR(100)")
 
     # Drop RLS policies
-    for table in ["prompt_templates", "vector_records", "inference_logs", "chat_messages", "chat_sessions"]:
+    for table in [
+        "prompt_templates",
+        "vector_records",
+        "inference_logs",
+        "chat_messages",
+        "chat_sessions",
+    ]:
         op.execute(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {table}")
         op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
 
@@ -242,5 +271,11 @@ def downgrade() -> None:
     """)
 
     # Drop the 5 tables (IF EXISTS since they may not have existed before for some DBs)
-    for table in ["prompt_templates", "vector_records", "inference_logs", "chat_messages", "chat_sessions"]:
+    for table in [
+        "prompt_templates",
+        "vector_records",
+        "inference_logs",
+        "chat_messages",
+        "chat_sessions",
+    ]:
         op.execute(f"DROP TABLE IF EXISTS {table} CASCADE")

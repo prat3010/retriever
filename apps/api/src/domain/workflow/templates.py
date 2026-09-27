@@ -27,7 +27,9 @@ def get_legal_document_analyzer_template() -> WorkflowDAGGraph:
             title="Legal Query Ingress",
             description="Ingests user inquiry, jurisdiction, and target agreement clauses",
             position=DAGNodePosition(x=100.0, y=200.0),
-            config={"default_query": "Analyze indemnity and termination liability under Section 9."},
+            config={
+                "default_query": "Analyze indemnity and termination liability under Section 9."
+            },
             output_keys=["query"],
         ),
         DAGNode(
@@ -137,7 +139,9 @@ def get_customer_support_copilot_template() -> WorkflowDAGGraph:
             title="Support Inquiry Ingress",
             description="Customer ticket submission with user account metadata",
             position=DAGNodePosition(x=100.0, y=250.0),
-            config={"default_query": "How do I upgrade my tenant plan and configure custom SSL?"},
+            config={
+                "default_query": "How do I upgrade my tenant plan and configure custom SSL?"
+            },
             output_keys=["query"],
         ),
         DAGNode(
@@ -201,7 +205,12 @@ def get_customer_support_copilot_template() -> WorkflowDAGGraph:
 
     edges = [
         DAGEdge(id="e_sup_1", source="input_ticket", target="router_intent"),
-        DAGEdge(id="e_sup_2", source="router_intent", target="retrieval_kb", condition="technical"),
+        DAGEdge(
+            id="e_sup_2",
+            source="router_intent",
+            target="retrieval_kb",
+            condition="technical",
+        ),
         DAGEdge(id="e_sup_3", source="retrieval_kb", target="prompt_support"),
         DAGEdge(id="e_sup_4", source="prompt_support", target="llm_support"),
         DAGEdge(id="e_sup_5", source="llm_support", target="output_ticket"),
@@ -225,7 +234,9 @@ def get_technical_codebase_assistant_template() -> WorkflowDAGGraph:
             title="Developer Query Ingress",
             description="Developer query with symbol references and language target",
             position=DAGNodePosition(x=100.0, y=300.0),
-            config={"default_query": "How is tenant RLS enforced in vector_repository.py?"},
+            config={
+                "default_query": "How is tenant RLS enforced in vector_repository.py?"
+            },
             output_keys=["query"],
         ),
         DAGNode(
@@ -313,7 +324,9 @@ def get_multimodal_schematic_inspector_template() -> WorkflowDAGGraph:
             title="Schematic & Query Ingress",
             description="Accepts technical system flowcharts, SVG/PNG diagrams, and inspection queries",
             position=DAGNodePosition(x=100.0, y=350.0),
-            config={"default_query": "Identify potential single points of failure in the ingress gateway."},
+            config={
+                "default_query": "Identify potential single points of failure in the ingress gateway."
+            },
             output_keys=["query"],
         ),
         DAGNode(
@@ -376,8 +389,12 @@ def get_multimodal_schematic_inspector_template() -> WorkflowDAGGraph:
     ]
 
     edges = [
-        DAGEdge(id="e_sch_1", source="input_schematic", target="retrieval_vision_graph"),
-        DAGEdge(id="e_sch_2", source="retrieval_vision_graph", target="transform_crossmodal"),
+        DAGEdge(
+            id="e_sch_1", source="input_schematic", target="retrieval_vision_graph"
+        ),
+        DAGEdge(
+            id="e_sch_2", source="retrieval_vision_graph", target="transform_crossmodal"
+        ),
         DAGEdge(id="e_sch_3", source="transform_crossmodal", target="prompt_schematic"),
         DAGEdge(id="e_sch_4", source="prompt_schematic", target="llm_schematic"),
         DAGEdge(id="e_sch_5", source="llm_schematic", target="output_schematic"),

@@ -79,7 +79,9 @@ async def test_embed_retry_on_api_error() -> None:
     adapter._client = AsyncMock()
     adapter._client.embeddings.create = AsyncMock(
         side_effect=[
-            openai.RateLimitError("Rate limited", response=mock_http_response, body=None),
+            openai.RateLimitError(
+                "Rate limited", response=mock_http_response, body=None
+            ),
             openai.APITimeoutError(mock_http_request),
             mock_success_response,
         ]
@@ -106,7 +108,9 @@ async def test_embed_retry_exhaustion() -> None:
     adapter = OpenAIEmbeddingAdapter(api_key="test-key")
     adapter._client = AsyncMock()
     adapter._client.embeddings.create = AsyncMock(
-        side_effect=openai.RateLimitError("Persistent failure", response=mock_http_response, body=None)
+        side_effect=openai.RateLimitError(
+            "Persistent failure", response=mock_http_response, body=None
+        )
     )
 
     with pytest.raises(openai.RateLimitError, match="Persistent failure"):

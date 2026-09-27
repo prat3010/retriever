@@ -21,6 +21,7 @@ def sample_config() -> TenantConfiguration:
 def _async_mock_redis():
     """Patcher that wraps MagicMock methods with AsyncMock for await support."""
     from unittest.mock import MagicMock
+
     m = MagicMock()
     m.get = AsyncMock()
     m.setex = AsyncMock()
@@ -30,13 +31,16 @@ def _async_mock_redis():
 
 @pytest.fixture(autouse=True)
 def mock_redis():
-    with patch("src.adapters.cache.config_cache.redis_client", new_callable=_async_mock_redis) as m:
+    with patch(
+        "src.adapters.cache.config_cache.redis_client", new_callable=_async_mock_redis
+    ) as m:
         yield m
 
 
 @pytest.mark.asyncio
 async def test_get_cached_config_hit(mock_redis, cache, sample_config):
     import json
+
     mock_redis.get.return_value = json.dumps(sample_config.model_dump())
     result = await cache.get_cached_config("tnt_001")
     assert result is not None
@@ -76,6 +80,7 @@ async def test_set_cached_config_redis_down(mock_redis, cache, sample_config):
 @pytest.mark.asyncio
 async def test_get_global_config_hit(mock_redis, cache, sample_config):
     import json
+
     mock_redis.get.return_value = json.dumps(sample_config.model_dump())
     result = await cache.get_cached_global_config()
     assert result is not None

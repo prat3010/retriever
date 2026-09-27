@@ -164,8 +164,12 @@ async def get_multicloud_replication_status() -> dict[str, Any]:
 )
 async def get_tenant_replica_config(tenantId: str) -> LibsqlReplicaConfig:
     """Returns connection parameters and sync auth token for a tenant's embedded replica."""
-    leader_node = _failover_controller.nodes.get(_failover_controller.active_leader_node_id)
-    leader_url = leader_node.endpoint_url if leader_node else "https://api.retriever.run"
+    leader_node = _failover_controller.nodes.get(
+        _failover_controller.active_leader_node_id
+    )
+    leader_url = (
+        leader_node.endpoint_url if leader_node else "https://api.retriever.run"
+    )
 
     return _replica_adapter.get_replica_config(
         tenant_id=tenantId,
@@ -191,13 +195,17 @@ async def sync_tenant_replica(tenantId: str) -> LibsqlReplicationStats:
 )
 async def check_tenant_multicloud_health(tenantId: str) -> dict[str, Any]:
     """Returns health and latency from the nearest edge cloud region for this tenant."""
-    leader_node = _failover_controller.nodes.get(_failover_controller.active_leader_node_id)
+    leader_node = _failover_controller.nodes.get(
+        _failover_controller.active_leader_node_id
+    )
     stats = await _replica_adapter.get_replication_stats(tenantId)
 
     return {
         "tenant_id": tenantId,
         "active_leader_region": _failover_controller.active_leader_region.value,
-        "active_leader_endpoint": leader_node.endpoint_url if leader_node else "https://api.retriever.run",
+        "active_leader_endpoint": leader_node.endpoint_url
+        if leader_node
+        else "https://api.retriever.run",
         "replica_wal_frame": stats.local_wal_frame,
         "replication_lag_ms": stats.replication_lag_ms,
         "status": "healthy",

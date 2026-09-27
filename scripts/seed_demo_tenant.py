@@ -16,7 +16,9 @@ from pathlib import Path
 api_root = Path(__file__).resolve().parent.parent / "apps" / "api"
 sys.path.insert(0, str(api_root))
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("seed_demo")
 
 DEMO_TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -85,6 +87,7 @@ async def generate_embedding(text: str, ollama_url: str) -> list[float]:
     """Attempts to generate real embeddings via local Ollama, or falls back to synthetic normalized vector."""
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(
                 f"{ollama_url}/api/embeddings",
@@ -100,6 +103,7 @@ async def generate_embedding(text: str, ollama_url: str) -> list[float]:
     # Deterministic fallback vector (768-dim normalized)
     seed = int(hashlib.md5(text.encode()).hexdigest(), 16)
     import random
+
     rng = random.Random(seed)
     raw = [rng.uniform(-1.0, 1.0) for _ in range(768)]
     norm = sum(x * x for x in raw) ** 0.5 or 1.0
@@ -127,7 +131,11 @@ async def seed_database():
         tenant = result.scalar_one_or_none()
 
         if not tenant:
-            logger.info("Creating demo tenant: %s (%s)", DEMO_TENANT_ID, "Demo Enterprise Workspace")
+            logger.info(
+                "Creating demo tenant: %s (%s)",
+                DEMO_TENANT_ID,
+                "Demo Enterprise Workspace",
+            )
             tenant = TenantDb(
                 tenant_id=DEMO_TENANT_ID,
                 name="Demo Enterprise Workspace",
@@ -202,7 +210,9 @@ async def seed_database():
             session.add(doc)
             await session.flush()
 
-            logger.info("Generating embeddings and indexing %d chunks...", len(SAMPLE_CHUNKS))
+            logger.info(
+                "Generating embeddings and indexing %d chunks...", len(SAMPLE_CHUNKS)
+            )
             for idx, item in enumerate(SAMPLE_CHUNKS):
                 chunk_vector = await generate_embedding(item["content"], ollama_url)
                 chunk_id = uuid.uuid4()

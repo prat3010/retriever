@@ -13,9 +13,9 @@ def adapter() -> PgVectorSearchAdapter:
     return PgVectorSearchAdapter()
 
 
-def _mock_row(chunk_id="chunk_1", doc_id="doc_1",
-              content="text", score=0.95,
-              metadata=None):
+def _mock_row(
+    chunk_id="chunk_1", doc_id="doc_1", content="text", score=0.95, metadata=None
+):
     return (chunk_id, doc_id, content, metadata or {}, score)
 
 
@@ -54,7 +54,9 @@ async def test_search_similar_happy_path(mock_build_filter, mock_session_ctx, ad
 @pytest.mark.asyncio
 @patch("src.adapters.vector.vector_repository.tenant_session", autospec=True)
 @patch("src.adapters.vector.vector_repository.build_filter_clause", autospec=True)
-async def test_search_similar_empty_results(mock_build_filter, mock_session_ctx, adapter):
+async def test_search_similar_empty_results(
+    mock_build_filter, mock_session_ctx, adapter
+):
     mock_build_filter.return_value = ("", {}, "")
     mock_db_session = MagicMock()
     mock_db_session.execute = AsyncMock()
@@ -65,7 +67,11 @@ async def test_search_similar_empty_results(mock_build_filter, mock_session_ctx,
     mock_db_session.execute.return_value = mock_result
 
     results = await adapter.search_similar(
-        tenant_id="tnt_001", embedding=[0.1], top_k=10, filters=[], tags=[],
+        tenant_id="tnt_001",
+        embedding=[0.1],
+        top_k=10,
+        filters=[],
+        tags=[],
     )
     assert results == []
 
@@ -73,7 +79,9 @@ async def test_search_similar_empty_results(mock_build_filter, mock_session_ctx,
 @pytest.mark.asyncio
 @patch("src.adapters.vector.vector_repository.tenant_session", autospec=True)
 @patch("src.adapters.vector.vector_repository.build_filter_clause", autospec=True)
-async def test_search_similar_with_filters(mock_build_filter, mock_session_ctx, adapter):
+async def test_search_similar_with_filters(
+    mock_build_filter, mock_session_ctx, adapter
+):
     mock_build_filter.return_value = (
         " AND dc.meta_data ->> 'dept' = :f_0",
         {"f_0": "legal"},
@@ -88,10 +96,16 @@ async def test_search_similar_with_filters(mock_build_filter, mock_session_ctx, 
 
     flt = [MetadataFilter(field="dept", operator="eq", value="legal")]
     await adapter.search_similar(
-        tenant_id="tnt_001", embedding=[0.1], top_k=10, filters=flt, tags=[],
+        tenant_id="tnt_001",
+        embedding=[0.1],
+        top_k=10,
+        filters=flt,
+        tags=[],
     )
 
-    mock_build_filter.assert_called_once_with(flt, [], "dc", collection_id=None, user_id=None, user_role=None)
+    mock_build_filter.assert_called_once_with(
+        flt, [], "dc", collection_id=None, user_id=None, user_role=None
+    )
     call_params = mock_db_session.execute.call_args[0][1]
     assert call_params["f_0"] == "legal"
 
@@ -113,7 +127,11 @@ async def test_search_similar_with_tags(mock_build_filter, mock_session_ctx, ada
     mock_db_session.execute.return_value = mock_result
 
     await adapter.search_similar(
-        tenant_id="tnt_001", embedding=[0.1], top_k=10, filters=[], tags=["finance"],
+        tenant_id="tnt_001",
+        embedding=[0.1],
+        top_k=10,
+        filters=[],
+        tags=["finance"],
     )
 
     call_sql = mock_db_session.execute.call_args[0][0].text

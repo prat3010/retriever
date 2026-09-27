@@ -1,0 +1,82 @@
+# ==============================================================================
+# Retriever Sovereign Air-Gapped Appliance — Standalone Edge OCI Image (M127)
+# ==============================================================================
+# Self-contained, zero-network-dependency runtime embedding SQLite FTS5,
+# hardware-rooted vector sealing, and local model orchestration.
+# Designed for high-security defense, SCADA, and sovereign air-gapped enclaves.
+# ==============================================================================
+
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libsqlite3-dev \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+# Build processing-core package
+COPY packages/processing-core /build/packages/processing-core
+RUN cd /build/packages/processing-core && uv pip install --system -e .
+
+# Install API dependencies
+COPY apps/api/pyproject.toml /build/apps/api/pyproject.toml
+RUN cd /build/apps/api && uv pip install --system -e .
+
+# ==============================================================================
+# Runtime Stage: Minimal Air-Gapped Sovereign Enclave
+# ==============================================================================
+FROM python:3.11-slim AS appliance
+
+WORKDIR /appliance
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/usr/local/bin:${PATH}" \
+    PYTHONPATH="/appliance/apps/api:/appliance/packages/processing-core/src" \
+    APPLIANCE_MODE="air_gapped_strict" \
+    ZERO_EGRESS_STRICT="true" \
+    APPLIANCE_STORAGE="sqlite_fts5_vector" \
+    APPLIANCE_MODELS_DIR="/appliance/models" \
+    APPLIANCE_SEALED_DIR="/appliance/data/sealed"
+
+# Install minimal SQLite and hardware crypto libraries (libtpm2 / libcrypto)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsqlite3-0 \
+    libssl3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed python site-packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application source
+COPY packages/processing-core /appliance/packages/processing-core
+COPY apps/api /appliance/apps/api
+
+# Create model registry and sealed vector directories
+RUN mkdir -p /appliance/models /appliance/data/sealed /appliance/tmp \
+    && useradd -u 10001 -m -s /bin/bash appliance \
+    && chown -R appliance:appliance /appliance
+
+USER appliance
+
+# Air-gapped health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/appliance/status')" || exit 1
+
+EXPOSE 8000
+
+# Standalone embedded entrypoint (FastAPI via Uvicorn on localhost)
+ENTRYPOINT ["uvicorn", "src.main:app", "--app-dir", "apps/api", "--host", "127.0.0.1", "--port", "8000", "--workers", "1"]

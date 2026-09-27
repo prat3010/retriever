@@ -25,24 +25,38 @@ from src.scripts.ingest_system_memory import (
     generate_fallback_embedding,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("verify_system_memory")
 
 
 async def verify_stats() -> dict[str, int]:
     """Retrieve System Tenant document, chunk, and vector counts."""
     async with tenant_session(tenant_id=SYSTEM_TENANT_ID, bypass_rls=True) as session:
-        doc_count = (await session.execute(
-            select(func.count()).select_from(DocumentDb).where(DocumentDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
-        )).scalar() or 0
+        doc_count = (
+            await session.execute(
+                select(func.count())
+                .select_from(DocumentDb)
+                .where(DocumentDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
+            )
+        ).scalar() or 0
 
-        chunk_count = (await session.execute(
-            select(func.count()).select_from(DocumentChunkDb).where(DocumentChunkDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
-        )).scalar() or 0
+        chunk_count = (
+            await session.execute(
+                select(func.count())
+                .select_from(DocumentChunkDb)
+                .where(DocumentChunkDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
+            )
+        ).scalar() or 0
 
-        vector_count = (await session.execute(
-            select(func.count()).select_from(VectorRecordDb).where(VectorRecordDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
-        )).scalar() or 0
+        vector_count = (
+            await session.execute(
+                select(func.count())
+                .select_from(VectorRecordDb)
+                .where(VectorRecordDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID))
+            )
+        ).scalar() or 0
 
     return {
         "documents": doc_count,
@@ -72,14 +86,19 @@ async def test_search_query(query: str, top_k: int = 3) -> None:
         symbol_name = r.meta_data.get("symbol_name", "")
         print(f"\n--- Result #{idx} (Score: {r.score:.4f}) ---")
         print(f"File: {file_path} | Type: {chunk_type} | Symbol: {symbol_name}")
-        snippet = r.content[:200].replace('\n', ' ')
+        snippet = r.content[:200].replace("\n", " ")
         print(f"Content: {snippet}...")
 
 
 async def main() -> None:
     logger.info("=== Verifying System Memory ===")
     stats = await verify_stats()
-    logger.info("System Tenant Stats: %d documents, %d chunks, %d vector records", stats["documents"], stats["chunks"], stats["vectors"])
+    logger.info(
+        "System Tenant Stats: %d documents, %d chunks, %d vector records",
+        stats["documents"],
+        stats["chunks"],
+        stats["vectors"],
+    )
 
     if stats["chunks"] > 0:
         await test_search_query("proxy telemetry country IP header")

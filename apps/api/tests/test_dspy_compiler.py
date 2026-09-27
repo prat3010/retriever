@@ -241,7 +241,10 @@ async def test_prompt_builder_compiled_injection():
         history=[],
         context_chunks=[{"chunk_id": "c1", "content": "Basic plan is $10/mo."}],
     )
-    assert "You are a standard handcrafted default assistant." in messages_default[0].content
+    assert (
+        "You are a standard handcrafted default assistant."
+        in messages_default[0].content
+    )
     assert len(messages_default) == 3  # system, context, user
 
     # Case 2: Active compiled prompt with demonstrations
@@ -363,12 +366,12 @@ def test_hexagonal_architecture_boundaries():
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root_pkg = alias.name.split(".")[0]
-                assert (
-                    root_pkg not in forbidden
-                ), f"Domain dspy_abstractions imports forbidden framework: {alias.name}"
+                assert root_pkg not in forbidden, (
+                    f"Domain dspy_abstractions imports forbidden framework: {alias.name}"
+                )
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 root_pkg = node.module.split(".")[0]
-                assert (
-                    root_pkg not in forbidden
-                ), f"Domain dspy_abstractions imports forbidden framework: {node.module}"
+                assert root_pkg not in forbidden, (
+                    f"Domain dspy_abstractions imports forbidden framework: {node.module}"
+                )

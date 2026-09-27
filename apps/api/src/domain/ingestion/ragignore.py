@@ -21,7 +21,9 @@ COMPULSORY_BLACKLIST_PATTERNS = [
 class RagIgnoreFilter:
     """Sanitizes document file paths against .ragignore rules and mandatory security blacklists."""
 
-    def __init__(self, root_dir: str | Path, custom_patterns: list[str] | None = None) -> None:
+    def __init__(
+        self, root_dir: str | Path, custom_patterns: list[str] | None = None
+    ) -> None:
         self.root_dir = Path(root_dir).resolve()
         self.patterns: list[str] = list(COMPULSORY_BLACKLIST_PATTERNS)
 
@@ -53,7 +55,9 @@ class RagIgnoreFilter:
         # Check exact and glob pattern matches
         for pat in self.patterns:
             pat_lower = pat.lower()
-            if fnmatch.fnmatch(base_name, pat_lower) or fnmatch.fnmatch(norm_path, pat_lower):
+            if fnmatch.fnmatch(base_name, pat_lower) or fnmatch.fnmatch(
+                norm_path, pat_lower
+            ):
                 return True
             if pat_lower.endswith("/") and fnmatch.fnmatch(norm_path + "/", pat_lower):
                 return True

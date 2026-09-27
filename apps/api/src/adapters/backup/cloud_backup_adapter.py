@@ -64,14 +64,17 @@ class CloudBackupAdapter(BackupAdapterInterface):
         digest = hashlib.sha256(raw_key.encode()).digest()
         self._fernet = Fernet(base64.urlsafe_b64encode(digest))
         self._storage = storage
-        self._local_dir = Path(local_backup_dir or os.environ.get("LOCAL_BACKUP_DIR", "/tmp/retriever/backups"))
+        self._local_dir = Path(
+            local_backup_dir
+            or os.environ.get("LOCAL_BACKUP_DIR", "/tmp/retriever/backups")
+        )
         self._local_dir.mkdir(parents=True, exist_ok=True)
 
     async def _dump_table(self, table_name: str) -> list[dict[str, Any]]:
         """Safely fetch all records from a table in a single transaction-safe cursor."""
         try:
             async with tenant_session(bypass_rls=True) as session:
-                query = text(f"SELECT * FROM \"{table_name}\"")
+                query = text(f'SELECT * FROM "{table_name}"')
                 result = await session.execute(query)
                 columns = list(result.keys())
                 rows: list[dict[str, Any]] = []
@@ -90,17 +93,27 @@ class CloudBackupAdapter(BackupAdapterInterface):
                 return rows
         except Exception as e:
             # Table may not exist yet in fresh migration; return empty rather than breaking entire backup
-            logger.warning("Skipping non-existent or inaccessible table '%s': %s", table_name, e)
+            logger.warning(
+                "Skipping non-existent or inaccessible table '%s': %s", table_name, e
+            )
             return []
 
-    async def create_snapshot(self, request: BackupTriggerRequest) -> BackupSnapshotMetadata:
+    async def create_snapshot(
+        self, request: BackupTriggerRequest
+    ) -> BackupSnapshotMetadata:
         start_time = time.perf_counter()
         now = datetime.now(UTC)
         snapshot_id = f"snap_{now.strftime('%Y%m%d_%H%M%S')}"
 
-        tables_to_dump = [t for t in TOPOLOGICAL_TABLE_ORDER if not (request.exclude_tables and t in request.exclude_tables)]
+        tables_to_dump = [
+            t
+            for t in TOPOLOGICAL_TABLE_ORDER
+            if not (request.exclude_tables and t in request.exclude_tables)
+        ]
         if request.include_tables:
-            tables_to_dump = [t for t in TOPOLOGICAL_TABLE_ORDER if t in request.include_tables]
+            tables_to_dump = [
+                t for t in TOPOLOGICAL_TABLE_ORDER if t in request.include_tables
+            ]
 
         dumped_data: dict[str, list[dict[str, Any]]] = {}
         row_counts: dict[str, int] = {}
@@ -111,7 +124,13 @@ class CloudBackupAdapter(BackupAdapterInterface):
             row_counts[table] = len(rows)
 
         # 1. Uncompressed JSON serialization
-        raw_json = json.dumps({"snapshot_id": snapshot_id, "timestamp": now.isoformat(), "tables": dumped_data}).encode("utf-8")
+        raw_json = json.dumps(
+            {
+                "snapshot_id": snapshot_id,
+                "timestamp": now.isoformat(),
+                "tables": dumped_data,
+            }
+        ).encode("utf-8")
         uncompressed_bytes = len(raw_json)
 
         # 2. Gzip compression
@@ -132,21 +151,29 @@ class CloudBackupAdapter(BackupAdapterInterface):
 
         if self._storage:
             try:
-                storage_uri = await self._storage.save_file("system_backups", archive_filename, ciphertext)
-                manifest_bytes = json.dumps({
-                    "snapshot_id": snapshot_id,
-                    "timestamp": now.isoformat(),
-                    "tables": tables_to_dump,
-                    "row_counts": row_counts,
-                    "uncompressed_bytes": uncompressed_bytes,
-                    "compressed_bytes": compressed_bytes,
-                    "sha256_checksum": sha256_checksum,
-                    "encryption_algorithm": "AES-256-GCM",
-                    "storage_uri": storage_uri,
-                }).encode("utf-8")
-                await self._storage.save_file("system_backups", manifest_filename, manifest_bytes)
+                storage_uri = await self._storage.save_file(
+                    "system_backups", archive_filename, ciphertext
+                )
+                manifest_bytes = json.dumps(
+                    {
+                        "snapshot_id": snapshot_id,
+                        "timestamp": now.isoformat(),
+                        "tables": tables_to_dump,
+                        "row_counts": row_counts,
+                        "uncompressed_bytes": uncompressed_bytes,
+                        "compressed_bytes": compressed_bytes,
+                        "sha256_checksum": sha256_checksum,
+                        "encryption_algorithm": "AES-256-GCM",
+                        "storage_uri": storage_uri,
+                    }
+                ).encode("utf-8")
+                await self._storage.save_file(
+                    "system_backups", manifest_filename, manifest_bytes
+                )
             except Exception as s3_err:
-                logger.error("Failed to upload backup to S3, saving locally: %s", s3_err)
+                logger.error(
+                    "Failed to upload backup to S3, saving locally: %s", s3_err
+                )
                 local_path = self._local_dir / archive_filename
                 local_path.write_bytes(ciphertext)
         else:
@@ -188,7 +215,9 @@ class CloudBackupAdapter(BackupAdapterInterface):
         snapshots: list[BackupSnapshotMetadata] = []
 
         # Read all local manifests
-        for manifest_file in sorted(self._local_dir.glob("*.manifest.json"), reverse=True):
+        for manifest_file in sorted(
+            self._local_dir.glob("*.manifest.json"), reverse=True
+        ):
             try:
                 content = manifest_file.read_text()
                 metadata = BackupSnapshotMetadata.model_validate_json(content)

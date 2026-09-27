@@ -56,7 +56,11 @@ class SqlComplianceRepository:
             chunk_uuids = [r[0] for r in res_chunks.fetchall()]
 
             if chunk_uuids:
-                for vec_model in (VectorRecordDb, VectorRecord1536Db, VectorRecord3072Db):
+                for vec_model in (
+                    VectorRecordDb,
+                    VectorRecord1536Db,
+                    VectorRecord3072Db,
+                ):
                     vec_del = delete(vec_model).where(
                         vec_model.tenant_id == tenant_uuid,
                         vec_model.chunk_id.in_(chunk_uuids),
@@ -116,7 +120,9 @@ class SqlComplianceRepository:
             stats["cache_purged"] = sc_res.rowcount or 0
 
             eval_res = await session.execute(
-                delete(OnlineEvaluationDb).where(OnlineEvaluationDb.tenant_id == tenant_uuid)
+                delete(OnlineEvaluationDb).where(
+                    OnlineEvaluationDb.tenant_id == tenant_uuid
+                )
             )
             stats["evaluations_purged"] = eval_res.rowcount or 0
 
@@ -149,7 +155,8 @@ class SqlComplianceRepository:
     async def get_compliance_certificates(self, tenant_id: str) -> list[Any]:
         """Fetch all deletion certificates for a tenant."""
         return [
-            cert for cert in self._certificates_ledger.values()
+            cert
+            for cert in self._certificates_ledger.values()
             if cert.tenant_id == tenant_id
         ]
 

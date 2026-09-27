@@ -39,11 +39,25 @@ from src.main import app
 
 def test_swarm_domain_abstractions_purity():
     """Verify that domain abstractions import zero forbidden frameworks (Hexagonal rule)."""
-    domain_file = Path(__file__).resolve().parents[1] / "src" / "domain" / "abstractions" / "swarm.py"
+    domain_file = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "domain"
+        / "abstractions"
+        / "swarm.py"
+    )
     assert domain_file.exists(), f"File {domain_file} must exist"
 
     tree = ast.parse(domain_file.read_text(), filename=str(domain_file))
-    forbidden = {"fastapi", "sqlalchemy", "redis", "pika", "celery", "adapters", "routers"}
+    forbidden = {
+        "fastapi",
+        "sqlalchemy",
+        "redis",
+        "pika",
+        "celery",
+        "adapters",
+        "routers",
+    }
 
     imported_modules = set()
     for node in ast.walk(tree):
@@ -207,18 +221,26 @@ def test_network_partition_and_causal_reconciliation():
 
     # Register Partition A nodes
     adapter.register_node(
-        SwarmNode(node_id="p1_node1", tenant_id=tenant_id, device_name="Cluster 1 - Node 1")
+        SwarmNode(
+            node_id="p1_node1", tenant_id=tenant_id, device_name="Cluster 1 - Node 1"
+        )
     )
     adapter.register_node(
-        SwarmNode(node_id="p1_node2", tenant_id=tenant_id, device_name="Cluster 1 - Node 2")
+        SwarmNode(
+            node_id="p1_node2", tenant_id=tenant_id, device_name="Cluster 1 - Node 2"
+        )
     )
 
     # Register Partition B nodes
     adapter.register_node(
-        SwarmNode(node_id="p2_node3", tenant_id=tenant_id, device_name="Cluster 2 - Node 3")
+        SwarmNode(
+            node_id="p2_node3", tenant_id=tenant_id, device_name="Cluster 2 - Node 3"
+        )
     )
     adapter.register_node(
-        SwarmNode(node_id="p2_node4", tenant_id=tenant_id, device_name="Cluster 2 - Node 4")
+        SwarmNode(
+            node_id="p2_node4", tenant_id=tenant_id, device_name="Cluster 2 - Node 4"
+        )
     )
 
     # Simulate offline mutations in Partition A
@@ -337,7 +359,11 @@ async def test_mcp_tool_definitions_and_execution():
     sync_result = await adapter.execute_tool(
         tenant_id=tenant_id,
         tool_name="swarm_sync",
-        arguments={"sender_id": "mcp_edge_1", "target_id": "mcp_edge_2", "highest_sequence": 1},
+        arguments={
+            "sender_id": "mcp_edge_1",
+            "target_id": "mcp_edge_2",
+            "highest_sequence": 1,
+        },
     )
     assert not sync_result.is_error
     assert "converged_clock" in sync_result.content[0].text

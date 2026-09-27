@@ -4,7 +4,6 @@ Implements the MetricsRegistry port using prometheus_client, exposing
 a ``/metrics`` endpoint for scraping.
 """
 
-
 from prometheus_client import REGISTRY, Counter, Gauge, Histogram, generate_latest
 
 from src.domain.abstractions.telemetry import MetricsRegistry
@@ -40,13 +39,19 @@ RLS_VIOLATIONS = Counter(
 class PrometheusMetricsRegistry(MetricsRegistry):
     """Prometheus-backed metrics registry."""
 
-    def increment(self, name: str, value: float = 1, labels: dict[str, str] | None = None) -> None:
+    def increment(
+        self, name: str, value: float = 1, labels: dict[str, str] | None = None
+    ) -> None:
         _get_or_create_counter(name, labels or {}).inc(value)
 
-    def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def observe(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         _get_or_create_histogram(name, labels or {}).observe(value)
 
-    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def set_gauge(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         _get_or_create_gauge(name, labels or {}).set(value)
 
     @staticmethod
@@ -64,13 +69,17 @@ _gauge_registry: dict[str, Gauge] = {}
 
 def _get_or_create_counter(name: str, labels: dict[str, str]) -> Counter:
     if name not in _counter_registry:
-        _counter_registry[name] = Counter(name, f"Counter: {name}", labelnames=list(labels))
+        _counter_registry[name] = Counter(
+            name, f"Counter: {name}", labelnames=list(labels)
+        )
     return _counter_registry[name].labels(**labels)
 
 
 def _get_or_create_histogram(name: str, labels: dict[str, str]) -> Histogram:
     if name not in _histogram_registry:
-        _histogram_registry[name] = Histogram(name, f"Histogram: {name}", labelnames=list(labels))
+        _histogram_registry[name] = Histogram(
+            name, f"Histogram: {name}", labelnames=list(labels)
+        )
     return _histogram_registry[name].labels(**labels)
 
 

@@ -138,7 +138,9 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
         is_svg = filename.lower().endswith(".svg") or "svg" in mime_type.lower()
 
         if is_svg or file_content.strip().startswith(b"<svg"):
-            return self.parse_svg_schematic(file_content.decode("utf-8", errors="ignore"), diagram_id, filename)
+            return self.parse_svg_schematic(
+                file_content.decode("utf-8", errors="ignore"), diagram_id, filename
+            )
 
         # Non-SVG files (PNG/JPG layout metadata or plain structured blueprint description)
         text_content = file_content.decode("utf-8", errors="ignore")
@@ -190,7 +192,11 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
                     if nested_text:
                         label = nested_text
 
-                    if not label or len(label) < 2 or label.lower() in {"canvas", "layer", "background"}:
+                    if (
+                        not label
+                        or len(label) < 2
+                        or label.lower() in {"canvas", "layer", "background"}
+                    ):
                         continue
 
                     # Extract coordinates
@@ -219,7 +225,13 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
                             element_id=el_id,
                             label=label,
                             element_type=el_type,
-                            bounding_box=BoundingBox(ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax, confidence=0.95),
+                            bounding_box=BoundingBox(
+                                ymin=ymin,
+                                xmin=xmin,
+                                ymax=ymax,
+                                xmax=xmax,
+                                confidence=0.95,
+                            ),
                             properties={"svg_tag": tag},
                         )
                     )
@@ -293,10 +305,15 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
 
         # If no flow patterns, extract capitalized technical terms
         if not unique_labels:
-            candidates = re.findall(r"\b([A-Z][a-zA-Z0-9]{2,}(?:\s+[A-Z][a-zA-Z0-9]+)*)\b", content)
+            candidates = re.findall(
+                r"\b([A-Z][a-zA-Z0-9]{2,}(?:\s+[A-Z][a-zA-Z0-9]+)*)\b", content
+            )
             for cand in candidates:
                 cand_clean = cand.strip()
-                if len(cand_clean) > 3 and self.classify_label(cand_clean) != VisualElementType.UNKNOWN:
+                if (
+                    len(cand_clean) > 3
+                    and self.classify_label(cand_clean) != VisualElementType.UNKNOWN
+                ):
                     unique_labels.add(cand_clean)
 
         # Position elements on a canonical 2D topological grid
@@ -325,7 +342,9 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
                 element_id=el_id,
                 label=label,
                 element_type=el_type,
-                bounding_box=BoundingBox(ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax, confidence=0.90),
+                bounding_box=BoundingBox(
+                    ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax, confidence=0.90
+                ),
             )
             elements.append(el)
             element_map[label.lower()] = el
@@ -369,7 +388,9 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
             for kw in keywords:
                 if kw in clean:
                     return el_type
-        return VisualElementType.SERVICE if len(clean) > 2 else VisualElementType.UNKNOWN
+        return (
+            VisualElementType.SERVICE if len(clean) > 2 else VisualElementType.UNKNOWN
+        )
 
     def _infer_protocol(self, label: str) -> str | None:
         """Extract network protocol identifier from connector text label."""
@@ -381,9 +402,14 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
                 return proto
         return None
 
-    def _extract_fallback_components(self, text: str, width: float, height: float) -> list[VisualElement]:
+    def _extract_fallback_components(
+        self, text: str, width: float, height: float
+    ) -> list[VisualElement]:
         """Extract text tokens and bounding positions as fallback components."""
-        matches = re.findall(r"<text[^>]*x=[\"']([\d\.]+)[\"'][^>]*y=[\"']([\d\.]+)[\"'][^>]*>([^<]+)</text>", text)
+        matches = re.findall(
+            r"<text[^>]*x=[\"']([\d\.]+)[\"'][^>]*y=[\"']([\d\.]+)[\"'][^>]*>([^<]+)</text>",
+            text,
+        )
         elements = []
         counter = 0
         for x_str, y_str, label in matches:
@@ -403,25 +429,34 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
                     element_id=f"elem_{counter}",
                     label=clean_label,
                     element_type=self.classify_label(clean_label),
-                    bounding_box=BoundingBox(ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax, confidence=0.85),
+                    bounding_box=BoundingBox(
+                        ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax, confidence=0.85
+                    ),
                 )
             )
         return elements
 
-    def _deduplicate_elements(self, elements: list[VisualElement]) -> list[VisualElement]:
+    def _deduplicate_elements(
+        self, elements: list[VisualElement]
+    ) -> list[VisualElement]:
         """Remove duplicate detected visual elements with high bounding-box IoU overlap."""
         unique: list[VisualElement] = []
         for el in elements:
             is_dup = False
             for u in unique:
-                if el.label.lower() == u.label.lower() or el.bounding_box.iou(u.bounding_box) > 0.8:
+                if (
+                    el.label.lower() == u.label.lower()
+                    or el.bounding_box.iou(u.bounding_box) > 0.8
+                ):
                     is_dup = True
                     break
             if not is_dup:
                 unique.append(el)
         return unique
 
-    def _resolve_connectors(self, elements: list[VisualElement], svg_content: str) -> list[VisualConnector]:
+    def _resolve_connectors(
+        self, elements: list[VisualElement], svg_content: str
+    ) -> list[VisualConnector]:
         """Infer directional connectors by matching vector line paths between visual elements."""
         connectors: list[VisualConnector] = []
         if len(elements) < 2:
@@ -457,12 +492,21 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
 
         # Fallback if no SVG lines: connect gateways to services, services to databases/caches
         if not connectors:
-            gateways = [e for e in elements if e.element_type == VisualElementType.GATEWAY]
-            services = [e for e in elements if e.element_type == VisualElementType.SERVICE]
+            gateways = [
+                e for e in elements if e.element_type == VisualElementType.GATEWAY
+            ]
+            services = [
+                e for e in elements if e.element_type == VisualElementType.SERVICE
+            ]
             datastores = [
                 e
                 for e in elements
-                if e.element_type in {VisualElementType.DATABASE, VisualElementType.CACHE, VisualElementType.QUEUE}
+                if e.element_type
+                in {
+                    VisualElementType.DATABASE,
+                    VisualElementType.CACHE,
+                    VisualElementType.QUEUE,
+                }
             ]
 
             for gw in gateways:
@@ -482,13 +526,19 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
             for svc in services:
                 for ds in datastores:
                     conn_counter += 1
-                    proto = "SQL" if ds.element_type == VisualElementType.DATABASE else "TCP"
+                    proto = (
+                        "SQL"
+                        if ds.element_type == VisualElementType.DATABASE
+                        else "TCP"
+                    )
                     connectors.append(
                         VisualConnector(
                             connector_id=f"conn_{conn_counter}",
                             source_element_id=svc.element_id,
                             target_element_id=ds.element_id,
-                            label="PERSISTS_IN" if ds.element_type == VisualElementType.DATABASE else "STORES_IN",
+                            label="PERSISTS_IN"
+                            if ds.element_type == VisualElementType.DATABASE
+                            else "STORES_IN",
                             protocol=proto,
                             confidence=0.90,
                         )
@@ -496,7 +546,9 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
 
         return connectors
 
-    def _find_closest_element(self, x: float, y: float, elements: list[VisualElement]) -> VisualElement | None:
+    def _find_closest_element(
+        self, x: float, y: float, elements: list[VisualElement]
+    ) -> VisualElement | None:
         """Find the visual element whose bounding box center is closest to a coordinate."""
         closest = None
         min_dist = float("inf")
@@ -541,7 +593,9 @@ class DomainSchematicExtractor(BaseSchematicExtractor):
             tgt = el_by_id.get(c.target_element_id)
             if src and tgt:
                 proto_str = f" via {c.protocol}" if c.protocol else ""
-                flow_samples.append(f"{src.label} --[{c.label}{proto_str}]--> {tgt.label}")
+                flow_samples.append(
+                    f"{src.label} --[{c.label}{proto_str}]--> {tgt.label}"
+                )
 
         if flow_samples:
             parts.append("Core topology paths: " + "; ".join(flow_samples) + ".")

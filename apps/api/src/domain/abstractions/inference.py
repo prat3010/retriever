@@ -127,12 +127,16 @@ class PromptTemplateRegistry(ABC):
         pass
 
     @abstractmethod
-    async def list_templates(self, tenant_id: str, bypass_rls: bool = False) -> list[PromptTemplate]:
+    async def list_templates(
+        self, tenant_id: str, bypass_rls: bool = False
+    ) -> list[PromptTemplate]:
         """List all prompt templates for a tenant."""
         pass
 
     @abstractmethod
-    async def delete_template(self, tenant_id: str, name: str, bypass_rls: bool = False) -> bool:
+    async def delete_template(
+        self, tenant_id: str, name: str, bypass_rls: bool = False
+    ) -> bool:
         """Delete a named prompt template. Returns True if found and deleted."""
         pass
 
@@ -166,21 +170,27 @@ class ChatSessionRepository(ABC):
 
     @abstractmethod
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
+        self,
+        tenant_id: str,
+        session_id: str,
+        message: ChatMessage,
+        user_id: str | None = None,
     ) -> None:
         """Append a message to a tenant-scoped session's history."""
         pass
 
     @abstractmethod
-    async def get_messages(
-        self, tenant_id: str, session_id: str
-    ) -> list[ChatMessage]:
+    async def get_messages(self, tenant_id: str, session_id: str) -> list[ChatMessage]:
         """Retrieve all messages for a tenant-scoped session in chronological order."""
         pass
 
     @abstractmethod
     async def get_messages_cursor(
-        self, tenant_id: str, session_id: str, limit: int = 50, cursor: str | None = None
+        self,
+        tenant_id: str,
+        session_id: str,
+        limit: int = 50,
+        cursor: str | None = None,
     ) -> tuple[list[ChatMessageInfo], str | None, bool]:
         """Retrieve messages for a session using cursor-based pagination."""
         pass
@@ -225,4 +235,3 @@ class FeedbackRepository(ABC):
     async def get_feedback_analytics(self, tenant_id: str) -> dict[str, Any]:
         """Aggregate feedback analytics for a tenant."""
         pass
-

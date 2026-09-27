@@ -122,12 +122,32 @@ def test_delta_calculator_with_payload_and_tampering():
 def test_edge_fusion_ranker_rrf():
     ranker = EdgeFusionRanker(rrf_k=60)
     vector_results = [
-        {"chunk_id": "c1", "content": "RAG Architecture", "vector_score": 0.95, "document_id": "d1"},
-        {"chunk_id": "c2", "content": "Edge SQLite Storage", "vector_score": 0.85, "document_id": "d2"},
+        {
+            "chunk_id": "c1",
+            "content": "RAG Architecture",
+            "vector_score": 0.95,
+            "document_id": "d1",
+        },
+        {
+            "chunk_id": "c2",
+            "content": "Edge SQLite Storage",
+            "vector_score": 0.85,
+            "document_id": "d2",
+        },
     ]
     fts_results = [
-        {"chunk_id": "c2", "content": "Edge SQLite Storage", "fts_score": 0.9, "document_id": "d2"},
-        {"chunk_id": "c3", "content": "Cloud PgVector", "fts_score": 0.8, "document_id": "d3"},
+        {
+            "chunk_id": "c2",
+            "content": "Edge SQLite Storage",
+            "fts_score": 0.9,
+            "document_id": "d2",
+        },
+        {
+            "chunk_id": "c3",
+            "content": "Cloud PgVector",
+            "fts_score": 0.8,
+            "document_id": "d3",
+        },
     ]
 
     fused = ranker.fuse_results(vector_results, fts_results, top_k=3, use_rrf=True)
@@ -267,7 +287,9 @@ async def test_edge_sync_adapter_bundle_creation(mock_tenant_session):
     mock_res_vecs = MagicMock()
     mock_res_vecs.scalars.return_value.all.return_value = []
 
-    mock_session.execute = AsyncMock(side_effect=[mock_res_docs, mock_res_chunks, mock_res_vecs])
+    mock_session.execute = AsyncMock(
+        side_effect=[mock_res_docs, mock_res_chunks, mock_res_vecs]
+    )
     mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
     adapter = EdgeSyncAdapter()
@@ -281,7 +303,12 @@ async def test_edge_sync_adapter_bundle_creation(mock_tenant_session):
 
     conn = sqlite3.connect(manifest.bundle_path)
     cursor = conn.cursor()
-    tables = [r[0] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+    tables = [
+        r[0]
+        for r in cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+    ]
     conn.close()
 
     assert "document_chunks" in tables
@@ -431,7 +458,11 @@ def test_tenant_edge_delta_endpoint():
         deleted_chunk_ids=[],
         checksum_sha256="abcdef1234567890" * 4,
     )
-    with patch.object(container.edge_sync_adapter, "get_delta_for_tenant", AsyncMock(return_value=mock_delta)):
+    with patch.object(
+        container.edge_sync_adapter,
+        "get_delta_for_tenant",
+        AsyncMock(return_value=mock_delta),
+    ):
         resp = client.get(
             f"/v1/tenants/{TEST_TENANT_ID}/edge/delta?since_seq=0&limit=100",
             headers={"X-Admin-Master-Key": ADMIN_KEY},
@@ -465,7 +496,11 @@ def test_tenant_edge_bundle_manifest_and_download():
         bundle_path=temp_path,
     )
 
-    with patch.object(container.edge_sync_adapter, "create_standalone_bundle", AsyncMock(return_value=mock_manifest)):
+    with patch.object(
+        container.edge_sync_adapter,
+        "create_standalone_bundle",
+        AsyncMock(return_value=mock_manifest),
+    ):
         # 1. Manifest JSON endpoint
         resp = client.post(
             f"/v1/tenants/{TEST_TENANT_ID}/edge/bundle",
@@ -504,7 +539,11 @@ def test_tenant_edge_simulated_search_endpoint():
         deleted_chunk_ids=[],
         checksum_sha256="abcdef" * 10,
     )
-    with patch.object(container.edge_sync_adapter, "get_delta_for_tenant", AsyncMock(return_value=mock_delta)):
+    with patch.object(
+        container.edge_sync_adapter,
+        "get_delta_for_tenant",
+        AsyncMock(return_value=mock_delta),
+    ):
         req = {
             "query": "architecture overview",
             "top_k": 3,
@@ -554,4 +593,3 @@ def test_sqlite_edge_engine_tenant_isolated_synced_sequence():
     # Isolated queries return each tenant's specific sequence
     assert engine.get_synced_sequence(tenant_id=tenant_a) == 42
     assert engine.get_synced_sequence(tenant_id=tenant_b) == 99
-

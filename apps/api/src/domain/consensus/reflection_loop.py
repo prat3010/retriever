@@ -73,13 +73,13 @@ class MultiAgentConsensusEngine:
             return self.providers[provider_name], provider_name
         return self.default_llm, "default_llm"
 
-    async def execute_consensus(
-        self, request: ConsensusRequest
-    ) -> ConsensusResult:
+    async def execute_consensus(self, request: ConsensusRequest) -> ConsensusResult:
         """Execute Generator vs. Critic reflection loop."""
         start_time = time.monotonic()
 
-        generator_llm, gen_name = self._resolve_provider(request.generator_provider_name)
+        generator_llm, gen_name = self._resolve_provider(
+            request.generator_provider_name
+        )
         critic_llm, critic_name = self._resolve_provider(request.critic_provider_name)
 
         # 1. Fetch document evidence
@@ -90,9 +90,12 @@ class MultiAgentConsensusEngine:
             enable_hybrid=True,
         )
         search_resp = await self.search.search(search_query)
-        evidence_text = "\n".join(
-            [f"- [{c.document_id}]: {c.content}" for c in search_resp.results]
-        ) or "No document evidence found."
+        evidence_text = (
+            "\n".join(
+                [f"- [{c.document_id}]: {c.content}" for c in search_resp.results]
+            )
+            or "No document evidence found."
+        )
 
         reflection_history: list[dict[str, Any]] = []
         current_feedback = ""
@@ -129,7 +132,9 @@ class MultiAgentConsensusEngine:
                 InferenceRequest(
                     messages=[
                         ChatMessage(role="system", content=critic_sys),
-                        ChatMessage(role="user", content="Audit the draft response now."),
+                        ChatMessage(
+                            role="user", content="Audit the draft response now."
+                        ),
                     ],
                     temperature=0.0,
                 )
@@ -146,7 +151,9 @@ class MultiAgentConsensusEngine:
                 evaluation = CriticEvaluation(
                     is_approved=bool(critic_json.get("is_approved", True)),
                     critique_score=float(critic_json.get("critique_score", 1.0)),
-                    critique_feedback=str(critic_json.get("critique_feedback", "Approved")),
+                    critique_feedback=str(
+                        critic_json.get("critique_feedback", "Approved")
+                    ),
                     unsupported_claims=critic_json.get("unsupported_claims", []),
                 )
             except Exception:

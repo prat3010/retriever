@@ -72,7 +72,6 @@ def orchestrator(mock_llm, mock_prompt_builder, mock_session_repo, mock_metrics)
 
 @pytest.mark.asyncio
 class TestSearchQualityMetrics:
-
     @pytest.fixture
     def tenant_config(self):
         return TenantConfiguration(tenant_id="t1")
@@ -80,7 +79,11 @@ class TestSearchQualityMetrics:
     async def test_emits_metrics_when_citations_present(
         self, orchestrator, mock_metrics, tenant_config
     ):
-        chunks = [_make_result("chunk_a"), _make_result("chunk_b"), _make_result("chunk_c")]
+        chunks = [
+            _make_result("chunk_a"),
+            _make_result("chunk_b"),
+            _make_result("chunk_c"),
+        ]
         orchestrator.citation_validator.set_valid_ids(["chunk_a", "chunk_b", "chunk_c"])
 
         await orchestrator.generate(
@@ -145,7 +148,11 @@ class TestSearchQualityMetrics:
     async def test_emits_correct_search_metrics_values(
         self, orchestrator, mock_metrics, tenant_config
     ):
-        chunks = [_make_result("chunk_a"), _make_result("chunk_b"), _make_result("chunk_c")]
+        chunks = [
+            _make_result("chunk_a"),
+            _make_result("chunk_b"),
+            _make_result("chunk_c"),
+        ]
         orchestrator.citation_validator.set_valid_ids(["chunk_a", "chunk_b", "chunk_c"])
 
         await orchestrator.generate(

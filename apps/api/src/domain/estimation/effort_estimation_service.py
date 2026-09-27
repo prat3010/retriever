@@ -53,13 +53,18 @@ class EffortEstimationService:
         for fid in feature_ids:
             if any(k in fid for k in ["voice", "webrtc", "call"]):
                 voice_count += 1
-            elif any(k in fid for k in ["vector", "rag", "agent", "vision", "ocr", "ai"]):
+            elif any(
+                k in fid for k in ["vector", "rag", "agent", "vision", "ocr", "ai"]
+            ):
                 ai_count += 1
             elif any(k in fid for k in ["auth", "rbac", "portal", "login"]):
                 auth_count += 1
             elif any(k in fid for k in ["database", "postgres", "storage", "cache"]):
                 db_count += 1
-            elif any(k in fid for k in ["pay", "razorpay", "stripe", "billing", "invoice", "escrow"]):
+            elif any(
+                k in fid
+                for k in ["pay", "razorpay", "stripe", "billing", "invoice", "escrow"]
+            ):
                 payment_count += 1
             elif any(k in fid for k in ["admin", "crm", "cms", "blog", "dashboard"]):
                 admin_count += 1
@@ -113,28 +118,71 @@ class EffortEstimationService:
         # Enrich with domain risk factors
         risk_factors: list[str] = []
         if vector.realtime_voice_count > 0:
-            risk_factors.append("Real-Time WebRTC / Voice AI integration introduces audio stream latency variance (+18-24h)")
+            risk_factors.append(
+                "Real-Time WebRTC / Voice AI integration introduces audio stream latency variance (+18-24h)"
+            )
         if vector.ai_vector_count >= 2:
-            risk_factors.append("Multi-model AI & Vector RAG pipelines require rigorous evaluation testbeds (+14-20h)")
+            risk_factors.append(
+                "Multi-model AI & Vector RAG pipelines require rigorous evaluation testbeds (+14-20h)"
+            )
         if vector.dependency_depth >= 4:
-            risk_factors.append("Deep architectural DAG coupling requires staged milestone integration gates")
+            risk_factors.append(
+                "Deep architectural DAG coupling requires staged milestone integration gates"
+            )
         if vector.payment_billing_count > 0 and vector.auth_security_count == 0:
-            risk_factors.append("Payment processing without dedicated user authentication requires custom webhook guards")
+            risk_factors.append(
+                "Payment processing without dedicated user authentication requires custom webhook guards"
+            )
 
         # Extract top effort drivers
         drivers: list[TopEffortDriver] = []
         for fid in scope.feature_ids:
             fid_low = fid.lower()
             if any(k in fid_low for k in ["voice", "webrtc"]):
-                drivers.append(TopEffortDriver(feature_name=fid, category="Real-Time / Voice AI", added_hours_estimate=22.0, risk_level="high"))
+                drivers.append(
+                    TopEffortDriver(
+                        feature_name=fid,
+                        category="Real-Time / Voice AI",
+                        added_hours_estimate=22.0,
+                        risk_level="high",
+                    )
+                )
             elif any(k in fid_low for k in ["rag", "vector", "agent"]):
-                drivers.append(TopEffortDriver(feature_name=fid, category="AI / RAG / Vector", added_hours_estimate=16.0, risk_level="high"))
+                drivers.append(
+                    TopEffortDriver(
+                        feature_name=fid,
+                        category="AI / RAG / Vector",
+                        added_hours_estimate=16.0,
+                        risk_level="high",
+                    )
+                )
             elif any(k in fid_low for k in ["pay", "billing", "razorpay"]):
-                drivers.append(TopEffortDriver(feature_name=fid, category="Payment & Commerce", added_hours_estimate=10.0, risk_level="medium"))
+                drivers.append(
+                    TopEffortDriver(
+                        feature_name=fid,
+                        category="Payment & Commerce",
+                        added_hours_estimate=10.0,
+                        risk_level="medium",
+                    )
+                )
             elif any(k in fid_low for k in ["auth", "rbac"]):
-                drivers.append(TopEffortDriver(feature_name=fid, category="Auth & Security", added_hours_estimate=8.0, risk_level="medium"))
+                drivers.append(
+                    TopEffortDriver(
+                        feature_name=fid,
+                        category="Auth & Security",
+                        added_hours_estimate=8.0,
+                        risk_level="medium",
+                    )
+                )
             elif any(k in fid_low for k in ["admin", "crm"]):
-                drivers.append(TopEffortDriver(feature_name=fid, category="Admin & Operations", added_hours_estimate=7.0, risk_level="low"))
+                drivers.append(
+                    TopEffortDriver(
+                        feature_name=fid,
+                        category="Admin & Operations",
+                        added_hours_estimate=7.0,
+                        risk_level="low",
+                    )
+                )
 
         drivers.sort(key=lambda d: d.added_hours_estimate, reverse=True)
 

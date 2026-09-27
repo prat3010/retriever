@@ -29,7 +29,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
         try:
             from sklearn.cluster import HDBSCAN  # noqa: F401
         except ImportError:
-            logger.warning("HDBSCAN not available in scikit-learn; will use KMeans fallback.")
+            logger.warning(
+                "HDBSCAN not available in scikit-learn; will use KMeans fallback."
+            )
             self._hdbscan_available = False
 
     def cluster_chunks(
@@ -56,7 +58,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
 
         # Handle very small collections (< 4 chunks)
         if total_chunks < 4:
-            topic = self._create_single_fallback_topic(0, chunk_ids, chunk_texts, embeddings_matrix)
+            topic = self._create_single_fallback_topic(
+                0, chunk_ids, chunk_texts, embeddings_matrix
+            )
             return TopicClusteringResponse(
                 tenant_id=tenant_id,
                 total_chunks=total_chunks,
@@ -66,14 +70,18 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
                 algorithm_used="fallback_single",
             )
 
-        labels, algo_name = self._run_clustering(embeddings_matrix, request, total_chunks)
+        labels, algo_name = self._run_clustering(
+            embeddings_matrix, request, total_chunks
+        )
 
         # Group chunks by cluster label
         cluster_chunks = defaultdict(list)
         cluster_texts = defaultdict(list)
         cluster_vectors = defaultdict(list)
 
-        for cid, text, vec, lbl in zip(chunk_ids, chunk_texts, embeddings_matrix, labels, strict=False):
+        for cid, text, vec, lbl in zip(
+            chunk_ids, chunk_texts, embeddings_matrix, labels, strict=False
+        ):
             cluster_chunks[lbl].append(cid)
             cluster_texts[lbl].append(text)
             cluster_vectors[lbl].append(vec)
@@ -94,7 +102,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
                     ClusterTopic(
                         topic_id=-1,
                         label="Miscellaneous / Outliers",
-                        keywords=keywords_per_cluster.get(-1, ["unclassified", "isolated"]),
+                        keywords=keywords_per_cluster.get(
+                            -1, ["unclassified", "isolated"]
+                        ),
                         chunk_ids=c_ids,
                         chunk_count=len(c_ids),
                         centroid=[],
@@ -145,7 +155,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
             algorithm_used=algo_name,
         )
 
-    def _run_clustering(self, X: np.ndarray, request: TopicClusteringRequest, n_samples: int):
+    def _run_clustering(
+        self, X: np.ndarray, request: TopicClusteringRequest, n_samples: int
+    ):
         """Execute HDBSCAN or MiniBatchKMeans."""
         if request.method == "hdbscan" and self._hdbscan_available and n_samples >= 5:
             try:
@@ -164,7 +176,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
                     return self._run_kmeans(X, n_samples)
                 return labels, "hdbscan"
             except Exception as e:
-                logger.warning(f"HDBSCAN clustering failed: {e}; falling back to KMeans")
+                logger.warning(
+                    f"HDBSCAN clustering failed: {e}; falling back to KMeans"
+                )
 
         return self._run_kmeans(X, n_samples)
 
@@ -195,7 +209,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
         labels = np.zeros(n, dtype=int)
         for _ in range(max_iter):
             # Compute squared euclidean distances to all centroids
-            dists = np.linalg.norm(X[:, np.newaxis, :] - centroids[np.newaxis, :, :], axis=2)
+            dists = np.linalg.norm(
+                X[:, np.newaxis, :] - centroids[np.newaxis, :, :], axis=2
+            )
             new_labels = np.argmin(dists, axis=1)
 
             if np.array_equal(labels, new_labels):
@@ -259,10 +275,49 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
         import re
 
         stopwords = {
-            "the", "and", "is", "in", "to", "of", "it", "with", "as", "for", "on", "that",
-            "this", "are", "from", "at", "by", "an", "be", "or", "was", "which", "will",
-            "can", "all", "has", "have", "had", "they", "their", "but", "not", "what",
-            "when", "where", "how", "who", "whom", "more", "also", "into", "than", "then",
+            "the",
+            "and",
+            "is",
+            "in",
+            "to",
+            "of",
+            "it",
+            "with",
+            "as",
+            "for",
+            "on",
+            "that",
+            "this",
+            "are",
+            "from",
+            "at",
+            "by",
+            "an",
+            "be",
+            "or",
+            "was",
+            "which",
+            "will",
+            "can",
+            "all",
+            "has",
+            "have",
+            "had",
+            "they",
+            "their",
+            "but",
+            "not",
+            "what",
+            "when",
+            "where",
+            "how",
+            "who",
+            "whom",
+            "more",
+            "also",
+            "into",
+            "than",
+            "then",
         }
 
         # Tokenize and compute term frequencies per document
@@ -305,7 +360,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
                 term_idf = math.log((1 + n_docs) / (1 + df[t])) + 1.0
                 scores[t] = term_tf * term_idf
 
-            sorted_terms = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            sorted_terms = sorted(
+                scores.items(), key=lambda item: item[1], reverse=True
+            )
             top_words = [t for t, _ in sorted_terms[:top_k]]
             keywords_map[lbl] = top_words if top_words else ["document", "topic"]
 
@@ -362,7 +419,9 @@ class TopicClusteringAdapter(BaseTopicClusterer, BaseKnowledgeGapDetector):
                 f"Topics with sparse documentation (< 3 chunks): {topics_str}. Adding more supporting paragraphs will improve retrieval recall."
             )
         if coverage_score > 0.85:
-            recommendations.append("Knowledge vault exhibits high semantic density and strong inter-document clustering.")
+            recommendations.append(
+                "Knowledge vault exhibits high semantic density and strong inter-document clustering."
+            )
 
         return KnowledgeGapReport(
             tenant_id=tenant_id,

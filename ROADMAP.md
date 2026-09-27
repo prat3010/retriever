@@ -226,10 +226,14 @@ Following an architectural and community reality check against viral open-source
 - [x] **FastAPI REST Endpoints:** Mounted 4 tenant-scoped endpoints under `/v1/tenants/{tenantId}/workflows/dag/*` covering compilation, execution, and enterprise template inspection.
 - [x] **Platform Battery #40 Registration:** Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata, health check endpoint, and zero-toy verification.
 
-### Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Planned**
-- [ ] **Single Distroless Edge Container:** Self-contained Docker / OCI image bundling SQLite FTS5, embedded quantized Ollama, and Retriever engine with zero internet connectivity requirements.
-- [ ] **Hardware-Rooted Micro-Enclave Encryption:** Automatic AES-256-GCM vector sealing using host hardware TPM 2.0 / Apple Secure Enclave seeds.
-- [ ] **Full-Duplex Offline Voice & Whisper:** Integrated local Whisper.cpp ASR + Piper neural TTS for sovereign voice interactions with zero third-party API dependencies.
+### Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Completed (2026-09-24)**
+- [x] **Single Distroless Edge Container:** Self-contained Docker / OCI recipe (`deploy/docker/Dockerfile.appliance`) bundling embedded SQLite FTS5, quantized models, and non-root execution with zero internet connectivity requirements.
+- [x] **Hardware-Rooted Vector Index Sealing:** Automatic AES-256-GCM vector database sealing (`HardwareVectorSealer`) bound to host hardware TPM 2.0 PCR registers or Apple Secure Enclave silicon seeds via HKDF-SHA256, with instant fail-fast locking on tamper detection.
+- [x] **Zero-Egress Strict Mode (Fail-Closed Sentinel):** In-process network sentinel (`AirgapNetworkSentinel`) that continuously audits sockets and DNS resolvers, blocking WAN connection attempts with `AirgapEgressViolationError`.
+- [x] **Full-Duplex Offline Voice & Whisper RAG:** Integrated local Whisper ASR + embedded SQLite hybrid search + Piper neural TTS voice pipeline (`SovereignVoiceRAGEngine`) with sub-350ms total conversational latency and zero cloud API dependencies.
+- [x] **Interactive Sovereign Appliance Cockpit:** Administrative UI (`sovereign-appliance-cockpit.tsx`) with real-time Air-Gap Security Shield, PCR attestation card, 1-click seal/unseal controls, and full-duplex voice RAG simulator.
+- [x] **FastAPI REST Endpoints:** 6 tenant and administrative endpoints mounted under `/v1/appliance/*` for status, network audits, manifests, hardware sealing, and voice queries.
+- [x] **Platform Battery #41 Registration:** Cataloged `sovereign_air_gapped_appliance` in `BatteryService` under `EDGE_DISTRIBUTION` with verified zero-toy parameterization.
 
 ### Milestone 128: Instant Cloud Playground & Multi-Region Sandbox Hub (v2.6.0) — **Planned**
 - [ ] **Ephemeral 1-Click Sandbox Tenants:** Instant, zero-sign-up 30-minute sandbox tenants with pre-ingested demo corpora (Kubernetes docs, SEC 10-K filings, ArXiv papers) for instant browser testing before local cloning.
@@ -255,6 +259,7 @@ Following an architectural and community reality check against viral open-source
 - 🕸️ **Hierarchical Memory & GoT Planning Feature Guide:** [`docs/features/hierarchical-memory-got-planning.md`](docs/features/hierarchical-memory-got-planning.md)
 - 🔌 **Enterprise SaaS Connectors & ACL Feature Guide:** [`docs/features/enterprise-saas-connectors-acl.md`](docs/features/enterprise-saas-connectors-acl.md)
 - 🎨 **Visual DAG Workflow Canvas Feature Guide:** [`docs/features/visual-dag-workflow-canvas.md`](docs/features/visual-dag-workflow-canvas.md)
+- 🛡️ **Sovereign Air-Gapped Appliance Feature Guide:** [`docs/features/sovereign-air-gapped-appliance.md`](docs/features/sovereign-air-gapped-appliance.md)
 - 🚀 **Production Deployment Guides:** [`docs/infrastructure/DEPLOYMENT.md`](docs/infrastructure/DEPLOYMENT.md)
 - 🤝 **Contributing Guidelines:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 

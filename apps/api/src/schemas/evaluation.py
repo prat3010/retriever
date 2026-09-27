@@ -21,7 +21,10 @@ class BulkImportQuestionsRequest(BaseModel):
 class TriggerSelfTuneRequest(BaseModel):
     """Request model for manually triggering or querying self-tuning parameter recommendations."""
 
-    apply_changes: bool = Field(default=False, description="Whether to automatically apply recommendations to tenant config")
+    apply_changes: bool = Field(
+        default=False,
+        description="Whether to automatically apply recommendations to tenant config",
+    )
 
 
 class SelfTuningReportDTO(BaseModel):
@@ -41,8 +44,12 @@ class SelfTuningReportDTO(BaseModel):
 class NliEvaluateRequest(BaseModel):
     """Request model for evaluating semantic NLI claim entailment."""
 
-    claims: list[str] = Field(..., min_length=1, description="List of atomic statements/claims to evaluate")
-    contexts: list[str] = Field(default_factory=list, description="List of context chunks acting as premises")
+    claims: list[str] = Field(
+        ..., min_length=1, description="List of atomic statements/claims to evaluate"
+    )
+    contexts: list[str] = Field(
+        default_factory=list, description="List of context chunks acting as premises"
+    )
 
 
 class NliClassificationDTO(BaseModel):
@@ -73,7 +80,9 @@ class SlmJudgeRequest(BaseModel):
 
     query: str = Field(..., description="User query prompt")
     answer: str = Field(..., description="Generated answer text to evaluate")
-    contexts: list[str] = Field(default_factory=list, description="Retrieved context chunks")
+    contexts: list[str] = Field(
+        default_factory=list, description="Retrieved context chunks"
+    )
 
 
 class SlmClaimAnalysisDTO(BaseModel):
@@ -137,6 +146,3 @@ class RegressionGateResponse(BaseModel):
     violations: list[str]
     summary_markdown: str
     timestamp: str
-
-
-

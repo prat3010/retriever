@@ -72,7 +72,9 @@ async def test_resilient_embedder_normal_operation() -> None:
 async def test_resilient_embedder_circuit_trip_and_fallback() -> None:
     primary = AsyncMock()
     # Simulate connection outage on Ollama
-    primary.embed_text = AsyncMock(side_effect=RuntimeError("Ollama connection refused"))
+    primary.embed_text = AsyncMock(
+        side_effect=RuntimeError("Ollama connection refused")
+    )
 
     resilient = ResilientEmbeddingAdapter(
         primary=primary,

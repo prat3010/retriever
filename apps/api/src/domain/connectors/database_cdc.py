@@ -1,4 +1,5 @@
 """Database Change-Data-Capture (CDC) Data Connector for PostgreSQL and MySQL."""
+
 import json
 import logging
 from datetime import UTC, datetime
@@ -64,6 +65,7 @@ class DatabaseCdcConnector(BaseConnector):
         try:
             if db_type == "postgresql":
                 import asyncpg
+
                 conn = await asyncpg.connect(
                     host=host,
                     port=port,
@@ -76,6 +78,7 @@ class DatabaseCdcConnector(BaseConnector):
                 return True
             else:
                 import asyncio
+
                 _, writer = await asyncio.wait_for(
                     asyncio.open_connection(host, port),
                     timeout=5.0,
@@ -84,7 +87,12 @@ class DatabaseCdcConnector(BaseConnector):
                 await writer.wait_closed()
                 return True
         except Exception as exc:
-            logger.warning("Database CDC connection validation failed for %s:%s: %s", host, port, exc)
+            logger.warning(
+                "Database CDC connection validation failed for %s:%s: %s",
+                host,
+                port,
+                exc,
+            )
             return False
 
     def _format_row_to_document(
@@ -139,7 +147,9 @@ class DatabaseCdcConnector(BaseConnector):
             },
         )
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Fetch documents without historical cursor (full initial pull)."""
         docs, _ = await self.fetch_incremental(config, ConnectorSyncState())
         return docs
@@ -185,7 +195,10 @@ class DatabaseCdcConnector(BaseConnector):
                 cursor=f"lsn_{highest_watermark}",
                 watermark=highest_watermark,
                 last_sync_at=datetime.now(UTC).isoformat(),
-                metadata={"total_tables": len(tables), "records_found": len(discovered_docs)},
+                metadata={
+                    "total_tables": len(tables),
+                    "records_found": len(discovered_docs),
+                },
             )
             return discovered_docs, new_state
 
@@ -198,6 +211,7 @@ class DatabaseCdcConnector(BaseConnector):
 
         try:
             import asyncpg
+
             conn = await asyncpg.connect(
                 host=host,
                 port=port,
@@ -239,6 +253,9 @@ class DatabaseCdcConnector(BaseConnector):
             cursor=f"lsn_{highest_watermark}",
             watermark=highest_watermark,
             last_sync_at=datetime.now(UTC).isoformat(),
-            metadata={"total_tables": len(tables), "records_found": len(discovered_docs)},
+            metadata={
+                "total_tables": len(tables),
+                "records_found": len(discovered_docs),
+            },
         )
         return discovered_docs, new_state

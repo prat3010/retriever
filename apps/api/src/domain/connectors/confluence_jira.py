@@ -1,4 +1,5 @@
 """Authentic Atlassian Confluence Cloud & Jira Software REST API Connectors."""
+
 import base64
 import html
 import logging
@@ -60,8 +61,15 @@ def _html_to_markdown(raw_html: str) -> str:
         )
 
     # Convert Bold and Italic
-    text = re.sub(r"<(?:strong|b)>(.*?)</(?:strong|b)>", r"**\1**", text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r"<(?:em|i)>(.*?)</(?:em|i)>", r"*\1*", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        r"<(?:strong|b)>(.*?)</(?:strong|b)>",
+        r"**\1**",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    text = re.sub(
+        r"<(?:em|i)>(.*?)</(?:em|i)>", r"*\1*", text, flags=re.IGNORECASE | re.DOTALL
+    )
 
     # Convert links <a href="...">...</a>
     text = re.sub(
@@ -72,11 +80,15 @@ def _html_to_markdown(raw_html: str) -> str:
     )
 
     # Convert Lists
-    text = re.sub(r"<li[^>]*>(.*?)</li>", r"- \1\n", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        r"<li[^>]*>(.*?)</li>", r"- \1\n", text, flags=re.IGNORECASE | re.DOTALL
+    )
     text = re.sub(r"</?[ou]l[^>]*>", "\n", text, flags=re.IGNORECASE)
 
     # Convert Paragraphs & Line Breaks
-    text = re.sub(r"<p[^>]*>(.*?)</p>", r"\1\n\n", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        r"<p[^>]*>(.*?)</p>", r"\1\n\n", text, flags=re.IGNORECASE | re.DOTALL
+    )
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
 
     # Convert Tables: <table><tr><th>/<td>
@@ -92,8 +104,12 @@ def _html_to_markdown(raw_html: str) -> str:
         is_first_header = False
 
         for row_html in rows:
-            headers = re.findall(r"<th[^>]*>(.*?)</th>", row_html, re.DOTALL | re.IGNORECASE)
-            cells = re.findall(r"<td[^>]*>(.*?)</td>", row_html, re.DOTALL | re.IGNORECASE)
+            headers = re.findall(
+                r"<th[^>]*>(.*?)</th>", row_html, re.DOTALL | re.IGNORECASE
+            )
+            cells = re.findall(
+                r"<td[^>]*>(.*?)</td>", row_html, re.DOTALL | re.IGNORECASE
+            )
             if headers:
                 is_first_header = True
                 parsed_rows.append([re.sub(r"<[^>]+>", "", h).strip() for h in headers])
@@ -116,7 +132,7 @@ def _html_to_markdown(raw_html: str) -> str:
             for r in parsed_rows[1:]:
                 out_lines.append("| " + " | ".join(r) + " |")
         else:
-            default_hd = [f"Column {i+1}" for i in range(col_count)]
+            default_hd = [f"Column {i + 1}" for i in range(col_count)]
             out_lines.append("| " + " | ".join(default_hd) + " |")
             out_lines.append("| " + " | ".join(["---"] * col_count) + " |")
             for r in parsed_rows:
@@ -185,15 +201,21 @@ class ConfluenceConnector(BaseConnector):
 
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
-                res = await client.get(f"{cloud_url}/wiki/rest/api/space/{space_key}", headers=headers)
+                res = await client.get(
+                    f"{cloud_url}/wiki/rest/api/space/{space_key}", headers=headers
+                )
                 return res.status_code in (200, 404)
         except Exception as exc:
             logger.warning("Confluence credential validation error: %s", exc)
             return False
 
-    def _get_sandbox_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    def _get_sandbox_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         space_key = config.configuration.get("space_key", "ENG")
-        cloud_url = config.configuration.get("cloud_url", "https://enterprise.atlassian.net").rstrip("/")
+        cloud_url = config.configuration.get(
+            "cloud_url", "https://enterprise.atlassian.net"
+        ).rstrip("/")
         return [
             DiscoveredDocument(
                 filename="confluence_architecture_blueprint.md",
@@ -242,7 +264,9 @@ class ConfluenceConnector(BaseConnector):
             ),
         ]
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         space_key = config.configuration.get("space_key", "")
         if not space_key:
             logger.warning("Confluence connector '%s' missing space_key", config.id)
@@ -272,7 +296,11 @@ class ConfluenceConnector(BaseConnector):
                 )
                 res = await client.get(url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Confluence API returned HTTP %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Confluence API returned HTTP %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return []
 
                 pages = res.json().get("results", [])
@@ -292,9 +320,17 @@ class ConfluenceConnector(BaseConnector):
                     allowed_groups: list[str] = []
                     is_public = True
 
-                    read_restrictions = page.get("restrictions", {}).get("read", {}).get("restrictions", {})
-                    user_restrictions = read_restrictions.get("user", {}).get("results", [])
-                    group_restrictions = read_restrictions.get("group", {}).get("results", [])
+                    read_restrictions = (
+                        page.get("restrictions", {})
+                        .get("read", {})
+                        .get("restrictions", {})
+                    )
+                    user_restrictions = read_restrictions.get("user", {}).get(
+                        "results", []
+                    )
+                    group_restrictions = read_restrictions.get("group", {}).get(
+                        "results", []
+                    )
 
                     for u in user_restrictions:
                         u_id = u.get("email") or u.get("accountId") or u.get("username")
@@ -309,7 +345,9 @@ class ConfluenceConnector(BaseConnector):
                     if allowed_users or allowed_groups:
                         is_public = False
 
-                    filename = f"{re.sub(r'[^a-zA-Z0-9_-]', '_', title).lower()}_{page_id}.md"
+                    filename = (
+                        f"{re.sub(r'[^a-zA-Z0-9_-]', '_', title).lower()}_{page_id}.md"
+                    )
                     web_url = f"{cloud_url}/wiki/spaces/{space_key}/pages/{page_id}"
 
                     discovered.append(
@@ -370,7 +408,11 @@ class ConfluenceConnector(BaseConnector):
                 )
                 res = await client.get(url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Incremental Confluence API error %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Incremental Confluence API error %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return [], state
 
                 pages = res.json().get("results", [])
@@ -385,13 +427,20 @@ class ConfluenceConnector(BaseConnector):
                         latest_mod = when
 
                     raw_body = page.get("body", {}).get("storage", {}).get("value", "")
-                    markdown_content = _html_to_markdown(raw_body) or f"# {title}\n\n*Page synced from Confluence.*"
+                    markdown_content = (
+                        _html_to_markdown(raw_body)
+                        or f"# {title}\n\n*Page synced from Confluence.*"
+                    )
 
                     allowed_users: list[str] = []
                     allowed_groups: list[str] = []
                     is_public = True
 
-                    read_restrictions = page.get("restrictions", {}).get("read", {}).get("restrictions", {})
+                    read_restrictions = (
+                        page.get("restrictions", {})
+                        .get("read", {})
+                        .get("restrictions", {})
+                    )
                     for u in read_restrictions.get("user", {}).get("results", []):
                         u_id = u.get("email") or u.get("accountId")
                         if u_id:
@@ -404,7 +453,9 @@ class ConfluenceConnector(BaseConnector):
                     if allowed_users or allowed_groups:
                         is_public = False
 
-                    filename = f"{re.sub(r'[^a-zA-Z0-9_-]', '_', title).lower()}_{page_id}.md"
+                    filename = (
+                        f"{re.sub(r'[^a-zA-Z0-9_-]', '_', title).lower()}_{page_id}.md"
+                    )
                     discovered.append(
                         DiscoveredDocument(
                             filename=filename,
@@ -482,15 +533,21 @@ class JiraConnector(BaseConnector):
 
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
-                res = await client.get(f"{cloud_url}/rest/api/3/project/{project_key}", headers=headers)
+                res = await client.get(
+                    f"{cloud_url}/rest/api/3/project/{project_key}", headers=headers
+                )
                 return res.status_code in (200, 404)
         except Exception as exc:
             logger.warning("Jira credential validation error: %s", exc)
             return False
 
-    def _get_sandbox_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    def _get_sandbox_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         project_key = config.configuration.get("project_key", "PROJ")
-        cloud_url = config.configuration.get("cloud_url", "https://enterprise.atlassian.net").rstrip("/")
+        cloud_url = config.configuration.get(
+            "cloud_url", "https://enterprise.atlassian.net"
+        ).rstrip("/")
         return [
             DiscoveredDocument(
                 filename=f"{project_key}-101_oauth_gateway.md",
@@ -543,7 +600,9 @@ class JiraConnector(BaseConnector):
         ]
 
     @staticmethod
-    def _format_issue_markdown(issue: dict[str, Any], cloud_url: str) -> tuple[str, list[str], list[str], bool]:
+    def _format_issue_markdown(
+        issue: dict[str, Any], cloud_url: str
+    ) -> tuple[str, list[str], list[str], bool]:
         key = issue.get("key", "UNKNOWN")
         fields = issue.get("fields", {})
         rendered = issue.get("renderedFields", {})
@@ -554,11 +613,15 @@ class JiraConnector(BaseConnector):
         priority = fields.get("priority", {}).get("name", "None")
 
         assignee = fields.get("assignee") or {}
-        assignee_name = assignee.get("displayName") or assignee.get("emailAddress") or "Unassigned"
+        assignee_name = (
+            assignee.get("displayName") or assignee.get("emailAddress") or "Unassigned"
+        )
         assignee_id = assignee.get("emailAddress") or assignee.get("accountId") or ""
 
         reporter = fields.get("reporter") or {}
-        reporter_name = reporter.get("displayName") or reporter.get("emailAddress") or "Unknown"
+        reporter_name = (
+            reporter.get("displayName") or reporter.get("emailAddress") or "Unknown"
+        )
         reporter_id = reporter.get("emailAddress") or reporter.get("accountId") or ""
 
         created = fields.get("created", "")
@@ -592,7 +655,9 @@ class JiraConnector(BaseConnector):
             comments_md_lines.append(f"- **{author}** ({c_date}):\n  {c_body.strip()}")
 
         comments_section = (
-            "## Comments\n" + "\n\n".join(comments_md_lines) if comments_md_lines else "*No comments recorded.*"
+            "## Comments\n" + "\n\n".join(comments_md_lines)
+            if comments_md_lines
+            else "*No comments recorded.*"
         )
 
         md_content = (
@@ -623,11 +688,15 @@ class JiraConnector(BaseConnector):
             is_public = False
             sec_name = security_level.get("name", "")
             if sec_name:
-                allowed_groups.append(f"jira-security-{sec_name.lower().replace(' ', '-')}")
+                allowed_groups.append(
+                    f"jira-security-{sec_name.lower().replace(' ', '-')}"
+                )
 
         return md_content, allowed_users, allowed_groups, is_public
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         project_key = config.configuration.get("project_key", "")
         if not project_key:
             logger.warning("Jira connector '%s' missing project_key", config.id)
@@ -663,13 +732,17 @@ class JiraConnector(BaseConnector):
                 )
                 res = await client.get(url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Jira API returned HTTP %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Jira API returned HTTP %d: %s", res.status_code, res.text[:200]
+                    )
                     return []
 
                 issues = res.json().get("issues", [])
                 for issue in issues:
                     key = issue.get("key", "TICKET")
-                    content_md, allowed_users, allowed_groups, is_public = self._format_issue_markdown(issue, cloud_url)
+                    content_md, allowed_users, allowed_groups, is_public = (
+                        self._format_issue_markdown(issue, cloud_url)
+                    )
                     updated = issue.get("fields", {}).get("updated", "")
 
                     discovered.append(
@@ -732,7 +805,11 @@ class JiraConnector(BaseConnector):
                 )
                 res = await client.get(url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Incremental Jira API returned HTTP %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Incremental Jira API returned HTTP %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return [], state
 
                 issues = res.json().get("issues", [])
@@ -745,7 +822,9 @@ class JiraConnector(BaseConnector):
                     if updated and updated > latest_updated:
                         latest_updated = updated
 
-                    content_md, allowed_users, allowed_groups, is_public = self._format_issue_markdown(issue, cloud_url)
+                    content_md, allowed_users, allowed_groups, is_public = (
+                        self._format_issue_markdown(issue, cloud_url)
+                    )
                     discovered.append(
                         DiscoveredDocument(
                             filename=f"jira_{key.lower()}.md",

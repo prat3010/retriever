@@ -39,7 +39,9 @@ DEFAULT_CLUSTER_SECRET = "retriever_mcp_mesh_internal_trust_key_v1"
 
 def _canonical_json(data: dict[str, Any]) -> bytes:
     """Deterministic canonical JSON serialization for signature calculation."""
-    return json.dumps(data, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return json.dumps(data, sort_keys=True, separators=(",", ":"), default=str).encode(
+        "utf-8"
+    )
 
 
 class McpMeshService:
@@ -76,7 +78,9 @@ class McpMeshService:
             status=MeshNodeStatus.ONLINE,
             latency_ms=1.0,
             last_heartbeat=time.time(),
-            public_key_fingerprint=hashlib.sha256(self.local_node_id.encode()).hexdigest()[:16],
+            public_key_fingerprint=hashlib.sha256(
+                self.local_node_id.encode()
+            ).hexdigest()[:16],
             metadata={"is_local": True},
         )
         self._nodes[self.local_node_id] = local_node
@@ -107,7 +111,9 @@ class McpMeshService:
             return False
         return self._nodes.pop(node_id, None) is not None
 
-    def heartbeat(self, node_id: str, latency_ms: float | None = None) -> MeshPeerNode | None:
+    def heartbeat(
+        self, node_id: str, latency_ms: float | None = None
+    ) -> MeshPeerNode | None:
         """Process peer heartbeat, refresh liveness lease, and optionally update latency."""
         node = self._nodes.get(node_id)
         if not node:
@@ -126,7 +132,9 @@ class McpMeshService:
         """List registered peer nodes, optionally filtered by health status."""
         self.evict_stale_nodes()
         if online_only or status_filter == MeshNodeStatus.ONLINE:
-            return [n for n in self._nodes.values() if n.status == MeshNodeStatus.ONLINE]
+            return [
+                n for n in self._nodes.values() if n.status == MeshNodeStatus.ONLINE
+            ]
         if status_filter:
             return [n for n in self._nodes.values() if n.status == status_filter]
         return list(self._nodes.values())
@@ -163,7 +171,8 @@ class McpMeshService:
 
         # Collect candidate online nodes that advertise this tool
         candidates = [
-            n for n in self._nodes.values()
+            n
+            for n in self._nodes.values()
             if n.status in (MeshNodeStatus.ONLINE, MeshNodeStatus.DEGRADED)
             and any(t.name == tool_name for t in n.advertised_tools)
         ]
@@ -179,13 +188,22 @@ class McpMeshService:
                 key=lambda n: (
                     n.capacity.ewma_latency_ms
                     * (1.0 + float(n.capacity.queue_depth))
-                    * (1.0 + (n.capacity.active_execution_slots / max(1, n.capacity.max_execution_slots)))
+                    * (
+                        1.0
+                        + (
+                            n.capacity.active_execution_slots
+                            / max(1, n.capacity.max_execution_slots)
+                        )
+                    )
                     * (1.0 if n.status == MeshNodeStatus.ONLINE else 10.0)
                 )
             )
             return candidates[0]
 
-        if effective_policy in (MeshRoutingPolicy.LOWEST_LATENCY, MeshRoutingPolicy.LOCAL_FIRST):
+        if effective_policy in (
+            MeshRoutingPolicy.LOWEST_LATENCY,
+            MeshRoutingPolicy.LOCAL_FIRST,
+        ):
             # Pick node with lowest latency
             candidates.sort(key=lambda n: n.latency_ms)
             return candidates[0]
@@ -284,7 +302,10 @@ class McpMeshService:
         for nid, node in self._nodes.items():
             if nid == self.local_node_id:
                 continue
-            if node.status == MeshNodeStatus.ONLINE and (now - node.last_heartbeat) > timeout_seconds:
+            if (
+                node.status == MeshNodeStatus.ONLINE
+                and (now - node.last_heartbeat) > timeout_seconds
+            ):
                 node.status = MeshNodeStatus.UNREACHABLE
                 evicted += 1
         return evicted
@@ -293,7 +314,11 @@ class McpMeshService:
         """Compile live Platform Battery #30 health check summary."""
         self.evict_stale_nodes()
         nodes = list(self._nodes.values())
-        active = sum(1 for n in nodes if n.status in (MeshNodeStatus.ONLINE, MeshNodeStatus.DEGRADED))
+        active = sum(
+            1
+            for n in nodes
+            if n.status in (MeshNodeStatus.ONLINE, MeshNodeStatus.DEGRADED)
+        )
         total_tools = len(self.list_mesh_tools())
         return MeshStatusSummary(
             battery_id="distributed_mcp_mesh",

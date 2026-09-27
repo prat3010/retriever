@@ -62,23 +62,31 @@ async def test_get_document_download_url_success(mock_user_context) -> None:
         updated_at="now",
     )
 
-    with patch.object(document_repository, "get_document", new_callable=AsyncMock) as mock_get_doc:
+    with patch.object(
+        document_repository, "get_document", new_callable=AsyncMock
+    ) as mock_get_doc:
         mock_get_doc.return_value = mock_doc
 
-        with patch.object(local_storage, "generate_presigned_url", new_callable=AsyncMock) as mock_presign:
+        with patch.object(
+            local_storage, "generate_presigned_url", new_callable=AsyncMock
+        ) as mock_presign:
             mock_presign.return_value = "/v1/local-downloads/fake-signed-path"
 
             client = TestClient(app)
-            response = client.get(f"/v1/tenants/{tenant_id}/documents/{document_id}/download-url?expiry=600")
+            response = client.get(
+                f"/v1/tenants/{tenant_id}/documents/{document_id}/download-url?expiry=600"
+            )
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert data["documentId"] == document_id
             assert data["downloadUrl"] == "/v1/local-downloads/fake-signed-path"
             assert data["expiresInSeconds"] == 600
-            
+
             mock_get_doc.assert_called_once_with(tenant_id, document_id)
-            mock_presign.assert_called_once_with(mock_doc.storage_path, expiry_seconds=600)
+            mock_presign.assert_called_once_with(
+                mock_doc.storage_path, expiry_seconds=600
+            )
 
 
 @pytest.mark.asyncio

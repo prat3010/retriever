@@ -56,7 +56,10 @@ async def test_tenant_isolation_cross_tenant_violation_triggers_kill_switch() ->
         scopes=["admin:*"],
     )
 
-    with patch("src.adapters.api.security.identity_provider.revoke_api_key_by_hash", new_callable=AsyncMock) as mock_revoke:
+    with patch(
+        "src.adapters.api.security.identity_provider.revoke_api_key_by_hash",
+        new_callable=AsyncMock,
+    ) as mock_revoke:
         with pytest.raises(TenantIsolationViolationError):
             await verify_tenant_isolation(
                 tenantId="b0d64742-d5e9-425f-a6ca-57eb003cf2be",  # fin_audit
@@ -77,7 +80,10 @@ async def test_tenant_isolation_cross_tenant_slug_spoofing() -> None:
         scopes=["admin:*"],
     )
 
-    with patch("src.adapters.api.security.identity_provider.revoke_api_key_by_hash", new_callable=AsyncMock) as mock_revoke:
+    with patch(
+        "src.adapters.api.security.identity_provider.revoke_api_key_by_hash",
+        new_callable=AsyncMock,
+    ) as mock_revoke:
         with pytest.raises(TenantIsolationViolationError):
             await verify_tenant_isolation(
                 tenantId="tech_docs",  # Maps to tech_docs UUID != red_team

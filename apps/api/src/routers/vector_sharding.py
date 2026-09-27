@@ -108,7 +108,9 @@ async def query_sharded_vectors(query: ScatterGatherQuery) -> ScatterGatherRespo
     response_model=ShardMutationResponse,
     summary="Commit Vector Mutation via Raft Consensus",
 )
-async def mutate_sharded_vectors(request: ShardMutationRequest) -> ShardMutationResponse:
+async def mutate_sharded_vectors(
+    request: ShardMutationRequest,
+) -> ShardMutationResponse:
     """Replicate vector index insertions/deletions across replica group via Raft consensus log."""
     service = container.vector_raft_sharding_service
     try:
@@ -162,7 +164,9 @@ async def trigger_raft_election(payload: ElectionPayload) -> dict[str, Any]:
     response_model=ShardRebalancePlan,
     summary="Trigger Online Shard Rebalance & Migration",
 )
-async def rebalance_shards(payload: TriggerRebalancePayload | None = None) -> ShardRebalancePlan:
+async def rebalance_shards(
+    payload: TriggerRebalancePayload | None = None,
+) -> ShardRebalancePlan:
     """Execute two-phase online shard migration from source to target node to eliminate cluster skew."""
     service = container.vector_raft_sharding_service
     try:

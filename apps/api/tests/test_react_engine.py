@@ -50,7 +50,9 @@ class MockSequentialLlm(LlmProvider):
             content = self._responses[self._call_count]
             self._call_count += 1
         else:
-            content = json.dumps({"thought": "Final wrap up", "final_answer": "All tasks concluded."})
+            content = json.dumps(
+                {"thought": "Final wrap up", "final_answer": "All tasks concluded."}
+            )
 
         return InferenceResponse(
             content=content,
@@ -64,11 +66,25 @@ class MockSequentialLlm(LlmProvider):
 
 def test_react_domain_abstractions_purity():
     """Verify that domain abstractions import zero forbidden frameworks (Hexagonal rule)."""
-    domain_file = Path(__file__).resolve().parents[1] / "src" / "domain" / "abstractions" / "react.py"
+    domain_file = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "domain"
+        / "abstractions"
+        / "react.py"
+    )
     assert domain_file.exists(), f"File {domain_file} must exist"
 
     tree = ast.parse(domain_file.read_text(), filename=str(domain_file))
-    forbidden = {"fastapi", "sqlalchemy", "redis", "pika", "celery", "adapters", "routers"}
+    forbidden = {
+        "fastapi",
+        "sqlalchemy",
+        "redis",
+        "pika",
+        "celery",
+        "adapters",
+        "routers",
+    }
 
     imported_modules = set()
     for node in ast.walk(tree):
@@ -94,16 +110,22 @@ def test_tool_call_signature_hashing():
 @pytest.mark.asyncio
 async def test_react_single_turn_completion():
     """Verify single-turn execution where LLM provides a final answer directly."""
-    mock_llm = MockSequentialLlm([
-        json.dumps({
-            "thought": "This query can be answered directly without tool invocations.",
-            "tool_calls": [],
-            "final_answer": "Direct answer to prompt.",
-        })
-    ])
+    mock_llm = MockSequentialLlm(
+        [
+            json.dumps(
+                {
+                    "thought": "This query can be answered directly without tool invocations.",
+                    "tool_calls": [],
+                    "final_answer": "Direct answer to prompt.",
+                }
+            )
+        ]
+    )
     engine = ReActExecutionEngine(llm_provider=mock_llm)
 
-    trace = await engine.run_loop(tenant_id="test-tenant", query="What is the capital of France?")
+    trace = await engine.run_loop(
+        tenant_id="test-tenant", query="What is the capital of France?"
+    )
     assert trace.final_answer == "Direct answer to prompt."
     assert trace.total_steps >= 1
     assert trace.circuit_breaker_triggered is False
@@ -119,24 +141,34 @@ async def test_react_multi_turn_tool_chaining():
         handler=lambda msg="": f"Echo: {msg}",
     )
 
-    mock_llm = MockSequentialLlm([
-        # Turn 1: Call echo_tool
-        json.dumps({
-            "thought": "I need to invoke echo_tool to process the message.",
-            "tool_calls": [{"tool_name": "echo_tool", "arguments": {"msg": "Hello Swarm"}}],
-            "final_answer": None,
-        }),
-        # Turn 2: Receive observation and answer
-        json.dumps({
-            "thought": "I received the echo output successfully.",
-            "tool_calls": [],
-            "final_answer": "Tool execution confirmed: Echo: Hello Swarm",
-        }),
-    ])
+    mock_llm = MockSequentialLlm(
+        [
+            # Turn 1: Call echo_tool
+            json.dumps(
+                {
+                    "thought": "I need to invoke echo_tool to process the message.",
+                    "tool_calls": [
+                        {"tool_name": "echo_tool", "arguments": {"msg": "Hello Swarm"}}
+                    ],
+                    "final_answer": None,
+                }
+            ),
+            # Turn 2: Receive observation and answer
+            json.dumps(
+                {
+                    "thought": "I received the echo output successfully.",
+                    "tool_calls": [],
+                    "final_answer": "Tool execution confirmed: Echo: Hello Swarm",
+                }
+            ),
+        ]
+    )
 
     engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
     events = []
-    async for ev in engine.run_loop_stream(tenant_id="test-tenant", query="Echo Hello Swarm"):
+    async for ev in engine.run_loop_stream(
+        tenant_id="test-tenant", query="Echo Hello Swarm"
+    ):
         events.append(ev)
 
     event_types = [e.event_type for e in events]
@@ -161,28 +193,42 @@ async def test_react_self_healing_error_recovery():
         return "Calculation: 42"
 
     tool_reg.register_tool(
-        definition=ToolDefinition(name="flaky_tool", description="A tool that can fail"),
+        definition=ToolDefinition(
+            name="flaky_tool", description="A tool that can fail"
+        ),
         handler=buggy_handler,
     )
 
-    mock_llm = MockSequentialLlm([
-        # Turn 1: Call tool with bad args
-        json.dumps({
-            "thought": "Trying calculation with initial args.",
-            "tool_calls": [{"tool_name": "flaky_tool", "arguments": {"fix": False}}],
-        }),
-        # Turn 2: Self-correct after observing the error
-        json.dumps({
-            "thought": "The tool failed with division by zero. Self-correcting by passing fix=True.",
-            "tool_calls": [{"tool_name": "flaky_tool", "arguments": {"fix": True}}],
-        }),
-        # Turn 3: Conclude
-        json.dumps({
-            "thought": "Calculation resolved cleanly.",
-            "tool_calls": [],
-            "final_answer": "Success with result 42.",
-        }),
-    ])
+    mock_llm = MockSequentialLlm(
+        [
+            # Turn 1: Call tool with bad args
+            json.dumps(
+                {
+                    "thought": "Trying calculation with initial args.",
+                    "tool_calls": [
+                        {"tool_name": "flaky_tool", "arguments": {"fix": False}}
+                    ],
+                }
+            ),
+            # Turn 2: Self-correct after observing the error
+            json.dumps(
+                {
+                    "thought": "The tool failed with division by zero. Self-correcting by passing fix=True.",
+                    "tool_calls": [
+                        {"tool_name": "flaky_tool", "arguments": {"fix": True}}
+                    ],
+                }
+            ),
+            # Turn 3: Conclude
+            json.dumps(
+                {
+                    "thought": "Calculation resolved cleanly.",
+                    "tool_calls": [],
+                    "final_answer": "Success with result 42.",
+                }
+            ),
+        ]
+    )
 
     engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
     trace = await engine.run_loop(tenant_id="test-tenant", query="Compute 42")
@@ -191,7 +237,9 @@ async def test_react_self_healing_error_recovery():
     assert "Success with result 42" in trace.final_answer
 
     # Verify SELF_HEALING event was emitted
-    self_healing_events = [e for e in trace.events if e.event_type == ReActEventType.SELF_HEALING]
+    self_healing_events = [
+        e for e in trace.events if e.event_type == ReActEventType.SELF_HEALING
+    ]
     assert len(self_healing_events) == 1
     assert self_healing_events[0].data["tool_name"] == "flaky_tool"
 
@@ -206,11 +254,17 @@ async def test_react_anti_loop_circuit_breaker():
     )
 
     # Model tries to repeat identical tool call 3 times in a row
-    repeating_response = json.dumps({
-        "thought": "Looping on same call.",
-        "tool_calls": [{"tool_name": "noop_tool", "arguments": {"key": "same_val"}}],
-    })
-    mock_llm = MockSequentialLlm([repeating_response, repeating_response, repeating_response])
+    repeating_response = json.dumps(
+        {
+            "thought": "Looping on same call.",
+            "tool_calls": [
+                {"tool_name": "noop_tool", "arguments": {"key": "same_val"}}
+            ],
+        }
+    )
+    mock_llm = MockSequentialLlm(
+        [repeating_response, repeating_response, repeating_response]
+    )
 
     engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
     trace = await engine.run_loop(
@@ -220,7 +274,9 @@ async def test_react_anti_loop_circuit_breaker():
     )
 
     assert trace.circuit_breaker_triggered is True
-    cb_events = [e for e in trace.events if e.event_type == ReActEventType.CIRCUIT_BREAKER]
+    cb_events = [
+        e for e in trace.events if e.event_type == ReActEventType.CIRCUIT_BREAKER
+    ]
     assert len(cb_events) >= 1
     assert cb_events[0].data["repeated_count"] >= 2
 
@@ -235,7 +291,12 @@ async def test_react_max_turns_cap():
     )
 
     infinite_steps = [
-        json.dumps({"thought": f"Turn {i}", "tool_calls": [{"tool_name": "step_tool", "arguments": {"i": i}}]})
+        json.dumps(
+            {
+                "thought": f"Turn {i}",
+                "tool_calls": [{"tool_name": "step_tool", "arguments": {"i": i}}],
+            }
+        )
         for i in range(10)
     ]
     mock_llm = MockSequentialLlm(infinite_steps)
@@ -248,7 +309,11 @@ async def test_react_max_turns_cap():
     )
 
     # Turn count should not exceed max_turns
-    thought_events = [e for e in trace.events if e.event_type == ReActEventType.THOUGHT and "thought" in e.data]
+    thought_events = [
+        e
+        for e in trace.events
+        if e.event_type == ReActEventType.THOUGHT and "thought" in e.data
+    ]
     assert len(thought_events) <= 3
 
 
@@ -272,7 +337,11 @@ async def test_fastapi_agentic_stream_endpoint():
         assert "text/event-stream" in response.headers.get("content-type", "")
 
         lines = response.text.strip().split("\n")
-        data_lines = [line.removeprefix("data: ").strip() for line in lines if line.startswith("data: ")]
+        data_lines = [
+            line.removeprefix("data: ").strip()
+            for line in lines
+            if line.startswith("data: ")
+        ]
         assert len(data_lines) >= 2
 
         # Check for [DONE] terminal signal

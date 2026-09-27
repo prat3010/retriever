@@ -56,7 +56,9 @@ def test_search_request_formatting(monkeypatch):
     )
     monkeypatch.setattr(client._client, "post", mock_post)
 
-    response = client.search("How does ColBERT work?", limit=5, enable_colbert_rerank=True)
+    response = client.search(
+        "How does ColBERT work?", limit=5, enable_colbert_rerank=True
+    )
 
     assert isinstance(response, SearchResponse)
     assert response.total == 1
@@ -132,6 +134,7 @@ def test_connector_manifests_sdk(monkeypatch):
 
 def test_extract_schematic_and_vision_methods(monkeypatch):
     """Verify synchronous vision methods on RetrieverClient."""
+
     def mock_post(url, json=None, **kwargs):
         u = str(url)
         if "schematic/extract-text" in u:
@@ -147,7 +150,13 @@ def test_extract_schematic_and_vision_methods(monkeypatch):
                             "element_id": "elem_1",
                             "label": "API Gateway",
                             "element_type": "gateway",
-                            "bounding_box": {"ymin": 0.1, "xmin": 0.1, "ymax": 0.3, "xmax": 0.4, "confidence": 0.95},
+                            "bounding_box": {
+                                "ymin": 0.1,
+                                "xmin": 0.1,
+                                "ymax": 0.3,
+                                "xmax": 0.4,
+                                "confidence": 0.95,
+                            },
                             "confidence": 0.95,
                         }
                     ],
@@ -165,7 +174,13 @@ def test_extract_schematic_and_vision_methods(monkeypatch):
                             "id": "api_gateway",
                             "label": "API Gateway",
                             "node_type": "visual_component",
-                            "bounding_box": {"ymin": 0.1, "xmin": 0.1, "ymax": 0.3, "xmax": 0.4, "confidence": 0.95},
+                            "bounding_box": {
+                                "ymin": 0.1,
+                                "xmin": 0.1,
+                                "ymax": 0.3,
+                                "xmax": 0.4,
+                                "confidence": 0.95,
+                            },
                         }
                     ],
                     "edges": [],
@@ -208,12 +223,12 @@ def test_voice_streaming_url_formatting():
         voice="warm_conversational",
         speed=1.1,
     )
-    assert url.startswith("wss://api.retriever.run/v1/tenants/tn_test_voice/voice/stream/vcs_12345")
+    assert url.startswith(
+        "wss://api.retriever.run/v1/tenants/tn_test_voice/voice/stream/vcs_12345"
+    )
     assert "token=ret_live_secret" in url
     assert "sensitivity=0.75" in url
     assert "silence_threshold_ms=300" in url
     assert "voice=warm_conversational" in url
     assert "speed=1.1" in url
     client.close()
-
-

@@ -101,4 +101,3 @@ class ColBertMaxSimRerankerAdapter(RerankerProvider):
             )
         except Exception:
             return candidates[:top_n]
-

@@ -21,8 +21,9 @@ logger = logging.getLogger(__name__)
 
 class CircuitState(StrEnum):
     """Operational states of the resilient embedding circuit breaker."""
-    CLOSED = "CLOSED"        # Normal operation: routing to primary provider
-    OPEN = "OPEN"            # Tripped: primary is failing, routing to fallback
+
+    CLOSED = "CLOSED"  # Normal operation: routing to primary provider
+    OPEN = "OPEN"  # Tripped: primary is failing, routing to fallback
     HALF_OPEN = "HALF_OPEN"  # Probe: cooldown elapsed, testing primary recovery
 
 
@@ -165,7 +166,10 @@ class ResilientEmbeddingAdapter(EmbeddingProvider):
 
             if self._state == CircuitState.OPEN:
                 now = time.monotonic()
-                if self._last_failure_time and (now - self._last_failure_time) >= self._cooldown_seconds:
+                if (
+                    self._last_failure_time
+                    and (now - self._last_failure_time) >= self._cooldown_seconds
+                ):
                     logger.info(
                         "ResilientEmbedder: Cooldown period elapsed (%.1fs). Transitioning to HALF_OPEN probe.",
                         self._cooldown_seconds,
@@ -229,7 +233,9 @@ class ResilientEmbeddingAdapter(EmbeddingProvider):
             try:
                 return await self._secondary.embed_text(text)
             except Exception as sec_exc:
-                logger.warning("ResilientEmbedder: Secondary provider also failed: %s", sec_exc)
+                logger.warning(
+                    "ResilientEmbedder: Secondary provider also failed: %s", sec_exc
+                )
 
         return await self._local_fallback.embed_text(text)
 
@@ -242,6 +248,8 @@ class ResilientEmbeddingAdapter(EmbeddingProvider):
             try:
                 return await self._secondary.embed_batch(texts)
             except Exception as sec_exc:
-                logger.warning("ResilientEmbedder: Secondary provider batch failed: %s", sec_exc)
+                logger.warning(
+                    "ResilientEmbedder: Secondary provider batch failed: %s", sec_exc
+                )
 
         return await self._local_fallback.embed_batch(texts)

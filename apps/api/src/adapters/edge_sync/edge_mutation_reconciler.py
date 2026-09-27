@@ -139,7 +139,9 @@ class EdgeMutationReconciler(EdgeReconciliationProtocol):
                         )
 
                 except Exception as e:
-                    logger.error("Failed to reconcile mutation %s: %s", m.mutation_id, e)
+                    logger.error(
+                        "Failed to reconcile mutation %s: %s", m.mutation_id, e
+                    )
                     resolutions.append(
                         EdgeSyncConflictResolution(
                             mutation_id=m.mutation_id,

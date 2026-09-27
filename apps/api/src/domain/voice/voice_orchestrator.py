@@ -44,7 +44,9 @@ class VoiceOrchestrator:
         self._transcription = transcription_adapter
         self._synthesis = synthesis_adapter
         self._signaling = signaling_adapter
-        self._turns_history: dict[str, list[VoiceTurn]] = {}  # session_id -> list[VoiceTurn]
+        self._turns_history: dict[
+            str, list[VoiceTurn]
+        ] = {}  # session_id -> list[VoiceTurn]
         self._audio_frames_count: int = 0
         self._vad_events_count: int = 0
 
@@ -54,7 +56,9 @@ class VoiceOrchestrator:
         self._turns_history[session.session_id] = []
         return session
 
-    async def process_signal(self, payload: WebRtcSignalingMessage) -> WebRtcSignalingMessage:
+    async def process_signal(
+        self, payload: WebRtcSignalingMessage
+    ) -> WebRtcSignalingMessage:
         """Processes incoming WebRTC signaling messages (offers, answers, ICE candidates)."""
         return await self._signaling.handle_signal(payload)
 

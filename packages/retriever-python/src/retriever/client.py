@@ -47,7 +47,9 @@ def _handle_error(response: httpx.Response) -> None:
     if response.status_code == 401:
         raise AuthenticationError("Invalid or missing API key.")
     if response.status_code == 403:
-        raise PermissionDeniedError("Tenant isolation boundary violation or forbidden access.")
+        raise PermissionDeniedError(
+            "Tenant isolation boundary violation or forbidden access."
+        )
     if response.status_code == 404:
         raise NotFoundError("Requested resource not found.")
     if response.status_code == 429:
@@ -244,14 +246,15 @@ class RetrieverClient:
         _handle_error(resp)
         return EnclaveEvidence.model_validate(resp.json())
 
-
     # ── Community Connectors & CDC Pipeline (Battery #27) ──────────────────────
 
     def list_connector_manifests(self) -> list[ConnectorManifestDTO]:
         resp = self._client.get("/v1/admin/connectors/manifests")
         _handle_error(resp)
         data = resp.json()
-        return [ConnectorManifestDTO.model_validate(m) for m in data.get("manifests", [])]
+        return [
+            ConnectorManifestDTO.model_validate(m) for m in data.get("manifests", [])
+        ]
 
     def list_connectors(self) -> list[ConnectorConfigDTO]:
         resp = self._client.get(f"/v1/admin/tenants/{self.tenant_id}/connectors")
@@ -320,7 +323,9 @@ class RetrieverClient:
         return MultimodalGraphResponseDTO.model_validate(resp.json())
 
     def get_document_schematics(self, document_id: str) -> dict[str, Any]:
-        resp = self._client.get(f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}")
+        resp = self._client.get(
+            f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -352,7 +357,9 @@ class RetrieverClient:
         _handle_error(resp)
         return MeshStatusSummaryDTO.model_validate(resp.json())
 
-    def list_mesh_nodes(self, status_filter: str | None = None) -> list[MeshPeerNodeDTO]:
+    def list_mesh_nodes(
+        self, status_filter: str | None = None
+    ) -> list[MeshPeerNodeDTO]:
         params = {"status": status_filter} if status_filter else {}
         resp = self._client.get("/v1/mesh/nodes", params=params)
         _handle_error(resp)
@@ -378,7 +385,9 @@ class RetrieverClient:
             "source_cluster_id": "cluster_python_sdk",
             "target_cluster_id": target_cluster_id,
         }
-        resp = self._client.post(f"/v1/mesh/tools/execute?policy={policy}", json=payload)
+        resp = self._client.post(
+            f"/v1/mesh/tools/execute?policy={policy}", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -404,7 +413,9 @@ class RetrieverClient:
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
 
-    def get_federated_task_status(self, delegation_id: str) -> FederatedDelegationResponseDTO:
+    def get_federated_task_status(
+        self, delegation_id: str
+    ) -> FederatedDelegationResponseDTO:
         resp = self._client.get(f"/v1/mesh/federation/tasks/{delegation_id}")
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
@@ -424,7 +435,9 @@ class RetrieverClient:
     def update_autoscaling_policy(
         self, policy: dict[str, Any] | AutoscalingPolicyDTO
     ) -> AutoscalingPolicyDTO:
-        body = policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        body = (
+            policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        )
         resp = self._client.post("/v1/mesh/load/autoscaling/policy", json=body)
         _handle_error(resp)
         return AutoscalingPolicyDTO.model_validate(resp.json())
@@ -442,7 +455,9 @@ class RetrieverClient:
     def reap_idle_enclaves(
         self, cluster_id: str = "cluster-primary"
     ) -> list[AutoscalingEventDTO]:
-        resp = self._client.post(f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}")
+        resp = self._client.post(
+            f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}"
+        )
         _handle_error(resp)
         return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
 
@@ -464,7 +479,11 @@ class RetrieverClient:
     def mutate_sharded_vectors(
         self, mutation: dict[str, Any] | ShardMutationRequest
     ) -> ShardMutationResponse:
-        body = mutation.model_dump() if isinstance(mutation, ShardMutationRequest) else mutation
+        body = (
+            mutation.model_dump()
+            if isinstance(mutation, ShardMutationRequest)
+            else mutation
+        )
         resp = self._client.post("/v1/shards/mutate", json=body)
         _handle_error(resp)
         return ShardMutationResponse.model_validate(resp.json())
@@ -475,7 +494,9 @@ class RetrieverClient:
         return RaftConsensusStatus.model_validate(resp.json())
 
     def trigger_raft_election(self, candidate_node_id: str) -> dict[str, Any]:
-        resp = self._client.post("/v1/shards/election", json={"candidate_node_id": candidate_node_id})
+        resp = self._client.post(
+            "/v1/shards/election", json={"candidate_node_id": candidate_node_id}
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -490,8 +511,6 @@ class RetrieverClient:
         resp = self._client.post(f"/v1/shards/{shard_id}/snapshot")
         _handle_error(resp)
         return resp.json()
-
-
 
     # ── Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (Battery #38 / M123) ──
 
@@ -512,7 +531,9 @@ class RetrieverClient:
             "prune_threshold": prune_threshold,
             "convergence_threshold": convergence_threshold,
         }
-        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans", json=payload)
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -535,12 +556,18 @@ class RetrieverClient:
             "parent_ids": parent_ids,
             "feedback": feedback,
         }
-        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload)
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
-    def execute_got_plan(self, plan_id: str, max_iterations: int = 10) -> dict[str, Any]:
-        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}")
+    def execute_got_plan(
+        self, plan_id: str, max_iterations: int = 10
+    ) -> dict[str, Any]:
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -554,7 +581,9 @@ class RetrieverClient:
             "parent_node_ids": parent_node_ids,
             "prompt": prompt,
         }
-        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload)
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -563,9 +592,13 @@ class RetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    def distill_got_plan(self, plan_id: str, target_tier: str = "L3_SEMANTIC") -> dict[str, Any]:
+    def distill_got_plan(
+        self, plan_id: str, target_tier: str = "L3_SEMANTIC"
+    ) -> dict[str, Any]:
         payload = {"target_tier": target_tier}
-        resp = self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload)
+        resp = self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -722,7 +755,9 @@ class AsyncRetrieverClient:
         resp = await self._client.get("/v1/admin/connectors/manifests")
         _handle_error(resp)
         data = resp.json()
-        return [ConnectorManifestDTO.model_validate(m) for m in data.get("manifests", [])]
+        return [
+            ConnectorManifestDTO.model_validate(m) for m in data.get("manifests", [])
+        ]
 
     async def list_connectors(self) -> list[ConnectorConfigDTO]:
         resp = await self._client.get(f"/v1/admin/tenants/{self.tenant_id}/connectors")
@@ -749,7 +784,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return ConnectorConfigDTO.model_validate(resp.json())
 
-    async def trigger_connector_sync(self, connector_id: str) -> ConnectorSyncResponseDTO:
+    async def trigger_connector_sync(
+        self, connector_id: str
+    ) -> ConnectorSyncResponseDTO:
         resp = await self._client.post(
             f"/v1/admin/tenants/{self.tenant_id}/connectors/{connector_id}/sync"
         )
@@ -791,7 +828,9 @@ class AsyncRetrieverClient:
         return MultimodalGraphResponseDTO.model_validate(resp.json())
 
     async def get_document_schematics(self, document_id: str) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/vision/schematics/{document_id}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -823,7 +862,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return MeshStatusSummaryDTO.model_validate(resp.json())
 
-    async def list_mesh_nodes(self, status_filter: str | None = None) -> list[MeshPeerNodeDTO]:
+    async def list_mesh_nodes(
+        self, status_filter: str | None = None
+    ) -> list[MeshPeerNodeDTO]:
         params = {"status": status_filter} if status_filter else {}
         resp = await self._client.get("/v1/mesh/nodes", params=params)
         _handle_error(resp)
@@ -849,7 +890,9 @@ class AsyncRetrieverClient:
             "source_cluster_id": "cluster_python_sdk",
             "target_cluster_id": target_cluster_id,
         }
-        resp = await self._client.post(f"/v1/mesh/tools/execute?policy={policy}", json=payload)
+        resp = await self._client.post(
+            f"/v1/mesh/tools/execute?policy={policy}", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -875,7 +918,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
 
-    async def get_federated_task_status(self, delegation_id: str) -> FederatedDelegationResponseDTO:
+    async def get_federated_task_status(
+        self, delegation_id: str
+    ) -> FederatedDelegationResponseDTO:
         resp = await self._client.get(f"/v1/mesh/federation/tasks/{delegation_id}")
         _handle_error(resp)
         return FederatedDelegationResponseDTO.model_validate(resp.json())
@@ -887,7 +932,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def get_autoscaling_events(self, limit: int = 50) -> list[AutoscalingEventDTO]:
+    async def get_autoscaling_events(
+        self, limit: int = 50
+    ) -> list[AutoscalingEventDTO]:
         resp = await self._client.get(f"/v1/mesh/load/autoscaling/events?limit={limit}")
         _handle_error(resp)
         return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
@@ -895,7 +942,9 @@ class AsyncRetrieverClient:
     async def update_autoscaling_policy(
         self, policy: dict[str, Any] | AutoscalingPolicyDTO
     ) -> AutoscalingPolicyDTO:
-        body = policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        body = (
+            policy.model_dump() if isinstance(policy, AutoscalingPolicyDTO) else policy
+        )
         resp = await self._client.post("/v1/mesh/load/autoscaling/policy", json=body)
         _handle_error(resp)
         return AutoscalingPolicyDTO.model_validate(resp.json())
@@ -913,7 +962,9 @@ class AsyncRetrieverClient:
     async def reap_idle_enclaves(
         self, cluster_id: str = "cluster-primary"
     ) -> list[AutoscalingEventDTO]:
-        resp = await self._client.post(f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}")
+        resp = await self._client.post(
+            f"/v1/mesh/load/scale-down/reap?cluster_id={cluster_id}"
+        )
         _handle_error(resp)
         return [AutoscalingEventDTO.model_validate(e) for e in resp.json()]
 
@@ -935,7 +986,11 @@ class AsyncRetrieverClient:
     async def mutate_sharded_vectors(
         self, mutation: dict[str, Any] | ShardMutationRequest
     ) -> ShardMutationResponse:
-        body = mutation.model_dump() if isinstance(mutation, ShardMutationRequest) else mutation
+        body = (
+            mutation.model_dump()
+            if isinstance(mutation, ShardMutationRequest)
+            else mutation
+        )
         resp = await self._client.post("/v1/shards/mutate", json=body)
         _handle_error(resp)
         return ShardMutationResponse.model_validate(resp.json())
@@ -946,7 +1001,9 @@ class AsyncRetrieverClient:
         return RaftConsensusStatus.model_validate(resp.json())
 
     async def trigger_raft_election(self, candidate_node_id: str) -> dict[str, Any]:
-        resp = await self._client.post("/v1/shards/election", json={"candidate_node_id": candidate_node_id})
+        resp = await self._client.post(
+            "/v1/shards/election", json={"candidate_node_id": candidate_node_id}
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -980,7 +1037,10 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def get_chunk_inclusion_proof(
-        self, chunk_id: str, document_id: str, chunks: list[dict[str, Any]] | None = None
+        self,
+        chunk_id: str,
+        document_id: str,
+        chunks: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         resp = await self._client.post(
             f"/v1/tenants/{self.tenant_id}/zkp/proof/chunk/{chunk_id}",
@@ -1008,7 +1068,9 @@ class AsyncRetrieverClient:
             "similarity_bound": similarity_bound,
             "ttl_seconds": ttl_seconds,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/zkp/attest", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/zkp/attest", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1029,7 +1091,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def list_grounding_certificates(self, limit: int = 50) -> list[dict[str, Any]]:
+    async def list_grounding_certificates(
+        self, limit: int = 50
+    ) -> list[dict[str, Any]]:
         resp = await self._client.get(
             f"/v1/tenants/{self.tenant_id}/zkp/certificates", params={"limit": limit}
         )
@@ -1039,7 +1103,9 @@ class AsyncRetrieverClient:
     # --- Enterprise Identity Federation & RB-VAC (M119, Battery #34) ---
 
     async def get_saml_config(self) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/identity/saml/config")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/identity/saml/config"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1051,7 +1117,9 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def get_sp_metadata_xml(self) -> str:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/identity/saml/metadata")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/identity/saml/metadata"
+        )
         _handle_error(resp)
         return resp.text
 
@@ -1064,7 +1132,9 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def generate_scim_token(self) -> dict[str, Any]:
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/identity/scim/token")
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/identity/scim/token"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1098,11 +1168,15 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def delete_scim_user(self, user_id: str) -> bool:
-        resp = await self._client.delete(f"/v1/scim/v2/tenants/{self.tenant_id}/Users/{user_id}")
+        resp = await self._client.delete(
+            f"/v1/scim/v2/tenants/{self.tenant_id}/Users/{user_id}"
+        )
         _handle_error(resp)
         return True
 
-    async def list_scim_groups(self, start_index: int = 1, count: int = 20) -> dict[str, Any]:
+    async def list_scim_groups(
+        self, start_index: int = 1, count: int = 20
+    ) -> dict[str, Any]:
         params = {"startIndex": start_index, "count": count}
         resp = await self._client.get(
             f"/v1/scim/v2/tenants/{self.tenant_id}/Groups", params=params
@@ -1143,7 +1217,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def update_tuning_config(self, config_payload: dict[str, Any]) -> dict[str, Any]:
+    async def update_tuning_config(
+        self, config_payload: dict[str, Any]
+    ) -> dict[str, Any]:
         config_payload["tenant_id"] = self.tenant_id
         resp = await self._client.put(
             f"/v1/tenants/{self.tenant_id}/tuning/config", json=config_payload
@@ -1151,7 +1227,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def list_preference_pairs(self, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+    async def list_preference_pairs(
+        self, limit: int = 50, offset: int = 0
+    ) -> dict[str, Any]:
         params = {"limit": limit, "offset": offset}
         resp = await self._client.get(
             f"/v1/tenants/{self.tenant_id}/tuning/pairs", params=params
@@ -1223,7 +1301,9 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def rollback_tuning_adapter(self, target_adapter_id: str | None = None) -> dict[str, Any]:
+    async def rollback_tuning_adapter(
+        self, target_adapter_id: str | None = None
+    ) -> dict[str, Any]:
         url = f"/v1/tenants/{self.tenant_id}/tuning/rollback"
         params = {"target_adapter_id": target_adapter_id} if target_adapter_id else {}
         resp = await self._client.post(url, params=params)
@@ -1274,7 +1354,9 @@ class AsyncRetrieverClient:
             "top_k": top_k,
             "epsilon_budget": epsilon_budget,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/mpc/sessions", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1284,7 +1366,9 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def get_mpc_session(self, session_id: str) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1324,16 +1408,22 @@ class AsyncRetrieverClient:
         return resp.json()
 
     async def execute_mpc_compute(self, session_id: str) -> dict[str, Any]:
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/compute")
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/compute"
+        )
         _handle_error(resp)
         return resp.json()
 
     async def get_mpc_results(self, session_id: str) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/results")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/results"
+        )
         _handle_error(resp)
         return resp.json()
 
-    async def abort_mpc_session(self, session_id: str, reason: str = "User aborted") -> dict[str, Any]:
+    async def abort_mpc_session(
+        self, session_id: str, reason: str = "User aborted"
+    ) -> dict[str, Any]:
         resp = await self._client.post(
             f"/v1/tenants/{self.tenant_id}/mpc/sessions/{session_id}/abort",
             json={"reason": reason},
@@ -1380,18 +1470,26 @@ class AsyncRetrieverClient:
             "k_cutoff": k_cutoff,
             "gate_policy": gate_policy,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/suites", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/benchmarks/suites", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
-    async def list_benchmark_runs(self, suite_id: str | None = None) -> list[dict[str, Any]]:
+    async def list_benchmark_runs(
+        self, suite_id: str | None = None
+    ) -> list[dict[str, Any]]:
         query = f"?suite_id={suite_id}" if suite_id else ""
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/benchmarks/runs{query}")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/benchmarks/runs{query}"
+        )
         _handle_error(resp)
         return resp.json()
 
     async def get_benchmark_run(self, run_id: str) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/benchmarks/runs/{run_id}")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/benchmarks/runs/{run_id}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1408,7 +1506,9 @@ class AsyncRetrieverClient:
             "is_baseline": is_baseline,
             "samples": samples,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/runs", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/benchmarks/runs", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1423,7 +1523,9 @@ class AsyncRetrieverClient:
             "candidate_run_id": candidate_run_id,
             "baseline_run_id": baseline_run_id,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/benchmarks/evaluate-gate", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/benchmarks/evaluate-gate", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1473,12 +1575,16 @@ class AsyncRetrieverClient:
             "prune_threshold": prune_threshold,
             "convergence_threshold": convergence_threshold,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
     async def get_got_plan(self, plan_id: str) -> dict[str, Any]:
-        resp = await self._client.get(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}")
+        resp = await self._client.get(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1496,12 +1602,18 @@ class AsyncRetrieverClient:
             "parent_ids": parent_ids,
             "feedback": feedback,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/step", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
-    async def execute_got_plan(self, plan_id: str, max_iterations: int = 10) -> dict[str, Any]:
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}")
+    async def execute_got_plan(
+        self, plan_id: str, max_iterations: int = 10
+    ) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/execute?max_iterations={max_iterations}"
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1515,7 +1627,9 @@ class AsyncRetrieverClient:
             "parent_node_ids": parent_node_ids,
             "prompt": prompt,
         }
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/aggregate", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1524,9 +1638,13 @@ class AsyncRetrieverClient:
         _handle_error(resp)
         return resp.json()
 
-    async def distill_got_plan(self, plan_id: str, target_tier: str = "L3_SEMANTIC") -> dict[str, Any]:
+    async def distill_got_plan(
+        self, plan_id: str, target_tier: str = "L3_SEMANTIC"
+    ) -> dict[str, Any]:
         payload = {"target_tier": target_tier}
-        resp = await self._client.post(f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload)
+        resp = await self._client.post(
+            f"/v1/tenants/{self.tenant_id}/got/plans/{plan_id}/distill", json=payload
+        )
         _handle_error(resp)
         return resp.json()
 
@@ -1548,4 +1666,3 @@ class AsyncRetrieverClient:
         resp = await self._client.post("/v1/got/simulate", json=payload)
         _handle_error(resp)
         return resp.json()
-

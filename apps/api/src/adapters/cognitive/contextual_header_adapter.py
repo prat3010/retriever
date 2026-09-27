@@ -3,6 +3,7 @@
 Generates document-level situational context headers for individual chunks prior to embedding.
 Implements the ContextualHeaderGeneratorPort.
 """
+
 import asyncio
 import logging
 import os
@@ -52,12 +53,16 @@ class ContextualHeaderGeneratorAdapter(ContextualHeaderGeneratorPort):
     def _get_client(
         self, api_key: str | None = None, base_url: str | None = None
     ) -> openai.AsyncOpenAI:
-        effective_key = api_key or self._api_key or os.environ.get("OPENAI_API_KEY", "dummy-key")
+        effective_key = (
+            api_key or self._api_key or os.environ.get("OPENAI_API_KEY", "dummy-key")
+        )
         effective_base = base_url or self._base_url or os.environ.get("OPENAI_BASE_URL")
 
         kwargs: dict[str, Any] = {"api_key": effective_key}
         if effective_base:
-            url = effective_base if effective_base.endswith("/") else f"{effective_base}/"
+            url = (
+                effective_base if effective_base.endswith("/") else f"{effective_base}/"
+            )
             kwargs["base_url"] = url
 
         return openai.AsyncOpenAI(**kwargs)
@@ -74,7 +79,11 @@ class ContextualHeaderGeneratorAdapter(ContextualHeaderGeneratorPort):
         filename = meta.get("filename", "Document")
         doc_type = meta.get("doc_type") or meta.get("default_doc_type", "Text Document")
         topics = meta.get("topics") or meta.get("default_topics", [])
-        topic_str = f" regarding {', '.join(topics[:3])}" if isinstance(topics, list) and topics else ""
+        topic_str = (
+            f" regarding {', '.join(topics[:3])}"
+            if isinstance(topics, list) and topics
+            else ""
+        )
 
         # Default fallback header if LLM generation fails or is unavailable
         fallback_header = f"[Context: {filename} ({doc_type}{topic_str})]"

@@ -78,7 +78,10 @@ class CloudRegionNode(BaseModel):
 
     @property
     def is_healthy(self) -> bool:
-        return self.role not in (ClusterNodeRole.DEGRADED, ClusterNodeRole.OFFLINE) and self.consecutive_failures == 0
+        return (
+            self.role not in (ClusterNodeRole.DEGRADED, ClusterNodeRole.OFFLINE)
+            and self.consecutive_failures == 0
+        )
 
 
 class RegionHealthProbe(BaseModel):
@@ -183,7 +186,9 @@ class MultiCloudHealthProbeProtocol(Protocol):
 
     async def probe_node(self, node: CloudRegionNode) -> RegionHealthProbe: ...
 
-    async def probe_all_regions(self, nodes: list[CloudRegionNode]) -> list[RegionHealthProbe]: ...
+    async def probe_all_regions(
+        self, nodes: list[CloudRegionNode]
+    ) -> list[RegionHealthProbe]: ...
 
 
 class FailoverControllerProtocol(Protocol):
@@ -193,7 +198,9 @@ class FailoverControllerProtocol(Protocol):
 
     async def execute_failover(self, request: FailoverRequest) -> FailoverResult: ...
 
-    async def record_heartbeat(self, node_id: str, latency_ms: float, is_healthy: bool) -> None: ...
+    async def record_heartbeat(
+        self, node_id: str, latency_ms: float, is_healthy: bool
+    ) -> None: ...
 
 
 class LibsqlReplicationProtocol(Protocol):

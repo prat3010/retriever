@@ -31,7 +31,9 @@ def upgrade() -> None:
             index=True,
         ),
         sa.Column("workflow_name", sa.String(128), nullable=False, index=True),
-        sa.Column("status", sa.String(32), nullable=False, server_default="queued", index=True),
+        sa.Column(
+            "status", sa.String(32), nullable=False, server_default="queued", index=True
+        ),
         sa.Column("trigger_event", sa.String(128), nullable=True),
         sa.Column("idempotency_key", sa.String(128), nullable=True, index=True),
         sa.Column("input_payload", JSONB, nullable=False, server_default="{}"),
@@ -102,7 +104,9 @@ def upgrade() -> None:
         sa.Column("max_attempts", sa.Integer(), nullable=False, server_default="3"),
         sa.Column("memoized_output", JSONB, nullable=False, server_default="{}"),
         sa.Column("error_details", sa.Text(), nullable=True),
-        sa.Column("execution_time_ms", sa.Float(), nullable=False, server_default="0.0"),
+        sa.Column(
+            "execution_time_ms", sa.Float(), nullable=False, server_default="0.0"
+        ),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
     )
@@ -129,7 +133,9 @@ def upgrade() -> None:
     """)
 
     op.execute("ALTER TABLE workflow_step_checkpoints ENABLE ROW LEVEL SECURITY;")
-    op.execute("DROP POLICY IF EXISTS tenant_isolation_policy ON workflow_step_checkpoints;")
+    op.execute(
+        "DROP POLICY IF EXISTS tenant_isolation_policy ON workflow_step_checkpoints;"
+    )
     op.execute("""
         CREATE POLICY tenant_isolation_policy ON workflow_step_checkpoints
         FOR ALL USING (
@@ -140,12 +146,22 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP POLICY IF EXISTS tenant_isolation_policy ON workflow_step_checkpoints;")
+    op.execute(
+        "DROP POLICY IF EXISTS tenant_isolation_policy ON workflow_step_checkpoints;"
+    )
     op.execute("DROP POLICY IF EXISTS tenant_isolation_policy ON workflow_executions;")
-    op.drop_index("ix_workflow_steps_tenant_status", table_name="workflow_step_checkpoints")
+    op.drop_index(
+        "ix_workflow_steps_tenant_status", table_name="workflow_step_checkpoints"
+    )
     op.drop_index("ix_workflow_steps_exec_step", table_name="workflow_step_checkpoints")
     op.drop_table("workflow_step_checkpoints")
-    op.drop_index("ix_workflow_executions_tenant_idemp", table_name="workflow_executions")
-    op.drop_index("ix_workflow_executions_tenant_name", table_name="workflow_executions")
-    op.drop_index("ix_workflow_executions_tenant_status", table_name="workflow_executions")
+    op.drop_index(
+        "ix_workflow_executions_tenant_idemp", table_name="workflow_executions"
+    )
+    op.drop_index(
+        "ix_workflow_executions_tenant_name", table_name="workflow_executions"
+    )
+    op.drop_index(
+        "ix_workflow_executions_tenant_status", table_name="workflow_executions"
+    )
     op.drop_table("workflow_executions")

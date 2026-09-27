@@ -46,7 +46,9 @@ class PromptCompilationRequest(BaseModel):
     tenant_id: str
     dataset_id: str | None = None
     name: str = "rag_cot_optimized"
-    optimizer: Literal["BootstrapFewShot", "MIPROv2", "RandomSearch"] = "BootstrapFewShot"
+    optimizer: Literal["BootstrapFewShot", "MIPROv2", "RandomSearch"] = (
+        "BootstrapFewShot"
+    )
     max_demos: int = Field(default=4, ge=1, le=10)
     metric_target: Literal["faithfulness", "relevancy", "composite"] = "composite"
 
@@ -100,36 +102,26 @@ class CompiledPromptRepositoryProtocol(ABC):
         pass
 
     @abstractmethod
-    async def get_active_program(
-        self, tenant_id: str
-    ) -> CompiledPromptProgram | None:
+    async def get_active_program(self, tenant_id: str) -> CompiledPromptProgram | None:
         """Retrieve the currently active compiled prompt program for a tenant."""
         pass
 
     @abstractmethod
-    async def list_programs(
-        self, tenant_id: str
-    ) -> list[CompiledPromptProgram]:
+    async def list_programs(self, tenant_id: str) -> list[CompiledPromptProgram]:
         """List all compiled prompt programs for a tenant."""
         pass
 
     @abstractmethod
-    async def activate_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def activate_program(self, tenant_id: str, program_id: str) -> bool:
         """Set a program as active and deactivate any previous active program."""
         pass
 
     @abstractmethod
-    async def deactivate_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def deactivate_program(self, tenant_id: str, program_id: str) -> bool:
         """Deactivate a compiled program, reverting tenant to default template."""
         pass
 
     @abstractmethod
-    async def delete_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def delete_program(self, tenant_id: str, program_id: str) -> bool:
         """Delete a compiled program."""
         pass

@@ -20,7 +20,9 @@ from src.domain.abstractions.identity import UserContext
 
 logger = logging.getLogger(__name__)
 
-_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
+)
 
 # Header key selector
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
@@ -89,10 +91,14 @@ async def get_current_user(
     except AuthenticationError as e:
         # 2. Try validating as OIDC / Supabase JWT token if OIDC or SUPABASE_URL is configured
         jwks_uri = settings.OIDC_JWKS_URI or (
-            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json" if settings.SUPABASE_URL else ""
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
+            if settings.SUPABASE_URL
+            else ""
         )
         issuer_url = settings.OIDC_ISSUER_URL or (
-            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else ""
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1"
+            if settings.SUPABASE_URL
+            else ""
         )
 
         if jwks_uri or issuer_url or settings.SUPABASE_URL:
@@ -103,7 +109,9 @@ async def get_current_user(
                 kid = unverified_header.get("kid")
 
                 # Strategy A: If HS256 or SUPABASE_JWT_SECRET / SERVICE_ROLE_KEY is provided
-                jwt_secret = settings.SUPABASE_JWT_SECRET or settings.SUPABASE_SERVICE_ROLE_KEY
+                jwt_secret = (
+                    settings.SUPABASE_JWT_SECRET or settings.SUPABASE_SERVICE_ROLE_KEY
+                )
                 if (alg == "HS256" or jwt_secret) and jwt_secret:
                     try:
                         payload = jwt.decode(
@@ -167,8 +175,13 @@ async def get_current_user(
                     )
                     user_id = payload.get("sub")
                     email = payload.get("email")
-                    roles = payload.get("roles") or payload.get("app_metadata", {}).get("roles", ["client"])
-                    scopes = payload.get("scopes", ["document:read", "document:write", "chat:read", "chat:write"])
+                    roles = payload.get("roles") or payload.get("app_metadata", {}).get(
+                        "roles", ["client"]
+                    )
+                    scopes = payload.get(
+                        "scopes",
+                        ["document:read", "document:write", "chat:read", "chat:write"],
+                    )
 
                     if not tenant_id and (user_id or email):
                         import uuid
@@ -184,7 +197,8 @@ async def get_current_user(
 
                         async with tenant_session(bypass_rls=True) as session:
                             stmt = select(UserDb).where(
-                                (UserDb.external_id == user_id) | (UserDb.external_id == email)
+                                (UserDb.external_id == user_id)
+                                | (UserDb.external_id == email)
                             )
                             res = await session.execute(stmt)
                             user_db = res.scalar_one_or_none()
@@ -194,7 +208,9 @@ async def get_current_user(
                             else:
                                 tenant_uuid = uuid.uuid4()
                                 user_uuid = uuid.uuid4()
-                                display_name = (email or "User").split("@")[0].capitalize()
+                                display_name = (
+                                    (email or "User").split("@")[0].capitalize()
+                                )
                                 external_id = user_id or email
 
                                 new_tenant = TenantDb(
@@ -232,7 +248,9 @@ async def get_current_user(
                                 user_id = str(user_uuid)
 
                     if not tenant_id:
-                        raise AuthenticationError("SSO / Supabase token missing required tenant context claim.")
+                        raise AuthenticationError(
+                            "SSO / Supabase token missing required tenant context claim."
+                        )
 
                     user_ctx = UserContext(
                         user_id=user_id or "unknown",
@@ -295,7 +313,9 @@ async def verify_tenant_isolation(
     if not user_context.tenant_id or user_context.tenant_id == "*":
         return
 
-    target_id = _SLUG_MAP.get(tenantId, tenantId) if not _UUID_RE.match(tenantId) else tenantId
+    target_id = (
+        _SLUG_MAP.get(tenantId, tenantId) if not _UUID_RE.match(tenantId) else tenantId
+    )
 
     if user_context.tenant_id != target_id:
         log_payload = {
@@ -305,7 +325,10 @@ async def verify_tenant_isolation(
             "target_tenant": tenantId,
             "message": "Tenant mismatch detected! Initiating Key Revocation Kill-Switch.",
         }
-        logger.critical("Critical security breach detected: tenant mismatch", extra={"security_incident": log_payload})
+        logger.critical(
+            "Critical security breach detected: tenant mismatch",
+            extra={"security_incident": log_payload},
+        )
 
         # Invalidate key immediately if token is available
         if token:
@@ -345,7 +368,11 @@ async def verify_scopes(
         try:
             body = await request.json()
             if isinstance(body, dict):
-                collection_param = collection_param or body.get("collection") or body.get("filters", {}).get("collection")
+                collection_param = (
+                    collection_param
+                    or body.get("collection")
+                    or body.get("filters", {}).get("collection")
+                )
                 filename = body.get("filename")
                 if filename and "." in filename:
                     doc_type_param = filename.split(".")[-1].lower()
@@ -355,22 +382,34 @@ async def verify_scopes(
     for scope in security_scopes.scopes:
         if scope in user_context.scopes:
             continue
-            
+
         allowed = False
         if scope == "document:read":
-            if collection_param and f"collection:{collection_param}:read" in user_context.scopes:
+            if (
+                collection_param
+                and f"collection:{collection_param}:read" in user_context.scopes
+            ):
                 allowed = True
-            if doc_type_param and f"document_type:{doc_type_param}:read" in user_context.scopes:
+            if (
+                doc_type_param
+                and f"document_type:{doc_type_param}:read" in user_context.scopes
+            ):
                 allowed = True
         elif scope == "document:write":
-            if collection_param and f"collection:{collection_param}:write" in user_context.scopes:
+            if (
+                collection_param
+                and f"collection:{collection_param}:write" in user_context.scopes
+            ):
                 allowed = True
-            if doc_type_param and f"document_type:{doc_type_param}:write" in user_context.scopes:
+            if (
+                doc_type_param
+                and f"document_type:{doc_type_param}:write" in user_context.scopes
+            ):
                 allowed = True
         elif scope == "chat:write":
             if "document:write" in user_context.scopes:
                 allowed = True
-                
+
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -401,7 +440,9 @@ async def verify_tenant_or_admin(
     x_admin_master_key: str | None = Header(None, alias="X-Admin-Master-Key"),
 ) -> None:
     """Allow either valid admin master key OR verified tenant bearer token with tenant isolation."""
-    if x_admin_master_key and secrets.compare_digest(x_admin_master_key, settings.ADMIN_MASTER_KEY):
+    if x_admin_master_key and secrets.compare_digest(
+        x_admin_master_key, settings.ADMIN_MASTER_KEY
+    ):
         return
 
     if not token:
@@ -412,4 +453,3 @@ async def verify_tenant_or_admin(
 
     user_ctx = await get_current_user(request, token)
     await verify_tenant_isolation(tenantId, user_ctx, token)
-

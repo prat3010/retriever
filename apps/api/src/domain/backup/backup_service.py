@@ -25,7 +25,9 @@ class BackupService:
         self._backup_adapter = backup_adapter
         self._restore_adapter = restore_adapter
 
-    async def create_snapshot(self, request: BackupTriggerRequest) -> BackupTriggerResponse:
+    async def create_snapshot(
+        self, request: BackupTriggerRequest
+    ) -> BackupTriggerResponse:
         """Trigger an encrypted logical snapshot of the platform database."""
         logger.info("Initiating platform database snapshot via backup service.")
         try:

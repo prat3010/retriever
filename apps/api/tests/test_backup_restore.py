@@ -60,7 +60,9 @@ async def test_backup_and_restore_roundtrip(temp_backup_env):
     )
 
     # 1. Trigger snapshot
-    response = await service.create_snapshot(BackupTriggerRequest(include_tables=["tenants", "users"]))
+    response = await service.create_snapshot(
+        BackupTriggerRequest(include_tables=["tenants", "users"])
+    )
     assert response.status == BackupStatus.COMPLETED
     assert response.metadata is not None
     m = response.metadata
@@ -87,7 +89,9 @@ async def test_backup_and_restore_roundtrip(temp_backup_env):
     assert "tenants" in payload["tables"]
 
     # 5. Execute dry-run restore
-    restore_res = await service.restore_snapshot(RestoreRequest(snapshot_id=m.snapshot_id, dry_run=True))
+    restore_res = await service.restore_snapshot(
+        RestoreRequest(snapshot_id=m.snapshot_id, dry_run=True)
+    )
     assert restore_res.status == RestoreStatus.DRY_RUN_PASSED
     assert m.snapshot_id == restore_res.snapshot_id
     assert "tenants" in restore_res.tables_restored
@@ -104,11 +108,19 @@ async def test_tampered_archive_detection(temp_backup_env):
     temp_dir = temp_backup_env["dir"]
     master_key = temp_backup_env["key"]
 
-    backup_adapter = CloudBackupAdapter(master_key=master_key, local_backup_dir=temp_dir)
-    restore_adapter = CloudRestoreAdapter(master_key=master_key, local_backup_dir=temp_dir)
-    service = BackupService(backup_adapter=backup_adapter, restore_adapter=restore_adapter)
+    backup_adapter = CloudBackupAdapter(
+        master_key=master_key, local_backup_dir=temp_dir
+    )
+    restore_adapter = CloudRestoreAdapter(
+        master_key=master_key, local_backup_dir=temp_dir
+    )
+    service = BackupService(
+        backup_adapter=backup_adapter, restore_adapter=restore_adapter
+    )
 
-    response = await service.create_snapshot(BackupTriggerRequest(include_tables=["tenants"]))
+    response = await service.create_snapshot(
+        BackupTriggerRequest(include_tables=["tenants"])
+    )
     snapshot_id = response.metadata.snapshot_id
 
     # Tamper with archive file
@@ -117,7 +129,9 @@ async def test_tampered_archive_detection(temp_backup_env):
     archive_file.write_bytes(corrupted_bytes)
 
     # Attempt restore
-    res = await service.restore_snapshot(RestoreRequest(snapshot_id=snapshot_id, dry_run=True))
+    res = await service.restore_snapshot(
+        RestoreRequest(snapshot_id=snapshot_id, dry_run=True)
+    )
     assert res.status == RestoreStatus.FAILED
     assert "Cryptographic hash mismatch" in res.message or "mismatch" in res.message
 

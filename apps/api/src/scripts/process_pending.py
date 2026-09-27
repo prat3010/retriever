@@ -1,4 +1,5 @@
 """Script to batch process all PENDING documents across tenants."""
+
 import argparse
 import asyncio
 import logging
@@ -13,7 +14,9 @@ from src.container import (
     search_service,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("process_pending")
 
 
@@ -21,20 +24,33 @@ async def process_all_pending(target_engine: str = "laptop") -> None:
     logger.info("Scanning for PENDING documents across all tenants...")
     # Fetch all pending documents
     # Using bypass_rls=True to retrieve pending documents across tenants
-    pending_docs = await document_repository.list_documents(tenant_id="*", bypass_rls=True)
-    pending_docs = [d for d in pending_docs if d.status in ("PENDING", "FAILED", "PROCESSING")]
+    pending_docs = await document_repository.list_documents(
+        tenant_id="*", bypass_rls=True
+    )
+    pending_docs = [
+        d for d in pending_docs if d.status in ("PENDING", "FAILED", "PROCESSING")
+    ]
 
     if not pending_docs:
         logger.info("No PENDING documents found.")
         return
 
-    logger.info("Found %d PENDING document(s) to process via target_engine='%s'.", len(pending_docs), target_engine)
+    logger.info(
+        "Found %d PENDING document(s) to process via target_engine='%s'.",
+        len(pending_docs),
+        target_engine,
+    )
 
     processed_count = 0
     failed_count = 0
 
     for doc in pending_docs:
-        logger.info("Processing document '%s' (ID: %s, Tenant: %s)...", doc.filename, doc.document_id, doc.tenant_id)
+        logger.info(
+            "Processing document '%s' (ID: %s, Tenant: %s)...",
+            doc.filename,
+            doc.document_id,
+            doc.tenant_id,
+        )
         doc.status = "PROCESSING"
         await document_repository.create_document(doc.tenant_id, doc)
 
@@ -50,10 +66,14 @@ async def process_all_pending(target_engine: str = "laptop") -> None:
                     if res.status_code == 200:
                         file_content = res.content
             except Exception as e:
-                logger.warning("Failed remote HTTP fetch for %s: %s", doc.document_id, e)
+                logger.warning(
+                    "Failed remote HTTP fetch for %s: %s", doc.document_id, e
+                )
 
         if file_content is None:
-            logger.error("Could not retrieve file bytes for document %s.", doc.document_id)
+            logger.error(
+                "Could not retrieve file bytes for document %s.", doc.document_id
+            )
             doc.status = "FAILED"
             await document_repository.create_document(doc.tenant_id, doc)
             failed_count += 1
@@ -69,7 +89,9 @@ async def process_all_pending(target_engine: str = "laptop") -> None:
                 mime_type=doc.mime_type,
                 embedder=search_service.embedder,
             )
-            logger.info("Successfully indexed '%s' (%d chunks).", doc.filename, chunk_count)
+            logger.info(
+                "Successfully indexed '%s' (%d chunks).", doc.filename, chunk_count
+            )
             processed_count += 1
         except Exception as err:
             logger.error("Error processing document %s: %s", doc.document_id, err)
@@ -77,11 +99,15 @@ async def process_all_pending(target_engine: str = "laptop") -> None:
             await document_repository.create_document(doc.tenant_id, doc)
             failed_count += 1
 
-    logger.info("Batch completed: %d processed, %d failed.", processed_count, failed_count)
+    logger.info(
+        "Batch completed: %d processed, %d failed.", processed_count, failed_count
+    )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Process PENDING documents across all tenants.")
+    parser = argparse.ArgumentParser(
+        description="Process PENDING documents across all tenants."
+    )
     parser.add_argument(
         "--target",
         choices=["laptop", "oracle", "auto"],

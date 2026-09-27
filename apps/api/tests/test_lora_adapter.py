@@ -29,7 +29,9 @@ def test_lora_contrastive_training():
     rng = np.random.default_rng(42)
     queries = [rng.standard_normal(dim).tolist() for _ in range(8)]
     # Positives are correlated with queries + small noise
-    positives = [(np.array(q) + 0.1 * rng.standard_normal(dim)).tolist() for q in queries]
+    positives = [
+        (np.array(q) + 0.1 * rng.standard_normal(dim)).tolist() for q in queries
+    ]
 
     loss = trainer.train(queries, positives, adapter, epochs=10, lr=0.01)
     assert loss >= 0.0

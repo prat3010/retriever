@@ -18,7 +18,9 @@ def reset_singletons():
     telemetry_setup._metrics = None
     telemetry_setup._rate_limiter = None
     yield
-    telemetry_setup._tracer, telemetry_setup._metrics, telemetry_setup._rate_limiter = saved
+    telemetry_setup._tracer, telemetry_setup._metrics, telemetry_setup._rate_limiter = (
+        saved
+    )
 
 
 @patch("src.adapters.telemetry.setup.OTelTracer")
@@ -59,6 +61,7 @@ def test_get_rate_limiter_enabled(mock_settings, mock_limiter_cls):
     mock_settings.RATE_LIMIT_MAX_REQUESTS = 100
 
     from src.adapters.cache.config_cache import redis_client
+
     limiter = telemetry_setup.get_rate_limiter()
     assert limiter is not None
     mock_limiter_cls.assert_called_once_with(
@@ -74,7 +77,11 @@ def test_get_rate_limiter_enabled(mock_settings, mock_limiter_cls):
 @patch("src.adapters.telemetry.setup.setup_middleware")
 @patch("src.adapters.telemetry.setup.settings")
 def test_init_telemetry_calls_all(
-    mock_settings, mock_middleware, mock_logging, mock_tracer, mock_metrics,
+    mock_settings,
+    mock_middleware,
+    mock_logging,
+    mock_tracer,
+    mock_metrics,
 ):
     mock_settings.ENVIRONMENT = "test"
     mock_settings.LOG_LEVEL = "DEBUG"
@@ -94,7 +101,11 @@ def test_init_telemetry_calls_all(
 @patch("src.adapters.telemetry.setup.setup_middleware")
 @patch("src.adapters.telemetry.setup.settings")
 def test_init_telemetry_registers_metrics_route(
-    mock_settings, mock_middleware, mock_logging, mock_tracer, mock_metrics,
+    mock_settings,
+    mock_middleware,
+    mock_logging,
+    mock_tracer,
+    mock_metrics,
 ):
     mock_settings.ENVIRONMENT = "test"
     mock_settings.LOG_LEVEL = "DEBUG"

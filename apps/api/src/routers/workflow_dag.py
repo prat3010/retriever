@@ -45,9 +45,13 @@ _compiler = DAGWorkflowCompiler()
 
 def _get_executor() -> DAGWorkflowExecutor:
     """Instantiate executor wiring real hybrid search and LLM inference if available."""
-    async def _retrieval_wrapper(tenant_id: str, query: str, limit: int = 5) -> list[dict[str, Any]]:
+
+    async def _retrieval_wrapper(
+        tenant_id: str, query: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
         try:
             from src.domain.abstractions.retrieval import SearchQuery
+
             sq = SearchQuery(text=query, limit=limit)
             res = await container.search_service.search(tenant_id, sq)
             return [
@@ -66,7 +70,10 @@ def _get_executor() -> DAGWorkflowExecutor:
     async def _llm_wrapper(prompt: str, model: str, system_prompt: str) -> str:
         try:
             from src.domain.abstractions.inference import InferenceRequest
-            inf_req = InferenceRequest(prompt=prompt, system_prompt=system_prompt, model=model)
+
+            inf_req = InferenceRequest(
+                prompt=prompt, system_prompt=system_prompt, model=model
+            )
             res = await container.inference_service.infer(inf_req)
             return res.text
         except Exception as e:

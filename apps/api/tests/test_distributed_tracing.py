@@ -12,9 +12,11 @@ client = TestClient(app)
 
 # ── 1. Unit Tests: OTel Tracer W3C Propagation Helpers ───────────────────────
 
+
 def test_otel_tracer_w3c_helpers():
     """Verify OTelTracer extracts, injects, and formats W3C traceparents."""
     from src.adapters.telemetry.setup import get_tracer
+
     tracer = get_tracer()
 
     # Format traceparent with active span
@@ -45,6 +47,7 @@ def test_auto_instrumentation_registry_status():
 
 
 # ── 2. API Tests: Gateway Trace Propagation & Header Reflection ───────────────
+
 
 def test_w3c_traceparent_header_propagation():
     """Verify incoming W3C traceparent header is preserved across the HTTP gateway."""

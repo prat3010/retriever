@@ -136,10 +136,7 @@ class DAGWorkflowExecutor:
                         chosen_branch = step_res.outputs.get("selected_branch")
                         for edge in graph.edges:
                             if edge.source == step_res.node_id:
-                                if (
-                                    edge.condition
-                                    and edge.condition != chosen_branch
-                                ):
+                                if edge.condition and edge.condition != chosen_branch:
                                     skipped_nodes.add(edge.target)
 
         total_latency = (time.perf_counter() - total_start) * 1000.0
@@ -261,9 +258,7 @@ class DAGWorkflowExecutor:
 
     # ── Node Handlers ─────────────────────────────────────────────────────────────
 
-    def _handle_input(
-        self, node: DAGNode, scope: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _handle_input(self, node: DAGNode, scope: dict[str, Any]) -> dict[str, Any]:
         """Process ingress input parameters."""
         query = scope.get("query", node.config.get("default_query", ""))
         return {
@@ -311,7 +306,7 @@ class DAGWorkflowExecutor:
             ]
 
         context = "\n\n".join(
-            f"[{c.get('chunk_id', i+1)}] {c.get('content', '')}"
+            f"[{c.get('chunk_id', i + 1)}] {c.get('content', '')}"
             for i, c in enumerate(chunks)
         )
         tokens = len(context) // 4
@@ -374,11 +369,7 @@ class DAGWorkflowExecutor:
             # Retain sentences containing key nouns/verbs
             sentences = [s.strip() for s in context.split(".") if s.strip()]
             compressed = ". ".join(sentences[: max(2, len(sentences) // 2)]) + "."
-            ratio = (
-                round(len(compressed) / max(1, len(context)), 2)
-                if context
-                else 1.0
-            )
+            ratio = round(len(compressed) / max(1, len(context)), 2) if context else 1.0
             output = {
                 "compressed_context": compressed,
                 "context": compressed,
@@ -421,7 +412,9 @@ class DAGWorkflowExecutor:
             or f"Answer query: {inputs.get('query', '')} with context: {inputs.get('context', '')}"
         )
         model = node.config.get("model", "llama3.2")
-        system_prompt = node.config.get("system_prompt", "You are an AI cognitive copilot.")
+        system_prompt = node.config.get(
+            "system_prompt", "You are an AI cognitive copilot."
+        )
 
         response_text = ""
         if self.llm_fn:
@@ -430,7 +423,9 @@ class DAGWorkflowExecutor:
                     prompt=prompt, model=model, system_prompt=system_prompt
                 )
             except Exception as e:
-                logger.warning("Dynamic LLM failed, using deterministic generation: %s", e)
+                logger.warning(
+                    "Dynamic LLM failed, using deterministic generation: %s", e
+                )
 
         if not response_text:
             query = scope.get("query", "the requested topic")
@@ -465,9 +460,7 @@ class DAGWorkflowExecutor:
     ) -> tuple[dict[str, Any], int]:
         """Evaluate response groundedness and faithfulness against context."""
         context = str(inputs.get("context", "")).lower()
-        response = str(
-            inputs.get("response") or inputs.get("answer", "")
-        ).lower()
+        response = str(inputs.get("response") or inputs.get("answer", "")).lower()
         threshold = float(node.config.get("threshold", 0.70))
 
         # Compute token overlap faithfulness
@@ -475,11 +468,7 @@ class DAGWorkflowExecutor:
         context_words = set(re.findall(r"\w+", context))
 
         overlap = len(resp_words.intersection(context_words))
-        score = (
-            round(overlap / max(1, len(resp_words)), 3)
-            if resp_words
-            else 0.85
-        )
+        score = round(overlap / max(1, len(resp_words)), 3) if resp_words else 0.85
         # Ensure realistic baseline score for grounded synthesis
         score = max(score, 0.82)
         passed = score >= threshold
@@ -517,9 +506,7 @@ class DAGWorkflowExecutor:
             10,
         )
 
-    def _handle_output(
-        self, node: DAGNode, scope: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _handle_output(self, node: DAGNode, scope: dict[str, Any]) -> dict[str, Any]:
         """Format final client response payload."""
         return {
             "query": scope.get("query", ""),

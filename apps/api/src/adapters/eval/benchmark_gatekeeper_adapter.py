@@ -7,6 +7,7 @@ import uuid
 
 try:
     from scipy import stats  # type: ignore
+
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
@@ -35,18 +36,21 @@ logger = logging.getLogger("retriever.eval.benchmark_gatekeeper")
 # Authentic Mathematical Metric Helpers
 # ---------------------------------------------------------------------------
 
+
 def calculate_dcg(relevances: list[float], k: int) -> float:
     """Compute Discounted Cumulative Gain at rank cut K with logarithmic discount."""
     dcg = 0.0
     for i, rel in enumerate(relevances[:k]):
         rank = i + 1
-        gain = (2.0 ** rel) - 1.0
+        gain = (2.0**rel) - 1.0
         discount = math.log2(rank + 1)
         dcg += gain / discount
     return dcg
 
 
-def calculate_ndcg_at_k(retrieved: list[str], ground_truth: list[str], k: int = 10) -> float:
+def calculate_ndcg_at_k(
+    retrieved: list[str], ground_truth: list[str], k: int = 10
+) -> float:
     """Compute Normalized Discounted Cumulative Gain at cutoff K (NDCG@K)."""
     if not ground_truth:
         return 1.0 if not retrieved else 0.0
@@ -73,7 +77,9 @@ def calculate_mrr(retrieved: list[str], ground_truth: list[str]) -> float:
     return 0.0
 
 
-def calculate_recall_at_k(retrieved: list[str], ground_truth: list[str], k: int = 10) -> float:
+def calculate_recall_at_k(
+    retrieved: list[str], ground_truth: list[str], k: int = 10
+) -> float:
     """Compute Recall@K = |Retrieved[:K] ∩ GroundTruth| / |GroundTruth|."""
     if not ground_truth:
         return 1.0
@@ -82,7 +88,9 @@ def calculate_recall_at_k(retrieved: list[str], ground_truth: list[str], k: int 
     return hits / float(len(gt_set))
 
 
-def calculate_precision_at_k(retrieved: list[str], ground_truth: list[str], k: int = 10) -> float:
+def calculate_precision_at_k(
+    retrieved: list[str], ground_truth: list[str], k: int = 10
+) -> float:
     """Compute Precision@K = |Retrieved[:K] ∩ GroundTruth| / K."""
     if k <= 0:
         return 0.0
@@ -91,13 +99,37 @@ def calculate_precision_at_k(retrieved: list[str], ground_truth: list[str], k: i
     return hits / float(k)
 
 
-def calculate_faithfulness(generated_answer: str | None, context_chunks: list[str]) -> float:
+def calculate_faithfulness(
+    generated_answer: str | None, context_chunks: list[str]
+) -> float:
     """Evaluate groundedness: proportion of non-stopword tokens supported by retrieved context."""
     if not generated_answer or not context_chunks:
         return 0.0
 
-    stop_words = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at", "to", "for", "of", "and", "or", "it", "this"}
-    words_answer = [w.lower() for w in re.findall(r"\b\w+\b", generated_answer) if w.lower() not in stop_words]
+    stop_words = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "and",
+        "or",
+        "it",
+        "this",
+    }
+    words_answer = [
+        w.lower()
+        for w in re.findall(r"\b\w+\b", generated_answer)
+        if w.lower() not in stop_words
+    ]
     if not words_answer:
         return 1.0
 
@@ -113,9 +145,34 @@ def calculate_answer_relevancy(generated_answer: str | None, query: str) -> floa
     if not generated_answer or not query:
         return 0.0
 
-    stop_words = {"the", "a", "an", "is", "are", "what", "how", "why", "where", "who", "in", "on", "at", "to", "for", "of", "and", "or"}
-    query_words = {w.lower() for w in re.findall(r"\b\w+\b", query) if w.lower() not in stop_words}
-    answer_words = {w.lower() for w in re.findall(r"\b\w+\b", generated_answer) if w.lower() not in stop_words}
+    stop_words = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "what",
+        "how",
+        "why",
+        "where",
+        "who",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "and",
+        "or",
+    }
+    query_words = {
+        w.lower() for w in re.findall(r"\b\w+\b", query) if w.lower() not in stop_words
+    }
+    answer_words = {
+        w.lower()
+        for w in re.findall(r"\b\w+\b", generated_answer)
+        if w.lower() not in stop_words
+    }
 
     if not query_words or not answer_words:
         return 0.5
@@ -148,10 +205,10 @@ def welch_satterthwaite_df(s1: float, n1: int, s2: float, n2: int) -> float:
     """Compute effective degrees of freedom nu via the Welch-Satterthwaite equation."""
     if n1 <= 1 or n2 <= 1:
         return float(max(1, n1 + n2 - 2))
-    v1 = (s1 ** 2) / float(n1)
-    v2 = (s2 ** 2) / float(n2)
+    v1 = (s1**2) / float(n1)
+    v2 = (s2**2) / float(n2)
     numerator = (v1 + v2) ** 2
-    denominator = ((v1 ** 2) / float(n1 - 1)) + ((v2 ** 2) / float(n2 - 1))
+    denominator = ((v1**2) / float(n1 - 1)) + ((v2**2) / float(n2 - 1))
     if denominator <= 1e-15:
         return float(n1 + n2 - 2)
     return numerator / denominator
@@ -159,7 +216,7 @@ def welch_satterthwaite_df(s1: float, n1: int, s2: float, n2: int) -> float:
 
 def approximate_students_t_pvalue(t: float, df: float) -> float:
     """Pure Python approximation of two-tailed Student's t distribution p-value.
-    
+
     Uses standard normal approximation for high degrees of freedom, and
     polynomial approximation for lower degrees of freedom.
     """
@@ -219,7 +276,7 @@ def compute_welch_ttest_from_stats(
     """Compute Two-Sample Welch's t-test from summary statistics."""
     df = welch_satterthwaite_df(s1, n1, s2, n2)
 
-    se = math.sqrt(((s1 ** 2) / float(n1)) + ((s2 ** 2) / float(n2)))
+    se = math.sqrt(((s1**2) / float(n1)) + ((s2**2) / float(n2)))
     if se <= 1e-12:
         t_stat = 0.0
         p_val = 1.0
@@ -227,7 +284,9 @@ def compute_welch_ttest_from_stats(
         t_stat = (m1 - m2) / se
         if SCIPY_AVAILABLE:
             try:
-                res = stats.ttest_ind_from_stats(m1, s1, n1, m2, s2, n2, equal_var=False)
+                res = stats.ttest_ind_from_stats(
+                    m1, s1, n1, m2, s2, n2, equal_var=False
+                )
                 p_val = float(res.pvalue)
                 t_stat = float(res.statistic)
             except Exception:
@@ -250,6 +309,7 @@ def compute_welch_ttest_from_stats(
 # ---------------------------------------------------------------------------
 # Benchmark Gatekeeper Adapter Implementation
 # ---------------------------------------------------------------------------
+
 
 class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
     """Production implementation of Platform Battery #37: Benchmark Gatekeeper."""
@@ -289,7 +349,11 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
                     query_id=f"q_{i + 1:02d}",
                     query_text=f"Enterprise Architecture standard query #{i + 1}",
                     ground_truth_chunks=[f"chk_arch_{i * 2}", f"chk_arch_{i * 2 + 1}"],
-                    retrieved_chunks=[f"chk_arch_{i * 2}", f"chk_arch_{i * 2 + 1}", f"chk_other_{i}"],
+                    retrieved_chunks=[
+                        f"chk_arch_{i * 2}",
+                        f"chk_arch_{i * 2 + 1}",
+                        f"chk_other_{i}",
+                    ],
                     ground_truth_answer=f"Verified canonical answer for query #{i + 1}",
                     generated_answer=f"Verified canonical answer for query #{i + 1} with context support",
                     latency_ms=18.0 + (i % 7) * 2.5,
@@ -311,7 +375,9 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             status=BenchmarkRunStatus.COMPLETED,
             summary=base_summary,
             samples=baseline_samples,
-            created_at=(datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)).isoformat(),
+            created_at=(
+                datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)
+            ).isoformat(),
         )
         self._runs[base_run.run_id] = base_run
 
@@ -323,7 +389,11 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
                     query_id=f"q_{i + 1:02d}",
                     query_text=f"Enterprise Architecture standard query #{i + 1}",
                     ground_truth_chunks=[f"chk_arch_{i * 2}", f"chk_arch_{i * 2 + 1}"],
-                    retrieved_chunks=[f"chk_arch_{i * 2}", f"chk_arch_{i * 2 + 1}", f"chk_other_{i}"],
+                    retrieved_chunks=[
+                        f"chk_arch_{i * 2}",
+                        f"chk_arch_{i * 2 + 1}",
+                        f"chk_other_{i}",
+                    ],
                     ground_truth_answer=f"Verified canonical answer for query #{i + 1}",
                     generated_answer=f"Verified canonical answer for query #{i + 1} with improved reasoning",
                     latency_ms=19.2 + (i % 6) * 2.8,
@@ -348,7 +418,9 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
         )
         self._runs[cand_run.run_id] = cand_run
 
-    def _compute_summary(self, samples: list[BenchmarkItemSample]) -> BenchmarkMetricsSummary:
+    def _compute_summary(
+        self, samples: list[BenchmarkItemSample]
+    ) -> BenchmarkMetricsSummary:
         """Aggregate item samples into a statistical summary."""
         if not samples:
             return BenchmarkMetricsSummary()
@@ -361,14 +433,32 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             sample_count=n,
             mean_ndcg_at_k=round(sum(s.ndcg_at_k for s in samples) / float(n), 4),
             mean_mrr=round(sum(s.mrr for s in samples) / float(n), 4),
-            mean_recall_at_k=round(sum(calculate_recall_at_k(s.retrieved_chunks, s.ground_truth_chunks) for s in samples) / float(n), 4),
-            mean_precision_at_k=round(sum(calculate_precision_at_k(s.retrieved_chunks, s.ground_truth_chunks) for s in samples) / float(n), 4),
+            mean_recall_at_k=round(
+                sum(
+                    calculate_recall_at_k(s.retrieved_chunks, s.ground_truth_chunks)
+                    for s in samples
+                )
+                / float(n),
+                4,
+            ),
+            mean_precision_at_k=round(
+                sum(
+                    calculate_precision_at_k(s.retrieved_chunks, s.ground_truth_chunks)
+                    for s in samples
+                )
+                / float(n),
+                4,
+            ),
             mean_faithfulness=round(sum(s.faithfulness for s in samples) / float(n), 4),
-            mean_answer_relevancy=round(sum(s.answer_relevancy for s in samples) / float(n), 4),
+            mean_answer_relevancy=round(
+                sum(s.answer_relevancy for s in samples) / float(n), 4
+            ),
             latency_p50_ms=round(p50, 2),
             latency_p95_ms=round(p95, 2),
             latency_p99_ms=round(p99, 2),
-            mean_tokens_per_query=round(sum(s.tokens_used for s in samples) / float(n), 1),
+            mean_tokens_per_query=round(
+                sum(s.tokens_used for s in samples) / float(n), 1
+            ),
         )
 
     def list_suites(self, tenant_id: str) -> list[BenchmarkSuite]:
@@ -399,10 +489,13 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             self._suites[suite_id] = new_suite
             return new_suite
 
-    def list_runs(self, tenant_id: str, suite_id: str | None = None) -> list[BenchmarkRun]:
+    def list_runs(
+        self, tenant_id: str, suite_id: str | None = None
+    ) -> list[BenchmarkRun]:
         with self._lock:
             runs = [
-                r for r in self._runs.values()
+                r
+                for r in self._runs.values()
                 if (r.tenant_id == tenant_id)
                 and (suite_id is None or r.suite_id == suite_id)
             ]
@@ -434,9 +527,13 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             # If external samples are provided, compute per-sample metrics
             if samples:
                 for s in samples:
-                    ndcg = calculate_ndcg_at_k(s.retrieved_chunks, s.ground_truth_chunks, suite.k_cutoff)
+                    ndcg = calculate_ndcg_at_k(
+                        s.retrieved_chunks, s.ground_truth_chunks, suite.k_cutoff
+                    )
                     mrr = calculate_mrr(s.retrieved_chunks, s.ground_truth_chunks)
-                    faith = calculate_faithfulness(s.generated_answer, s.retrieved_chunks)
+                    faith = calculate_faithfulness(
+                        s.generated_answer, s.retrieved_chunks
+                    )
                     rel = calculate_answer_relevancy(s.generated_answer, s.query_text)
                     processed_samples.append(
                         BenchmarkItemSample(
@@ -462,7 +559,11 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
                             query_id=f"q_{i + 1:02d}",
                             query_text=f"Benchmark test item #{i + 1} for {checkpoint_or_commit}",
                             ground_truth_chunks=[f"c_{i * 2}", f"c_{i * 2 + 1}"],
-                            retrieved_chunks=[f"c_{i * 2}", f"c_{i * 2 + 1}", f"other_{i}"],
+                            retrieved_chunks=[
+                                f"c_{i * 2}",
+                                f"c_{i * 2 + 1}",
+                                f"other_{i}",
+                            ],
                             latency_ms=18.5 + (i % 5) * 3.0,
                             tokens_used=170 + i * 2,
                             ndcg_at_k=0.89 - (i % 4) * 0.02,
@@ -485,7 +586,9 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
                 created_at=datetime.datetime.now(datetime.UTC).isoformat(),
             )
             self._runs[run_id] = new_run
-            suite.sample_queries_count = max(suite.sample_queries_count, len(processed_samples))
+            suite.sample_queries_count = max(
+                suite.sample_queries_count, len(processed_samples)
+            )
             return new_run
 
     def evaluate_gate(
@@ -510,7 +613,8 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             else:
                 # Find most recent marked baseline run for this suite
                 matching_baselines = [
-                    r for r in self._runs.values()
+                    r
+                    for r in self._runs.values()
                     if r.suite_id == suite_id and r.is_baseline
                 ]
                 baseline = matching_baselines[0] if matching_baselines else None
@@ -525,19 +629,32 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             # 1. P95 Latency regression check (Higher is worse)
             base_lat = [s.latency_ms for s in baseline.samples]
             cand_lat = [s.latency_ms for s in candidate.samples]
-            lat_ttest = compute_welch_ttest(base_lat, cand_lat, "latency", policy.significance_alpha)
-            lat_delta_abs = candidate.summary.latency_p95_ms - baseline.summary.latency_p95_ms
-            lat_delta_pct = (lat_delta_abs / baseline.summary.latency_p95_ms * 100.0) if baseline.summary.latency_p95_ms > 0 else 0.0
+            lat_ttest = compute_welch_ttest(
+                base_lat, cand_lat, "latency", policy.significance_alpha
+            )
+            lat_delta_abs = (
+                candidate.summary.latency_p95_ms - baseline.summary.latency_p95_ms
+            )
+            lat_delta_pct = (
+                (lat_delta_abs / baseline.summary.latency_p95_ms * 100.0)
+                if baseline.summary.latency_p95_ms > 0
+                else 0.0
+            )
 
             lat_is_reg = False
             lat_severity = "NONE"
-            if lat_delta_pct > policy.max_latency_p95_increase_pct and lat_ttest.is_statistically_significant:
+            if (
+                lat_delta_pct > policy.max_latency_p95_increase_pct
+                and lat_ttest.is_statistically_significant
+            ):
                 lat_is_reg = True
                 lat_severity = "CRITICAL"
                 rejection_reasons.append(
                     f"P95 Latency grew by +{lat_delta_pct:.1f}% (threshold +{policy.max_latency_p95_increase_pct:.1f}%) with p={lat_ttest.p_value:.4f} < {policy.significance_alpha}"
                 )
-            elif lat_delta_pct > 0 and lat_delta_pct > (policy.max_latency_p95_increase_pct * 0.7):
+            elif lat_delta_pct > 0 and lat_delta_pct > (
+                policy.max_latency_p95_increase_pct * 0.7
+            ):
                 lat_severity = "WARNING"
 
             metric_diffs.append(
@@ -556,19 +673,32 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             # 2. NDCG@K regression check (Lower is worse)
             base_ndcg = [s.ndcg_at_k for s in baseline.samples]
             cand_ndcg = [s.ndcg_at_k for s in candidate.samples]
-            ndcg_ttest = compute_welch_ttest(base_ndcg, cand_ndcg, "ndcg_at_k", policy.significance_alpha)
-            ndcg_delta_abs = candidate.summary.mean_ndcg_at_k - baseline.summary.mean_ndcg_at_k
-            ndcg_delta_pct = (ndcg_delta_abs / baseline.summary.mean_ndcg_at_k * 100.0) if baseline.summary.mean_ndcg_at_k > 0 else 0.0
+            ndcg_ttest = compute_welch_ttest(
+                base_ndcg, cand_ndcg, "ndcg_at_k", policy.significance_alpha
+            )
+            ndcg_delta_abs = (
+                candidate.summary.mean_ndcg_at_k - baseline.summary.mean_ndcg_at_k
+            )
+            ndcg_delta_pct = (
+                (ndcg_delta_abs / baseline.summary.mean_ndcg_at_k * 100.0)
+                if baseline.summary.mean_ndcg_at_k > 0
+                else 0.0
+            )
 
             ndcg_is_reg = False
             ndcg_severity = "NONE"
-            if ndcg_delta_abs < -policy.max_ndcg_drop_abs and ndcg_ttest.is_statistically_significant:
+            if (
+                ndcg_delta_abs < -policy.max_ndcg_drop_abs
+                and ndcg_ttest.is_statistically_significant
+            ):
                 ndcg_is_reg = True
                 ndcg_severity = "CRITICAL"
                 rejection_reasons.append(
                     f"Mean NDCG@{suite.k_cutoff} dropped by {ndcg_delta_abs:.3f} (max allowed drop {policy.max_ndcg_drop_abs:.3f}) with p={ndcg_ttest.p_value:.4f} < {policy.significance_alpha}"
                 )
-            elif ndcg_delta_abs < 0 and abs(ndcg_delta_abs) > (policy.max_ndcg_drop_abs * 0.6):
+            elif ndcg_delta_abs < 0 and abs(ndcg_delta_abs) > (
+                policy.max_ndcg_drop_abs * 0.6
+            ):
                 ndcg_severity = "WARNING"
 
             metric_diffs.append(
@@ -587,19 +717,32 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             # 3. Faithfulness regression check (Lower is worse)
             base_faith = [s.faithfulness for s in baseline.samples]
             cand_faith = [s.faithfulness for s in candidate.samples]
-            faith_ttest = compute_welch_ttest(base_faith, cand_faith, "faithfulness", policy.significance_alpha)
-            faith_delta_abs = candidate.summary.mean_faithfulness - baseline.summary.mean_faithfulness
-            faith_delta_pct = (faith_delta_abs / baseline.summary.mean_faithfulness * 100.0) if baseline.summary.mean_faithfulness > 0 else 0.0
+            faith_ttest = compute_welch_ttest(
+                base_faith, cand_faith, "faithfulness", policy.significance_alpha
+            )
+            faith_delta_abs = (
+                candidate.summary.mean_faithfulness - baseline.summary.mean_faithfulness
+            )
+            faith_delta_pct = (
+                (faith_delta_abs / baseline.summary.mean_faithfulness * 100.0)
+                if baseline.summary.mean_faithfulness > 0
+                else 0.0
+            )
 
             faith_is_reg = False
             faith_severity = "NONE"
-            if faith_delta_abs < -policy.max_faithfulness_drop_abs and faith_ttest.is_statistically_significant:
+            if (
+                faith_delta_abs < -policy.max_faithfulness_drop_abs
+                and faith_ttest.is_statistically_significant
+            ):
                 faith_is_reg = True
                 faith_severity = "CRITICAL"
                 rejection_reasons.append(
                     f"Faithfulness groundedness dropped by {faith_delta_abs:.3f} (max allowed drop {policy.max_faithfulness_drop_abs:.3f}) with p={faith_ttest.p_value:.4f}"
                 )
-            elif faith_delta_abs < 0 and abs(faith_delta_abs) > (policy.max_faithfulness_drop_abs * 0.6):
+            elif faith_delta_abs < 0 and abs(faith_delta_abs) > (
+                policy.max_faithfulness_drop_abs * 0.6
+            ):
                 faith_severity = "WARNING"
 
             metric_diffs.append(
@@ -668,10 +811,18 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
         )
 
         delta_abs = request.candidate_mean - request.baseline_mean
-        delta_pct = (delta_abs / request.baseline_mean * 100.0) if request.baseline_mean != 0 else 0.0
+        delta_pct = (
+            (delta_abs / request.baseline_mean * 100.0)
+            if request.baseline_mean != 0
+            else 0.0
+        )
 
         # For latency: positive delta is degradation. For quality (NDCG/Faithfulness): negative delta is degradation.
-        is_latency = request.metric_type in [MetricType.LATENCY_P50, MetricType.LATENCY_P95, MetricType.LATENCY_P99]
+        is_latency = request.metric_type in [
+            MetricType.LATENCY_P50,
+            MetricType.LATENCY_P95,
+            MetricType.LATENCY_P99,
+        ]
 
         if is_latency:
             is_degraded = delta_pct > request.tolerance_threshold_pct
@@ -690,7 +841,9 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
                 f"Degradation of {delta_pct:+.2f}% detected, but NOT statistically significant "
                 f"(p={ttest.p_value:.6f} >= alpha={request.alpha}). May be stochastic variance; monitor closely."
             )
-        elif ttest.is_statistically_significant and ((is_latency and delta_pct < 0) or (not is_latency and delta_pct > 0)):
+        elif ttest.is_statistically_significant and (
+            (is_latency and delta_pct < 0) or (not is_latency and delta_pct > 0)
+        ):
             verdict = GateVerdict.PASSED_CLEAN
             explanation = (
                 f"Statistically significant improvement (p={ttest.p_value:.6f} < alpha={request.alpha}). "
@@ -698,9 +851,7 @@ class BenchmarkGatekeeperAdapter(BenchmarkGatekeeperPort):
             )
         else:
             verdict = GateVerdict.PASSED_CLEAN
-            explanation = (
-                f"Gate passed clean. Difference of {delta_pct:+.2f}% is within acceptable tolerance boundaries."
-            )
+            explanation = f"Gate passed clean. Difference of {delta_pct:+.2f}% is within acceptable tolerance boundaries."
 
         return BenchmarkMathSimulationResponse(
             metric_type=request.metric_type,

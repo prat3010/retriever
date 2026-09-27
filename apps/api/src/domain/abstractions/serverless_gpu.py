@@ -48,7 +48,9 @@ GPU_HOURLY_RATES: dict[str, float] = {
 class LoraAdapterMetadata(BaseModel):
     """Metadata describing a fine-tuned LoRA adapter scoped to a tenant."""
 
-    adapter_id: str = Field(..., description="Unique UUID or slug identifier for the LoRA adapter")
+    adapter_id: str = Field(
+        ..., description="Unique UUID or slug identifier for the LoRA adapter"
+    )
     tenant_id: str = Field(..., description="Tenant owning this fine-tuned adapter")
     name: str = Field(..., description="Human-readable name of the adapter")
     base_model: str = Field(
@@ -74,14 +76,18 @@ class LoraAdapterMetadata(BaseModel):
         description="Type of adapter: 'llm' for generative weights or 'embedding' for vector residual weights",
     )
     created_at: str = Field(default="", description="ISO timestamp of adapter creation")
-    description: str = Field(default="", description="Operational notes and fine-tuning domain context")
+    description: str = Field(
+        default="", description="Operational notes and fine-tuning domain context"
+    )
 
 
 class ServerlessDeploymentStatus(BaseModel):
     """Operational status of the serverless GPU serving cluster."""
 
     provider: ServerlessProviderType
-    cluster_status: str = "ready"  # "ready", "cold", "scaling_up", "scaling_down", "unhealthy"
+    cluster_status: str = (
+        "ready"  # "ready", "cold", "scaling_up", "scaling_down", "unhealthy"
+    )
     active_containers: int = 0
     min_containers: int = 0
     max_containers: int = 5
@@ -192,16 +198,12 @@ class TenantLoraRegistryProtocol(ABC):
         pass
 
     @abstractmethod
-    async def deactivate_adapter(
-        self, tenant_id: str, adapter_id: str
-    ) -> bool:
+    async def deactivate_adapter(self, tenant_id: str, adapter_id: str) -> bool:
         """Deactivate a specified LoRA adapter."""
         pass
 
     @abstractmethod
-    async def delete_adapter(
-        self, tenant_id: str, adapter_id: str
-    ) -> bool:
+    async def delete_adapter(self, tenant_id: str, adapter_id: str) -> bool:
         """Delete an adapter record for a tenant."""
         pass
 

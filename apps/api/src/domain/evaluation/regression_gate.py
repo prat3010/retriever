@@ -26,14 +26,22 @@ class RegressionGateEngine(BaseRegressionGate):
         timestamp: str,
     ) -> str:
         """Format evaluation results into a GitHub Flavored Markdown summary table."""
-        verdict_badge = "✅ **PASSED (RELEASE APPROVED)**" if passed else "❌ **BLOCKED (REGRESSION DETECTED)**"
+        verdict_badge = (
+            "✅ **PASSED (RELEASE APPROVED)**"
+            if passed
+            else "❌ **BLOCKED (REGRESSION DETECTED)**"
+        )
 
         def status_icon(condition: bool) -> str:
             return "✅ PASS" if condition else "❌ VIOLATION"
 
         f_status = status_icon(scores["faithfulness"] >= thresholds.min_faithfulness)
-        p_status = status_icon(scores["context_precision"] >= thresholds.min_context_precision)
-        r_status = status_icon(scores["answer_relevancy"] >= thresholds.min_answer_relevancy)
+        p_status = status_icon(
+            scores["context_precision"] >= thresholds.min_context_precision
+        )
+        r_status = status_icon(
+            scores["answer_relevancy"] >= thresholds.min_answer_relevancy
+        )
         h_status = status_icon(scores["hallucination"] <= thresholds.max_hallucination)
 
         lines = [

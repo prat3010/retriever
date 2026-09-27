@@ -8,10 +8,18 @@ from pydantic import BaseModel, Field, model_validator
 class CriticEvaluation(BaseModel):
     """Factual evaluation report emitted by the Critic/Auditor Agent."""
 
-    is_approved: bool = Field(..., description="True if response is 100% supported by document evidence")
-    critique_score: float = Field(..., ge=0.0, le=1.0, description="Factual alignment score between 0.0 and 1.0")
-    critique_feedback: str = Field(..., description="Actionable critique feedback for Generator revision")
-    unsupported_claims: list[str] = Field(default_factory=list, description="List of unverified or hallucinated claims")
+    is_approved: bool = Field(
+        ..., description="True if response is 100% supported by document evidence"
+    )
+    critique_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Factual alignment score between 0.0 and 1.0"
+    )
+    critique_feedback: str = Field(
+        ..., description="Actionable critique feedback for Generator revision"
+    )
+    unsupported_claims: list[str] = Field(
+        default_factory=list, description="List of unverified or hallucinated claims"
+    )
 
 
 class ConsensusRequest(BaseModel):
@@ -23,10 +31,14 @@ class ConsensusRequest(BaseModel):
         default=None, description="Optional target LLM provider name for Generator role"
     )
     critic_provider_name: str | None = Field(
-        default=None, description="Optional target LLM provider name for Critic/Auditor role"
+        default=None,
+        description="Optional target LLM provider name for Critic/Auditor role",
     )
     max_reflection_rounds: int = Field(
-        default=2, ge=1, le=5, description="Maximum critique and revision passes allowed"
+        default=2,
+        ge=1,
+        le=5,
+        description="Maximum critique and revision passes allowed",
     )
 
     @model_validator(mode="before")
@@ -77,4 +89,3 @@ class ConsensusResult(BaseModel):
             if self.consensus_score is None:
                 self.consensus_score = 1.0
         return self
-

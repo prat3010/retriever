@@ -36,7 +36,9 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
     async def get_template(
         self, tenant_id: str, name: str, bypass_rls: bool = False
     ) -> PromptTemplate | None:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
                 PromptTemplateDb.name == name,
@@ -56,7 +58,9 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
     async def save_template(
         self, tenant_id: str, template: PromptTemplate, bypass_rls: bool = False
     ) -> None:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
                 PromptTemplateDb.name == template.name,
@@ -77,11 +81,19 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                 )
             await session.flush()
 
-    async def list_templates(self, tenant_id: str, bypass_rls: bool = False) -> list[PromptTemplate]:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
-            stmt = select(PromptTemplateDb).where(
-                PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
-            ).order_by(PromptTemplateDb.name)
+    async def list_templates(
+        self, tenant_id: str, bypass_rls: bool = False
+    ) -> list[PromptTemplate]:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
+            stmt = (
+                select(PromptTemplateDb)
+                .where(
+                    PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
+                )
+                .order_by(PromptTemplateDb.name)
+            )
             result = await session.execute(stmt)
             return [
                 PromptTemplate(
@@ -94,8 +106,12 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                 for row in result.scalars().all()
             ]
 
-    async def delete_template(self, tenant_id: str, name: str, bypass_rls: bool = False) -> bool:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+    async def delete_template(
+        self, tenant_id: str, name: str, bypass_rls: bool = False
+    ) -> bool:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
             stmt = select(PromptTemplateDb).where(
                 PromptTemplateDb.tenant_id == uuid.UUID(tenant_id),
                 PromptTemplateDb.name == name,
@@ -116,7 +132,10 @@ class SqlChatSessionRepository(ChatSessionRepository):
         self, tenant_id: str, user_id: str | None = None
     ) -> ChatSessionInfo:
         session_id = uuid.uuid4()
-        if not user_id or user_id in ("00000000-0000-0000-0000-000000000001", "guest-demo"):
+        if not user_id or user_id in (
+            "00000000-0000-0000-0000-000000000001",
+            "guest-demo",
+        ):
             user_uuid = None
         else:
             try:
@@ -170,7 +189,11 @@ class SqlChatSessionRepository(ChatSessionRepository):
             )
 
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
+        self,
+        tenant_id: str,
+        session_id: str,
+        message: ChatMessage,
+        user_id: str | None = None,
     ) -> None:
         user_uuid = uuid.UUID(user_id) if user_id else None
         async with tenant_session(tenant_id=tenant_id) as session:
@@ -184,15 +207,14 @@ class SqlChatSessionRepository(ChatSessionRepository):
                     name=message.name,
                     tool_calls=(
                         [tc.model_dump() for tc in message.tool_calls]
-                        if message.tool_calls else None
+                        if message.tool_calls
+                        else None
                     ),
                 )
             )
             await session.flush()
 
-    async def get_messages(
-        self, tenant_id: str, session_id: str
-    ) -> list[ChatMessage]:
+    async def get_messages(self, tenant_id: str, session_id: str) -> list[ChatMessage]:
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = (
                 select(ChatMessageDb)
@@ -209,15 +231,19 @@ class SqlChatSessionRepository(ChatSessionRepository):
                     role=row.role,
                     content=row.content,
                     name=row.name,
-                    tool_calls=[
-                        ToolCall(**tc) for tc in row.tool_calls
-                    ] if row.tool_calls else [],
+                    tool_calls=[ToolCall(**tc) for tc in row.tool_calls]
+                    if row.tool_calls
+                    else [],
                 )
                 for row in rows
             ]
 
     async def get_messages_cursor(
-        self, tenant_id: str, session_id: str, limit: int = 50, cursor: str | None = None
+        self,
+        tenant_id: str,
+        session_id: str,
+        limit: int = 50,
+        cursor: str | None = None,
     ) -> tuple[list[ChatMessageInfo], str | None, bool]:
         """Retrieve messages for a session using cursor-based pagination."""
         async with tenant_session(tenant_id=tenant_id) as session:
@@ -230,13 +256,18 @@ class SqlChatSessionRepository(ChatSessionRepository):
                 try:
                     cursor_time, cursor_id = decode_cursor(cursor)
                     stmt = stmt.where(
-                        (ChatMessageDb.created_at < cursor_time) |
-                        ((ChatMessageDb.created_at == cursor_time) & (ChatMessageDb.message_id < cursor_id))
+                        (ChatMessageDb.created_at < cursor_time)
+                        | (
+                            (ChatMessageDb.created_at == cursor_time)
+                            & (ChatMessageDb.message_id < cursor_id)
+                        )
                     )
                 except ValueError:
                     pass
 
-            stmt = stmt.order_by(ChatMessageDb.created_at.desc(), ChatMessageDb.message_id.desc()).limit(limit + 1)
+            stmt = stmt.order_by(
+                ChatMessageDb.created_at.desc(), ChatMessageDb.message_id.desc()
+            ).limit(limit + 1)
             result = await session.execute(stmt)
             rows = result.scalars().all()
 
@@ -262,7 +293,9 @@ class SqlChatSessionRepository(ChatSessionRepository):
             next_cursor = None
             if has_more and rows:
                 last_fetched = rows[-1]
-                next_cursor = encode_cursor(last_fetched.created_at, last_fetched.message_id)
+                next_cursor = encode_cursor(
+                    last_fetched.created_at, last_fetched.message_id
+                )
 
             return items, next_cursor, has_more
 
@@ -319,10 +352,11 @@ class SqlInferenceLogWriter(InferenceLogWriter):
         from sqlalchemy import select
 
         async with tenant_session(tenant_id=tenant_id, bypass_rls=True) as session:
-            stmt = select(InferenceLogDb).where(InferenceLogDb.created_at >= window_start)
+            stmt = select(InferenceLogDb).where(
+                InferenceLogDb.created_at >= window_start
+            )
             if tenant_id:
                 stmt = stmt.where(InferenceLogDb.tenant_id == uuid.UUID(tenant_id))
             stmt = stmt.order_by(InferenceLogDb.created_at.desc())
             result = await session.execute(stmt)
             return list(result.scalars().all())
-

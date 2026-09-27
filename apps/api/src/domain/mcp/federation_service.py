@@ -63,7 +63,9 @@ class AgentFederationService:
 
         # 3. Tenant ID presence
         if not request.tenant_id or not request.tenant_id.strip():
-            raise TenantIsolationViolationError("Delegation request missing required tenant_id.")
+            raise TenantIsolationViolationError(
+                "Delegation request missing required tenant_id."
+            )
 
     async def handle_delegation(
         self,
@@ -85,7 +87,9 @@ class AgentFederationService:
                 "tenant_id": request.tenant_id,
                 "intent": request.intent,
             }
-            self.mesh_service.verify_trust_envelope(request.trust_envelope, payload_data)
+            self.mesh_service.verify_trust_envelope(
+                request.trust_envelope, payload_data
+            )
 
         # 3. Log visited cluster chain progression
         logger.debug(
@@ -112,7 +116,10 @@ class AgentFederationService:
                 tool_traces = [
                     {
                         "tool": "enclave_policy_evaluator",
-                        "arguments": {"tenant_id": request.tenant_id, "scope": request.context_scope},
+                        "arguments": {
+                            "tenant_id": request.tenant_id,
+                            "scope": request.context_scope,
+                        },
                         "status": "success",
                         "timestamp": time.time(),
                     },
@@ -230,7 +237,12 @@ class AgentFederationService:
                 "target_agent_role": {
                     "type": "string",
                     "description": "Specialist role to invoke: 'forensic_auditor', 'code_synthesizer', or 'planner'.",
-                    "enum": ["forensic_auditor", "code_synthesizer", "planner", "skeptic_critic"],
+                    "enum": [
+                        "forensic_auditor",
+                        "code_synthesizer",
+                        "planner",
+                        "skeptic_critic",
+                    ],
                 },
                 "intent": {
                     "type": "string",

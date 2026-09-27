@@ -33,7 +33,9 @@ def test_nli_explicit_contradiction_detection():
 
     # Case 1: Claim has negation, premise is positive
     claim_neg = "The platform does not support Razorpay payment webhooks."
-    premise_pos = "The platform supports Razorpay payment webhooks for invoice settlements."
+    premise_pos = (
+        "The platform supports Razorpay payment webhooks for invoice settlements."
+    )
 
     res1 = evaluator.classify_claim_premise(claim_neg, premise_pos)
     assert res1.status == "contradiction"
@@ -42,7 +44,9 @@ def test_nli_explicit_contradiction_detection():
 
     # Case 2: Claim is positive, premise has negation
     claim_pos = "Clients can delete baseline system contracts."
-    premise_neg = "Clients cannot delete baseline system contracts as they are marked permanent."
+    premise_neg = (
+        "Clients cannot delete baseline system contracts as they are marked permanent."
+    )
 
     res2 = evaluator.classify_claim_premise(claim_pos, premise_neg)
     assert res2.status == "contradiction"
@@ -67,8 +71,8 @@ def test_nli_evaluate_claims_aggregate():
 
     claims = [
         "Retriever uses pgvector for semantic vector search.",  # Entailed
-        "The system does not support Redis caching.",           # Contradicted
-        "Satellites orbit Mars in synchronous resonance.",      # Neutral
+        "The system does not support Redis caching.",  # Contradicted
+        "Satellites orbit Mars in synchronous resonance.",  # Neutral
     ]
 
     contexts = [

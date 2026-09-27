@@ -1,4 +1,5 @@
 """Unit and integration tests for Milestone 69: Pre-Chunk Contextual Retrieval Ingestion Engine."""
+
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -50,10 +51,16 @@ async def test_contextual_header_single_success():
             document_text="Full architecture specification for high-scale RAG systems.",
             chunk_content="The pgvector HNSW index configuration.",
             tenant_id="tn_test_1",
-            doc_metadata={"filename": "arch_spec.pdf", "doc_type": "Technical Specification"},
+            doc_metadata={
+                "filename": "arch_spec.pdf",
+                "doc_type": "Technical Specification",
+            },
         )
 
-        assert header == "[Context: This document is a technical architecture specification for the Retriever engine.]"
+        assert (
+            header
+            == "[Context: This document is a technical architecture specification for the Retriever engine.]"
+        )
         mock_client.chat.completions.create.assert_called_once()
 
 
@@ -87,7 +94,9 @@ async def test_contextual_header_fallback_on_llm_exception():
     adapter = ContextualHeaderGeneratorAdapter(api_key="mock-key")
 
     mock_client = MagicMock()
-    mock_client.chat.completions.create = AsyncMock(side_effect=RuntimeError("LLM API Timeout"))
+    mock_client.chat.completions.create = AsyncMock(
+        side_effect=RuntimeError("LLM API Timeout")
+    )
 
     with patch.object(adapter, "_get_client", return_value=mock_client):
         header = await adapter.generate_context_header_single(
@@ -101,7 +110,10 @@ async def test_contextual_header_fallback_on_llm_exception():
             },
         )
 
-        assert header == "[Context: earnings.pdf (Financial Report regarding Revenue, Earnings, Growth)]"
+        assert (
+            header
+            == "[Context: earnings.pdf (Financial Report regarding Revenue, Earnings, Growth)]"
+        )
 
 
 @pytest.mark.asyncio
@@ -133,7 +145,10 @@ async def test_contextual_header_batch_generation():
 @pytest.mark.asyncio
 @patch("workers.src.tasks._publish_event", autospec=True)
 @patch("workers.src.tasks.create_async_engine", autospec=True)
-@patch("workers.src.tasks.extract_text_from_file", return_value="Paragraph 1 about system architecture. Paragraph 2 about database indexes.")
+@patch(
+    "workers.src.tasks.extract_text_from_file",
+    return_value="Paragraph 1 about system architecture. Paragraph 2 about database indexes.",
+)
 async def test_worker_ingestion_with_contextual_retrieval(
     mock_extract, mock_create_engine, mock_publish_event
 ):
@@ -154,18 +169,22 @@ async def test_worker_ingestion_with_contextual_retrieval(
     mock_engine.begin.return_value = mock_ctx
 
     mock_result = MagicMock()
-    config_row = (json.dumps({
-        "chunking_settings": {
-            "enable_contextual_retrieval": True,
-            "strategy": "fixed_window",
-            "chunk_size": 200,
-            "chunk_overlap": 20,
-        },
-        "ai_provider": {
-            "api_key": "mock-ai-key",
-            "default_model": "gemini-1.5-flash",
-        }
-    }),)
+    config_row = (
+        json.dumps(
+            {
+                "chunking_settings": {
+                    "enable_contextual_retrieval": True,
+                    "strategy": "fixed_window",
+                    "chunk_size": 200,
+                    "chunk_overlap": 20,
+                },
+                "ai_provider": {
+                    "api_key": "mock-ai-key",
+                    "default_model": "gemini-1.5-flash",
+                },
+            }
+        ),
+    )
     mock_result.fetchone.return_value = config_row
     mock_conn.execute = AsyncMock(return_value=mock_result)
 
@@ -174,8 +193,12 @@ async def test_worker_ingestion_with_contextual_retrieval(
         new=AsyncMock(return_value=["[Context: Engineering Architecture Spec]"]),
     ):
         with patch("builtins.open", create=True) as mock_open:
-            mock_open.return_value.__enter__.return_value.read.return_value = "Test content"
-            await process_document_async(doc_id, tenant_id, "/tmp/test_spec.pdf", "application/pdf")
+            mock_open.return_value.__enter__.return_value.read.return_value = (
+                "Test content"
+            )
+            await process_document_async(
+                doc_id, tenant_id, "/tmp/test_spec.pdf", "application/pdf"
+            )
 
     # Verify that database execute was called with enriched chunk parameters
     executed_sql_calls = mock_conn.execute.call_args_list
@@ -185,7 +208,12 @@ async def test_worker_ingestion_with_contextual_retrieval(
     insert_call = None
     for call in executed_sql_calls:
         args = call[0]
-        if len(args) > 1 and isinstance(args[1], list) and len(args[1]) > 0 and "chunk_id" in args[1][0]:
+        if (
+            len(args) > 1
+            and isinstance(args[1], list)
+            and len(args[1]) > 0
+            and "chunk_id" in args[1][0]
+        ):
             insert_call = args[1]
             break
 

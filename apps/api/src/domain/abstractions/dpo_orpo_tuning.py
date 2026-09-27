@@ -14,9 +14,9 @@ from pydantic import BaseModel, Field
 class TuningObjective(StrEnum):
     """Supported preference alignment objective algorithms."""
 
-    DPO = "dpo"    # Direct Preference Optimization (Rafailov et al.)
+    DPO = "dpo"  # Direct Preference Optimization (Rafailov et al.)
     ORPO = "orpo"  # Odds Ratio Preference Optimization (Hong et al.)
-    KTO = "kto"    # Kahneman-Tversky Optimization (Ethayarajh et al.)
+    KTO = "kto"  # Kahneman-Tversky Optimization (Ethayarajh et al.)
 
 
 class TuningJobStatus(StrEnum):
@@ -34,15 +34,30 @@ class TuningJobStatus(StrEnum):
 class PreferencePair(BaseModel):
     """A harvested or curated preference sample with winning and losing completions."""
 
-    pair_id: str = Field(..., description="Unique UUID identifier for the preference pair")
+    pair_id: str = Field(
+        ..., description="Unique UUID identifier for the preference pair"
+    )
     tenant_id: str = Field(..., description="Tenant owning this preference datum")
     prompt: str = Field(..., description="The user query or prompt (x)")
-    winning_response: str = Field(..., description="The chosen/upvoted completion (y_w)")
-    losing_response: str = Field(..., description="The rejected/downvoted completion (y_l)")
-    source_message_id: str | None = Field(default=None, description="Linked chat message UUID if harvested")
-    feedback_rating: int = Field(default=1, description="Rating score (+1 upvote, -1 downvote/correction)")
-    tags: list[str] = Field(default_factory=list, description="Categorical taxonomy tags (e.g. ['factual', 'concise'])")
-    is_verified: bool = Field(default=True, description="Whether pair has passed automated quality filtering")
+    winning_response: str = Field(
+        ..., description="The chosen/upvoted completion (y_w)"
+    )
+    losing_response: str = Field(
+        ..., description="The rejected/downvoted completion (y_l)"
+    )
+    source_message_id: str | None = Field(
+        default=None, description="Linked chat message UUID if harvested"
+    )
+    feedback_rating: int = Field(
+        default=1, description="Rating score (+1 upvote, -1 downvote/correction)"
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Categorical taxonomy tags (e.g. ['factual', 'concise'])",
+    )
+    is_verified: bool = Field(
+        default=True, description="Whether pair has passed automated quality filtering"
+    )
     created_at: str = Field(..., description="ISO 8601 timestamp of creation")
 
 
@@ -50,14 +65,24 @@ class TuningHyperparameters(BaseModel):
     """Hyperparameters configuring preference optimization runs."""
 
     learning_rate: float = Field(default=5e-6, description="Optimizer learning rate")
-    beta: float = Field(default=0.1, description="DPO temperature scaling factor (beta)")
-    lambda_orpo: float = Field(default=0.1, description="ORPO odds-ratio loss weight (lambda)")
+    beta: float = Field(
+        default=0.1, description="DPO temperature scaling factor (beta)"
+    )
+    lambda_orpo: float = Field(
+        default=0.1, description="ORPO odds-ratio loss weight (lambda)"
+    )
     lora_r: int = Field(default=16, description="LoRA rank dimension")
     lora_alpha: float = Field(default=32.0, description="LoRA scaling multiplier")
     batch_size: int = Field(default=4, description="Training micro-batch size")
-    epochs: int = Field(default=3, description="Training epochs over preference dataset")
-    auto_trigger_threshold: int = Field(default=50, description="Number of harvested pairs needed to trigger auto-train")
-    eval_split_ratio: float = Field(default=0.2, description="Held-out validation dataset fraction")
+    epochs: int = Field(
+        default=3, description="Training epochs over preference dataset"
+    )
+    auto_trigger_threshold: int = Field(
+        default=50, description="Number of harvested pairs needed to trigger auto-train"
+    )
+    eval_split_ratio: float = Field(
+        default=0.2, description="Held-out validation dataset fraction"
+    )
 
 
 class TuningLossStep(BaseModel):
@@ -66,33 +91,64 @@ class TuningLossStep(BaseModel):
     step: int = Field(..., description="Iteration step number")
     epoch: int = Field(..., description="Current epoch index")
     train_loss: float = Field(..., description="Calculated preference loss")
-    reward_margin: float = Field(..., description="Implicit reward difference: r(x, y_w) - r(x, y_l)")
-    accuracy: float = Field(..., description="Batch pairwise accuracy (fraction where r_w > r_l)")
-    odds_ratio: float = Field(..., description="Odds ratio of chosen vs rejected probabilities")
+    reward_margin: float = Field(
+        ..., description="Implicit reward difference: r(x, y_w) - r(x, y_l)"
+    )
+    accuracy: float = Field(
+        ..., description="Batch pairwise accuracy (fraction where r_w > r_l)"
+    )
+    odds_ratio: float = Field(
+        ..., description="Odds ratio of chosen vs rejected probabilities"
+    )
 
 
 class EvaluationGateResult(BaseModel):
     """Post-training validation gate outcome benchmarked against held-out validation split."""
 
-    passed: bool = Field(..., description="Whether the trained model passed quality gates")
-    validation_accuracy: float = Field(..., description="Preference accuracy on held-out validation split (min 0.75)")
-    avg_reward_margin: float = Field(..., description="Mean implicit reward separation on validation split")
+    passed: bool = Field(
+        ..., description="Whether the trained model passed quality gates"
+    )
+    validation_accuracy: float = Field(
+        ..., description="Preference accuracy on held-out validation split (min 0.75)"
+    )
+    avg_reward_margin: float = Field(
+        ..., description="Mean implicit reward separation on validation split"
+    )
     validation_loss: float = Field(..., description="Validation loss")
-    total_eval_pairs: int = Field(..., description="Number of validation samples evaluated")
-    recommendation: str = Field(..., description="'promote_to_active' or 'reject_and_rollback'")
+    total_eval_pairs: int = Field(
+        ..., description="Number of validation samples evaluated"
+    )
+    recommendation: str = Field(
+        ..., description="'promote_to_active' or 'reject_and_rollback'"
+    )
 
 
 class ContinuousTuningConfig(BaseModel):
     """Tenant configuration governing automatic preference harvesting and tuning."""
 
     tenant_id: str = Field(..., description="Tenant identifier")
-    objective: TuningObjective = Field(default=TuningObjective.DPO, description="Default alignment objective")
-    base_model: str = Field(default="meta-llama/Meta-Llama-3.1-8B-Instruct", description="Base model identifier")
-    active_adapter_id: str | None = Field(default=None, description="Currently active hot-swapped LoRA adapter ID")
-    auto_train_enabled: bool = Field(default=True, description="Whether to automatically dispatch jobs at threshold")
-    hyperparameters: TuningHyperparameters = Field(default_factory=TuningHyperparameters)
-    total_pairs_harvested: int = Field(default=0, description="Total preference pairs collected to date")
-    active_pairs_in_buffer: int = Field(default=0, description="Unprocessed pairs awaiting next training batch")
+    objective: TuningObjective = Field(
+        default=TuningObjective.DPO, description="Default alignment objective"
+    )
+    base_model: str = Field(
+        default="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        description="Base model identifier",
+    )
+    active_adapter_id: str | None = Field(
+        default=None, description="Currently active hot-swapped LoRA adapter ID"
+    )
+    auto_train_enabled: bool = Field(
+        default=True, description="Whether to automatically dispatch jobs at threshold"
+    )
+    hyperparameters: TuningHyperparameters = Field(
+        default_factory=TuningHyperparameters
+    )
+    total_pairs_harvested: int = Field(
+        default=0, description="Total preference pairs collected to date"
+    )
+    active_pairs_in_buffer: int = Field(
+        default=0, description="Unprocessed pairs awaiting next training batch"
+    )
 
 
 class TuningJob(BaseModel):
@@ -100,17 +156,35 @@ class TuningJob(BaseModel):
 
     job_id: str = Field(..., description="Unique UUID identifier for the tuning job")
     tenant_id: str = Field(..., description="Tenant owning this job")
-    objective: TuningObjective = Field(..., description="Objective used (dpo, orpo, kto)")
-    status: TuningJobStatus = Field(default=TuningJobStatus.QUEUED, description="Current execution state")
+    objective: TuningObjective = Field(
+        ..., description="Objective used (dpo, orpo, kto)"
+    )
+    status: TuningJobStatus = Field(
+        default=TuningJobStatus.QUEUED, description="Current execution state"
+    )
     base_model: str = Field(..., description="Foundational base model compiled against")
-    output_adapter_id: str = Field(..., description="Identifier for the generated LoRA adapter")
-    dataset_size: int = Field(..., description="Total preference pairs utilized for training and eval")
-    hyperparameters: TuningHyperparameters = Field(..., description="Hyperparameters used for this execution")
-    loss_history: list[TuningLossStep] = Field(default_factory=list, description="Step loss telemetry convergence curve")
-    evaluation: EvaluationGateResult | None = Field(default=None, description="Evaluation gate metrics")
+    output_adapter_id: str = Field(
+        ..., description="Identifier for the generated LoRA adapter"
+    )
+    dataset_size: int = Field(
+        ..., description="Total preference pairs utilized for training and eval"
+    )
+    hyperparameters: TuningHyperparameters = Field(
+        ..., description="Hyperparameters used for this execution"
+    )
+    loss_history: list[TuningLossStep] = Field(
+        default_factory=list, description="Step loss telemetry convergence curve"
+    )
+    evaluation: EvaluationGateResult | None = Field(
+        default=None, description="Evaluation gate metrics"
+    )
     created_at: str = Field(..., description="ISO 8601 creation timestamp")
-    completed_at: str | None = Field(default=None, description="ISO 8601 completion timestamp")
-    error_message: str | None = Field(default=None, description="Error details if job failed")
+    completed_at: str | None = Field(
+        default=None, description="ISO 8601 completion timestamp"
+    )
+    error_message: str | None = Field(
+        default=None, description="Error details if job failed"
+    )
 
 
 class TuningMathSimulationResult(BaseModel):
@@ -137,7 +211,9 @@ class ContinuousTuningPort(ABC):
     """Abstract port interface for continuous preference harvesting and fine-tuning."""
 
     @abstractmethod
-    def harvest_preference_pair(self, tenant_id: str, pair: PreferencePair) -> PreferencePair:
+    def harvest_preference_pair(
+        self, tenant_id: str, pair: PreferencePair
+    ) -> PreferencePair:
         """Record or ingest a preference pair into the tenant's harvest buffer."""
         ...
 
@@ -191,7 +267,9 @@ class ContinuousTuningPort(ABC):
         ...
 
     @abstractmethod
-    def rollback_adapter(self, tenant_id: str, target_adapter_id: str | None = None) -> ContinuousTuningConfig:
+    def rollback_adapter(
+        self, tenant_id: str, target_adapter_id: str | None = None
+    ) -> ContinuousTuningConfig:
         """Roll back tenant serving to prior adapter version."""
         ...
 

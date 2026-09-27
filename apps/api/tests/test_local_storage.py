@@ -77,7 +77,9 @@ async def test_generate_presigned_url_signature_verifies(storage):
     # Recompute expected signature
     relative = "tnt_001/doc.pdf"
     msg = f"{relative}:{expires}".encode()
-    expected = hmac.new(b"local-storage-presign-key", msg=msg, digestmod=sha256).hexdigest()
+    expected = hmac.new(
+        b"local-storage-presign-key", msg=msg, digestmod=sha256
+    ).hexdigest()
 
     assert sig == expected
     assert expires > int(time.time())

@@ -28,7 +28,9 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         self._propagator = TraceContextTextMapPropagator()
         self._tracer = trace.get_tracer("retriever-http-gateway")
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         route_path = request.url.path
         method = request.method
         start = time.monotonic()
@@ -37,11 +39,15 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         parent_context = self._propagator.extract(carrier=dict(request.headers))
 
         # 2. Extract tenant and user identifiers if present in request headers
-        tenant_id = request.headers.get("x-tenant-id", request.headers.get("tenant-id", ""))
+        tenant_id = request.headers.get(
+            "x-tenant-id", request.headers.get("tenant-id", "")
+        )
         user_id = request.headers.get("x-user-id", request.headers.get("user-id", ""))
 
         span_name = f"HTTP {method} {route_path}"
-        with self._tracer.start_as_current_span(span_name, context=parent_context) as span:
+        with self._tracer.start_as_current_span(
+            span_name, context=parent_context
+        ) as span:
             span.set_attribute("http.method", method)
             span.set_attribute("http.url", str(request.url))
             span.set_attribute("http.route", route_path)
@@ -59,7 +65,9 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
                 status_code = response.status_code
                 span.set_attribute("http.status_code", status_code)
                 if status_code >= 400:
-                    span.set_status(Status(StatusCode.ERROR, description=f"HTTP {status_code}"))
+                    span.set_status(
+                        Status(StatusCode.ERROR, description=f"HTTP {status_code}")
+                    )
                 else:
                     span.set_status(Status(StatusCode.OK))
             except Exception as exc:
@@ -70,7 +78,9 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             duration = time.monotonic() - start
 
             # Record latency histogram
-            HTTP_REQUEST_LATENCY.labels(method=method, route=route_path).observe(duration)
+            HTTP_REQUEST_LATENCY.labels(method=method, route=route_path).observe(
+                duration
+            )
 
             # Attach W3C Trace context and custom X-Trace-Id to response headers
             response.headers["X-Trace-Id"] = trace_id

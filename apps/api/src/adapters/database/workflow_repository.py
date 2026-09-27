@@ -54,7 +54,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
             execution_id=str(row.execution_id),
             step_name=str(row.step_name),
             step_index=int(row.step_index or 0),
-            status=StepStatus(row.status) if row.status in StepStatus._value2member_map_ else StepStatus.PENDING,
+            status=StepStatus(row.status)
+            if row.status in StepStatus._value2member_map_
+            else StepStatus.PENDING,
             attempts=int(row.attempts or 0),
             max_attempts=int(row.max_attempts or 3),
             memoized_output=row.memoized_output or {},
@@ -71,7 +73,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
             execution_id=str(row.execution_id),
             tenant_id=str(row.tenant_id),
             workflow_name=str(row.workflow_name),
-            status=WorkflowStatus(row.status) if row.status in WorkflowStatus._value2member_map_ else WorkflowStatus.QUEUED,
+            status=WorkflowStatus(row.status)
+            if row.status in WorkflowStatus._value2member_map_
+            else WorkflowStatus.QUEUED,
             trigger_event=row.trigger_event,
             idempotency_key=row.idempotency_key,
             input_payload=row.input_payload or {},
@@ -91,7 +95,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
         t_id = str(tenant_uuid)
 
         # Update in-memory cache
-        self._memory_executions.setdefault(t_id, {})[execution.execution_id] = execution.model_copy(deep=True)
+        self._memory_executions.setdefault(t_id, {})[execution.execution_id] = (
+            execution.model_copy(deep=True)
+        )
 
         try:
             async with tenant_session(tenant_id=t_id) as session:
@@ -170,7 +176,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
         for record in self._memory_executions.get(t_id, {}).values():
             if record.idempotency_key == idempotency_key:
                 cached = record.model_copy(deep=True)
-                cached.step_history = await self.list_step_checkpoints(record.execution_id)
+                cached.step_history = await self.list_step_checkpoints(
+                    record.execution_id
+                )
                 return cached
         return None
 
@@ -179,7 +187,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
         t_id = str(tenant_uuid)
 
         # Update in-memory store
-        self._memory_executions.setdefault(t_id, {})[execution.execution_id] = execution.model_copy(deep=True)
+        self._memory_executions.setdefault(t_id, {})[execution.execution_id] = (
+            execution.model_copy(deep=True)
+        )
 
         try:
             async with tenant_session(tenant_id=t_id) as session:
@@ -195,7 +205,14 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
                         current_step_name=execution.current_step_name,
                         output_payload=execution.output_payload,
                         error_message=execution.error_message,
-                        completed_at=datetime.now(UTC) if execution.status in (WorkflowStatus.COMPLETED, WorkflowStatus.FAILED, WorkflowStatus.CANCELLED) else None,
+                        completed_at=datetime.now(UTC)
+                        if execution.status
+                        in (
+                            WorkflowStatus.COMPLETED,
+                            WorkflowStatus.FAILED,
+                            WorkflowStatus.CANCELLED,
+                        )
+                        else None,
                         updated_at=datetime.now(UTC),
                     )
                 )
@@ -217,17 +234,33 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
 
         try:
             async with tenant_session(tenant_id=t_id) as session:
-                query = select(WorkflowExecutionDb).where(WorkflowExecutionDb.tenant_id == tenant_uuid)
-                count_query = select(func.count()).select_from(WorkflowExecutionDb).where(WorkflowExecutionDb.tenant_id == tenant_uuid)
+                query = select(WorkflowExecutionDb).where(
+                    WorkflowExecutionDb.tenant_id == tenant_uuid
+                )
+                count_query = (
+                    select(func.count())
+                    .select_from(WorkflowExecutionDb)
+                    .where(WorkflowExecutionDb.tenant_id == tenant_uuid)
+                )
 
                 if status:
                     query = query.where(WorkflowExecutionDb.status == status.value)
-                    count_query = count_query.where(WorkflowExecutionDb.status == status.value)
+                    count_query = count_query.where(
+                        WorkflowExecutionDb.status == status.value
+                    )
                 if workflow_name:
-                    query = query.where(WorkflowExecutionDb.workflow_name == workflow_name)
-                    count_query = count_query.where(WorkflowExecutionDb.workflow_name == workflow_name)
+                    query = query.where(
+                        WorkflowExecutionDb.workflow_name == workflow_name
+                    )
+                    count_query = count_query.where(
+                        WorkflowExecutionDb.workflow_name == workflow_name
+                    )
 
-                query = query.order_by(WorkflowExecutionDb.created_at.desc()).limit(limit).offset(offset)
+                query = (
+                    query.order_by(WorkflowExecutionDb.created_at.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
                 res = await session.execute(query)
                 rows = res.scalars().all()
 
@@ -252,7 +285,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
     async def save_step_checkpoint(self, step: WorkflowStepRecord) -> None:
         exec_id = step.execution_id
         # Update in-memory
-        self._memory_steps.setdefault(exec_id, {})[step.step_name] = step.model_copy(deep=True)
+        self._memory_steps.setdefault(exec_id, {})[step.step_name] = step.model_copy(
+            deep=True
+        )
 
         try:
             # Look up tenant_id from execution
@@ -273,7 +308,11 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
                             row.memoized_output = step.memoized_output
                             row.error_details = step.error_details
                             row.execution_time_ms = step.execution_time_ms
-                            row.completed_at = datetime.now(UTC) if step.status == StepStatus.COMPLETED else None
+                            row.completed_at = (
+                                datetime.now(UTC)
+                                if step.status == StepStatus.COMPLETED
+                                else None
+                            )
                         else:
                             new_row = WorkflowStepCheckpointDb(
                                 step_id=step.step_id,
@@ -288,7 +327,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
                                 error_details=step.error_details,
                                 execution_time_ms=step.execution_time_ms,
                                 started_at=datetime.now(UTC),
-                                completed_at=datetime.now(UTC) if step.status == StepStatus.COMPLETED else None,
+                                completed_at=datetime.now(UTC)
+                                if step.status == StepStatus.COMPLETED
+                                else None,
                             )
                             session.add(new_row)
                         await session.commit()
@@ -327,7 +368,9 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
                     async with tenant_session(tenant_id=t_id) as session:
                         stmt = (
                             select(WorkflowStepCheckpointDb)
-                            .where(WorkflowStepCheckpointDb.execution_id == execution_id)
+                            .where(
+                                WorkflowStepCheckpointDb.execution_id == execution_id
+                            )
                             .order_by(WorkflowStepCheckpointDb.step_index.asc())
                         )
                         res = await session.execute(stmt)
@@ -347,9 +390,15 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
 
         try:
             async with tenant_session(tenant_id=t_id) as session:
-                stmt = select(func.count()).select_from(WorkflowExecutionDb).where(
-                    WorkflowExecutionDb.tenant_id == tenant_uuid,
-                    WorkflowExecutionDb.status.in_([WorkflowStatus.RUNNING.value, WorkflowStatus.QUEUED.value]),
+                stmt = (
+                    select(func.count())
+                    .select_from(WorkflowExecutionDb)
+                    .where(
+                        WorkflowExecutionDb.tenant_id == tenant_uuid,
+                        WorkflowExecutionDb.status.in_(
+                            [WorkflowStatus.RUNNING.value, WorkflowStatus.QUEUED.value]
+                        ),
+                    )
                 )
                 res = await session.execute(stmt)
                 count = res.scalar()
@@ -359,7 +408,8 @@ class SqlWorkflowRepository(IDurableWorkflowRepository):
             logger.debug("Database active count bypassed: %s", err)
 
         active = [
-            e for e in self._memory_executions.get(t_id, {}).values()
+            e
+            for e in self._memory_executions.get(t_id, {}).values()
             if e.status in (WorkflowStatus.RUNNING, WorkflowStatus.QUEUED)
         ]
         return len(active)

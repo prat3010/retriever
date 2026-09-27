@@ -6,15 +6,18 @@ from src.domain.abstractions.exceptions import InvalidFilterError
 from src.domain.abstractions.retrieval import MetadataFilter, SearchResult
 
 _OP_TO_SQL: dict[str, tuple[str, Callable[[Any], Any]]] = {
-    "eq":       ("{alias}.meta_data ->> '{field}' = :{param}", str),
-    "neq":      ("{alias}.meta_data ->> '{field}' != :{param}", str),
-    "in":       ("{alias}.meta_data -> '{field}' ?| :{param}", lambda v: [str(x) for x in (v or [])]),
-    "gt":       ("({alias}.meta_data ->> '{field}')::numeric > :{param}", str),
-    "gte":      ("({alias}.meta_data ->> '{field}')::numeric >= :{param}", str),
-    "lt":       ("({alias}.meta_data ->> '{field}')::numeric < :{param}", str),
-    "lte":      ("({alias}.meta_data ->> '{field}')::numeric <= :{param}", str),
+    "eq": ("{alias}.meta_data ->> '{field}' = :{param}", str),
+    "neq": ("{alias}.meta_data ->> '{field}' != :{param}", str),
+    "in": (
+        "{alias}.meta_data -> '{field}' ?| :{param}",
+        lambda v: [str(x) for x in (v or [])],
+    ),
+    "gt": ("({alias}.meta_data ->> '{field}')::numeric > :{param}", str),
+    "gte": ("({alias}.meta_data ->> '{field}')::numeric >= :{param}", str),
+    "lt": ("({alias}.meta_data ->> '{field}')::numeric < :{param}", str),
+    "lte": ("({alias}.meta_data ->> '{field}')::numeric <= :{param}", str),
     "contains": ("{alias}.meta_data @> :{param}::jsonb", lambda v: v),
-    "regex":    ("{alias}.meta_data ->> '{field}' ~* :{param}", str),
+    "regex": ("{alias}.meta_data ->> '{field}' ~* :{param}", str),
 }
 
 # Metadata field names are interpolated into SQL templates verbatim, so only
@@ -108,7 +111,9 @@ def build_filter_clause(
     for i, f in enumerate(norm_filters):
         p = f"f_{i}"
         if f.operator not in _OP_TO_SQL and f.operator != "exists":
-            raise InvalidFilterError(f"Unsupported metadata filter operator: {f.operator!r}")
+            raise InvalidFilterError(
+                f"Unsupported metadata filter operator: {f.operator!r}"
+            )
         if not _FIELD_NAME_RE.match(f.field):
             raise InvalidFilterError(f"Invalid metadata field name: {f.field!r}")
         if f.operator == "exists":
@@ -123,4 +128,3 @@ def build_filter_clause(
         return " AND " + " AND ".join(conditions), params, join_clause
 
     return "", params, join_clause
-

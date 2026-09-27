@@ -19,6 +19,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: GraphExtractor Triple Parsing ──────────────────────────────
 
+
 def test_graph_extractor_parsing():
     """Verify GraphExtractor extracts subject-predicate-object triples from text."""
     extractor = GraphExtractor()
@@ -40,6 +41,7 @@ def test_graph_extractor_parsing():
 
 
 # ── 2. Unit Test: PgGraphRepository CRUD & Multi-Hop Traversal ──────────────
+
 
 @pytest.mark.asyncio
 @patch("src.adapters.database.graph_repository.tenant_session")
@@ -84,13 +86,16 @@ async def test_pg_graph_repository_crud(mock_tenant_session):
 
 # ── 3. Unit Test: Neo4jGraphRepository Fallback ─────────────────────────────
 
+
 @pytest.mark.asyncio
 @patch("src.adapters.graph.neo4j_repository.PgGraphRepository")
 async def test_neo4j_graph_repository_fallback(mock_pg_class):
     """Verify Neo4jGraphRepository delegates to PostgreSQL when Neo4j is offline."""
     mock_fallback = AsyncMock()
     mock_fallback.add_triples.return_value = 1
-    mock_fallback.search_triples.return_value = MagicMock(root_entity="Alice", triples=[])
+    mock_fallback.search_triples.return_value = MagicMock(
+        root_entity="Alice", triples=[]
+    )
 
     repo = Neo4jGraphRepository(
         uri="bolt://invalid-host:7687",
@@ -115,6 +120,7 @@ async def test_neo4j_graph_repository_fallback(mock_pg_class):
 
 
 # ── 4. Unit Test: Environment Auto-Detection Logic ──────────────────────────
+
 
 def test_infra_capabilities_graph_detection():
     """Verify InfraCapabilities detects low-RAM Oracle VM vs expanded VPS/MacBook profile."""
@@ -146,10 +152,12 @@ def test_infra_capabilities_graph_detection():
 
 # ── 5. Integration Test: Admin Graph Endpoints ──────────────────────────────
 
+
 @patch("src.routers.admin.config_service.get_tenant_config", new_callable=AsyncMock)
 def test_admin_graph_capabilities_and_summary(mock_get_cfg):
     """Verify GET /v1/admin/tenants/{tenantId}/graph/capabilities endpoint."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
@@ -172,6 +180,7 @@ def test_admin_graph_capabilities_and_summary(mock_get_cfg):
 
 
 # ── 6. Unit Test: HybridSearchService Graph Evidence Pass ────────────────────
+
 
 @pytest.mark.asyncio
 async def test_hybrid_search_graph_evidence_pass():
@@ -221,4 +230,3 @@ async def test_hybrid_search_graph_evidence_pass():
     assert len(res.results) >= 1
     contents = [r.content for r in res.results]
     assert any("[Graph Evidence]" in c for c in contents)
-

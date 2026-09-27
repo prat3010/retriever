@@ -65,8 +65,18 @@ def test_admin_experiment_lifecycle_crud(mock_config_service, mock_audit) -> Non
         "name": "LLM Provider Comparison",
         "description": "Comparing GPT-4o-mini vs Gemini-2.5-flash",
         "variants": [
-            {"id": "var_gpt", "name": "GPT-4o Mini", "traffic_pct": 50.0, "overrides": {}},
-            {"id": "var_gemini", "name": "Gemini 2.5 Flash", "traffic_pct": 50.0, "overrides": {}},
+            {
+                "id": "var_gpt",
+                "name": "GPT-4o Mini",
+                "traffic_pct": 50.0,
+                "overrides": {},
+            },
+            {
+                "id": "var_gemini",
+                "name": "Gemini 2.5 Flash",
+                "traffic_pct": 50.0,
+                "overrides": {},
+            },
         ],
     }
 
@@ -87,7 +97,9 @@ def test_admin_experiment_lifecycle_crud(mock_config_service, mock_audit) -> Non
     assert any(e["id"] == exp_id for e in list_res.json())
 
     # Get Single Experiment
-    get_res = client.get(f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers)
+    get_res = client.get(
+        f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers
+    )
     assert get_res.status_code == 200
     assert get_res.json()["id"] == exp_id
 
@@ -110,12 +122,16 @@ def test_admin_experiment_lifecycle_crud(mock_config_service, mock_audit) -> Non
     assert status_res.json()["status"] == "active"
 
     # Delete Experiment
-    del_res = client.delete(f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers)
+    del_res = client.delete(
+        f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers
+    )
     assert del_res.status_code == 200
     assert del_res.json()["status"] == "deleted"
 
     # Verify Deletion
-    get_del_res = client.get(f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers)
+    get_del_res = client.get(
+        f"/v1/admin/tenants/{tenant_id}/experiments/{exp_id}", headers=headers
+    )
     assert get_del_res.status_code == 404
 
 
@@ -134,7 +150,10 @@ def test_admin_experiment_metrics(mock_config_service, mock_tenant_session) -> N
     variant_a = VariantConfig(id="var_a", name="Variant A", traffic_pct=50.0)
     variant_b = VariantConfig(id="var_b", name="Variant B", traffic_pct=50.0)
     exp = ExperimentConfig(
-        id="exp_123", name="Search Test", status="active", variants=[variant_a, variant_b]
+        id="exp_123",
+        name="Search Test",
+        status="active",
+        variants=[variant_a, variant_b],
     )
 
     fake_config = TenantConfiguration(tenant_id=tenant_id, experiments=[exp])

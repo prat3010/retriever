@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { SovereignApplianceCockpit } from "@/components/sovereign-appliance-cockpit";
 import { VisualDagCanvas } from "@/components/visual-dag-canvas";
-import { Workflow, Layers, Webhook } from "lucide-react";
+import { Workflow, Layers, Webhook, ShieldCheck } from "lucide-react";
 
 interface TenantWorkflowTabProps {
   tenantId: string;
 }
 
 export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"dag" | "durable" | "n8n">("dag");
+  const [activeSubTab, setActiveSubTab] = useState<"dag" | "durable" | "n8n" | "appliance">("dag");
   const [webhookUrl, setWebhookUrl] = useState("https://n8n.example.com/webhook/retriever-events");
   const configureMutation = useConfigureN8nWebhook(tenantId);
   const { data: n8nSpec } = useN8nSpec();
@@ -63,6 +64,18 @@ export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
         >
           <Webhook className="w-3.5 h-3.5" />
           n8n Webhook
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab("appliance")}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            activeSubTab === "appliance"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Sovereign Appliance (Battery #41)
         </button>
       </div>
 
@@ -199,6 +212,11 @@ export function TenantWorkflowTab({ tenantId }: TenantWorkflowTabProps) {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* SubTab 4: Sovereign Appliance */}
+      {activeSubTab === "appliance" && (
+        <SovereignApplianceCockpit tenantId={tenantId} />
       )}
     </div>
   );

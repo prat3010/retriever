@@ -23,7 +23,9 @@ class RetentionWorker:
             return {"scanned": 0, "purged": 0}
 
         cutoff_date = datetime.now(UTC) - timedelta(days=retention_days)
-        expired_doc_ids = await self.repo.get_expired_document_ids(tenant_id, cutoff_date)
+        expired_doc_ids = await self.repo.get_expired_document_ids(
+            tenant_id, cutoff_date
+        )
 
         purged_count = 0
         for doc_id in expired_doc_ids:
@@ -31,7 +33,9 @@ class RetentionWorker:
                 await self.purge_service.hard_purge_document(tenant_id, doc_id)
                 purged_count += 1
             except Exception as err:
-                logger.error(f"Failed to auto-purge expired document '{doc_id}' ({err}).")
+                logger.error(
+                    f"Failed to auto-purge expired document '{doc_id}' ({err})."
+                )
 
         if purged_count > 0:
             logger.info(

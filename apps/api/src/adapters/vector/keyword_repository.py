@@ -13,7 +13,6 @@ from src.domain.abstractions.retrieval import (
 
 
 class PgKeywordSearchAdapter(KeywordSearchProvider):
-
     async def search_keywords(
         self,
         tenant_id: str,
@@ -37,7 +36,6 @@ class PgKeywordSearchAdapter(KeywordSearchProvider):
             user_groups=user_groups,
             enable_acl_filter=enable_acl_filter,
         )
-
 
         async with tenant_session(tenant_id=tenant_id) as session:
             result = await session.execute(

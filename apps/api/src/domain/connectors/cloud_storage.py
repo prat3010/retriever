@@ -1,4 +1,5 @@
 """Cloud Object Storage Data Connector for AWS S3, Cloudflare R2, and MinIO."""
+
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,7 +25,15 @@ class S3StorageConnector(BaseConnector):
     - Preserves object metadata (ETag, storage class, key, byte size).
     """
 
-    SUPPORTED_EXTENSIONS: ClassVar[set[str]] = {".txt", ".md", ".pdf", ".json", ".csv", ".html", ".docx"}
+    SUPPORTED_EXTENSIONS: ClassVar[set[str]] = {
+        ".txt",
+        ".md",
+        ".pdf",
+        ".json",
+        ".csv",
+        ".html",
+        ".docx",
+    }
 
     def get_manifest(self) -> ConnectorManifest:
         return ConnectorManifest(
@@ -46,6 +55,7 @@ class S3StorageConnector(BaseConnector):
 
     def _get_boto_client(self, config: ConnectorConfig) -> Any:
         import boto3
+
         cfg = config.configuration
         kwargs: dict[str, Any] = {
             "region_name": cfg.get("region_name", "us-east-1"),
@@ -75,10 +85,14 @@ class S3StorageConnector(BaseConnector):
             client.list_objects_v2(Bucket=bucket, MaxKeys=1)
             return True
         except Exception as exc:
-            logger.warning("S3 credential validation error for bucket %s: %s", bucket, exc)
+            logger.warning(
+                "S3 credential validation error for bucket %s: %s", bucket, exc
+            )
             return False
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Fetch all documents from target bucket without prior cursor."""
         docs, _ = await self.fetch_incremental(config, ConnectorSyncState())
         return docs
@@ -129,7 +143,10 @@ class S3StorageConnector(BaseConnector):
                 cursor=f"s3_cursor_{len(seen_etags)}",
                 watermark=now_iso,
                 last_sync_at=now_iso,
-                metadata={"seen_etags": seen_etags, "synced_count": len(discovered_docs)},
+                metadata={
+                    "seen_etags": seen_etags,
+                    "synced_count": len(discovered_docs),
+                },
             )
             return discovered_docs, new_state
 
@@ -156,7 +173,9 @@ class S3StorageConnector(BaseConnector):
                     try:
                         content_str = raw_bytes.decode("utf-8")
                     except UnicodeDecodeError:
-                        content_str = f"[Binary Document: {key} ({len(raw_bytes)} bytes)]"
+                        content_str = (
+                            f"[Binary Document: {key} ({len(raw_bytes)} bytes)]"
+                        )
 
                     mime_type = obj_res.get("ContentType", "text/plain")
                     if ext == ".md":
@@ -177,13 +196,17 @@ class S3StorageConnector(BaseConnector):
                             "s3_key": key,
                             "etag": etag,
                             "size": item.get("Size", len(raw_bytes)),
-                            "last_modified": item.get("LastModified", datetime.now(UTC)).isoformat(),
+                            "last_modified": item.get(
+                                "LastModified", datetime.now(UTC)
+                            ).isoformat(),
                         },
                     )
                     discovered_docs.append(doc)
                     seen_etags[key] = etag
                 except Exception as dl_err:
-                    logger.warning("Failed to fetch S3 object s3://%s/%s: %s", bucket, key, dl_err)
+                    logger.warning(
+                        "Failed to fetch S3 object s3://%s/%s: %s", bucket, key, dl_err
+                    )
 
         new_state = ConnectorSyncState(
             cursor=f"s3_cursor_{len(seen_etags)}",

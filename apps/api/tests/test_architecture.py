@@ -103,10 +103,12 @@ def test_domain_does_not_import_infrastructure() -> None:
             bad = FORBIDDEN_DOMAIN_IMPORTS & parts
             if bad:
                 rel = path.relative_to(DOMAIN_DIR)
-                violations.append(f"{rel}: imports {mod} (forbidden: {', '.join(sorted(bad))})")
+                violations.append(
+                    f"{rel}: imports {mod} (forbidden: {', '.join(sorted(bad))})"
+                )
 
-    assert not violations, (
-        "Domain layer imports infrastructure:\n" + "\n".join(violations)
+    assert not violations, "Domain layer imports infrastructure:\n" + "\n".join(
+        violations
     )
 
 
@@ -122,8 +124,8 @@ def test_no_hardcoded_system_prompt() -> None:
                 violations.append(f"{rel}: contains {pattern!r}")
                 break
 
-    assert not violations, (
-        "Hardcoded system prompt patterns found:\n" + "\n".join(violations)
+    assert not violations, "Hardcoded system prompt patterns found:\n" + "\n".join(
+        violations
     )
 
 

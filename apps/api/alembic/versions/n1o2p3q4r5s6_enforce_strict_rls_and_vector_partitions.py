@@ -18,11 +18,21 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     # 0. Add collection_id to documents, document_chunks, and vector_records if missing
     op.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS collection_id UUID;")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_documents_collection_id ON documents(collection_id);")
-    op.execute("ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS collection_id UUID;")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_document_chunks_collection_id ON document_chunks(collection_id);")
-    op.execute("ALTER TABLE vector_records ADD COLUMN IF NOT EXISTS collection_id UUID;")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_collection_id ON vector_records(collection_id);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_documents_collection_id ON documents(collection_id);"
+    )
+    op.execute(
+        "ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS collection_id UUID;"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_document_chunks_collection_id ON document_chunks(collection_id);"
+    )
+    op.execute(
+        "ALTER TABLE vector_records ADD COLUMN IF NOT EXISTS collection_id UUID;"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_collection_id ON vector_records(collection_id);"
+    )
 
     # 1. Create vector_records_1024, vector_records_1536, and vector_records_3072 if not exists
     op.execute("""
@@ -34,9 +44,15 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_1024_tenant_id ON vector_records_1024(tenant_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_1024_collection_id ON vector_records_1024(collection_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_vector_records_1024_embedding ON vector_records_1024 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_1024_tenant_id ON vector_records_1024(tenant_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_1024_collection_id ON vector_records_1024(collection_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS idx_vector_records_1024_embedding ON vector_records_1024 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)"
+    )
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS vector_records_1536 (
@@ -47,9 +63,15 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_1536_tenant_id ON vector_records_1536(tenant_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_1536_collection_id ON vector_records_1536(collection_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_vector_records_1536_embedding ON vector_records_1536 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_1536_tenant_id ON vector_records_1536(tenant_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_1536_collection_id ON vector_records_1536(collection_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS idx_vector_records_1536_embedding ON vector_records_1536 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)"
+    )
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS vector_records_3072 (
@@ -60,9 +82,15 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_3072_tenant_id ON vector_records_3072(tenant_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_vector_records_3072_collection_id ON vector_records_3072(collection_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_vector_records_3072_embedding ON vector_records_3072 USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops) WITH (m = 16, ef_construction = 64)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_3072_tenant_id ON vector_records_3072(tenant_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_vector_records_3072_collection_id ON vector_records_3072(collection_id)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS idx_vector_records_3072_embedding ON vector_records_3072 USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops) WITH (m = 16, ef_construction = 64)"
+    )
 
     # 2. Enforce and Force Row Level Security across all tenant tables
     op.execute("""

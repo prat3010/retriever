@@ -18,6 +18,10 @@ class ChatMessageRequest(BaseModel):
 
 
 class FeedbackSubmitRequest(BaseModel):
-    rating: int = Field(default=0, description="Rating score, +1 for positive, -1 for negative.")
+    rating: int = Field(
+        default=0, description="Rating score, +1 for positive, -1 for negative."
+    )
     feedback_text: str | None = Field(None, description="Optional text comment.")
-    scores: dict[str, int] | None = Field(None, description="Per-dimension scores, e.g. helpfulness=5, accuracy=4.")
+    scores: dict[str, int] | None = Field(
+        None, description="Per-dimension scores, e.g. helpfulness=5, accuracy=4."
+    )

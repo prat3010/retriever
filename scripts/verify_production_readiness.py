@@ -24,11 +24,18 @@ import urllib.error
 import urllib.request
 
 DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "http://localhost:8000")
-DEFAULT_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4")
-DEFAULT_API_KEY = os.getenv("LOAD_TEST_API_KEY", "ret_live_eae27a51db3b44ef81e16df59137eda7bcfdc987dc204d6bacb9db0089a7886a")
+DEFAULT_TENANT_ID = os.getenv(
+    "LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4"
+)
+DEFAULT_API_KEY = os.getenv(
+    "LOAD_TEST_API_KEY",
+    "ret_live_eae27a51db3b44ef81e16df59137eda7bcfdc987dc204d6bacb9db0089a7886a",
+)
 DEFAULT_USER_ID = os.getenv("LOAD_TEST_USER_ID", "36e62429-419e-48ef-af92-533afca9e028")
-DEFAULT_ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266")
-
+DEFAULT_ADMIN_KEY = os.getenv(
+    "ADMIN_MASTER_KEY",
+    "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266",
+)
 
 
 def probe_http(
@@ -45,7 +52,9 @@ def probe_http(
         data_bytes = json.dumps(payload).encode("utf-8")
         req_headers["Content-Type"] = "application/json"
 
-    req = urllib.request.Request(url, data=data_bytes, headers=req_headers, method=method)
+    req = urllib.request.Request(
+        url, data=data_bytes, headers=req_headers, method=method
+    )
     start = time.perf_counter()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
@@ -75,12 +84,22 @@ def probe_http(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Retriever Production Readiness Diagnostics")
-    parser.add_argument("--target", default=DEFAULT_TARGET, help=f"Target base URL (default: {DEFAULT_TARGET})")
-    parser.add_argument("--tenant-id", default=DEFAULT_TENANT_ID, help="Tenant UUID for testing")
+    parser = argparse.ArgumentParser(
+        description="Retriever Production Readiness Diagnostics"
+    )
+    parser.add_argument(
+        "--target",
+        default=DEFAULT_TARGET,
+        help=f"Target base URL (default: {DEFAULT_TARGET})",
+    )
+    parser.add_argument(
+        "--tenant-id", default=DEFAULT_TENANT_ID, help="Tenant UUID for testing"
+    )
     parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="Tenant API Key")
     parser.add_argument("--user-id", default=DEFAULT_USER_ID, help="Tenant User ID")
-    parser.add_argument("--admin-key", default=DEFAULT_ADMIN_KEY, help="Admin Master Key")
+    parser.add_argument(
+        "--admin-key", default=DEFAULT_ADMIN_KEY, help="Admin Master Key"
+    )
 
     args = parser.parse_args()
     target = args.target.rstrip("/")
@@ -94,17 +113,27 @@ def main():
     results = []
 
     # Probe 1: Database & Pool Readiness
-    print("1. Testing PostgreSQL Connection Pool & Redis (/health/readiness)...", end=" ", flush=True)
+    print(
+        "1. Testing PostgreSQL Connection Pool & Redis (/health/readiness)...",
+        end=" ",
+        flush=True,
+    )
     status, lat, body, hdrs = probe_http(f"{target}/health/readiness")
     if status == 200 and isinstance(body, dict) and body.get("status") == "ready":
         print(f"✅ PASSED ({lat}ms)")
-        results.append(("PostgreSQL & Redis Pool Readiness", True, f"{lat}ms (status: ready)"))
+        results.append(
+            ("PostgreSQL & Redis Pool Readiness", True, f"{lat}ms (status: ready)")
+        )
     else:
         print(f"❌ FAILED (HTTP {status}, {lat}ms: {body})")
         results.append(("PostgreSQL & Redis Pool Readiness", False, f"HTTP {status}"))
 
     # Probe 2: Gateway Event Loop
-    print("2. Testing ASGI Event Loop & Nginx Routing (/health/liveness)...", end=" ", flush=True)
+    print(
+        "2. Testing ASGI Event Loop & Nginx Routing (/health/liveness)...",
+        end=" ",
+        flush=True,
+    )
     status, lat, body, hdrs = probe_http(f"{target}/health/liveness")
     rate_remaining = hdrs.get("x-ratelimit-remaining", "N/A")
     if status == 200 and isinstance(body, dict) and body.get("status") == "alive":
@@ -115,31 +144,51 @@ def main():
         results.append(("ASGI Gateway & Nginx Routing", False, f"HTTP {status}"))
 
     # Probe 3: Admin Master Key RBAC
-    print("3. Testing Admin Master Key Authentication (/v1/admin/tenants)...", end=" ", flush=True)
+    print(
+        "3. Testing Admin Master Key Authentication (/v1/admin/tenants)...",
+        end=" ",
+        flush=True,
+    )
     admin_headers = {"X-Admin-Master-Key": args.admin_key}
-    status, lat, body, hdrs = probe_http(f"{target}/v1/admin/tenants", headers=admin_headers)
+    status, lat, body, hdrs = probe_http(
+        f"{target}/v1/admin/tenants", headers=admin_headers
+    )
     if status == 200 and isinstance(body, dict) and "items" in body:
         tenant_count = body.get("total", len(body.get("items", [])))
         print(f"✅ PASSED ({lat}ms | {tenant_count} active tenants registered)")
-        results.append(("Admin Master Key RBAC", True, f"{lat}ms ({tenant_count} tenants)"))
+        results.append(
+            ("Admin Master Key RBAC", True, f"{lat}ms ({tenant_count} tenants)")
+        )
     else:
         print(f"❌ FAILED (HTTP {status}: {body})")
         results.append(("Admin Master Key RBAC", False, f"HTTP {status}"))
 
     # Probe 4: Tenant Retrieval Configuration
-    print(f"4. Inspecting Tenant Configuration ({args.tenant_id[:8]}...)...", end=" ", flush=True)
-    status, lat, body, hdrs = probe_http(f"{target}/v1/admin/tenants/{args.tenant_id}/config", headers=admin_headers)
+    print(
+        f"4. Inspecting Tenant Configuration ({args.tenant_id[:8]}...)...",
+        end=" ",
+        flush=True,
+    )
+    status, lat, body, hdrs = probe_http(
+        f"{target}/v1/admin/tenants/{args.tenant_id}/config", headers=admin_headers
+    )
     if status == 200 and isinstance(body, dict):
         embed_prov = body.get("embedding_provider", {}).get("provider_name", "unknown")
         embed_model = body.get("embedding_provider", {}).get("model_name", "unknown")
         print(f"✅ PASSED ({lat}ms | Provider: {embed_prov} • Model: {embed_model})")
-        results.append(("Tenant Configuration", True, f"Provider: {embed_prov}/{embed_model}"))
+        results.append(
+            ("Tenant Configuration", True, f"Provider: {embed_prov}/{embed_model}")
+        )
     else:
         print(f"❌ FAILED (HTTP {status})")
         results.append(("Tenant Configuration", False, f"HTTP {status}"))
 
     # Probe 5: Search & Retrieval Resilience
-    print("5. Executing Hybrid / Keyword Search Query (/v1/tenants/[id]/search)...", end=" ", flush=True)
+    print(
+        "5. Executing Hybrid / Keyword Search Query (/v1/tenants/[id]/search)...",
+        end=" ",
+        flush=True,
+    )
     search_headers = {
         "Authorization": f"Bearer {args.api_key}",
         "X-User-ID": args.user_id,
@@ -161,10 +210,18 @@ def main():
         hit_count = len(body.get("results", []))
         strategy = body.get("searchMeta", {}).get("strategy", "unknown")
         print(f"✅ PASSED ({lat}ms | {hit_count} hits | Strategy: {strategy})")
-        results.append(("Search & Retrieval Execution", True, f"{lat}ms ({hit_count} hits, strategy: {strategy})"))
+        results.append(
+            (
+                "Search & Retrieval Execution",
+                True,
+                f"{lat}ms ({hit_count} hits, strategy: {strategy})",
+            )
+        )
     elif status == 500:
         print("⚠️ SERVER 500 (Embedder misconfiguration on remote VPS)")
-        results.append(("Search & Retrieval Execution", False, "HTTP 500: Embedder misconfigured"))
+        results.append(
+            ("Search & Retrieval Execution", False, "HTTP 500: Embedder misconfigured")
+        )
     else:
         print(f"❌ FAILED (HTTP {status}: {body})")
         results.append(("Search & Retrieval Execution", False, f"HTTP {status}"))
@@ -172,12 +229,20 @@ def main():
     # Probe 6: Universal MCP Protocol Handshake
     print("6. Probing Universal MCP SSE Endpoint (/v1/mcp/sse)...", end=" ", flush=True)
     status, lat, body, hdrs = probe_http(f"{target}/v1/mcp/sse")
-    if status in (200, 400, 401):  # 401 confirms endpoint is active and enforcing security
+    if status in (
+        200,
+        400,
+        401,
+    ):  # 401 confirms endpoint is active and enforcing security
         print(f"✅ PASSED (Endpoint listening & auth enforced, {lat}ms)")
-        results.append(("Universal MCP SSE Protocol", True, f"Active & Protected ({lat}ms)"))
+        results.append(
+            ("Universal MCP SSE Protocol", True, f"Active & Protected ({lat}ms)")
+        )
     elif status == 404:
         print("⚠️ 404 NOT FOUND (Universal MCP router not mounted)")
-        results.append(("Universal MCP SSE Protocol", False, "HTTP 404: Endpoint not found"))
+        results.append(
+            ("Universal MCP SSE Protocol", False, "HTTP 404: Endpoint not found")
+        )
     else:
         print(f"❌ FAILED (HTTP {status})")
         results.append(("Universal MCP SSE Protocol", False, f"HTTP {status}"))

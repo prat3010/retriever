@@ -26,7 +26,12 @@ API_SRC = REPO_ROOT / "apps" / "api"
 if str(API_SRC) not in sys.path:
     sys.path.insert(0, str(API_SRC))
 
-from src.container import boundary_checker, code_scaffolder, metaprogrammer, plugin_manager  # noqa: E402
+from src.container import (  # noqa: E402
+    boundary_checker,
+    code_scaffolder,
+    metaprogrammer,
+    plugin_manager,
+)
 from src.domain.abstractions.scaffolding import SolutionPersona, UseCaseRequirement  # noqa: E402
 
 
@@ -39,17 +44,23 @@ def cmd_scaffold(args: argparse.Namespace) -> int:
         persona=persona,
     )
 
-    print(f"\n🧠 [Metaprogrammer] Synthesizing capability for: '{args.prompt}' (Persona: {persona.value})")
+    print(
+        f"\n🧠 [Metaprogrammer] Synthesizing capability for: '{args.prompt}' (Persona: {persona.value})"
+    )
     plan = metaprogrammer.generate_plan(req)
 
     print(f"\n📦 Plugin ID: {plan.plugin_id} ({plan.display_name})")
     print(f"📁 Category: {plan.manifest.category.value}")
-    print(f"🛡️  AST Boundary Check: {'✅ PASSED' if plan.ast_audit_passed else '❌ FAILED'}")
+    print(
+        f"🛡️  AST Boundary Check: {'✅ PASSED' if plan.ast_audit_passed else '❌ FAILED'}"
+    )
 
     if plan.recommended_batteries:
         print("\n🔋 Matched Active Platform Batteries:")
         for b in plan.recommended_batteries:
-            print(f"  • {b.battery_name} (Confidence: {int(b.match_confidence * 100)}%)")
+            print(
+                f"  • {b.battery_name} (Confidence: {int(b.match_confidence * 100)}%)"
+            )
 
     print(f"\n📝 Generated {len(plan.scaffolded_files)} Hexagonal Code Slices:")
     for f in plan.scaffolded_files:
@@ -58,7 +69,9 @@ def cmd_scaffold(args: argparse.Namespace) -> int:
     if args.apply:
         print("\n🚀 Writing files to `src/plugins/custom/`...")
         res = code_scaffolder.apply_plan(plan, dry_run=args.dry_run)
-        print(f"✅ Successfully wrote {len(res['files_written'])} files to {res['target_dir']}")
+        print(
+            f"✅ Successfully wrote {len(res['files_written'])} files to {res['target_dir']}"
+        )
         mount_res = plugin_manager.mount_single_plugin(plan.plugin_id)
         if mount_res.get("mounted"):
             print(f"⚡ Hot-mounted into runtime at `/v1/plugins/{plan.plugin_id}/*`")
@@ -80,7 +93,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 1
 
     py_files = [target] if target.is_file() else list(target.rglob("*.py"))
-    print(f"\n🛡️  [AST Boundary Gate] Inspecting {len(py_files)} Python files in {target}...")
+    print(
+        f"\n🛡️  [AST Boundary Gate] Inspecting {len(py_files)} Python files in {target}..."
+    )
 
     violations_found = 0
     for f in py_files:
@@ -94,7 +109,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
                 print(f"  • {v}")
 
     if violations_found == 0:
-        print(f"✅ All {len(py_files)} files strictly conform to Hexagonal boundaries (0 framework imports in domain).")
+        print(
+            f"✅ All {len(py_files)} files strictly conform to Hexagonal boundaries (0 framework imports in domain)."
+        )
         return 0
     else:
         print(f"\n🚨 Failed with {violations_found} architectural boundary violations.")
@@ -107,7 +124,9 @@ def cmd_plugins(args: argparse.Namespace) -> int:
     print(f"\n🔌 Discovered {len(plugins)} Custom Plugin(s):")
     for p in plugins:
         status_icon = "🟢" if p.is_active else "⚪"
-        print(f"  {status_icon} [{p.plugin_id}] {p.display_name} (v{p.version}) - {p.category}")
+        print(
+            f"  {status_icon} [{p.plugin_id}] {p.display_name} (v{p.version}) - {p.category}"
+        )
         print(f"     Description: {p.description}")
         if p.hooks.api_router:
             print(f"     Route: /v1/plugins/{p.plugin_id}/*")
@@ -115,17 +134,29 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Retriever FDE Scaffolding & Extensibility CLI")
+    parser = argparse.ArgumentParser(
+        description="Retriever FDE Scaffolding & Extensibility CLI"
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Scaffold command
-    p_scaffold = subparsers.add_parser("scaffold", help="Generate custom capability slices")
+    p_scaffold = subparsers.add_parser(
+        "scaffold", help="Generate custom capability slices"
+    )
     p_scaffold.add_argument("--prompt", required=True, help="Requirement description")
     p_scaffold.add_argument("--domain", default="general", help="Target domain context")
-    p_scaffold.add_argument("--persona", default="fde_engineer", choices=["business", "fde_engineer"])
-    p_scaffold.add_argument("--apply", action="store_true", help="Write generated files to disk")
-    p_scaffold.add_argument("--dry-run", action="store_true", help="Dry run write operations")
-    p_scaffold.add_argument("--print-pr", action="store_true", help="Print community PR markdown template")
+    p_scaffold.add_argument(
+        "--persona", default="fde_engineer", choices=["business", "fde_engineer"]
+    )
+    p_scaffold.add_argument(
+        "--apply", action="store_true", help="Write generated files to disk"
+    )
+    p_scaffold.add_argument(
+        "--dry-run", action="store_true", help="Dry run write operations"
+    )
+    p_scaffold.add_argument(
+        "--print-pr", action="store_true", help="Print community PR markdown template"
+    )
 
     # Verify command
     p_verify = subparsers.add_parser("verify", help="Check AST Hexagonal boundaries")

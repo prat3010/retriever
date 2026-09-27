@@ -61,7 +61,9 @@ class MemorySearchResult(BaseModel):
 
     node: EpisodicMemoryNode
     similarity_score: float
-    retention_score: float  # Computed dynamically via Ebbinghaus curve: R(t) = exp(-dt / S)
+    retention_score: (
+        float  # Computed dynamically via Ebbinghaus curve: R(t) = exp(-dt / S)
+    )
 
 
 class DistilledGuidance(BaseModel):

@@ -46,7 +46,9 @@ class SqlTenantLoraRepository(TenantLoraRegistryProtocol):
             artifact_uri=row.artifact_uri or "",
             rank=row.rank,
             alpha=row.alpha if row.alpha is not None else 32.0,
-            target_modules=row.target_modules if isinstance(row.target_modules, list) else [],
+            target_modules=row.target_modules
+            if isinstance(row.target_modules, list)
+            else [],
             is_active=bool(row.is_active),
             adapter_type=row.adapter_type or "llm",
             created_at=row.created_at.isoformat() if row.created_at else "",
@@ -98,7 +100,9 @@ class SqlTenantLoraRepository(TenantLoraRegistryProtocol):
                 await session.refresh(db_item)
                 return self._to_domain(db_item)
         except Exception as e:
-            logger.debug(f"SqlTenantLoraRepository: DB write skipped (fallback active): {e}")
+            logger.debug(
+                f"SqlTenantLoraRepository: DB write skipped (fallback active): {e}"
+            )
             return stored_adapter
 
     async def get_adapter(
@@ -166,13 +170,15 @@ class SqlTenantLoraRepository(TenantLoraRegistryProtocol):
 
         target = await self.get_adapter(tenant_id, adapter_id)
         if not target:
-            raise KeyError(f"LoRA adapter {adapter_id} not found for tenant {tenant_id}")
+            raise KeyError(
+                f"LoRA adapter {adapter_id} not found for tenant {tenant_id}"
+            )
 
         ad_type = target.adapter_type
         if t_id in self._memory_store:
             for k, v in self._memory_store[t_id].items():
                 if v.adapter_type == ad_type:
-                    v.is_active = (k == adapter_id)
+                    v.is_active = k == adapter_id
 
         target.is_active = True
 
@@ -200,13 +206,13 @@ class SqlTenantLoraRepository(TenantLoraRegistryProtocol):
                 )
                 await session.commit()
         except Exception as e:
-            logger.debug(f"SqlTenantLoraRepository: DB activation skipped (fallback active): {e}")
+            logger.debug(
+                f"SqlTenantLoraRepository: DB activation skipped (fallback active): {e}"
+            )
 
         return target
 
-    async def deactivate_adapter(
-        self, tenant_id: str, adapter_id: str
-    ) -> bool:
+    async def deactivate_adapter(self, tenant_id: str, adapter_id: str) -> bool:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
@@ -232,9 +238,7 @@ class SqlTenantLoraRepository(TenantLoraRegistryProtocol):
         except Exception:
             return True
 
-    async def delete_adapter(
-        self, tenant_id: str, adapter_id: str
-    ) -> bool:
+    async def delete_adapter(self, tenant_id: str, adapter_id: str) -> bool:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 

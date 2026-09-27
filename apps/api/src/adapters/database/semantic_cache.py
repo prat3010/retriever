@@ -18,7 +18,10 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         embedding_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
         async with engine.begin() as conn:
             # Set local tenant RLS context for select query safely via set_config
-            await conn.execute(text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"), {"tenant_id": tenant_id})
+            await conn.execute(
+                text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+                {"tenant_id": tenant_id},
+            )
             res = await conn.execute(
                 text(
                     """
@@ -28,20 +31,24 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
                     ORDER BY embedding <=> CAST(:embedding AS vector) LIMIT 1
                     """
                 ),
-                {"tenant_id": tenant_id, "embedding": embedding_str}
+                {"tenant_id": tenant_id, "embedding": embedding_str},
             )
             row = res.fetchone()
             if row and row[1] is not None and row[1] < 0.01:
-                cached_results_raw = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                cached_results_raw = (
+                    json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                )
                 results = []
                 for item in cached_results_raw:
-                    results.append(SearchResult(
-                        chunk_id=item["chunk_id"],
-                        document_id=item["document_id"],
-                        content=item["content"],
-                        score=item["score"],
-                        metadata=item.get("metadata", {})
-                    ))
+                    results.append(
+                        SearchResult(
+                            chunk_id=item["chunk_id"],
+                            document_id=item["document_id"],
+                            content=item["content"],
+                            score=item["score"],
+                            metadata=item.get("metadata", {}),
+                        )
+                    )
                 return results
         return None
 
@@ -55,14 +62,16 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         embedding_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
         results_serializable = []
         for r in results:
-            results_serializable.append({
-                "chunk_id": r.chunk_id,
-                "document_id": r.document_id,
-                "content": r.content,
-                "score": r.score,
-                "metadata": r.metadata
-            })
-            
+            results_serializable.append(
+                {
+                    "chunk_id": r.chunk_id,
+                    "document_id": r.document_id,
+                    "content": r.content,
+                    "score": r.score,
+                    "metadata": r.metadata,
+                }
+            )
+
         async with engine.begin() as conn:
             await conn.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             await conn.execute(
@@ -78,8 +87,8 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
                     "tenant_id": tenant_id,
                     "query_text": query_text,
                     "embedding": embedding_str,
-                    "search_results": json.dumps(results_serializable)
-                }
+                    "search_results": json.dumps(results_serializable),
+                },
             )
 
     async def purge_tenant_cache(self, tenant_id: str) -> int:
@@ -97,9 +106,10 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
         async with engine.begin() as conn:
             await conn.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             res = await conn.execute(
-                text("SELECT count(*) FROM semantic_cache WHERE tenant_id = :tenant_id AND expires_at > NOW()"),
+                text(
+                    "SELECT count(*) FROM semantic_cache WHERE tenant_id = :tenant_id AND expires_at > NOW()"
+                ),
                 {"tenant_id": tenant_id},
             )
             count = res.scalar() or 0
             return {"total_vectors": int(count)}
-

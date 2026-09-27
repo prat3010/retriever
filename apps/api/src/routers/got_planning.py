@@ -50,7 +50,9 @@ async def create_got_plan(tenantId: str, request: GoTPlanRequest) -> GoTPlanResp
     """Initialize a new Graph-of-Thoughts reasoning session for a prompt."""
     planner = get_got_planner()
     graph = await planner.create_plan(tenantId, request)
-    return GoTPlanResponse(graph=graph, message="GoT planning session initialized successfully.")
+    return GoTPlanResponse(
+        graph=graph, message="GoT planning session initialized successfully."
+    )
 
 
 @router.get(
@@ -75,13 +77,17 @@ async def get_got_plan(tenantId: str, planId: str) -> GoTGraph:
     response_model=GoTGraph,
     status_code=status.HTTP_200_OK,
 )
-async def step_got_plan(tenantId: str, planId: str, request: GoTStepRequest) -> GoTGraph:
+async def step_got_plan(
+    tenantId: str, planId: str, request: GoTStepRequest
+) -> GoTGraph:
     """Execute a single graph transformation step (generate, refine, score, prune)."""
     planner = get_got_planner()
     try:
         return await planner.step_plan(tenantId, planId, request)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.post(
@@ -103,13 +109,17 @@ async def execute_got_plan(tenantId: str, planId: str) -> GoTGraph:
     response_model=GoTGraph,
     status_code=status.HTTP_200_OK,
 )
-async def aggregate_got_thoughts(tenantId: str, planId: str, request: GoTAggregateRequest) -> GoTGraph:
+async def aggregate_got_thoughts(
+    tenantId: str, planId: str, request: GoTAggregateRequest
+) -> GoTGraph:
     """Combine multiple independent thought branches into a unified synthesis vertex."""
     planner = get_got_planner()
     try:
         return await planner.aggregate_thoughts(tenantId, planId, request)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.get(
@@ -128,13 +138,17 @@ async def get_hierarchical_memory(tenantId: str) -> HierarchicalMemoryView:
     response_model=DistillationResult,
     status_code=status.HTTP_200_OK,
 )
-async def distill_got_graph(tenantId: str, request: DistillationRequest) -> DistillationResult:
+async def distill_got_graph(
+    tenantId: str, request: DistillationRequest
+) -> DistillationResult:
     """Contract and distill a completed GoT graph into long-term hierarchical memory."""
     planner = get_got_planner()
     try:
         return await planner.distill_graph(tenantId, request)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.post(

@@ -105,10 +105,16 @@ async def test_router_fallback_on_provider_unavailable() -> None:
     primary.generate.side_effect = ProviderUnavailableError("timeout")
 
     fallback = AsyncMock()
-    fallback.generate.return_value = InferenceResponse(content="fallback ok", usage=Usage())
+    fallback.generate.return_value = InferenceResponse(
+        content="fallback ok", usage=Usage()
+    )
 
     router = RoutingLLMProvider(openai_adapter=primary, anthropic_adapter=fallback)
-    config = {"provider_name": "openai", "fallback_provider": "anthropic", "retry_attempts": 0}
+    config = {
+        "provider_name": "openai",
+        "fallback_provider": "anthropic",
+        "retry_attempts": 0,
+    }
 
     result = await router.generate(_make_request(), config)
 
@@ -127,7 +133,12 @@ async def test_router_retries_before_fallback() -> None:
     fallback.generate.return_value = InferenceResponse(content="ok", usage=Usage())
 
     router = RoutingLLMProvider(openai_adapter=primary, anthropic_adapter=fallback)
-    config = {"provider_name": "openai", "fallback_provider": "anthropic", "retry_attempts": 2, "retry_delay_ms": 1}
+    config = {
+        "provider_name": "openai",
+        "fallback_provider": "anthropic",
+        "retry_attempts": 2,
+        "retry_delay_ms": 1,
+    }
 
     result = await router.generate(_make_request(), config)
 
@@ -148,7 +159,12 @@ async def test_router_all_providers_unavailable() -> None:
     fallback.generate.side_effect = ProviderUnavailableError("also down")
 
     router = RoutingLLMProvider(openai_adapter=primary, anthropic_adapter=fallback)
-    config = {"provider_name": "openai", "fallback_provider": "anthropic", "retry_attempts": 0, "retry_delay_ms": 1}
+    config = {
+        "provider_name": "openai",
+        "fallback_provider": "anthropic",
+        "retry_attempts": 0,
+        "retry_delay_ms": 1,
+    }
 
     with pytest.raises(ProviderUnavailableError, match="All providers unavailable"):
         await router.generate(_make_request(), config)
@@ -204,7 +220,11 @@ async def test_router_stream_fallback() -> None:
     fallback.generate_stream = _fallback_stream
 
     router = RoutingLLMProvider(openai_adapter=primary, anthropic_adapter=fallback)
-    config = {"provider_name": "openai", "fallback_provider": "anthropic", "retry_attempts": 0}
+    config = {
+        "provider_name": "openai",
+        "fallback_provider": "anthropic",
+        "retry_attempts": 0,
+    }
 
     events = [e async for e in router.generate_stream(_make_request(), config)]
 
@@ -232,7 +252,11 @@ async def test_router_stream_all_unavailable() -> None:
     fallback.generate_stream = _failing_stream2
 
     router = RoutingLLMProvider(openai_adapter=primary, anthropic_adapter=fallback)
-    config = {"provider_name": "openai", "fallback_provider": "anthropic", "retry_attempts": 0}
+    config = {
+        "provider_name": "openai",
+        "fallback_provider": "anthropic",
+        "retry_attempts": 0,
+    }
 
     with pytest.raises(ProviderUnavailableError):
         async for _ in router.generate_stream(_make_request(), config):

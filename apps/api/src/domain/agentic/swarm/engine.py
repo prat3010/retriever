@@ -106,10 +106,19 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         # Build standard dialectic cross-examination edges
         edges = [
             (SwarmAgentRole.PLANNER.value, SwarmAgentRole.SKEPTIC_CRITIC.value),
-            (SwarmAgentRole.SKEPTIC_CRITIC.value, SwarmAgentRole.CODE_SYNTHESIZER.value),
-            (SwarmAgentRole.CODE_SYNTHESIZER.value, SwarmAgentRole.FORENSIC_AUDITOR.value),
+            (
+                SwarmAgentRole.SKEPTIC_CRITIC.value,
+                SwarmAgentRole.CODE_SYNTHESIZER.value,
+            ),
+            (
+                SwarmAgentRole.CODE_SYNTHESIZER.value,
+                SwarmAgentRole.FORENSIC_AUDITOR.value,
+            ),
             (SwarmAgentRole.FORENSIC_AUDITOR.value, SwarmAgentRole.PLANNER.value),
-            (SwarmAgentRole.SKEPTIC_CRITIC.value, SwarmAgentRole.FORENSIC_AUDITOR.value),
+            (
+                SwarmAgentRole.SKEPTIC_CRITIC.value,
+                SwarmAgentRole.FORENSIC_AUDITOR.value,
+            ),
         ]
         active_set = {r.value for r in active_roles}
         for u, v in edges:
@@ -165,14 +174,18 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         self._tenant_stats[tenant_id]["total_rounds"] += rounds_completed
         self._tenant_stats[tenant_id]["pruned_claims"] += pruned_count
 
-    async def execute_debate(self, request: SwarmDebateRequest) -> QuorumConsensusResult:
+    async def execute_debate(
+        self, request: SwarmDebateRequest
+    ) -> QuorumConsensusResult:
         """Run full multi-round dialectic debate synchronously and return quorum consensus result."""
         events: list[SwarmDebateEvent] = []
         async for event in self.stream_debate(request):
             events.append(event)
 
         # The final event carries the consensus result
-        final_event = next((e for e in reversed(events) if e.event_type == "consensus_reached"), None)
+        final_event = next(
+            (e for e in reversed(events) if e.event_type == "consensus_reached"), None
+        )
         if final_event and "result" in final_event.data:
             return QuorumConsensusResult.model_validate(final_event.data["result"])
 
@@ -208,7 +221,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                     tenant_id=request.tenant_id, query=request.prompt, limit=2
                 )
                 if guidance and guidance.guidance_prompt:
-                    memory_context = f"\n[Distilled Experience]: {guidance.guidance_prompt}"
+                    memory_context = (
+                        f"\n[Distilled Experience]: {guidance.guidance_prompt}"
+                    )
             except Exception as ex:
                 logger.warning(f"Swarm memory priming lookup skipped: {ex}")
 
@@ -271,8 +286,14 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                 for tgt in topology.successors(role.value)
                 if tgt in [r.value for r in roles]
             ]
-            primary_target = peer_targets[0] if peer_targets else (
-                SwarmAgentRole.PLANNER if role != SwarmAgentRole.PLANNER else SwarmAgentRole.SKEPTIC_CRITIC
+            primary_target = (
+                peer_targets[0]
+                if peer_targets
+                else (
+                    SwarmAgentRole.PLANNER
+                    if role != SwarmAgentRole.PLANNER
+                    else SwarmAgentRole.SKEPTIC_CRITIC
+                )
             )
 
             critique_turn, pruned = await self._generate_critique_turn(
@@ -357,7 +378,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
             weight = profile.base_weight if profile else 1.0
 
             # Evaluate Candidate A
-            conf_a = self._compute_agent_voting_confidence(role, candidate_a, round_3_turns)
+            conf_a = self._compute_agent_voting_confidence(
+                role, candidate_a, round_3_turns
+            )
             ballot_a = AgentBallot(
                 agent_role=role,
                 candidate_id=candidate_a.resolution_id,
@@ -376,21 +399,39 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
             )
 
         # Compute weighted quorum score
-        total_weight = sum(self._profiles.get(r, SwarmAgentProfile(role=r, display_name=r.value, avatar_icon="", mandate="")).base_weight for r in roles)
-        sum_weighted_score_a = sum(b.confidence * b.weight for b in ballots if b.candidate_id == candidate_a.resolution_id)
+        total_weight = sum(
+            self._profiles.get(
+                r,
+                SwarmAgentProfile(
+                    role=r, display_name=r.value, avatar_icon="", mandate=""
+                ),
+            ).base_weight
+            for r in roles
+        )
+        sum_weighted_score_a = sum(
+            b.confidence * b.weight
+            for b in ballots
+            if b.candidate_id == candidate_a.resolution_id
+        )
         weighted_score_a = round(sum_weighted_score_a / max(total_weight, 0.001), 4)
 
         candidate_a.weighted_score = weighted_score_a
         candidate_a.quorum_met = weighted_score_a >= request.quorum_threshold
         candidate_a.supporting_roles = [
-            b.agent_role for b in ballots if b.candidate_id == candidate_a.resolution_id and b.confidence >= 0.70
+            b.agent_role
+            for b in ballots
+            if b.candidate_id == candidate_a.resolution_id and b.confidence >= 0.70
         ]
 
         # Alternative candidate score calculation
         candidate_b.weighted_score = round(max(0.1, 1.0 - weighted_score_a * 0.8), 4)
         candidate_b.quorum_met = candidate_b.weighted_score >= request.quorum_threshold
 
-        winning_cand = candidate_a if candidate_a.weighted_score >= candidate_b.weighted_score else candidate_b
+        winning_cand = (
+            candidate_a
+            if candidate_a.weighted_score >= candidate_b.weighted_score
+            else candidate_b
+        )
         quorum_reached = winning_cand.quorum_met
 
         round_3 = DebateRound(
@@ -431,9 +472,14 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         )
 
         # Consolidate winning debate into cognitive memory if available (M108)
-        if self.memory_engine and quorum_reached and hasattr(self.memory_engine, "consolidate_trace"):
+        if (
+            self.memory_engine
+            and quorum_reached
+            and hasattr(self.memory_engine, "consolidate_trace")
+        ):
             try:
                 from src.domain.abstractions.memory import ConsolidationRequest
+
                 trace_turns = [
                     {
                         "step_index": idx,
@@ -441,7 +487,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                         "tools_called": [turn.agent_role.value],
                         "observation": f"Confidence: {turn.confidence_score}",
                     }
-                    for idx, turn in enumerate(round_1_turns + round_2_turns + round_3_turns)
+                    for idx, turn in enumerate(
+                        round_1_turns + round_2_turns + round_3_turns
+                    )
                 ]
                 await self.memory_engine.consolidate_trace(
                     ConsolidationRequest(
@@ -454,7 +502,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                     )
                 )
             except Exception as ex:
-                logger.warning(f"Swarm cognitive memory auto-consolidation skipped: {ex}")
+                logger.warning(
+                    f"Swarm cognitive memory auto-consolidation skipped: {ex}"
+                )
 
         yield SwarmDebateEvent(
             event_type="consensus_reached",
@@ -481,7 +531,11 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                 )
 
                 role_profile = self._profiles.get(role, DEFAULT_ROLE_PROFILES.get(role))
-                mandate = role_profile.mandate if role_profile else "Provide specialized domain reasoning."
+                mandate = (
+                    role_profile.mandate
+                    if role_profile
+                    else "Provide specialized domain reasoning."
+                )
                 system_prompt = (
                     f"You are the specialized AI persona '{role.value.replace('_', ' ').title()}' in a dialectic agent debate swarm.\n"
                     f"Your Mandate: {mandate}\n"
@@ -528,8 +582,15 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                                     claim_id=f"clm_{uuid4().hex[:8]}",
                                     agent_role=role,
                                     statement=str(c_raw["statement"]),
-                                    evidence_basis=[str(e) for e in c_raw.get("evidence_basis", ["Analytical synthesis"])],
-                                    confidence_score=float(c_raw.get("confidence_score", 0.90)),
+                                    evidence_basis=[
+                                        str(e)
+                                        for e in c_raw.get(
+                                            "evidence_basis", ["Analytical synthesis"]
+                                        )
+                                    ],
+                                    confidence_score=float(
+                                        c_raw.get("confidence_score", 0.90)
+                                    ),
                                 )
                             )
                     if claims_list:
@@ -559,7 +620,10 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                     claim_id=f"clm_{uuid4().hex[:8]}",
                     agent_role=role,
                     statement="Task must execute in 3 dependency-ordered phases to avoid race conditions.",
-                    evidence_basis=["Structural workflow DAG best practices", "Idempotency specs"],
+                    evidence_basis=[
+                        "Structural workflow DAG best practices",
+                        "Idempotency specs",
+                    ],
                     confidence_score=0.92,
                 ),
                 CandidateClaim(
@@ -583,7 +647,10 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                     claim_id=f"clm_{uuid4().hex[:8]}",
                     agent_role=role,
                     statement="Missing credentials or external services must trigger explicit fail-fast errors.",
-                    evidence_basis=["Zero-toy architectural invariant", "Security specifications"],
+                    evidence_basis=[
+                        "Zero-toy architectural invariant",
+                        "Security specifications",
+                    ],
                     confidence_score=0.96,
                 ),
                 CandidateClaim(
@@ -666,7 +733,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
     ) -> tuple[DebateTurn, list[CandidateClaim]]:
         """Formulate cross-examination critique targeting peer claims and prune hallucinations."""
         pruned: list[CandidateClaim] = []
-        target_turn = next((t for t in round_1_turns if t.agent_role == target_role), None)
+        target_turn = next(
+            (t for t in round_1_turns if t.agent_role == target_role), None
+        )
         target_snippet = target_turn.content[:100] if target_turn else "peer arguments"
 
         if self.llm and hasattr(self.llm, "generate"):
@@ -677,7 +746,11 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                 )
 
                 role_profile = self._profiles.get(role, DEFAULT_ROLE_PROFILES.get(role))
-                mandate = role_profile.mandate if role_profile else "Provide specialized dialectic critique."
+                mandate = (
+                    role_profile.mandate
+                    if role_profile
+                    else "Provide specialized dialectic critique."
+                )
                 system_prompt = (
                     f"You are '{role.value.replace('_', ' ').title()}' cross-examining {target_role.value.replace('_', ' ').title()} in a dialectic swarm debate.\n"
                     f"Your Mandate: {mandate}\n"
@@ -713,12 +786,18 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                     raw = raw.strip("`").strip()
                 parsed = json.loads(raw)
                 if isinstance(parsed, dict) and "critique" in parsed:
-                    pruned_stmts = [str(s).lower() for s in parsed.get("pruned_claim_statements", [])]
+                    pruned_stmts = [
+                        str(s).lower()
+                        for s in parsed.get("pruned_claim_statements", [])
+                    ]
                     for claim in candidate_claims:
                         if any(ps in claim.statement.lower() for ps in pruned_stmts):
                             claim.is_audited = True
                             claim.is_verified = False
-                            claim.rejection_reason = parsed.get("prune_rationale", "Rejected during dialectic peer review.")
+                            claim.rejection_reason = parsed.get(
+                                "prune_rationale",
+                                "Rejected during dialectic peer review.",
+                            )
                             pruned.append(claim)
 
                     return (
@@ -730,7 +809,9 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
                             content=str(parsed["critique"]),
                             claims_proposed=[],
                             target_role=target_role,
-                            confidence_score=float(parsed.get("confidence_score", 0.90)),
+                            confidence_score=float(
+                                parsed.get("confidence_score", 0.90)
+                            ),
                             timestamp=time.time(),
                         ),
                         pruned,
@@ -741,7 +822,10 @@ class MultiAgentSwarmQuorumEngine(SwarmDebateProtocol):
         if role == SwarmAgentRole.FORENSIC_AUDITOR:
             # Audit candidate claims: identify any unsubstantiated assertion
             for claim in candidate_claims:
-                if "sub-50ms" in claim.statement or "minority agent capture" in claim.statement:
+                if (
+                    "sub-50ms" in claim.statement
+                    or "minority agent capture" in claim.statement
+                ):
                     # Forensic challenge: require empirical verification
                     claim.is_audited = True
                     # Let's prune extreme ungrounded claims

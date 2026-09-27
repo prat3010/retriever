@@ -51,7 +51,8 @@ class TeiRerankerAdapter(RerankerProvider):
 
         target_url = (
             self.endpoint_url
-            if self.endpoint_url.endswith("/rerank") or self.endpoint_url.endswith("/predict")
+            if self.endpoint_url.endswith("/rerank")
+            or self.endpoint_url.endswith("/predict")
             else f"{self.endpoint_url}/rerank"
         )
 
@@ -82,6 +83,9 @@ class TeiRerankerAdapter(RerankerProvider):
             )
             try:
                 from src.domain.retrieval.colbert_engine import score_colbert_maxsim
-                return score_colbert_maxsim(query, candidates, top_n=top_n, threshold=threshold)
+
+                return score_colbert_maxsim(
+                    query, candidates, top_n=top_n, threshold=threshold
+                )
             except Exception:
                 return candidates[:top_n]

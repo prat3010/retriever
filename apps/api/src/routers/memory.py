@@ -20,13 +20,26 @@ router = APIRouter(prefix="/v1", tags=["Cognitive Memory"])
 
 
 class GuidanceQueryRequest(BaseModel):
-    query: str = Field(..., min_length=1, description="Prompt to retrieve relevant past experience guidance for")
-    limit: int = Field(default=3, ge=1, le=10, description="Max memory nodes to retrieve")
-    min_similarity: float = Field(default=0.65, ge=0.0, le=1.0, description="Minimum cosine similarity threshold")
+    query: str = Field(
+        ...,
+        min_length=1,
+        description="Prompt to retrieve relevant past experience guidance for",
+    )
+    limit: int = Field(
+        default=3, ge=1, le=10, description="Max memory nodes to retrieve"
+    )
+    min_similarity: float = Field(
+        default=0.65, ge=0.0, le=1.0, description="Minimum cosine similarity threshold"
+    )
 
 
 class PruneRequest(BaseModel):
-    min_retention: float = Field(default=0.15, ge=0.01, le=1.0, description="Retention threshold below which decayed memories are pruned")
+    min_retention: float = Field(
+        default=0.15,
+        ge=0.01,
+        le=1.0,
+        description="Retention threshold below which decayed memories are pruned",
+    )
 
 
 @router.get(
@@ -46,7 +59,9 @@ async def get_memory_stats(tenantId: str) -> MemoryStats:
     """Retrieve aggregate cognitive memory statistics for a tenant."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
     return await memory_engine.get_stats(tenantId)
 
 
@@ -65,15 +80,27 @@ async def get_memory_stats(tenantId: str) -> MemoryStats:
 )
 async def list_memory_nodes(
     tenantId: str,
-    type: MemoryType | None = Query(default=None, description="Optional filter by MemoryType (episodic, semantic, procedural)"),
-    query: str | None = Query(default=None, description="Optional search term matching query or distilled insight"),
-    limit: int = Query(default=50, ge=1, le=100, description="Maximum number of nodes to return"),
+    type: MemoryType | None = Query(
+        default=None,
+        description="Optional filter by MemoryType (episodic, semantic, procedural)",
+    ),
+    query: str | None = Query(
+        default=None,
+        description="Optional search term matching query or distilled insight",
+    ),
+    limit: int = Query(
+        default=50, ge=1, le=100, description="Maximum number of nodes to return"
+    ),
 ) -> list[EpisodicMemoryNode]:
     """List cognitive memory nodes for a tenant with optional filtering."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
-    return await memory_engine.list_memories(tenant_id=tenantId, memory_type=type, query=query, limit=limit)
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
+    return await memory_engine.list_memories(
+        tenant_id=tenantId, memory_type=type, query=query, limit=limit
+    )
 
 
 @router.post(
@@ -96,7 +123,9 @@ async def retrieve_experience_guidance(
     """Test and simulate experience distillation guidance for an incoming query."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
     return await memory_engine.retrieve_guidance(
         tenant_id=tenantId,
         query=request.query,
@@ -125,7 +154,9 @@ async def consolidate_experience_trace(
     """Consolidate a ReAct execution trace into an episodic memory node."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
     return await memory_engine.consolidate_trace(tenant_id=tenantId, request=request)
 
 
@@ -147,10 +178,14 @@ async def delete_memory_node(
     """Delete a specific cognitive memory node."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
     deleted = await memory_engine.delete_memory(tenant_id=tenantId, node_id=nodeId)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Memory node '{nodeId}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Memory node '{nodeId}' not found."
+        )
     return {"deleted": True, "node_id": nodeId}
 
 
@@ -172,6 +207,10 @@ async def prune_decayed_memories(
     """Prune decayed memories whose Ebbinghaus retention score has decayed below threshold."""
     memory_engine = getattr(container, "cognitive_memory", None)
     if not memory_engine:
-        raise HTTPException(status_code=503, detail="Cognitive memory engine is not initialized.")
-    pruned_count = await memory_engine.prune_memories(tenant_id=tenantId, min_retention=request.min_retention)
+        raise HTTPException(
+            status_code=503, detail="Cognitive memory engine is not initialized."
+        )
+    pruned_count = await memory_engine.prune_memories(
+        tenant_id=tenantId, min_retention=request.min_retention
+    )
     return {"pruned_count": pruned_count, "min_retention": request.min_retention}

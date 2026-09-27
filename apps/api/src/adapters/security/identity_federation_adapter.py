@@ -55,9 +55,7 @@ class IdentityFederationAdapter(IdentityFederationPort):
                 self._groups[tenant_id][g_id] = ScimGroup(
                     id=g_id,
                     displayName=g_name,
-                    members=[
-                        ScimGroupMember(value=m, display=m) for m in g_members
-                    ],
+                    members=[ScimGroupMember(value=m, display=m) for m in g_members],
                     meta=ScimMeta(
                         resourceType="Group",
                         created=now,
@@ -93,11 +91,11 @@ class IdentityFederationAdapter(IdentityFederationPort):
             f'entityID="{sp_entity_id}">\n'
             '  <md:SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" '
             'protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">\n'
-            '    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>\n'
+            "    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>\n"
             f'    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" '
             f'Location="{acs_url}" index="1" isDefault="true"/>\n'
-            '  </md:SPSSODescriptor>\n'
-            '</md:EntityDescriptor>'
+            "  </md:SPSSODescriptor>\n"
+            "</md:EntityDescriptor>"
         )
         return metadata_xml
 
@@ -111,7 +109,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
         si_node = sig_node.find("ds:SignedInfo", ds_ns)
         sig_val_node = sig_node.find("ds:SignatureValue", ds_ns)
         if si_node is None or sig_val_node is None or not sig_val_node.text:
-            raise ValueError("SAML signature is malformed: missing SignedInfo or SignatureValue")
+            raise ValueError(
+                "SAML signature is malformed: missing SignedInfo or SignatureValue"
+            )
 
         # 1. Load Certificate
         clean_cert = cert_pem_or_der.strip()
@@ -136,7 +136,11 @@ class IdentityFederationAdapter(IdentityFederationPort):
         sig_bytes = base64.b64decode(sig_val_node.text.strip())
 
         sig_method_node = si_node.find("ds:SignatureMethod", ds_ns)
-        sig_algo = sig_method_node.get("Algorithm", "").lower() if sig_method_node is not None else ""
+        sig_algo = (
+            sig_method_node.get("Algorithm", "").lower()
+            if sig_method_node is not None
+            else ""
+        )
         if "sha1" in sig_algo:
             hash_algo = hashes.SHA1()
         elif "sha384" in sig_algo:
@@ -154,7 +158,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
                 hash_algo,
             )
         except Exception as err:
-            raise ValueError(f"SAML XMLDSig signature verification failed: {err}") from err
+            raise ValueError(
+                f"SAML XMLDSig signature verification failed: {err}"
+            ) from err
 
         # 3. Verify Reference digest if present
         ref_node = si_node.find("ds:Reference", ds_ns)
@@ -225,7 +231,11 @@ class IdentityFederationAdapter(IdentityFederationPort):
 
         # Extract Issuer
         issuer_node = root.find(".//saml:Issuer", ns)
-        issuer = issuer_node.text.strip() if issuer_node is not None and issuer_node.text else ""
+        issuer = (
+            issuer_node.text.strip()
+            if issuer_node is not None and issuer_node.text
+            else ""
+        )
         if config.idp_entity_id and issuer and issuer != config.idp_entity_id:
             raise ValueError(
                 f"SAML Issuer mismatch: expected '{config.idp_entity_id}', got '{issuer}'"
@@ -246,7 +256,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
             if not_on_or_after:
                 valid_until = not_on_or_after
                 try:
-                    expiry_dt = datetime.fromisoformat(not_on_or_after.replace("Z", "+00:00"))
+                    expiry_dt = datetime.fromisoformat(
+                        not_on_or_after.replace("Z", "+00:00")
+                    )
                     if now_dt > expiry_dt:
                         raise ValueError(f"SAML Assertion expired at {not_on_or_after}")
                 except ValueError as ve:
@@ -259,7 +271,11 @@ class IdentityFederationAdapter(IdentityFederationPort):
         attributes: dict[str, Any] = {}
         for attr_node in root.findall(".//saml:AttributeStatement/saml:Attribute", ns):
             attr_name = attr_node.get("Name", "")
-            values = [v.text.strip() for v in attr_node.findall("saml:AttributeValue", ns) if v.text]
+            values = [
+                v.text.strip()
+                for v in attr_node.findall("saml:AttributeValue", ns)
+                if v.text
+            ]
             if values:
                 attributes[attr_name] = values if len(values) > 1 else values[0]
 
@@ -391,7 +407,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
 
             if op_type in ("replace", "add"):
                 if path == "active" or (isinstance(val, dict) and "active" in val):
-                    user.active = bool(val.get("active") if isinstance(val, dict) else val)
+                    user.active = bool(
+                        val.get("active") if isinstance(val, dict) else val
+                    )
                 elif path == "displayName":
                     user.displayName = str(val)
                 elif path == "userName":
@@ -424,7 +442,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
             Resources=page_groups,
         )
 
-    async def create_scim_group(self, tenant_id: str, group: dict[str, Any]) -> ScimGroup:
+    async def create_scim_group(
+        self, tenant_id: str, group: dict[str, Any]
+    ) -> ScimGroup:
         self._ensure_tenant_storage(tenant_id)
         group_id = group.get("id") or f"grp_{uuid.uuid4().hex[:10]}"
         display_name = group.get("displayName", "Unnamed Group")
@@ -482,7 +502,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
                         group.members.append(
                             ScimGroupMember(
                                 value=m_val,
-                                display=item.get("display") if isinstance(item, dict) else None,
+                                display=item.get("display")
+                                if isinstance(item, dict)
+                                else None,
                             )
                         )
             elif op_type == "remove":
@@ -490,7 +512,9 @@ class IdentityFederationAdapter(IdentityFederationPort):
                     (item.get("value") if isinstance(item, dict) else str(item))
                     for item in val
                 }
-                group.members = [m for m in group.members if m.value not in remove_values]
+                group.members = [
+                    m for m in group.members if m.value not in remove_values
+                ]
 
         group.meta.lastModified = now
         self._groups[tenant_id][group_id] = group

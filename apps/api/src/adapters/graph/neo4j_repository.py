@@ -95,8 +95,16 @@ class Neo4jGraphRepository(BaseGraphRepository):
                 "subject": t.subject.strip(),
                 "predicate": t.predicate.strip().upper(),
                 "object": t.object.strip(),
-                "chunk_id": getattr(t, "chunk_id", None) or (t.metadata.get("chunk_id") if getattr(t, "metadata", None) else None),
-                "document_id": getattr(t, "document_id", None) or (t.metadata.get("document_id") if getattr(t, "metadata", None) else None),
+                "chunk_id": getattr(t, "chunk_id", None)
+                or (
+                    t.metadata.get("chunk_id") if getattr(t, "metadata", None) else None
+                ),
+                "document_id": getattr(t, "document_id", None)
+                or (
+                    t.metadata.get("document_id")
+                    if getattr(t, "metadata", None)
+                    else None
+                ),
                 "confidence": getattr(t, "confidence", 1.0),
             }
             for t in triples
@@ -154,7 +162,9 @@ class Neo4jGraphRepository(BaseGraphRepository):
                 connected_entities=sorted(connected),
             )
         except Exception as err:
-            logger.error(f"Neo4j search_triples failed ({err}). Delegating to fallback.")
+            logger.error(
+                f"Neo4j search_triples failed ({err}). Delegating to fallback."
+            )
             return await self.fallback_repo.search_triples(tenant_id, entity, max_hops)
 
     async def get_graph_summary(self, tenant_id: str) -> dict[str, Any]:
@@ -179,14 +189,18 @@ class Neo4jGraphRepository(BaseGraphRepository):
                 "neo4j_status": "online",
             }
         except Exception as err:
-            logger.error(f"Neo4j get_graph_summary failed ({err}). Delegating to fallback.")
+            logger.error(
+                f"Neo4j get_graph_summary failed ({err}). Delegating to fallback."
+            )
             return await self.fallback_repo.get_graph_summary(tenant_id)
 
     async def delete_document_triples(self, tenant_id: str, document_id: str) -> int:
         """Remove document triples from Neo4j or fallback to PostgreSQL."""
         driver = await self._get_driver()
         if not driver:
-            return await self.fallback_repo.delete_document_triples(tenant_id, document_id)
+            return await self.fallback_repo.delete_document_triples(
+                tenant_id, document_id
+            )
 
         try:
             async with driver.session() as session:
@@ -201,8 +215,12 @@ class Neo4jGraphRepository(BaseGraphRepository):
             await self.fallback_repo.delete_document_triples(tenant_id, document_id)
             return deleted
         except Exception as err:
-            logger.error(f"Neo4j delete_document_triples failed ({err}). Delegating to fallback.")
-            return await self.fallback_repo.delete_document_triples(tenant_id, document_id)
+            logger.error(
+                f"Neo4j delete_document_triples failed ({err}). Delegating to fallback."
+            )
+            return await self.fallback_repo.delete_document_triples(
+                tenant_id, document_id
+            )
 
     async def delete_triple(self, tenant_id: str, triple_id: str) -> bool:
         """Delete a single triple from Neo4j or fallback to PostgreSQL."""
@@ -223,7 +241,9 @@ class Neo4jGraphRepository(BaseGraphRepository):
             logger.error(f"Neo4j delete_triple failed ({err}). Delegating to fallback.")
             return await self.fallback_repo.delete_triple(tenant_id, triple_id)
 
-    async def get_all_triples(self, tenant_id: str, limit: int = 1000) -> list[EntityTriple]:
+    async def get_all_triples(
+        self, tenant_id: str, limit: int = 1000
+    ) -> list[EntityTriple]:
         """Fetch all entity relationship triples for a tenant."""
         driver = await self._get_driver()
         if not driver:
@@ -255,7 +275,9 @@ class Neo4jGraphRepository(BaseGraphRepository):
                     )
             return triples
         except Exception as err:
-            logger.error(f"Neo4j get_all_triples failed ({err}). Delegating to fallback.")
+            logger.error(
+                f"Neo4j get_all_triples failed ({err}). Delegating to fallback."
+            )
             return await self.fallback_repo.get_all_triples(tenant_id, limit)
 
     async def close(self):
@@ -263,4 +285,3 @@ class Neo4jGraphRepository(BaseGraphRepository):
         if self._driver:
             await self._driver.close()
             self._driver = None
-

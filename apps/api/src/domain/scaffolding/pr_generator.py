@@ -23,13 +23,19 @@ class PullRequestGenerator:
     @classmethod
     def generate_pr_markdown(cls, plan: "ScaffoldingPlan") -> str:
         """Generate comprehensive GitHub Pull Request markdown text."""
-        files_list = "\n".join([f"- `{f.rel_path}` ({f.module_type.value})" for f in plan.scaffolded_files])
+        files_list = "\n".join(
+            [f"- `{f.rel_path}` ({f.module_type.value})" for f in plan.scaffolded_files]
+        )
 
         hooks_summary = []
         if plan.manifest.integration_hooks.api_router:
-            hooks_summary.append(f"- **FastAPI Route Mount:** `/v1/plugins/{plan.plugin_id}/*`")
+            hooks_summary.append(
+                f"- **FastAPI Route Mount:** `/v1/plugins/{plan.plugin_id}/*`"
+            )
         if plan.manifest.integration_hooks.battery_service:
-            hooks_summary.append(f"- **Battery Service Registration:** Platform Battery `{plan.plugin_id}`")
+            hooks_summary.append(
+                f"- **Battery Service Registration:** Platform Battery `{plan.plugin_id}`"
+            )
         if plan.manifest.integration_hooks.agentic_tool:
             hooks_summary.append(
                 f"- **Agentic Copilot Tool:** `{plan.manifest.integration_hooks.agentic_tool.name}`"
@@ -39,7 +45,9 @@ class PullRequestGenerator:
                 f"- **Durable Workflow Step:** `{plan.manifest.integration_hooks.workflow_step}`"
             )
 
-        hooks_text = "\n".join(hooks_summary) if hooks_summary else "- Standalone Domain Service"
+        hooks_text = (
+            "\n".join(hooks_summary) if hooks_summary else "- Standalone Domain Service"
+        )
 
         return f"""# 🚀 [Plugin Contribution] {plan.display_name} (`{plan.plugin_id}`)
 

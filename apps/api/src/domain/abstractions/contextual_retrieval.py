@@ -3,6 +3,7 @@
 Hexagonal boundary rule: Only standard library modules and domain abstractions allowed.
 Zero infrastructure or external framework imports.
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any

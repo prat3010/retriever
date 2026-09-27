@@ -8,7 +8,10 @@ class CompressionRequest(BaseModel):
 
     text: str = Field(..., description="Raw text context to be compressed")
     compression_rate: float = Field(
-        default=0.5, ge=0.1, le=0.9, description="Target ratio of text to retain (0.1 to 0.9)"
+        default=0.5,
+        ge=0.1,
+        le=0.9,
+        description="Target ratio of text to retain (0.1 to 0.9)",
     )
 
 

@@ -176,7 +176,9 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
         self.anthropic_adapter = anthropic_adapter
         self.serverless_gpu_client = serverless_gpu_client
         self.tenant_lora_repo = tenant_lora_repo
-        self._cooldowns: dict[str, float] = {}  # model_id -> monotonic failure timestamp
+        self._cooldowns: dict[
+            str, float
+        ] = {}  # model_id -> monotonic failure timestamp
         self._models_catalog = {m.model_id: m for m in CATALOG_MODELS}
 
     def list_available_models(self) -> list[GatewayModelInfo]:
@@ -246,7 +248,11 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
             return "gemini"
         if "claude" in model.lower():
             return "anthropic"
-        if "qwen" in model.lower() or "ollama" in model.lower() or "nomic" in model.lower():
+        if (
+            "qwen" in model.lower()
+            or "ollama" in model.lower()
+            or "nomic" in model.lower()
+        ):
             return "ollama"
         if "gpt" in model.lower():
             return "openai"
@@ -262,22 +268,34 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
         cfg["provider_name"] = provider
 
         if provider == "gemini":
-            cfg["api_key"] = os.environ.get("GEMINI_API_KEY", "") or cfg.get("api_key", "")
+            cfg["api_key"] = os.environ.get("GEMINI_API_KEY", "") or cfg.get(
+                "api_key", ""
+            )
             cfg["base_url"] = "https://generativelanguage.googleapis.com/v1beta/openai/"
             if cfg["model"].startswith("gemini/"):
                 cfg["model"] = cfg["model"].split("gemini/", 1)[1]
         elif provider == "ollama":
             cfg["api_key"] = "ollama"
-            base_ollama = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+            base_ollama = os.environ.get(
+                "OLLAMA_BASE_URL", "http://localhost:11434"
+            ).rstrip("/")
             cfg["base_url"] = f"{base_ollama}/v1"
             if cfg["model"].startswith("ollama/"):
                 cfg["model"] = cfg["model"].split("ollama/", 1)[1]
-            if cfg["model"] in ("qwen2.5:14b", "llama3.2:3b", "qwen2.5", "llama3.2", "meta-llama/llama-3.3-70b-instruct"):
+            if cfg["model"] in (
+                "qwen2.5:14b",
+                "llama3.2:3b",
+                "qwen2.5",
+                "llama3.2",
+                "meta-llama/llama-3.3-70b-instruct",
+            ):
                 cfg["model"] = "qwen2.5:1.5b"
         elif provider == "openai":
             cfg["api_key"] = cfg.get("api_key") or os.environ.get("OPENAI_API_KEY", "")
             if os.environ.get("OPENAI_BASE_URL"):
-                cfg["base_url"] = cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
+                cfg["base_url"] = cfg.get("base_url") or os.environ.get(
+                    "OPENAI_BASE_URL"
+                )
         return provider, cfg
 
     async def _execute_generate(
@@ -307,7 +325,11 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
 
             # Format messages for LiteLLM
             messages = [
-                {"role": m.role, "content": m.content, **({"name": m.name} if m.name else {})}
+                {
+                    "role": m.role,
+                    "content": m.content,
+                    **({"name": m.name} if m.name else {}),
+                }
                 for m in request.messages
             ]
             kwargs: dict[str, Any] = {
@@ -328,6 +350,7 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
             content = res.choices[0].message.content or ""
             usage = res.usage
             from src.domain.abstractions.inference import Usage
+
             u = Usage(
                 input_tokens=getattr(usage, "prompt_tokens", 0) or 0,
                 output_tokens=getattr(usage, "completion_tokens", 0) or 0,
@@ -344,7 +367,9 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                 return await self.anthropic_adapter.generate(request, cfg)
             if self.openai_adapter:
                 return await self.openai_adapter.generate(request, cfg)
-            raise ProviderUnavailableError(f"Model {model} execution failed: {litellm_err}") from litellm_err
+            raise ProviderUnavailableError(
+                f"Model {model} execution failed: {litellm_err}"
+            ) from litellm_err
 
     async def generate(
         self, request: InferenceRequest, configuration: dict[str, Any]
@@ -370,11 +395,15 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
 
                 # Tag telemetry metadata
                 configuration["_actual_model"] = model
-                configuration["_actual_provider"] = self._resolve_provider_for_model(model)
+                configuration["_actual_provider"] = self._resolve_provider_for_model(
+                    model
+                )
                 configuration["_gateway_latency_ms"] = latency
                 return response
             except Exception as exc:
-                logger.warning(f"Gateway: Model {model} failed: {exc}. Attempting cascade...")
+                logger.warning(
+                    f"Gateway: Model {model} failed: {exc}. Attempting cascade..."
+                )
                 self._mark_failure(model)
                 last_exception = exc
                 continue
@@ -403,7 +432,10 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
             provider, cfg = self._prepare_provider_config(model, configuration)
 
             if len(attempted) > 1:
-                yield {"event": "info", "message": f"Smart router failing over to {model}"}
+                yield {
+                    "event": "info",
+                    "message": f"Smart router failing over to {model}",
+                }
 
             try:
                 # 0. Check for Serverless GPU streaming
@@ -412,14 +444,18 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                     tenant_id = cfg.get("tenant_id")
                     if tenant_id and self.tenant_lora_repo:
                         try:
-                            lora_adapter = await self.tenant_lora_repo.get_active_adapter(
-                                tenant_id, adapter_type="llm"
+                            lora_adapter = (
+                                await self.tenant_lora_repo.get_active_adapter(
+                                    tenant_id, adapter_type="llm"
+                                )
                             )
                         except Exception:
                             pass
                     configuration["_actual_model"] = model
                     configuration["_actual_provider"] = provider
-                    async for chunk in self.serverless_gpu_client.execute_serverless_stream(
+                    async for (
+                        chunk
+                    ) in self.serverless_gpu_client.execute_serverless_stream(
                         request, cfg, lora_adapter=lora_adapter
                     ):
                         yield chunk
@@ -432,7 +468,9 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                     else self.openai_adapter
                 )
                 if not active_adapter:
-                    raise ProviderUnavailableError(f"No streaming adapter available for {model}")
+                    raise ProviderUnavailableError(
+                        f"No streaming adapter available for {model}"
+                    )
 
                 configuration["_actual_model"] = model
                 configuration["_actual_provider"] = provider
@@ -444,7 +482,9 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                 logger.warning(f"Gateway: Streaming failed for model {model}: {exc}")
                 self._mark_failure(model)
                 if model == cascade[-1]:
-                    raise ProviderUnavailableError(f"Streaming cascade exhausted at {model}: {exc}") from exc
+                    raise ProviderUnavailableError(
+                        f"Streaming cascade exhausted at {model}: {exc}"
+                    ) from exc
                 continue
 
         raise ProviderUnavailableError(

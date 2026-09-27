@@ -50,7 +50,17 @@ def test_scaffolding_hexagonal_boundary() -> None:
         domain_dir / "scaffolding" / "metaprogrammer.py",
         domain_dir / "scaffolding" / "pr_generator.py",
     ]
-    forbidden = {"fastapi", "sqlalchemy", "celery", "redis", "pika", "httpx", "modal", "bentoml", "subprocess"}
+    forbidden = {
+        "fastapi",
+        "sqlalchemy",
+        "celery",
+        "redis",
+        "pika",
+        "httpx",
+        "modal",
+        "bentoml",
+        "subprocess",
+    }
 
     for f in scaffold_domain_files:
         assert f.exists(), f"Domain file {f} must exist"
@@ -59,11 +69,15 @@ def test_scaffolding_hexagonal_boundary() -> None:
             if isinstance(node, ast.Import):
                 for name in node.names:
                     root = name.name.split(".")[0]
-                    assert root not in forbidden, f"Hexagonal violation in {f.name}: imported {root}"
+                    assert root not in forbidden, (
+                        f"Hexagonal violation in {f.name}: imported {root}"
+                    )
             elif isinstance(node, ast.ImportFrom):
                 if node.module:
                     root = node.module.split(".")[0]
-                    assert root not in forbidden, f"Hexagonal violation in {f.name}: imported {root}"
+                    assert root not in forbidden, (
+                        f"Hexagonal violation in {f.name}: imported {root}"
+                    )
 
 
 # ── 2. Requirement Analyzer Tests ───────────────────────────────────────────
@@ -114,7 +128,9 @@ import sqlalchemy
 def do_logic() -> str:
     return "logic"
 """
-    res = validator.validate_code(bad_domain_code, filename="bad_service.py", is_domain=True)
+    res = validator.validate_code(
+        bad_domain_code, filename="bad_service.py", is_domain=True
+    )
     assert res.is_valid is False
     assert "fastapi" in res.forbidden_imports_found
     assert "sqlalchemy" in res.forbidden_imports_found
@@ -128,7 +144,9 @@ def test_boundary_checker_detects_dangerous_eval() -> None:
 def run_command(cmd: str) -> None:
     eval(cmd)
 """
-    res = validator.validate_code(dangerous_code, filename="eval_test.py", is_domain=False)
+    res = validator.validate_code(
+        dangerous_code, filename="eval_test.py", is_domain=False
+    )
     assert res.is_valid is False
     assert any("eval" in v for v in res.violations)
 

@@ -26,12 +26,20 @@ async def test_convex_hybrid_fusion(mock_search_deps):
     )
 
     vec_results = [
-        SearchResult(chunk_id="chunk-1", document_id="doc-1", content="dense hit 1", score=0.9),
-        SearchResult(chunk_id="chunk-2", document_id="doc-2", content="dense hit 2", score=0.5),
+        SearchResult(
+            chunk_id="chunk-1", document_id="doc-1", content="dense hit 1", score=0.9
+        ),
+        SearchResult(
+            chunk_id="chunk-2", document_id="doc-2", content="dense hit 2", score=0.5
+        ),
     ]
     kw_results = [
-        SearchResult(chunk_id="chunk-2", document_id="doc-2", content="dense hit 2", score=10.0),
-        SearchResult(chunk_id="chunk-3", document_id="doc-3", content="sparse hit 3", score=8.0),
+        SearchResult(
+            chunk_id="chunk-2", document_id="doc-2", content="dense hit 2", score=10.0
+        ),
+        SearchResult(
+            chunk_id="chunk-3", document_id="doc-3", content="sparse hit 3", score=8.0
+        ),
     ]
 
     # Test alpha = 1.0 (pure dense priority)

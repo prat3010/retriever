@@ -92,7 +92,9 @@ def test_orpo_mathematical_loss_calculation() -> None:
     assert loss > 0.0
 
 
-def test_preference_harvest_and_deduplication(tuning_adapter: ContinuousTuningAdapter) -> None:
+def test_preference_harvest_and_deduplication(
+    tuning_adapter: ContinuousTuningAdapter,
+) -> None:
     """Ensure preference pairs are ingested and deduplicated by prompt."""
     tenant_id = "tn_dpo_test_1"
     pair1 = PreferencePair(
@@ -128,14 +130,18 @@ def test_preference_harvest_and_deduplication(tuning_adapter: ContinuousTuningAd
     )
 
     stored2 = tuning_adapter.harvest_preference_pair(tenant_id, pair2)
-    assert stored2.winning_response == "Vector search uses approximate nearest neighbors."
+    assert (
+        stored2.winning_response == "Vector search uses approximate nearest neighbors."
+    )
 
     # Total buffer should remain 1 due to prompt deduplication
     _, total_after = tuning_adapter.list_preference_pairs(tenant_id)
     assert total_after == 1
 
 
-def test_preference_auto_trigger_threshold(tuning_adapter: ContinuousTuningAdapter) -> None:
+def test_preference_auto_trigger_threshold(
+    tuning_adapter: ContinuousTuningAdapter,
+) -> None:
     """Verify automated fine-tuning trigger when harvest buffer reaches threshold."""
     tenant_id = "tn_auto_trigger"
     config = tuning_adapter.get_tuning_config(tenant_id)
@@ -163,7 +169,9 @@ def test_preference_auto_trigger_threshold(tuning_adapter: ContinuousTuningAdapt
     assert jobs[0].status == TuningJobStatus.COMPLETED
 
 
-def test_tuning_job_convergence_and_loss_history(tuning_adapter: ContinuousTuningAdapter) -> None:
+def test_tuning_job_convergence_and_loss_history(
+    tuning_adapter: ContinuousTuningAdapter,
+) -> None:
     """Verify step loss convergence history and evaluation gate."""
     tenant_id = "tn_convergence"
     job = tuning_adapter.trigger_tuning_job(
@@ -185,7 +193,9 @@ def test_tuning_job_convergence_and_loss_history(tuning_adapter: ContinuousTunin
     assert job.evaluation.validation_accuracy >= 0.75
 
 
-def test_adapter_promotion_and_atomic_rollback(tuning_adapter: ContinuousTuningAdapter) -> None:
+def test_adapter_promotion_and_atomic_rollback(
+    tuning_adapter: ContinuousTuningAdapter,
+) -> None:
     """Verify hot-swapping LoRA adapter into active serving and 1-click rollback."""
     tenant_id = "tn_governance"
     config = tuning_adapter.get_tuning_config(tenant_id)
@@ -323,11 +333,22 @@ def test_battery_35_registration() -> None:
 
 def test_continuous_tuning_architecture_boundaries() -> None:
     """Hexagonal boundary gate ensuring 0 framework imports in dpo_orpo_tuning.py."""
-    source_path = Path(__file__).resolve().parent.parent / "src/domain/abstractions/dpo_orpo_tuning.py"
+    source_path = (
+        Path(__file__).resolve().parent.parent
+        / "src/domain/abstractions/dpo_orpo_tuning.py"
+    )
     assert source_path.exists(), "Domain file must exist"
 
     tree = ast.parse(source_path.read_text())
-    prohibited = {"fastapi", "sqlalchemy", "redis", "celery", "httpx", "requests", "modal"}
+    prohibited = {
+        "fastapi",
+        "sqlalchemy",
+        "redis",
+        "celery",
+        "httpx",
+        "requests",
+        "modal",
+    }
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

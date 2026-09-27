@@ -76,7 +76,6 @@ class EvalRun(BaseModel):
 
 
 class EvalDatasetRepository(ABC):
-
     @abstractmethod
     async def create_dataset(self, dataset: EvalDataset) -> EvalDataset:
         pass
@@ -107,7 +106,6 @@ class EvalDatasetRepository(ABC):
 
 
 class EvalRunRepository(ABC):
-
     @abstractmethod
     async def create_run(self, run: EvalRun) -> EvalRun:
         pass
@@ -121,7 +119,9 @@ class EvalRunRepository(ABC):
         pass
 
     @abstractmethod
-    async def update_run_status(self, run_id: str, status: str, aggregate_scores: dict[str, Any] | None = None) -> None:
+    async def update_run_status(
+        self, run_id: str, status: str, aggregate_scores: dict[str, Any] | None = None
+    ) -> None:
         pass
 
     @abstractmethod
@@ -248,9 +248,9 @@ class BaseRegressionGate(ABC):
 
     @abstractmethod
     def evaluate_gate(
-        self, aggregate_scores: AggregateScores, thresholds: RegressionGateThresholds | None = None
+        self,
+        aggregate_scores: AggregateScores,
+        thresholds: RegressionGateThresholds | None = None,
     ) -> RegressionGateReport:
         """Evaluate aggregate scores against thresholds and produce a CI gate report."""
         pass
-
-

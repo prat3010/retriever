@@ -85,7 +85,9 @@ async def list_mesh_nodes(
     return mesh_service.list_nodes(status_filter=status_filter)
 
 
-@router.post("/nodes/register", response_model=MeshPeerNode, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/nodes/register", response_model=MeshPeerNode, status_code=status.HTTP_201_CREATED
+)
 async def register_peer_node(node: MeshPeerNode) -> MeshPeerNode:
     """Register or update an edge enclave or remote cluster peer node."""
     mesh_service = getattr(container, "mcp_mesh_service", None)
@@ -97,7 +99,9 @@ async def register_peer_node(node: MeshPeerNode) -> MeshPeerNode:
     return mesh_service.register_node(node)
 
 
-@router.post("/nodes/heartbeat", response_model=MeshPeerNode, status_code=status.HTTP_200_OK)
+@router.post(
+    "/nodes/heartbeat", response_model=MeshPeerNode, status_code=status.HTTP_200_OK
+)
 async def node_heartbeat(payload: HeartbeatPayload) -> MeshPeerNode:
     """Process peer liveness heartbeat and update latency metrics."""
     mesh_service = getattr(container, "mcp_mesh_service", None)
@@ -133,7 +137,9 @@ async def unregister_peer_node(node_id: str) -> dict[str, Any]:
     return {"status": "unregistered", "node_id": node_id}
 
 
-@router.get("/tools", response_model=list[McpToolDefinition], status_code=status.HTTP_200_OK)
+@router.get(
+    "/tools", response_model=list[McpToolDefinition], status_code=status.HTTP_200_OK
+)
 async def list_mesh_tools() -> list[McpToolDefinition]:
     """Aggregate all discoverable tools across all online nodes in the distributed mesh."""
     mesh_service = getattr(container, "mcp_mesh_service", None)
@@ -149,7 +155,11 @@ async def list_mesh_tools() -> list[McpToolDefinition]:
     return mesh_service.list_mesh_tools()
 
 
-@router.post("/tools/execute", response_model=McpToolExecutionResult, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tools/execute",
+    response_model=McpToolExecutionResult,
+    status_code=status.HTTP_200_OK,
+)
 async def execute_mesh_tool(
     payload: MeshToolCallPayload,
     policy: MeshRoutingPolicy = Query(MeshRoutingPolicy.LOCAL_FIRST),
@@ -171,7 +181,9 @@ async def execute_mesh_tool(
                 cluster_id=payload.target_cluster_id or None,
             )
         else:
-            target_node = mesh_service.resolve_tool_route(payload.tool_name, policy=policy)
+            target_node = mesh_service.resolve_tool_route(
+                payload.tool_name, policy=policy
+            )
     except MeshLoadSheddingError as err:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -192,9 +204,16 @@ async def execute_mesh_tool(
         if target_node.node_id == mesh_service.local_node_id:
             if not battery_mcp_adapter:
                 return McpToolExecutionResult(
-                    content=[McpContentItem(text="Local MCP battery adapter not initialized.")],
+                    content=[
+                        McpContentItem(
+                            text="Local MCP battery adapter not initialized."
+                        )
+                    ],
                     is_error=True,
-                    meta={"node_id": target_node.node_id, "cluster_id": target_node.cluster_id},
+                    meta={
+                        "node_id": target_node.node_id,
+                        "cluster_id": target_node.cluster_id,
+                    },
                 )
             # Execute tool locally
             res = await battery_mcp_adapter.execute_tool(
@@ -344,7 +363,11 @@ async def get_mesh_load_metrics() -> dict[str, Any]:
     return load_balancer.get_cluster_load_summary()
 
 
-@router.get("/load/autoscaling/events", response_model=list[AutoscalingEvent], status_code=status.HTTP_200_OK)
+@router.get(
+    "/load/autoscaling/events",
+    response_model=list[AutoscalingEvent],
+    status_code=status.HTTP_200_OK,
+)
 async def get_autoscaling_events(
     limit: int = Query(50, ge=1, le=200),
 ) -> list[AutoscalingEvent]:
@@ -358,7 +381,11 @@ async def get_autoscaling_events(
     return load_balancer.get_events(limit=limit)
 
 
-@router.post("/load/autoscaling/policy", response_model=AutoscalingPolicy, status_code=status.HTTP_200_OK)
+@router.post(
+    "/load/autoscaling/policy",
+    response_model=AutoscalingPolicy,
+    status_code=status.HTTP_200_OK,
+)
 async def update_autoscaling_policy(payload: AutoscalingPolicy) -> AutoscalingPolicy:
     """Update cluster autoscaling thresholds (utilization, queue depth, scale-down timeout)."""
     load_balancer = getattr(container, "mesh_load_balancer_service", None)
@@ -370,7 +397,11 @@ async def update_autoscaling_policy(payload: AutoscalingPolicy) -> AutoscalingPo
     return load_balancer.update_policy(payload)
 
 
-@router.post("/load/heartbeat-telemetry", response_model=MeshPeerNode, status_code=status.HTTP_200_OK)
+@router.post(
+    "/load/heartbeat-telemetry",
+    response_model=MeshPeerNode,
+    status_code=status.HTTP_200_OK,
+)
 async def report_node_capacity_telemetry(payload: NodeTelemetryPayload) -> MeshPeerNode:
     """Ingest heartbeat telemetry from an edge enclave node updating slots and EWMA latency."""
     load_balancer = getattr(container, "mesh_load_balancer_service", None)
@@ -388,7 +419,11 @@ async def report_node_capacity_telemetry(payload: NodeTelemetryPayload) -> MeshP
         ) from err
 
 
-@router.post("/load/scale-down/reap", response_model=list[AutoscalingEvent], status_code=status.HTTP_200_OK)
+@router.post(
+    "/load/scale-down/reap",
+    response_model=list[AutoscalingEvent],
+    status_code=status.HTTP_200_OK,
+)
 async def reap_idle_enclaves(
     cluster_id: str = Query("cluster-primary"),
 ) -> list[AutoscalingEvent]:
@@ -400,4 +435,3 @@ async def reap_idle_enclaves(
             detail="Mesh Load Balancer service is not initialized.",
         )
     return await load_balancer.evaluate_autoscaling(cluster_id)
-

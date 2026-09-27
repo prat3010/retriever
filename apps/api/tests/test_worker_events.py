@@ -9,7 +9,11 @@ from unittest.mock import MagicMock, patch
 def test_build_envelope_shape() -> None:
     from workers.src.tasks import _build_envelope
 
-    envelope = _build_envelope("DOCUMENT_PARSED", {"documentId": "doc_1", "tenantId": "t1"}, trace_id="trace-abc")
+    envelope = _build_envelope(
+        "DOCUMENT_PARSED",
+        {"documentId": "doc_1", "tenantId": "t1"},
+        trace_id="trace-abc",
+    )
 
     assert envelope["eventId"].startswith("evt_")
     assert envelope["eventType"] == "DOCUMENT_PARSED"
@@ -22,7 +26,9 @@ def test_build_envelope_shape() -> None:
 def test_build_envelope_default_trace_id() -> None:
     from workers.src.tasks import _build_envelope
 
-    envelope = _build_envelope("DOCUMENT_FAILED", {"documentId": "doc_1", "tenantId": "t1"})
+    envelope = _build_envelope(
+        "DOCUMENT_FAILED", {"documentId": "doc_1", "tenantId": "t1"}
+    )
 
     assert envelope["traceId"] == ""
 

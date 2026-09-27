@@ -25,15 +25,28 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.UUID(), nullable=False),
         sa.Column("external_id", sa.String(255), nullable=False),
         sa.Column("display_name", sa.String(255), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("user_id"),
-        sa.UniqueConstraint("tenant_id", "external_id", name="uq_users_tenant_external"),
+        sa.UniqueConstraint(
+            "tenant_id", "external_id", name="uq_users_tenant_external"
+        ),
     )
     op.create_index(op.f("ix_users_tenant_id"), "users", ["tenant_id"])
     op.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY;")
-    op.execute("CREATE POLICY tenant_isolation_policy ON users FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.bypass_rls', true) = 'true');")
+    op.execute(
+        "CREATE POLICY tenant_isolation_policy ON users FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.bypass_rls', true) = 'true');"
+    )
 
     # Add role to api_keys
     op.add_column(
@@ -59,8 +72,10 @@ def upgrade() -> None:
         )
         op.create_foreign_key(
             "fk_chat_sessions_user_id",
-            "chat_sessions", "users",
-            ["user_id"], ["user_id"],
+            "chat_sessions",
+            "users",
+            ["user_id"],
+            ["user_id"],
             ondelete="SET NULL",
         )
         op.create_index("ix_chat_sessions_user_id", "chat_sessions", ["user_id"])
@@ -73,8 +88,10 @@ def upgrade() -> None:
         )
         op.create_foreign_key(
             "fk_chat_messages_user_id",
-            "chat_messages", "users",
-            ["user_id"], ["user_id"],
+            "chat_messages",
+            "users",
+            ["user_id"],
+            ["user_id"],
             ondelete="SET NULL",
         )
         op.create_index("ix_chat_messages_user_id", "chat_messages", ["user_id"])
@@ -87,8 +104,10 @@ def upgrade() -> None:
         )
         op.create_foreign_key(
             "fk_inference_logs_user_id",
-            "inference_logs", "users",
-            ["user_id"], ["user_id"],
+            "inference_logs",
+            "users",
+            ["user_id"],
+            ["user_id"],
             ondelete="SET NULL",
         )
         op.create_index("ix_inference_logs_user_id", "inference_logs", ["user_id"])
@@ -97,7 +116,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Remove user_id from inference_logs
     op.drop_index("ix_inference_logs_user_id", table_name="inference_logs")
-    op.drop_constraint("fk_inference_logs_user_id", "inference_logs", type_="foreignkey")
+    op.drop_constraint(
+        "fk_inference_logs_user_id", "inference_logs", type_="foreignkey"
+    )
     op.drop_column("inference_logs", "user_id")
 
     # Remove user_id from chat_messages

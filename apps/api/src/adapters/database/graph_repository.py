@@ -162,7 +162,9 @@ class PgGraphRepository(BaseGraphRepository):
             await session.commit()
             return (res.rowcount or 0) > 0
 
-    async def get_all_triples(self, tenant_id: str, limit: int = 1000) -> list[EntityTriple]:
+    async def get_all_triples(
+        self, tenant_id: str, limit: int = 1000
+    ) -> list[EntityTriple]:
         """Fetch all entity relationship triples for a tenant."""
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = (
@@ -184,4 +186,3 @@ class PgGraphRepository(BaseGraphRepository):
                 )
                 for r in rows
             ]
-

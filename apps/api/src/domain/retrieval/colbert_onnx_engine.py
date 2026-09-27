@@ -48,9 +48,13 @@ class NeuralColbertEngine:
         try:
             from fastembed.late_interaction import LateInteractionTextEmbedding
 
-            self._neural_model = LateInteractionTextEmbedding(model_name=self.model_name)
+            self._neural_model = LateInteractionTextEmbedding(
+                model_name=self.model_name
+            )
             self._is_neural = True
-            logger.info("Neural ONNX ColBERT model '%s' loaded successfully.", self.model_name)
+            logger.info(
+                "Neural ONNX ColBERT model '%s' loaded successfully.", self.model_name
+            )
         except Exception as exc:
             logger.debug(
                 "Neural ColBERT model '%s' unavailable (%s). Using deterministic MaxSim hash engine.",
@@ -89,7 +93,9 @@ class NeuralColbertEngine:
                 max_sims = np.max(sim_matrix, axis=1)
                 return float(np.mean(max_sims))
             except Exception as exc:
-                logger.debug("Neural MaxSim score_pair failed: %s, falling back to hash", exc)
+                logger.debug(
+                    "Neural MaxSim score_pair failed: %s, falling back to hash", exc
+                )
 
         # Fallback to deterministic token MaxSim
         q_tokens = tokenize_technical_terms(query)
@@ -132,7 +138,9 @@ class NeuralColbertEngine:
                 scored_candidates.sort(key=lambda x: x.score, reverse=True)
                 return scored_candidates[:top_k]
             except Exception as exc:
-                logger.debug("Neural rerank_candidates failed: %s, falling back to hash", exc)
+                logger.debug(
+                    "Neural rerank_candidates failed: %s, falling back to hash", exc
+                )
 
         # Fallback path using batch deterministic MaxSim
         q_tokens = tokenize_technical_terms(query)

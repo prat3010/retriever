@@ -10,7 +10,10 @@ PII_PATTERNS = [
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED SSN]"),
     (re.compile(r"\b(?:\d[ -]*?){13,16}\b"), "[REDACTED CREDIT CARD]"),
     (re.compile(r"sk-[a-zA-Z0-9]{20,}"), "[REDACTED API KEY]"),
-    (re.compile(r"bearer\s+[a-zA-Z0-9_\-\.]{20,}", re.IGNORECASE), "Bearer [REDACTED TOKEN]"),
+    (
+        re.compile(r"bearer\s+[a-zA-Z0-9_\-\.]{20,}", re.IGNORECASE),
+        "Bearer [REDACTED TOKEN]",
+    ),
 ]
 
 

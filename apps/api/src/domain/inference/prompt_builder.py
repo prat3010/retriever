@@ -20,6 +20,7 @@ CONTEXT_TEMPLATE = "[Source: {chunk_id}] {content}"
 
 _TIKTOKEN_ENCODING = tiktoken.get_encoding("cl100k_base")
 
+
 def _estimate_tokens(text: str) -> int:
     return max(1, len(_TIKTOKEN_ENCODING.encode(text)))
 
@@ -54,11 +55,17 @@ class PromptBuilder:
         compiled_program = None
         if self.compiled_prompt_repo:
             try:
-                compiled_program = await self.compiled_prompt_repo.get_active_program(tenant_id)
+                compiled_program = await self.compiled_prompt_repo.get_active_program(
+                    tenant_id
+                )
             except Exception:
                 compiled_program = None
 
-        if compiled_program and compiled_program.is_active and compiled_program.compiled_instruction:
+        if (
+            compiled_program
+            and compiled_program.is_active
+            and compiled_program.compiled_instruction
+        ):
             system_content = compiled_program.compiled_instruction
         else:
             system_content = await self._resolve_system_prompt(
@@ -70,7 +77,11 @@ class PromptBuilder:
 
         # 3. Format few-shot demonstrations if compiled DSPy program is active
         demo_messages: list[ChatMessage] = []
-        if compiled_program and compiled_program.is_active and compiled_program.few_shot_demos:
+        if (
+            compiled_program
+            and compiled_program.is_active
+            and compiled_program.few_shot_demos
+        ):
             for demo in compiled_program.few_shot_demos:
                 demo_user = f"Context:\n{demo.context}\n\nQuestion: {demo.question}"
                 demo_assistant = (
@@ -79,7 +90,9 @@ class PromptBuilder:
                     else demo.answer
                 )
                 demo_messages.append(ChatMessage(role="user", content=demo_user))
-                demo_messages.append(ChatMessage(role="assistant", content=demo_assistant))
+                demo_messages.append(
+                    ChatMessage(role="assistant", content=demo_assistant)
+                )
 
         # 4. Build candidate message list
         system_msg = ChatMessage(role="system", content=system_content)
@@ -112,18 +125,20 @@ class PromptBuilder:
             lines = [f"Document: {doc_id}"]
             for c in doc_chunks:
                 meta = c.get("metadata") or {}
-                parent_id = meta.get("parent_chunk_id") if isinstance(meta, dict) else None
+                parent_id = (
+                    meta.get("parent_chunk_id") if isinstance(meta, dict) else None
+                )
                 chunk_id = c.get("chunk_id", "unknown")
                 content = c.get("content", "")
                 if parent_id:
                     content = f"[This is part of section {parent_id}]\n{content}"
-                lines.append(CONTEXT_TEMPLATE.format(chunk_id=chunk_id, content=content))
+                lines.append(
+                    CONTEXT_TEMPLATE.format(chunk_id=chunk_id, content=content)
+                )
             sections.append("\n".join(lines))
         return "\n\n".join(sections)
 
-    async def _resolve_system_prompt(
-        self, tenant_id: str, name: str
-    ) -> str:
+    async def _resolve_system_prompt(self, tenant_id: str, name: str) -> str:
         """Fetch system prompt from the template registry. Fail if missing."""
         template = await self.template_registry.get_template(tenant_id, name)
         if not template:
@@ -148,32 +163,47 @@ class PromptBuilder:
             user_msg = remaining[-1]
             history = remaining[:-2]
 
-            while history and _estimate_tokens(
-                system.content + "".join(m.content for m in history)
-                + context_msg.content + user_msg.content
-            ) > budget:
+            while (
+                history
+                and _estimate_tokens(
+                    system.content
+                    + "".join(m.content for m in history)
+                    + context_msg.content
+                    + user_msg.content
+                )
+                > budget
+            ):
                 history.pop(0)
 
             remaining = history + [context_msg, user_msg]
 
         # If still over budget, trim context chunks
-        if _estimate_tokens(
-            system.content + "".join(m.content for m in remaining)
-        ) > budget:
+        if (
+            _estimate_tokens(system.content + "".join(m.content for m in remaining))
+            > budget
+        ):
             context_msg = remaining[-2]
             lines = context_msg.content.split("\n\n")
             header = lines[0] if lines else ""
             chunks = lines[1:]
-            while chunks and _estimate_tokens(
-                system.content + "".join(m.content for m in remaining[:-2])
-                + header + "\n\n" + "\n\n".join(chunks)
-                + remaining[-1].content
-            ) > budget:
+            while (
+                chunks
+                and _estimate_tokens(
+                    system.content
+                    + "".join(m.content for m in remaining[:-2])
+                    + header
+                    + "\n\n"
+                    + "\n\n".join(chunks)
+                    + remaining[-1].content
+                )
+                > budget
+            ):
                 chunks.pop()
             remaining[-2] = ChatMessage(
                 role="system",
                 content=header + "\n\n" + "\n\n".join(chunks)
-                if chunks else "Context was truncated due to token limits.",
+                if chunks
+                else "Context was truncated due to token limits.",
             )
 
         return [system] + remaining

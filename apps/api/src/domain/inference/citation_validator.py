@@ -42,9 +42,11 @@ class CitationValidator:
 
     def strip_invalid_citations(self, text: str) -> str:
         """Remove all [Source: X] tokens where X is NOT in valid_ids."""
+
         def _replacer(match):
             cid = match.group(1)
             return "" if cid not in self._valid_ids else match.group(0)
+
         return CITATION_PATTERN.sub(_replacer, text)
 
     def validate_sentence_attribution(
@@ -79,7 +81,9 @@ class CitationValidator:
 
         Returns a list of dicts with sentence, cited_chunk_ids, and is_grounded status.
         """
-        sentence_pattern = re.compile(r".+?(?:[.!?](?:\s*\[(?:Source|Doc):\s*[^\]]+\])?(?=\s+|$)|$)", re.DOTALL)
+        sentence_pattern = re.compile(
+            r".+?(?:[.!?](?:\s*\[(?:Source|Doc):\s*[^\]]+\])?(?=\s+|$)|$)", re.DOTALL
+        )
         matches = sentence_pattern.findall(text.strip())
         sentences = [m.strip() for m in matches if m.strip()]
 
@@ -90,27 +94,30 @@ class CitationValidator:
             cited_ids = self.extract_citations(s)
             words = set(re.findall(r"\b[a-zA-Z0-9]{4,}\b", s.lower()))
             if not words:
-                attributions.append({
-                    "sentence": s,
-                    "cited_chunk_ids": cited_ids,
-                    "is_grounded": True,
-                })
+                attributions.append(
+                    {
+                        "sentence": s,
+                        "cited_chunk_ids": cited_ids,
+                        "is_grounded": True,
+                    }
+                )
                 continue
 
             if cited_ids:
                 grounded = any(
-                    cid in chunk_contents and any(w in chunk_contents[cid].lower() for w in words)
+                    cid in chunk_contents
+                    and any(w in chunk_contents[cid].lower() for w in words)
                     for cid in cited_ids
                 )
             else:
                 grounded = any(w in all_context_text for w in words)
 
-            attributions.append({
-                "sentence": s,
-                "cited_chunk_ids": cited_ids,
-                "is_grounded": grounded,
-            })
+            attributions.append(
+                {
+                    "sentence": s,
+                    "cited_chunk_ids": cited_ids,
+                    "is_grounded": grounded,
+                }
+            )
 
         return attributions
-
-

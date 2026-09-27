@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 def test_get_engine_lazy_init() -> None:
     import workers.src.tasks
+
     workers.src.tasks._engine = None
 
     with patch("workers.src.tasks.create_async_engine") as mock_create:

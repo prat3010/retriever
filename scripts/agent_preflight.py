@@ -173,7 +173,11 @@ def detect_provider(key: str, hint: str | None = None) -> tuple[str, str]:
         return ("mistral", "MISTRAL_API_KEY")
 
     if hint_clean:
-        var_name = hint_clean.upper() if hint_clean.endswith("_API_KEY") else f"{hint_clean.upper()}_API_KEY"
+        var_name = (
+            hint_clean.upper()
+            if hint_clean.endswith("_API_KEY")
+            else f"{hint_clean.upper()}_API_KEY"
+        )
         return (hint_clean, var_name)
     return ("openai", "OPENAI_API_KEY")
 
@@ -185,15 +189,25 @@ def init_env(root_dir: Path) -> dict:
     env_file = root_dir / ".env"
     example_file = root_dir / ".env.docker.example"
     if env_file.is_file():
-        return {"success": True, "created": False, "message": ".env file already exists."}
+        return {
+            "success": True,
+            "created": False,
+            "message": ".env file already exists.",
+        }
     if example_file.is_file():
         shutil.copy(example_file, env_file)
-        return {"success": True, "created": True, "message": "Created .env from .env.docker.example."}
+        return {
+            "success": True,
+            "created": True,
+            "message": "Created .env from .env.docker.example.",
+        }
     env_file.write_text("# Retriever Environment Configuration\n", encoding="utf-8")
     return {"success": True, "created": True, "message": "Created blank .env file."}
 
 
-def inject_key(root_dir: Path, provider_or_hint: str, raw_key: str | None = None) -> dict:
+def inject_key(
+    root_dir: Path, provider_or_hint: str, raw_key: str | None = None
+) -> dict:
     """Safely initializes .env (if missing) and injects/updates the API key."""
     import shutil
 
@@ -216,7 +230,9 @@ def inject_key(root_dir: Path, provider_or_hint: str, raw_key: str | None = None
         if example_file.is_file():
             shutil.copy(example_file, env_file)
         else:
-            env_file.write_text("# Retriever Environment Configuration\n", encoding="utf-8")
+            env_file.write_text(
+                "# Retriever Environment Configuration\n", encoding="utf-8"
+            )
 
     lines = env_file.read_text(encoding="utf-8").splitlines()
     replaced = False
@@ -303,8 +319,12 @@ def run_preflight() -> dict:
     env = sense_environment(root_dir)
 
     # Calculate overall readiness
-    can_docker_launch = dk["installed"] and dk["daemon_running"] and dk["compose_available"]
-    port_conflicts = [p for p, info in ports.items() if info["in_use"] and p in (8000, 3000)]
+    can_docker_launch = (
+        dk["installed"] and dk["daemon_running"] and dk["compose_available"]
+    )
+    port_conflicts = [
+        p for p, info in ports.items() if info["in_use"] and p in (8000, 3000)
+    ]
 
     readiness = "READY" if can_docker_launch and not port_conflicts else "NEEDS_SETUP"
 
@@ -346,7 +366,9 @@ def print_pretty(data: dict):
         print(f"  • Docker Daemon:  {GREEN}Active & Running{NC}")
         print(f"  • Compose Plugin: {GREEN}Available ({dk['compose_version']}){NC}")
     elif dk["installed"] and not dk["daemon_running"]:
-        print(f"  • Docker Daemon:  {RED}Installed but NOT running (Start Docker Desktop){NC}")
+        print(
+            f"  • Docker Daemon:  {RED}Installed but NOT running (Start Docker Desktop){NC}"
+        )
     else:
         print(f"  • Docker Daemon:  {RED}Not installed{NC}")
 
@@ -357,7 +379,9 @@ def print_pretty(data: dict):
         if info["available"]:
             print(f"  • Port {port:5d} ({info['service']:<27}): {GREEN}Available{NC}")
         else:
-            print(f"  • Port {port:5d} ({info['service']:<27}): {YELLOW}Active / Occupied{NC}")
+            print(
+                f"  • Port {port:5d} ({info['service']:<27}): {YELLOW}Active / Occupied{NC}"
+            )
 
     # Environment & LLM Inference
     env = data["environment"]
@@ -366,13 +390,17 @@ def print_pretty(data: dict):
     if env["has_env"]:
         print(f"  • Environment:    {GREEN}.env file present & configured{NC}")
     else:
-        print(f"  • Environment:    {YELLOW}.env will be auto-generated from template{NC}")
+        print(
+            f"  • Environment:    {YELLOW}.env will be auto-generated from template{NC}"
+        )
 
     print(f"  • Embeddings:     {GREEN}Local Ollama (nomic-embed-text) — $0 Cost{NC}")
 
     cfg_keys = env.get("configured_keys", {})
     if cfg_keys:
-        keys_summary = ", ".join(f"{k.replace('_API_KEY', '')} ({v})" for k, v in cfg_keys.items())
+        keys_summary = ", ".join(
+            f"{k.replace('_API_KEY', '')} ({v})" for k, v in cfg_keys.items()
+        )
         print(f"  • Chat Inference: {GREEN}Cloud Key Configured [{keys_summary}]{NC}")
     else:
         print(
@@ -382,7 +410,9 @@ def print_pretty(data: dict):
     print("\n----------------------------------------------------------------------")
     if rec["can_auto_launch_docker"]:
         print(f"{GREEN}{BOLD}✓ SYSTEM READY FOR 1-CLICK LAUNCH{NC}")
-        print(f"Execute: {CYAN}./scripts/quickstart.sh{NC} or {CYAN}docker compose up -d{NC}")
+        print(
+            f"Execute: {CYAN}./scripts/quickstart.sh{NC} or {CYAN}docker compose up -d{NC}"
+        )
     else:
         print(f"{YELLOW}{BOLD}! ACTION NEEDED BEFORE LAUNCH{NC}")
         print(f"Action: {rec['next_command']}")
@@ -440,7 +470,9 @@ def main():
                     f"{GREEN}{BOLD}✓ Successfully configured {res['env_var']} ({res['masked_key']}) in .env{NC}"
                 )
             else:
-                print(f"{RED}{BOLD}Error: {res.get('error', 'Failed to inject key')}{NC}")
+                print(
+                    f"{RED}{BOLD}Error: {res.get('error', 'Failed to inject key')}{NC}"
+                )
         sys.exit(0 if res["success"] else 1)
 
     data = run_preflight()

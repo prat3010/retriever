@@ -57,7 +57,10 @@ def test_ocr_with_tesseract_pdf_multi_page(mock_ocr_modules) -> None:
     with patch("pdfplumber.open") as mock_pdfplumber:
         mock_page_1 = MagicMock()
         mock_page_2 = MagicMock()
-        mock_pdfplumber.return_value.__enter__.return_value.pages = [mock_page_1, mock_page_2]
+        mock_pdfplumber.return_value.__enter__.return_value.pages = [
+            mock_page_1,
+            mock_page_2,
+        ]
 
         result = _ocr_with_tesseract("/path/doc.pdf", "application/pdf")
 
@@ -92,7 +95,12 @@ def test_describe_with_vision_empty_api_key() -> None:
     from workers.src.tasks import _describe_with_vision
 
     with patch.dict("os.environ", {}, clear=True):
-        result = _describe_with_vision("/path/img.png", "image/png", {}, tenant_id="11111111-1111-1111-1111-111111111111")
+        result = _describe_with_vision(
+            "/path/img.png",
+            "image/png",
+            {},
+            tenant_id="11111111-1111-1111-1111-111111111111",
+        )
 
     assert result == ""
 
@@ -103,12 +111,16 @@ def test_describe_with_vision_image(mock_openai_cls) -> None:
 
     mock_client = MagicMock()
     mock_openai_cls.return_value = mock_client
-    mock_client.chat.completions.create.return_value.choices[0].message.content = "a cat"
+    mock_client.chat.completions.create.return_value.choices[
+        0
+    ].message.content = "a cat"
 
     config = {"ai_provider": {"api_key": "sk-test", "vision_model": "gpt-4o"}}
 
     with patch("builtins.open", create=True) as mock_open:
-        mock_open.return_value.__enter__.return_value.read.return_value = b"fake_image_bytes"
+        mock_open.return_value.__enter__.return_value.read.return_value = (
+            b"fake_image_bytes"
+        )
         result = _describe_with_vision("/path/cat.png", "image/png", config)
 
     assert result == "a cat"
@@ -121,11 +133,16 @@ def test_describe_with_vision_pdf_multi_page(mock_pdfplumber, mock_openai_cls) -
 
     mock_page_1 = MagicMock()
     mock_page_2 = MagicMock()
-    mock_pdfplumber.return_value.__enter__.return_value.pages = [mock_page_1, mock_page_2]
+    mock_pdfplumber.return_value.__enter__.return_value.pages = [
+        mock_page_1,
+        mock_page_2,
+    ]
 
     mock_client = MagicMock()
     mock_openai_cls.return_value = mock_client
-    mock_client.chat.completions.create.return_value.choices[0].message.content = "page content"
+    mock_client.chat.completions.create.return_value.choices[
+        0
+    ].message.content = "page content"
 
     config = {"ai_provider": {"api_key": "sk-test", "vision_model": "gpt-4o"}}
 
@@ -159,7 +176,9 @@ def test_describe_with_vision_env_api_key_fallback(mock_openai_cls) -> None:
 
     mock_client = MagicMock()
     mock_openai_cls.return_value = mock_client
-    mock_client.chat.completions.create.return_value.choices[0].message.content = "vision result"
+    mock_client.chat.completions.create.return_value.choices[
+        0
+    ].message.content = "vision result"
 
     with patch.dict("os.environ", {"OPENAI_API_KEY": "env-key"}):
         with patch("builtins.open", create=True) as mock_open:
@@ -187,10 +206,13 @@ def test_ocr_with_rapidocr_image(mock_rapidocr_module) -> None:
 
     engine_instance = MagicMock()
     mock_rapidocr_module.return_value = engine_instance
-    engine_instance.return_value = ([
-        [None, "RapidOCR extracted line 1", 0.99],
-        [None, "RapidOCR extracted line 2", 0.98],
-    ], None)
+    engine_instance.return_value = (
+        [
+            [None, "RapidOCR extracted line 1", 0.99],
+            [None, "RapidOCR extracted line 2", 0.98],
+        ],
+        None,
+    )
 
     result = _ocr_with_rapidocr("/path/sample.png", "image/png")
 
@@ -203,9 +225,7 @@ def test_ocr_with_rapidocr_pdf_multi_page(mock_rapidocr_module) -> None:
 
     engine_instance = MagicMock()
     mock_rapidocr_module.return_value = engine_instance
-    engine_instance.return_value = ([
-        [None, "Page content line", 0.99]
-    ], None)
+    engine_instance.return_value = ([[None, "Page content line", 0.99]], None)
 
     with patch("pdfplumber.open") as mock_pdfplumber:
         mock_page = MagicMock()
@@ -236,4 +256,3 @@ def test_ocr_with_rapidocr_exception_returns_empty(mock_rapidocr_module) -> None
     result = _ocr_with_rapidocr("/path/sample.png", "image/png")
 
     assert result == ""
-

@@ -29,7 +29,9 @@ def test_tenant_id() -> str:
 @pytest.fixture(scope="session")
 def saml_test_key_and_cert():
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "idp.okta.com")])
+    subject = issuer = x509.Name(
+        [x509.NameAttribute(NameOID.COMMON_NAME, "idp.okta.com")]
+    )
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -70,7 +72,9 @@ def sign_saml_response(raw_xml: str, private_key: rsa.RSAPrivateKey) -> str:
 </ds:SignedInfo>"""
 
     c14n_si = ET.canonicalize(signed_info_xml)
-    sig_bytes = private_key.sign(c14n_si.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
+    sig_bytes = private_key.sign(
+        c14n_si.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256()
+    )
     sig_b64 = base64.b64encode(sig_bytes).decode("utf-8")
 
     sig_xml = f"""<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -162,7 +166,9 @@ async def test_saml_assertion_validation(
 
     signed_xml = sign_saml_response(sample_saml_xml, key)
     b64_xml = base64.b64encode(signed_xml.encode("utf-8")).decode("utf-8")
-    payload = await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
+    payload = await identity_federation_adapter.process_saml_response(
+        test_tenant_id, b64_xml
+    )
 
     assert payload.name_id == "lead_engineer@enterprise.internal"
     assert "engineering" in payload.security_groups
@@ -173,7 +179,9 @@ async def test_saml_assertion_validation(
 
 
 @pytest.mark.asyncio
-async def test_saml_unsigned_assertion_rejected(test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert):
+async def test_saml_unsigned_assertion_rejected(
+    test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert
+):
     """Verify unsigned SAML assertions are rejected when IdP certificate is configured."""
     _, cert_pem = saml_test_key_and_cert
     config = SamlIdpConfig(
@@ -192,7 +200,9 @@ async def test_saml_unsigned_assertion_rejected(test_tenant_id: str, sample_saml
 
 
 @pytest.mark.asyncio
-async def test_saml_tampered_assertion_rejected(test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert):
+async def test_saml_tampered_assertion_rejected(
+    test_tenant_id: str, sample_saml_xml: str, saml_test_key_and_cert
+):
     """Verify tampered SAML assertions fail cryptographic signature verification."""
     key, cert_pem = saml_test_key_and_cert
     config = SamlIdpConfig(
@@ -206,10 +216,14 @@ async def test_saml_tampered_assertion_rejected(test_tenant_id: str, sample_saml
 
     signed_xml = sign_saml_response(sample_saml_xml, key)
     # Tamper with NameID after signing
-    tampered_xml = signed_xml.replace("lead_engineer@enterprise.internal", "attacker@evil.com")
+    tampered_xml = signed_xml.replace(
+        "lead_engineer@enterprise.internal", "attacker@evil.com"
+    )
     b64_xml = base64.b64encode(tampered_xml.encode("utf-8")).decode("utf-8")
 
-    with pytest.raises(ValueError, match=r"(signature verification failed|digest mismatch)"):
+    with pytest.raises(
+        ValueError, match=r"(signature verification failed|digest mismatch)"
+    ):
         await identity_federation_adapter.process_saml_response(test_tenant_id, b64_xml)
 
 
@@ -256,7 +270,9 @@ async def test_scim_user_lifecycle(test_tenant_id: str):
         "active": True,
         "emails": [{"value": "sarah.connor@enterprise.internal", "primary": True}],
     }
-    user = await identity_federation_adapter.create_scim_user(test_tenant_id, new_user_payload)
+    user = await identity_federation_adapter.create_scim_user(
+        test_tenant_id, new_user_payload
+    )
     assert user.id.startswith("usr_")
     assert user.userName == "sarah.connor@enterprise.internal"
     assert user.active is True
@@ -282,9 +298,13 @@ async def test_scim_user_lifecycle(test_tenant_id: str):
     assert patched.active is False
 
     # 6. Delete User
-    deleted = await identity_federation_adapter.delete_scim_user(test_tenant_id, user.id)
+    deleted = await identity_federation_adapter.delete_scim_user(
+        test_tenant_id, user.id
+    )
     assert deleted is True
-    assert await identity_federation_adapter.get_scim_user(test_tenant_id, user.id) is None
+    assert (
+        await identity_federation_adapter.get_scim_user(test_tenant_id, user.id) is None
+    )
 
 
 @pytest.mark.asyncio
@@ -294,7 +314,9 @@ async def test_scim_group_lifecycle(test_tenant_id: str):
         "displayName": "Cybersecurity Response",
         "members": [{"value": "usr_001", "display": "Security Analyst"}],
     }
-    group = await identity_federation_adapter.create_scim_group(test_tenant_id, group_payload)
+    group = await identity_federation_adapter.create_scim_group(
+        test_tenant_id, group_payload
+    )
     assert group.id.startswith("grp_")
     assert group.displayName == "Cybersecurity Response"
     assert len(group.members) == 1
@@ -303,7 +325,9 @@ async def test_scim_group_lifecycle(test_tenant_id: str):
     patched = await identity_federation_adapter.patch_scim_group(
         test_tenant_id,
         group.id,
-        operations=[{"op": "add", "value": [{"value": "usr_002", "display": "Threat Hunter"}]}],
+        operations=[
+            {"op": "add", "value": [{"value": "usr_002", "display": "Threat Hunter"}]}
+        ],
     )
     assert len(patched.members) == 2
 
@@ -317,9 +341,14 @@ async def test_scim_group_lifecycle(test_tenant_id: str):
     assert patched_del.members[0].value == "usr_002"
 
     # Delete Group
-    deleted = await identity_federation_adapter.delete_scim_group(test_tenant_id, group.id)
+    deleted = await identity_federation_adapter.delete_scim_group(
+        test_tenant_id, group.id
+    )
     assert deleted is True
-    assert await identity_federation_adapter.get_scim_group(test_tenant_id, group.id) is None
+    assert (
+        await identity_federation_adapter.get_scim_group(test_tenant_id, group.id)
+        is None
+    )
 
 
 @pytest.mark.asyncio
@@ -359,7 +388,9 @@ async def test_rbvac_retrieval_filtering(test_tenant_id: str):
         email="eng@enterprise.internal",
         security_groups=["engineering"],
     )
-    eng_res = await identity_federation_adapter.enforce_rbvac(test_tenant_id, eng_ctx, candidates)
+    eng_res = await identity_federation_adapter.enforce_rbvac(
+        test_tenant_id, eng_ctx, candidates
+    )
     assert len(eng_res.allowed_candidates) == 2
     assert len(eng_res.pruned_telemetry) == 1
     assert eng_res.pruned_telemetry[0].chunk_id == "chk_fin_03"
@@ -372,7 +403,9 @@ async def test_rbvac_retrieval_filtering(test_tenant_id: str):
         email="cfo@enterprise.internal",
         security_groups=["finance"],
     )
-    cfo_res = await identity_federation_adapter.enforce_rbvac(test_tenant_id, cfo_ctx, candidates)
+    cfo_res = await identity_federation_adapter.enforce_rbvac(
+        test_tenant_id, cfo_ctx, candidates
+    )
     # CFO has clearance for public and finance chunks
     assert len(cfo_res.allowed_candidates) == 2
     allowed_ids = {c.chunk_id for c in cfo_res.allowed_candidates}

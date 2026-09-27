@@ -59,7 +59,11 @@ class SyntheticDatasetGenerator(BaseSyntheticDatasetGenerator):
 
         for idx, sentence in enumerate(sentences[:count]):
             # 1. Look for definition patterns ("X is Y", "X refers to Y")
-            is_def = re.search(r"^(.*?)\s+(?:is|are|refers to|means|specifies)\s+(.*)$", sentence, re.IGNORECASE)
+            is_def = re.search(
+                r"^(.*?)\s+(?:is|are|refers to|means|specifies)\s+(.*)$",
+                sentence,
+                re.IGNORECASE,
+            )
             if is_def:
                 subject = is_def.group(1).strip()
                 candidates.append(
@@ -74,7 +78,11 @@ class SyntheticDatasetGenerator(BaseSyntheticDatasetGenerator):
                 continue
 
             # 2. Look for action / relationship patterns ("X uses Y", "X requires Y")
-            is_req = re.search(r"^(.*?)\s+(?:uses|requires|integrates with|supports|provides)\s+(.*)$", sentence, re.IGNORECASE)
+            is_req = re.search(
+                r"^(.*?)\s+(?:uses|requires|integrates with|supports|provides)\s+(.*)$",
+                sentence,
+                re.IGNORECASE,
+            )
             if is_req:
                 subject = is_req.group(1).strip()
                 candidates.append(
@@ -82,12 +90,13 @@ class SyntheticDatasetGenerator(BaseSyntheticDatasetGenerator):
                         question=f"What does {subject} require or integrate with?",
                         ground_truth_answer=sentence,
                         relevant_chunk_ids=[chunk_id],
-                        archetype="conditional" if "require" in sentence.lower() else "factual",
+                        archetype="conditional"
+                        if "require" in sentence.lower()
+                        else "factual",
                         confidence_score=0.90,
                     )
                 )
                 continue
-
 
             # 3. General proposition formulation
             words = sentence.split()
@@ -130,7 +139,11 @@ class SyntheticDatasetGenerator(BaseSyntheticDatasetGenerator):
                     if match:
                         items = json.loads(match.group(0))
                         for it in items:
-                            if isinstance(it, dict) and "question" in it and "ground_truth_answer" in it:
+                            if (
+                                isinstance(it, dict)
+                                and "question" in it
+                                and "ground_truth_answer" in it
+                            ):
                                 generated.append(
                                     SyntheticQuestionCandidate(
                                         question=it["question"],
@@ -145,7 +158,9 @@ class SyntheticDatasetGenerator(BaseSyntheticDatasetGenerator):
 
             # Fallback to heuristic proposition extractor if LLM fails or unconfigured
             if not generated:
-                generated = self._heuristic_generate(chunk_id, content, count=count_per_chunk)
+                generated = self._heuristic_generate(
+                    chunk_id, content, count=count_per_chunk
+                )
 
             all_candidates.extend(generated)
 

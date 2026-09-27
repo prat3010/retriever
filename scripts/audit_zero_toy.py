@@ -23,12 +23,24 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "apps" / "api" / "src"
 
 # Forbidden substrings in production code
 FORBIDDEN_SUBSTRINGS = [
-    (re.compile(r'b["\']mock_audio_frame["\']'), "Dummy audio frame fallback in exception handler"),
-    (re.compile(r'class\s+Mock\w+'), "Mock class defined in production code"),
-    (re.compile(r'demo_boost\s*=\s*min\('), "Synthetic benchmark score boost formula"),
-    (re.compile(r'is_healthy\s*=\s*True.*is_simulated\s*=\s*True', re.DOTALL), "Reporting dead probe as healthy 200 OK"),
-    (re.compile(r'LongLLMLingua.*words\[:'), "Naive string slicing mislabeled as LongLLMLingua"),
-    (re.compile(r'Llama Guard.*(?:drop table|ignore previous)', re.IGNORECASE), "Naive keyword check mislabeled as Llama Guard"),
+    (
+        re.compile(r'b["\']mock_audio_frame["\']'),
+        "Dummy audio frame fallback in exception handler",
+    ),
+    (re.compile(r"class\s+Mock\w+"), "Mock class defined in production code"),
+    (re.compile(r"demo_boost\s*=\s*min\("), "Synthetic benchmark score boost formula"),
+    (
+        re.compile(r"is_healthy\s*=\s*True.*is_simulated\s*=\s*True", re.DOTALL),
+        "Reporting dead probe as healthy 200 OK",
+    ),
+    (
+        re.compile(r"LongLLMLingua.*words\[:"),
+        "Naive string slicing mislabeled as LongLLMLingua",
+    ),
+    (
+        re.compile(r"Llama Guard.*(?:drop table|ignore previous)", re.IGNORECASE),
+        "Naive keyword check mislabeled as Llama Guard",
+    ),
 ]
 
 
@@ -71,11 +83,15 @@ def main() -> int:
         print("=================================================================")
         for v in VIOLATIONS:
             print(f"  ! {v}")
-        print("\nProduction code must NEVER contain mock facades, synthetic score boosts,")
+        print(
+            "\nProduction code must NEVER contain mock facades, synthetic score boosts,"
+        )
         print("or fake ML labels. Fix the violations above with genuine domain logic.")
         return 1
 
-    print(f"✓ Zero-Toy Audit Passed: {len(py_files)} production Python files scanned, 0 violations.")
+    print(
+        f"✓ Zero-Toy Audit Passed: {len(py_files)} production Python files scanned, 0 violations."
+    )
     return 0
 
 

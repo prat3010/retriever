@@ -4,8 +4,9 @@ from src.domain.abstractions.web_search import WebSearchProvider, WebSearchResul
 
 
 class BraveSearchAdapter(WebSearchProvider):
-
-    def __init__(self, api_key: str, base_url: str = "https://api.search.brave.com/res/v1") -> None:
+    def __init__(
+        self, api_key: str, base_url: str = "https://api.search.brave.com/res/v1"
+    ) -> None:
         self.api_key = api_key
         self.base_url = base_url
 
@@ -16,7 +17,10 @@ class BraveSearchAdapter(WebSearchProvider):
             resp = await client.get(
                 f"{self.base_url}/web/search",
                 params={"q": query, "count": max_results},
-                headers={"Accept": "application/json", "X-Subscription-Token": self.api_key},
+                headers={
+                    "Accept": "application/json",
+                    "X-Subscription-Token": self.api_key,
+                },
             )
             resp.raise_for_status()
             data = resp.json()

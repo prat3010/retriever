@@ -37,7 +37,9 @@ class SqlDocumentRepository(DocumentRepository):
     async def list_documents(
         self, tenant_id: str, collection_id: str | None = None, bypass_rls: bool = False
     ) -> list[Document]:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
             stmt = select(DocumentDb).where(
                 DocumentDb.is_deleted == False,
             )
@@ -46,10 +48,17 @@ class SqlDocumentRepository(DocumentRepository):
             if collection_id:
                 stmt = stmt.where(DocumentDb.collection_id == uuid.UUID(collection_id))
             stmt = stmt.order_by(DocumentDb.created_at.desc())
-            return [self._to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
+            return [
+                self._to_domain(r)
+                for r in (await session.execute(stmt)).scalars().all()
+            ]
 
-    async def get_document(self, tenant_id: str, document_id: str, bypass_rls: bool = False) -> Document | None:
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
+    async def get_document(
+        self, tenant_id: str, document_id: str, bypass_rls: bool = False
+    ) -> Document | None:
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
             stmt = select(DocumentDb).where(
                 DocumentDb.tenant_id == uuid.UUID(tenant_id),
                 DocumentDb.document_id == uuid.UUID(document_id),
@@ -89,7 +98,9 @@ class SqlDocumentRepository(DocumentRepository):
                     DocumentDb(
                         document_id=uuid.UUID(doc.document_id),
                         tenant_id=uuid.UUID(tenant_id),
-                        collection_id=uuid.UUID(doc.collection_id) if doc.collection_id else None,
+                        collection_id=uuid.UUID(doc.collection_id)
+                        if doc.collection_id
+                        else None,
                         filename=doc.filename,
                         file_hash=doc.file_hash,
                         storage_path=doc.storage_path,
@@ -148,7 +159,10 @@ class SqlDocumentRepository(DocumentRepository):
                 )
                 .order_by(DocumentChunkDb.chunk_index)
             )
-            return [self._chunk_to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
+            return [
+                self._chunk_to_domain(r)
+                for r in (await session.execute(stmt)).scalars().all()
+            ]
 
     async def get_chunks_by_ids(
         self, tenant_id: str, chunk_ids: list[str]
@@ -168,26 +182,43 @@ class SqlDocumentRepository(DocumentRepository):
                 DocumentChunkDb.tenant_id == uuid.UUID(tenant_id),
                 DocumentChunkDb.chunk_id.in_(uuids),
             )
-            return [self._chunk_to_domain(r) for r in (await session.execute(stmt)).scalars().all()]
+            return [
+                self._chunk_to_domain(r)
+                for r in (await session.execute(stmt)).scalars().all()
+            ]
 
     async def list_documents_cursor(
-        self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False
+        self,
+        tenant_id: str,
+        limit: int = 50,
+        cursor: str | None = None,
+        bypass_rls: bool = False,
     ) -> tuple[list[Document], str | None, bool]:
         """List documents using cursor-based pagination. Returns (items, next_cursor, has_more)."""
-        async with tenant_session(tenant_id=tenant_id, bypass_rls=bypass_rls) as session:
-            stmt = select(DocumentDb).where(DocumentDb.tenant_id == uuid.UUID(tenant_id), DocumentDb.is_deleted == False)
+        async with tenant_session(
+            tenant_id=tenant_id, bypass_rls=bypass_rls
+        ) as session:
+            stmt = select(DocumentDb).where(
+                DocumentDb.tenant_id == uuid.UUID(tenant_id),
+                DocumentDb.is_deleted == False,
+            )
 
             if cursor:
                 try:
                     cursor_time, cursor_id = decode_cursor(cursor)
                     stmt = stmt.where(
-                        (DocumentDb.created_at < cursor_time) |
-                        ((DocumentDb.created_at == cursor_time) & (DocumentDb.document_id < cursor_id))
+                        (DocumentDb.created_at < cursor_time)
+                        | (
+                            (DocumentDb.created_at == cursor_time)
+                            & (DocumentDb.document_id < cursor_id)
+                        )
                     )
                 except ValueError:
                     pass
 
-            stmt = stmt.order_by(DocumentDb.created_at.desc(), DocumentDb.document_id.desc()).limit(limit + 1)
+            stmt = stmt.order_by(
+                DocumentDb.created_at.desc(), DocumentDb.document_id.desc()
+            ).limit(limit + 1)
             result = await session.execute(stmt)
             rows = result.scalars().all()
 
@@ -211,7 +242,9 @@ class SqlDocumentRepository(DocumentRepository):
         async with tenant_session(tenant_id=tenant_id) as session:
             stmt = (
                 select(DocumentChunkDb, VectorRecordDb.embedding)
-                .join(VectorRecordDb, DocumentChunkDb.chunk_id == VectorRecordDb.chunk_id)
+                .join(
+                    VectorRecordDb, DocumentChunkDb.chunk_id == VectorRecordDb.chunk_id
+                )
                 .where(DocumentChunkDb.tenant_id == uuid.UUID(tenant_id))
                 .limit(limit)
             )
@@ -222,4 +255,3 @@ class SqlDocumentRepository(DocumentRepository):
                 emb_list = list(embedding) if embedding is not None else []
                 results.append((chunk, emb_list))
             return results
-

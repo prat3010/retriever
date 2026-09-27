@@ -68,7 +68,13 @@ class GatewayProbeResult(BaseModel):
 class BudgetExceededError(Exception):
     """Raised when tenant exceeds assigned hard budget limit and action is 'block'."""
 
-    def __init__(self, tenant_id: str, current_spend: float, budget: float, period: str = "monthly") -> None:
+    def __init__(
+        self,
+        tenant_id: str,
+        current_spend: float,
+        budget: float,
+        period: str = "monthly",
+    ) -> None:
         self.tenant_id = tenant_id
         self.current_spend = current_spend
         self.budget = budget

@@ -1,4 +1,5 @@
 """Unit tests for Milestone 70: Late-Interaction (ColBERT) Token-Level MaxSim Reranker."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -83,11 +84,23 @@ async def test_colbert_maxsim_adapter_async() -> None:
 
     query = "tenant_id postgres isolation"
     cands = [
-        SearchResult(chunk_id="c1", document_id="d1", content="Tenant isolation via tenant_id in postgres.", score=0.6),
-        SearchResult(chunk_id="c2", document_id="d1", content="Unrelated garden recipe.", score=0.2),
+        SearchResult(
+            chunk_id="c1",
+            document_id="d1",
+            content="Tenant isolation via tenant_id in postgres.",
+            score=0.6,
+        ),
+        SearchResult(
+            chunk_id="c2",
+            document_id="d1",
+            content="Unrelated garden recipe.",
+            score=0.2,
+        ),
     ]
 
-    reranked = await adapter.rerank(query=query, candidates=cands, top_n=2, threshold=0.4)
+    reranked = await adapter.rerank(
+        query=query, candidates=cands, top_n=2, threshold=0.4
+    )
     assert len(reranked) >= 1
     assert reranked[0].chunk_id == "c1"
 
@@ -126,8 +139,15 @@ async def test_tei_reranker_adapter_fallback_to_colbert() -> None:
     adapter = TeiRerankerAdapter(endpoint_url="http://unreachable-tei:8080")
 
     cands = [
-        SearchResult(chunk_id="c1", document_id="d1", content="General docs", score=0.7),
-        SearchResult(chunk_id="c2", document_id="d1", content="Specialized calcQuote logic", score=0.5),
+        SearchResult(
+            chunk_id="c1", document_id="d1", content="General docs", score=0.7
+        ),
+        SearchResult(
+            chunk_id="c2",
+            document_id="d1",
+            content="Specialized calcQuote logic",
+            score=0.5,
+        ),
     ]
 
     async def _mock_post_fail(*args, **kwargs):
@@ -158,4 +178,3 @@ def test_batch_colbert_maxsim_engine() -> None:
     # Doc 1 and Doc 3 have lower scores
     assert scores[1] > scores[0]
     assert scores[1] > scores[2]
-

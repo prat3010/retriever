@@ -76,7 +76,10 @@ def generate_additive_shares(
             accumulated += rand_val
         shares_int[parties_count - 1][d] = q_v[d] - accumulated
 
-    return [[float(shares_int[p][d]) / scale for d in range(dimension)] for p in range(parties_count)]
+    return [
+        [float(shares_int[p][d]) / scale for d in range(dimension)]
+        for p in range(parties_count)
+    ]
 
 
 def reconstruct_additive_shares(shares: list[list[float]]) -> list[float]:
@@ -146,8 +149,12 @@ def calculate_beaver_inner_product(
     for d in range(dimension):
         # Mask shares: [Delta x]_p = [x]_p - [a]_p
         # Mask shares: [Delta y]_p = [y]_p - [b]_p
-        dx_shares = [x_shares[p][d] - triples[p][d].a_share for p in range(parties_count)]
-        dy_shares = [y_shares[p][d] - triples[p][d].b_share for p in range(parties_count)]
+        dx_shares = [
+            x_shares[p][d] - triples[p][d].a_share for p in range(parties_count)
+        ]
+        dy_shares = [
+            y_shares[p][d] - triples[p][d].b_share for p in range(parties_count)
+        ]
         delta_x[d] = sum(dx_shares)
         delta_y[d] = sum(dy_shares)
 
@@ -200,7 +207,9 @@ class MpcEnclaveAdapter(MpcEnclavePort):
 
     def __init__(self) -> None:
         self._sessions: dict[str, MpcSession] = {}
-        self._shares_store: dict[str, dict[str, list[EncryptedVectorShare]]] = {}  # session_id -> {party_id: shares}
+        self._shares_store: dict[
+            str, dict[str, list[EncryptedVectorShare]]
+        ] = {}  # session_id -> {party_id: shares}
         self._results_store: dict[str, MpcResultsResponse] = {}
 
     def create_session(
@@ -251,7 +260,8 @@ class MpcEnclaveAdapter(MpcEnclavePort):
         return [
             s
             for s in self._sessions.values()
-            if s.tenant_id == tenant_id or any(p.tenant_id == tenant_id for p in s.participating_parties)
+            if s.tenant_id == tenant_id
+            or any(p.tenant_id == tenant_id for p in s.participating_parties)
         ]
 
     def join_session(
@@ -267,7 +277,10 @@ class MpcEnclaveAdapter(MpcEnclavePort):
         if not session:
             raise KeyError(f"MPC session {session_id} not found.")
 
-        if session.status in (EnclaveSessionStatus.COMPLETED, EnclaveSessionStatus.ABORTED):
+        if session.status in (
+            EnclaveSessionStatus.COMPLETED,
+            EnclaveSessionStatus.ABORTED,
+        ):
             raise ValueError(f"Cannot join session in status {session.status}.")
 
         # Check if party already registered
@@ -305,9 +318,13 @@ class MpcEnclaveAdapter(MpcEnclavePort):
             raise KeyError(f"MPC session {session_id} not found.")
 
         # Find party
-        party = next((p for p in session.participating_parties if p.party_id == party_id), None)
+        party = next(
+            (p for p in session.participating_parties if p.party_id == party_id), None
+        )
         if not party:
-            raise PermissionError(f"Party {party_id} is not registered in session {session_id}.")
+            raise PermissionError(
+                f"Party {party_id} is not registered in session {session_id}."
+            )
 
         if session_id not in self._shares_store:
             self._shares_store[session_id] = {}
@@ -316,9 +333,10 @@ class MpcEnclaveAdapter(MpcEnclavePort):
         party.has_submitted_shares = True
 
         # Check if all parties have submitted shares
-        all_submitted = (
-            len(session.participating_parties) >= session.required_parties_count
-            and all(p.has_submitted_shares for p in session.participating_parties)
+        all_submitted = len(
+            session.participating_parties
+        ) >= session.required_parties_count and all(
+            p.has_submitted_shares for p in session.participating_parties
         )
         if all_submitted:
             session.status = EnclaveSessionStatus.SHARES_INGESTED
@@ -340,9 +358,14 @@ class MpcEnclaveAdapter(MpcEnclavePort):
 
         # Check differential privacy budget
         epsilon_cost = 0.50
-        if session.epsilon_budget_consumed + epsilon_cost > session.epsilon_budget_total:
+        if (
+            session.epsilon_budget_consumed + epsilon_cost
+            > session.epsilon_budget_total
+        ):
             session.status = EnclaveSessionStatus.ABORTED
-            raise ValueError("Differential privacy budget exceeded for this MPC session.")
+            raise ValueError(
+                "Differential privacy budget exceeded for this MPC session."
+            )
 
         session_shares = self._shares_store.get(session_id, {})
         parties_count = len(session.participating_parties)
@@ -353,7 +376,11 @@ class MpcEnclaveAdapter(MpcEnclavePort):
 
         # Separate Query Shares (Initiator) and Candidate Shares (Evaluators)
         initiator_party = next(
-            (p for p in session.participating_parties if p.role == EnclavePartyRole.INITIATOR),
+            (
+                p
+                for p in session.participating_parties
+                if p.role == EnclavePartyRole.INITIATOR
+            ),
             session.participating_parties[0],
         )
 
@@ -362,7 +389,9 @@ class MpcEnclaveAdapter(MpcEnclavePort):
             # Generate synthetic test query shares for demonstration if empty
             query_raw = [random.uniform(-1.0, 1.0) for _ in range(dimension)]
             query_raw = normalize_vector(query_raw)
-            generated = generate_additive_shares(query_raw, parties_count, session.fixed_point_scale)
+            generated = generate_additive_shares(
+                query_raw, parties_count, session.fixed_point_scale
+            )
             for idx, p in enumerate(session.participating_parties):
                 if p.party_id not in session_shares:
                     session_shares[p.party_id] = []
@@ -379,7 +408,10 @@ class MpcEnclaveAdapter(MpcEnclavePort):
                 )
 
         # Aggregate query coordinates per party
-        x_shares = [session_shares[p.party_id][0].share_values for p in session.participating_parties]
+        x_shares = [
+            session_shares[p.party_id][0].share_values
+            for p in session.participating_parties
+        ]
 
         # Candidate evaluations (simulate cross-party corpus matching)
         candidates_pool = [
@@ -395,7 +427,9 @@ class MpcEnclaveAdapter(MpcEnclavePort):
             cand_raw = [random.uniform(-1.0, 1.0) for _ in range(dimension)]
             cand_raw = normalize_vector(cand_raw)
             # Impart controlled alignment with base_sim
-            cand_shares = generate_additive_shares(cand_raw, parties_count, session.fixed_point_scale)
+            cand_shares = generate_additive_shares(
+                cand_raw, parties_count, session.fixed_point_scale
+            )
 
             # Compute confidential dot product using Beaver triples
             # For demonstration, compute dot product using Beaver triples
@@ -434,7 +468,9 @@ class MpcEnclaveAdapter(MpcEnclavePort):
             matches_above_threshold=len(top_results),
             results=top_results,
             computation_time_ms=exec_time_ms,
-            epsilon_remaining=round(session.epsilon_budget_total - session.epsilon_budget_consumed, 2),
+            epsilon_remaining=round(
+                session.epsilon_budget_total - session.epsilon_budget_consumed, 2
+            ),
         )
 
         self._results_store[session_id] = response
@@ -453,7 +489,9 @@ class MpcEnclaveAdapter(MpcEnclavePort):
         session.status = EnclaveSessionStatus.ABORTED
         return session
 
-    def simulate_mpc_math(self, request: MpcMathSimulationRequest) -> MpcMathSimulationResponse:
+    def simulate_mpc_math(
+        self, request: MpcMathSimulationRequest
+    ) -> MpcMathSimulationResponse:
         dim = request.vector_dimension
         parties_count = request.parties_count
         scale = request.fixed_point_scale
@@ -498,7 +536,10 @@ class MpcEnclaveAdapter(MpcEnclavePort):
 
         # Collect sample shares for first 3 dimensions
         sample_dims = min(3, dim)
-        sample_shares = [[round(q_shares[p][i], 4) for i in range(sample_dims)] for p in range(parties_count)]
+        sample_shares = [
+            [round(q_shares[p][i], 4) for i in range(sample_dims)]
+            for p in range(parties_count)
+        ]
 
         # Entropy of all generated share coordinates
         flattened_shares = [val for p_shares in q_shares for val in p_shares]

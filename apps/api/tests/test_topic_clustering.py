@@ -1,9 +1,12 @@
 try:
     import pytest
+
     fixture = pytest.fixture
 except ImportError:
+
     def fixture(func):
         return func
+
 
 import numpy as np
 
@@ -61,7 +64,10 @@ def test_small_collection_single_topic_fallback(clustering_adapter):
     topic = res.topics[0]
     assert topic.topic_id == 0
     assert topic.chunk_count == 2
-    assert "invoice" in " ".join(topic.keywords).lower() or "payment" in " ".join(topic.keywords).lower()
+    assert (
+        "invoice" in " ".join(topic.keywords).lower()
+        or "payment" in " ".join(topic.keywords).lower()
+    )
 
 
 def test_multi_cluster_c_tfidf_separation(clustering_adapter):
@@ -93,7 +99,9 @@ def test_multi_cluster_c_tfidf_separation(clustering_adapter):
         chunk_ids=chunk_ids,
         chunk_texts=chunk_texts,
         embeddings=embeddings,
-        request=TopicClusteringRequest(min_cluster_size=2, method="kmeans", top_k_keywords=4),
+        request=TopicClusteringRequest(
+            min_cluster_size=2, method="kmeans", top_k_keywords=4
+        ),
     )
 
     assert res.total_chunks == 8
@@ -102,8 +110,16 @@ def test_multi_cluster_c_tfidf_separation(clustering_adapter):
 
     # Verify keyword distinctiveness across topics
     all_keywords = " ".join([" ".join(t.keywords) for t in res.topics]).lower()
-    assert "authentication" in all_keywords or "token" in all_keywords or "login" in all_keywords
-    assert "invoice" in all_keywords or "payment" in all_keywords or "billing" in all_keywords
+    assert (
+        "authentication" in all_keywords
+        or "token" in all_keywords
+        or "login" in all_keywords
+    )
+    assert (
+        "invoice" in all_keywords
+        or "payment" in all_keywords
+        or "billing" in all_keywords
+    )
 
 
 def test_knowledge_gap_detection(clustering_adapter):
@@ -162,4 +178,3 @@ if __name__ == "__main__":
     print("✓ Knowledge gap detection test passed.")
 
     print("\n🎉 All 4 Topic Clustering & Knowledge Gap tests passed successfully!")
-

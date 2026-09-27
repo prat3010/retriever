@@ -37,9 +37,13 @@ router = APIRouter(tags=["Vision & Multimodal GraphRAG"])
 class ExtractSchematicTextRequest(BaseModel):
     """Payload for extracting schematic from text/ASCII or SVG markup without multipart upload."""
 
-    content: str = Field(..., description="Raw SVG markup, ASCII diagram, or architecture description")
+    content: str = Field(
+        ..., description="Raw SVG markup, ASCII diagram, or architecture description"
+    )
     filename: str = Field(default="architecture.svg", description="Diagram filename")
-    document_id: str | None = Field(default=None, description="Optional associated document ID")
+    document_id: str | None = Field(
+        default=None, description="Optional associated document ID"
+    )
 
 
 class MultimodalStatusResponse(BaseModel):
@@ -114,7 +118,9 @@ async def extract_schematic_upload(
     # 3. If document_id provided, cross-link with existing document text chunks
     if document_id and document_repository:
         try:
-            chunks = await document_repository.get_document_chunks(tenantId, document_id)
+            chunks = await document_repository.get_document_chunks(
+                tenantId, document_id
+            )
             if chunks:
                 xm_triples = await multimodal_graph_service.link_cross_modal_entities(
                     tenant_id=tenantId,

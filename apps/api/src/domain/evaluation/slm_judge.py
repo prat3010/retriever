@@ -41,7 +41,9 @@ class SlmJudgeEngine(BaseSlmJudge):
         # 1. Attempt LLM/SLM Structured Evaluation if provider is passed
         if llm_provider is not None:
             try:
-                result = await self._call_slm_provider(query, answer, contexts, llm_provider)
+                result = await self._call_slm_provider(
+                    query, answer, contexts, llm_provider
+                )
                 if result is not None:
                     elapsed = (time.monotonic() - start_time) * 1000
                     result.latency_ms = round(elapsed, 2)
@@ -51,7 +53,9 @@ class SlmJudgeEngine(BaseSlmJudge):
                 pass
 
         # 2. Fallback Deterministic Structural Judge using NLI Evaluator
-        fallback_result = self._generate_structural_judge_result(query, answer, contexts)
+        fallback_result = self._generate_structural_judge_result(
+            query, answer, contexts
+        )
         elapsed = (time.monotonic() - start_time) * 1000
         fallback_result.latency_ms = round(elapsed, 2)
         return fallback_result
@@ -61,7 +65,7 @@ class SlmJudgeEngine(BaseSlmJudge):
     ) -> SlmJudgeResult | None:
         """Prompt Small Language Model for structured claim-by-claim evaluation."""
         formatted_contexts = "\n\n".join(
-            f"[Context {i+1}]: {c}" for i, c in enumerate(contexts[:5])
+            f"[Context {i + 1}]: {c}" for i, c in enumerate(contexts[:5])
         )
 
         prompt = (
@@ -75,7 +79,7 @@ class SlmJudgeEngine(BaseSlmJudge):
             '  "faithfulness_score": 0.0 to 1.0,\n'
             '  "reasoning": "summary explanation",\n'
             '  "claim_analyses": [\n'
-            '    {\n'
+            "    {\n"
             '      "claim": "exact sentence claim",\n'
             '      "status": "supported" | "unsupported" | "contradicted",\n'
             '      "evidence_span": "verbatim text quote from context or empty",\n'
@@ -147,7 +151,9 @@ class SlmJudgeEngine(BaseSlmJudge):
                 status = "supported"
                 span = c.premise[:120] + "..." if len(c.premise) > 120 else c.premise
                 conf = c.entailment_prob
-                rationale = "Claim is grounded in context premise with consistent polarity."
+                rationale = (
+                    "Claim is grounded in context premise with consistent polarity."
+                )
             elif c.status == "contradiction":
                 status = "contradicted"
                 span = c.premise[:120] + "..." if len(c.premise) > 120 else c.premise

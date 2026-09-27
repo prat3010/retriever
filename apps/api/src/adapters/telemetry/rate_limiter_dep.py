@@ -12,7 +12,10 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
         scope: Logical scope name (e.g. 'search', 'chat', 'ingest').
         max_requests: Override the default max requests for this scope.
     """
-    async def dependency(request: Request, response: Response = None, tenantId: str | None = None) -> None:
+
+    async def dependency(
+        request: Request, response: Response = None, tenantId: str | None = None
+    ) -> None:
         limiter = get_rate_limiter()
         if limiter is None:
             return  # Rate limiting disabled
@@ -23,6 +26,7 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
             if auth_header:
                 try:
                     from src.adapters.api.security import get_current_user
+
                     user_context = await get_current_user(token=auth_header)
                     t_id = user_context.tenant_id
                 except Exception:
@@ -34,6 +38,7 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
         if t_id:
             try:
                 from src.adapters.cache.config_cache import redis_client
+
                 if redis_client is not None:
                     quarantine_flag = await redis_client.get(f"quarantine:{t_id}")
                     if quarantine_flag:
@@ -45,8 +50,6 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
             result = await limiter.acquire(key, max_requests_override=effective_max)
         else:
             result = await limiter.acquire(key)
-
-
 
         # Set rate limit headers in the response if available
         if response is not None:
@@ -66,7 +69,7 @@ def rate_limit(scope: str = "default", max_requests: int | None = None) -> calla
                     "X-RateLimit-Limit": str(result.limit),
                     "X-RateLimit-Remaining": str(result.remaining),
                     "X-RateLimit-Reset": str(result.reset_after),
-                }
+                },
             )
 
     return dependency

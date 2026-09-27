@@ -49,7 +49,6 @@ ENTERPRISE_PII_DEFINITIONS: dict[str, dict[str, Any]] = {
         "category": PiiCategory.FINANCIAL,
         "pattern": re.compile(r"\b[A-Z]{4}0[A-Z0-9]{6}\b"),
     },
-
     # ── Identification (GDPR Art. 9 / KYC) ──
     "ssn": {
         "category": PiiCategory.IDENTIFICATION,
@@ -67,7 +66,6 @@ ENTERPRISE_PII_DEFINITIONS: dict[str, dict[str, Any]] = {
         "category": PiiCategory.IDENTIFICATION,
         "pattern": re.compile(r"\b[A-Z][0-9]{7,8}\b"),
     },
-
     # ── Secrets & Credentials (SOC 2 / Zero-Trust) ──
     "aws_access_key": {
         "category": PiiCategory.SECRETS,
@@ -83,29 +81,30 @@ ENTERPRISE_PII_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "jwt_token": {
         "category": PiiCategory.SECRETS,
-        "pattern": re.compile(r"\beyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\b"),
+        "pattern": re.compile(
+            r"\beyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\b"
+        ),
     },
     "private_key_header": {
         "category": PiiCategory.SECRETS,
         "pattern": re.compile(r"-----BEGIN[ A-Z0-9_-]+PRIVATE KEY-----"),
     },
-
     # ── Network & Infrastructure ──
     "ipv4": {
         "category": PiiCategory.NETWORK,
-        "pattern": re.compile(r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"),
+        "pattern": re.compile(
+            r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"
+        ),
     },
     "mac_address": {
         "category": PiiCategory.NETWORK,
         "pattern": re.compile(r"\b(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})\b"),
     },
-
     # ── Health & Medical (HIPAA Safe Harbor) ──
     "medical_record_number": {
         "category": PiiCategory.HEALTH_HIPAA,
         "pattern": re.compile(r"\bMRN[ -]?[0-9]{6,10}\b", re.IGNORECASE),
     },
-
     # ── Contact Information ──
     "email": {
         "category": PiiCategory.CONTACT,
@@ -113,7 +112,9 @@ ENTERPRISE_PII_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "phone": {
         "category": PiiCategory.CONTACT,
-        "pattern": re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+        "pattern": re.compile(
+            r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+        ),
     },
 }
 
@@ -124,7 +125,9 @@ class PiiAnonymizer:
     def __init__(self) -> None:
         self.definitions = ENTERPRISE_PII_DEFINITIONS
 
-    def _generate_mask(self, raw_value: str, entity_type: str, category: PiiCategory, mode: MaskingMode) -> str:
+    def _generate_mask(
+        self, raw_value: str, entity_type: str, category: PiiCategory, mode: MaskingMode
+    ) -> str:
         if mode == MaskingMode.REDACT:
             return f"[REDACTED_{entity_type.upper()}]"
 
@@ -157,7 +160,9 @@ class PiiAnonymizer:
                 total_redacted=0,
             )
 
-        active_categories = set(request.categories) if request.categories else set(PiiCategory)
+        active_categories = (
+            set(request.categories) if request.categories else set(PiiCategory)
+        )
         raw_candidates: list[PiiEntityMatch] = []
 
         # 1. Process built-in entity definitions
@@ -174,7 +179,9 @@ class PiiAnonymizer:
                 if validator and not validator(val):
                     continue
 
-                mask = self._generate_mask(val, entity_type, category, request.masking_mode)
+                mask = self._generate_mask(
+                    val, entity_type, category, request.masking_mode
+                )
                 raw_candidates.append(
                     PiiEntityMatch(
                         category=category,
@@ -208,7 +215,7 @@ class PiiAnonymizer:
                     pass
 
         # 3. Non-overlapping Interval Selection: longer match wins
-        raw_candidates.sort(key=lambda m: (m.end - m.start), reverse=True)
+        raw_candidates.sort(key=lambda m: m.end - m.start, reverse=True)
         selected_matches: list[PiiEntityMatch] = []
         occupied_spans: list[tuple[int, int]] = []
 
@@ -227,7 +234,9 @@ class PiiAnonymizer:
 
         redacted_text = text
         for m in selected_matches:
-            redacted_text = redacted_text[: m.start] + m.masked_value + redacted_text[m.end :]
+            redacted_text = (
+                redacted_text[: m.start] + m.masked_value + redacted_text[m.end :]
+            )
 
         # 5. Return matches in original document reading order
         selected_matches.sort(key=lambda m: m.start)

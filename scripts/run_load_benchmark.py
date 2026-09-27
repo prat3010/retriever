@@ -31,8 +31,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "http://localhost:8000")
-DEFAULT_TENANT_ID = os.getenv("LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4")
-DEFAULT_ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266")
+DEFAULT_TENANT_ID = os.getenv(
+    "LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4"
+)
+DEFAULT_ADMIN_KEY = os.getenv(
+    "ADMIN_MASTER_KEY",
+    "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266",
+)
 
 
 def percentile(sorted_list: list[float], p: float) -> float:
@@ -47,7 +52,13 @@ def percentile(sorted_list: list[float], p: float) -> float:
     return round(sorted_list[f], 2)
 
 
-def execute_http_request(url: str, method: str = "GET", headers: dict | None = None, payload: dict | None = None, timeout: float = 40.0) -> tuple[int, float, str]:
+def execute_http_request(
+    url: str,
+    method: str = "GET",
+    headers: dict | None = None,
+    payload: dict | None = None,
+    timeout: float = 40.0,
+) -> tuple[int, float, str]:
     """Execute synchronous HTTP request with microsecond timer.
     Returns: (status_code, latency_ms, error_message)
     """
@@ -57,7 +68,9 @@ def execute_http_request(url: str, method: str = "GET", headers: dict | None = N
         data_bytes = json.dumps(payload).encode("utf-8")
         req_headers["Content-Type"] = "application/json"
 
-    req = urllib.request.Request(url, data=data_bytes, headers=req_headers, method=method)
+    req = urllib.request.Request(
+        url, data=data_bytes, headers=req_headers, method=method
+    )
     start = time.perf_counter()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
@@ -88,7 +101,9 @@ async def run_worker_sweep(
         worker_results = []
         for _ in range(num_requests_per_worker):
             p = payload_fn() if payload_fn else None
-            res = await loop.run_in_executor(None, execute_http_request, url, method, headers, p, 40.0)
+            res = await loop.run_in_executor(
+                None, execute_http_request, url, method, headers, p, 40.0
+            )
             worker_results.append(res)
         return worker_results
 
@@ -111,26 +126,40 @@ async def benchmark_concurrency_tier(
 
     # 1. Health Readiness (/health/readiness) - Tests PostgreSQL SELECT 1 connection pool + ASGI event loop
     health_url = f"{target_base}/health/readiness"
-    health_results = await run_worker_sweep(health_url, "GET", {}, None, reqs_per_worker, concurrency)
-    endpoint_stats["health_readiness"] = compute_distribution("PostgreSQL & Pool Readiness", health_results)
+    health_results = await run_worker_sweep(
+        health_url, "GET", {}, None, reqs_per_worker, concurrency
+    )
+    endpoint_stats["health_readiness"] = compute_distribution(
+        "PostgreSQL & Pool Readiness", health_results
+    )
 
     # 2. Health Liveness (/health/liveness) - Pure ASGI Event Loop & Nginx Routing Overhead
     liveness_url = f"{target_base}/health/liveness"
-    liveness_results = await run_worker_sweep(liveness_url, "GET", {}, None, reqs_per_worker, concurrency)
-    endpoint_stats["health_liveness"] = compute_distribution("ASGI Gateway & Nginx Routing", liveness_results)
+    liveness_results = await run_worker_sweep(
+        liveness_url, "GET", {}, None, reqs_per_worker, concurrency
+    )
+    endpoint_stats["health_liveness"] = compute_distribution(
+        "ASGI Gateway & Nginx Routing", liveness_results
+    )
 
     # 3. Control Plane Multi-Tenant Routing (/v1/admin/tenants) - Tests Admin Master Key & JSON Serialization
     admin_url = f"{target_base}/v1/admin/tenants"
     admin_headers = {"X-Admin-Master-Key": admin_key}
-    admin_results = await run_worker_sweep(admin_url, "GET", admin_headers, None, reqs_per_worker, concurrency)
-    endpoint_stats["admin_tenants"] = compute_distribution("Multi-Tenant Control Plane", admin_results)
+    admin_results = await run_worker_sweep(
+        admin_url, "GET", admin_headers, None, reqs_per_worker, concurrency
+    )
+    endpoint_stats["admin_tenants"] = compute_distribution(
+        "Multi-Tenant Control Plane", admin_results
+    )
 
     total_duration = time.perf_counter() - tier_start
     all_tier_results = health_results + liveness_results + admin_results
     total_reqs = len(all_tier_results)
     qps = round(total_reqs / total_duration, 1) if total_duration > 0 else 0.0
 
-    aggregated = compute_distribution(f"Aggregated ({concurrency} VUs)", all_tier_results)
+    aggregated = compute_distribution(
+        f"Aggregated ({concurrency} VUs)", all_tier_results
+    )
     aggregated["qps"] = qps
     aggregated["total_duration_sec"] = round(total_duration, 2)
     aggregated["concurrency"] = concurrency
@@ -142,7 +171,13 @@ async def benchmark_concurrency_tier(
 def compute_distribution(name: str, results: list[tuple[int, float, str]]) -> dict:
     """Calculate statistical distribution for a collection of (status, latency, err) tuples."""
     if not results:
-        return {"name": name, "total_requests": 0, "success_count": 0, "failure_count": 0, "error_rate_pct": 0.0}
+        return {
+            "name": name,
+            "total_requests": 0,
+            "success_count": 0,
+            "failure_count": 0,
+            "error_rate_pct": 0.0,
+        }
 
     total = len(results)
     successes = [lat for status, lat, _ in results if status == 200]
@@ -168,7 +203,9 @@ def compute_distribution(name: str, results: list[tuple[int, float, str]]) -> di
     }
 
 
-def generate_reports(target_url: str, sweep_data: dict, out_dir: Path, web_sync_dir: Path | None):
+def generate_reports(
+    target_url: str, sweep_data: dict, out_dir: Path, web_sync_dir: Path | None
+):
     """Generate Markdown and JSON reports and sync to website."""
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
@@ -224,15 +261,17 @@ def generate_reports(target_url: str, sweep_data: dict, out_dir: Path, web_sync_
             f"| **{vu} VUs** | {data['total_requests']} | **{data['qps']} req/s** | {data['p50_ms']} ms | {data['p90_ms']} ms | {data['p95_ms']} ms | {data['p99_ms']} ms | {data['error_rate_pct']}% |"
         )
 
-    md_lines.extend([
-        "",
-        "---",
-        "",
-        "## 🔍 Per-Endpoint Latency Breakdown (Sampled at Peak Load)",
-        "",
-        "| Endpoint / Surface | Method | Total Calls | Avg (ms) | $P_{50}$ (ms) | $P_{95}$ (ms) | $P_{99}$ (ms) | Error Rate |",
-        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
-    ])
+    md_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 🔍 Per-Endpoint Latency Breakdown (Sampled at Peak Load)",
+            "",
+            "| Endpoint / Surface | Method | Total Calls | Avg (ms) | $P_{50}$ (ms) | $P_{95}$ (ms) | $P_{99}$ (ms) | Error Rate |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+        ]
+    )
 
     highest_vu = list(sweep_data.keys())[-1]
     peak_endpoints = sweep_data[highest_vu].get("endpoints", {})
@@ -242,21 +281,23 @@ def generate_reports(target_url: str, sweep_data: dict, out_dir: Path, web_sync_
             f"| **{ep_data['name']}** | `{method}` | {ep_data['total_requests']} | {ep_data['avg_ms']} ms | {ep_data['p50_ms']} ms | {ep_data['p95_ms']} ms | {ep_data['p99_ms']} ms | {ep_data['error_rate_pct']}% |"
         )
 
-    md_lines.extend([
-        "",
-        "---",
-        "",
-        "## 🛡️ Architectural Resilience & Invariants Verified",
-        "1. **Zero Connection Pool Starvation:** PostgreSQL connection pooling and async engine connection checkout remain stable across concurrency tiers.",
-        "2. **Gateway Event-Loop Overhead:** Sub-50ms round-trip latency over public HTTPS across international edge routing.",
-        "3. **Zero-Toy Compliance:** All responses verified against strict HTTP 200 OK contracts without fallback mock swallowing.",
-        "",
-        "### Reproducibility",
-        "Anyone can reproduce this benchmark independently from the command line:",
-        "```bash",
-        f"python3 scripts/run_load_benchmark.py --target {target_url} --users 10,25,50",
-        "```",
-    ])
+    md_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 🛡️ Architectural Resilience & Invariants Verified",
+            "1. **Zero Connection Pool Starvation:** PostgreSQL connection pooling and async engine connection checkout remain stable across concurrency tiers.",
+            "2. **Gateway Event-Loop Overhead:** Sub-50ms round-trip latency over public HTTPS across international edge routing.",
+            "3. **Zero-Toy Compliance:** All responses verified against strict HTTP 200 OK contracts without fallback mock swallowing.",
+            "",
+            "### Reproducibility",
+            "Anyone can reproduce this benchmark independently from the command line:",
+            "```bash",
+            f"python3 scripts/run_load_benchmark.py --target {target_url} --users 10,25,50",
+            "```",
+        ]
+    )
 
     md_path = out_dir / "EMPIRICAL_LOAD_BENCHMARK_REPORT.md"
     with open(md_path, "w", encoding="utf-8") as f:
@@ -265,13 +306,36 @@ def generate_reports(target_url: str, sweep_data: dict, out_dir: Path, web_sync_
 
 
 async def main_async():
-    parser = argparse.ArgumentParser(description="Retriever Empirical Load Benchmark Suite")
-    parser.add_argument("--target", default=DEFAULT_TARGET, help=f"Target URL (default: {DEFAULT_TARGET})")
-    parser.add_argument("--admin-key", default=DEFAULT_ADMIN_KEY, help="Admin Master Key")
-    parser.add_argument("--users", default="10,25,50", help="Comma-separated concurrency tiers (e.g. 10,25,50)")
-    parser.add_argument("--reqs-per-user", type=int, default=2, help="Requests per virtual user per tier")
-    parser.add_argument("--outdir", default="docs/benchmarks", help="Output directory in retriever")
-    parser.add_argument("--sync-dir", default=None, help="Optional external directory path to sync metrics JSON to")
+    parser = argparse.ArgumentParser(
+        description="Retriever Empirical Load Benchmark Suite"
+    )
+    parser.add_argument(
+        "--target",
+        default=DEFAULT_TARGET,
+        help=f"Target URL (default: {DEFAULT_TARGET})",
+    )
+    parser.add_argument(
+        "--admin-key", default=DEFAULT_ADMIN_KEY, help="Admin Master Key"
+    )
+    parser.add_argument(
+        "--users",
+        default="10,25,50",
+        help="Comma-separated concurrency tiers (e.g. 10,25,50)",
+    )
+    parser.add_argument(
+        "--reqs-per-user",
+        type=int,
+        default=2,
+        help="Requests per virtual user per tier",
+    )
+    parser.add_argument(
+        "--outdir", default="docs/benchmarks", help="Output directory in retriever"
+    )
+    parser.add_argument(
+        "--sync-dir",
+        default=None,
+        help="Optional external directory path to sync metrics JSON to",
+    )
 
     args = parser.parse_args()
     target_base = args.target.rstrip("/")
@@ -286,7 +350,10 @@ async def main_async():
 
     sweep_data = {}
     for vu in tiers:
-        print(f"▶️ Executing Concurrency Sweep: {vu} Virtual Users (reqs/VU: {args.reqs_per_user})...", flush=True)
+        print(
+            f"▶️ Executing Concurrency Sweep: {vu} Virtual Users (reqs/VU: {args.reqs_per_user})...",
+            flush=True,
+        )
         tier_summary = await benchmark_concurrency_tier(
             target_base=target_base,
             admin_key=args.admin_key,

@@ -14,7 +14,9 @@ async def test_zero_config_python_ast_ingestion() -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     filename = "service.py"
-    code_content = b"def process_data(x):\n    return x * 2\n\nclass DataHandler:\n    pass\n"
+    code_content = (
+        b"def process_data(x):\n    return x * 2\n\nclass DataHandler:\n    pass\n"
+    )
 
     embedder = AsyncMock()
     embedder.embed_batch.side_effect = lambda texts: [[0.1] * 1536 for _ in texts]
@@ -28,7 +30,9 @@ async def test_zero_config_python_ast_ingestion() -> None:
     mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         chunk_count = await ingest_file_sync(
@@ -54,7 +58,9 @@ async def test_zero_config_markdown_ingestion() -> None:
     tenant_id = str(uuid.uuid4())
     doc_id = str(uuid.uuid4())
     filename = "README.md"
-    md_content = b"# Introduction\nWelcome to Retriever.\n\n## Features\n- Zero config RAG\n"
+    md_content = (
+        b"# Introduction\nWelcome to Retriever.\n\n## Features\n- Zero config RAG\n"
+    )
 
     embedder = AsyncMock()
     embedder.embed_batch.side_effect = lambda texts: [[0.2] * 1536 for _ in texts]
@@ -68,7 +74,9 @@ async def test_zero_config_markdown_ingestion() -> None:
     mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         chunk_count = await ingest_file_sync(
@@ -106,7 +114,9 @@ async def test_zero_config_hierarchical_document_ingestion() -> None:
     mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         chunk_count = await ingest_file_sync(
@@ -138,6 +148,7 @@ async def test_zero_config_hierarchical_document_ingestion() -> None:
 def _create_mock_docx() -> bytes:
     import io
     import zipfile
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
         xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -154,6 +165,7 @@ def _create_mock_docx() -> bytes:
 def _create_mock_xlsx() -> bytes:
     import io
     import zipfile
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
         sst = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -200,7 +212,9 @@ async def test_zero_config_docx_ingestion() -> None:
     mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         chunk_count = await ingest_file_sync(
@@ -239,7 +253,9 @@ async def test_zero_config_xlsx_ingestion() -> None:
     mock_session.add = MagicMock()
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         chunk_count = await ingest_file_sync(
@@ -255,4 +271,6 @@ async def test_zero_config_xlsx_ingestion() -> None:
         assert chunk_count > 0
         texts_embedded = embedder.embed_batch.call_args[0][0]
         assert any("Month" in t and "Revenue" in t for t in texts_embedded)
-        assert all(t.startswith("[Document: financial_model.xlsx]\n") for t in texts_embedded)
+        assert all(
+            t.startswith("[Document: financial_model.xlsx]\n") for t in texts_embedded
+        )

@@ -33,7 +33,12 @@ class SqlQuotaRepository(QuotaRepository):
         start_of_month = datetime(now.year, now.month, 1, tzinfo=UTC)
         async with tenant_session(tenant_id=tenant_id, bypass_rls=True) as session:
             stmt = select(
-                func.coalesce(func.sum(InferenceLogDb.prompt_tokens + InferenceLogDb.completion_tokens), 0)
+                func.coalesce(
+                    func.sum(
+                        InferenceLogDb.prompt_tokens + InferenceLogDb.completion_tokens
+                    ),
+                    0,
+                )
             ).where(
                 InferenceLogDb.tenant_id == uuid.UUID(tenant_id),
                 InferenceLogDb.created_at >= start_of_month,
@@ -46,9 +51,7 @@ class SqlQuotaRepository(QuotaRepository):
         now = datetime.now(UTC)
         start_of_day = datetime(now.year, now.month, now.day, tzinfo=UTC)
         async with tenant_session(tenant_id=tenant_id, bypass_rls=True) as session:
-            stmt = select(
-                func.count(InferenceLogDb.log_id)
-            ).where(
+            stmt = select(func.count(InferenceLogDb.log_id)).where(
                 InferenceLogDb.tenant_id == uuid.UUID(tenant_id),
                 InferenceLogDb.created_at >= start_of_day,
             )

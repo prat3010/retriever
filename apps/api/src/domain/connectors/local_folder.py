@@ -22,17 +22,25 @@ class LocalFolderConnector(BaseConnector):
             icon="folder",
             supports_incremental=False,
             required_parameters=["folder_path"],
-            optional_parameters={"allowed_extensions": [".txt", ".md", ".json", ".csv"]},
+            optional_parameters={
+                "allowed_extensions": [".txt", ".md", ".json", ".csv"]
+            },
         )
 
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
-        folder_path = config.configuration.get("folder_path") or config.configuration.get("folder_id")
+        folder_path = config.configuration.get(
+            "folder_path"
+        ) or config.configuration.get("folder_id")
         if not folder_path:
             return False
         return os.path.isdir(str(folder_path))
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
-        folder_path = config.configuration.get("folder_path") or config.configuration.get("folder_id")
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
+        folder_path = config.configuration.get(
+            "folder_path"
+        ) or config.configuration.get("folder_id")
         if not folder_path or not os.path.isdir(str(folder_path)):
             return []
 
@@ -43,7 +51,10 @@ class LocalFolderConnector(BaseConnector):
         for root, _, files in os.walk(path):
             for file in files:
                 file_path = Path(root) / file
-                if file_path.suffix.lower() in supported_extensions and file_path.is_file():
+                if (
+                    file_path.suffix.lower() in supported_extensions
+                    and file_path.is_file()
+                ):
                     try:
                         content = file_path.read_text(encoding="utf-8", errors="ignore")
                         discovered.append(

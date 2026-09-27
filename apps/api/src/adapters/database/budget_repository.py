@@ -64,7 +64,9 @@ class SqlBudgetRepository(BudgetRepositoryProtocol):
         self, tenant_id: str, default_budget: VirtualTenantBudget | None = None
     ) -> VirtualTenantBudget:
         """Fetch compiled virtual budget details and current utilization for a tenant."""
-        daily_spend, monthly_spend, cost_by_model = await self.get_tenant_spend(tenant_id)
+        daily_spend, monthly_spend, cost_by_model = await self.get_tenant_spend(
+            tenant_id
+        )
         base = default_budget or VirtualTenantBudget()
 
         exceeded = False

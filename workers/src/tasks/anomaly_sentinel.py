@@ -45,7 +45,11 @@ def run_telemetry_anomaly_sentinel(
         )
 
         anomalies = [s for s in scores if s.is_anomaly]
-        quarantined = [s for s in anomalies if s.risk_level == "CRITICAL" and s.entity_type == "api_key"]
+        quarantined = [
+            s
+            for s in anomalies
+            if s.risk_level == "CRITICAL" and s.entity_type == "api_key"
+        ]
 
         return {
             "status": "completed",
@@ -70,6 +74,7 @@ def run_telemetry_anomaly_sentinel(
         if loop.is_running():
             # If in an existing loop, use an executor
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 result = pool.submit(asyncio.run, _execute_scan()).result()
         else:

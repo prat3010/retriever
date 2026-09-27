@@ -48,11 +48,14 @@ class SelfTuningEngine:
     ) -> SelfTuningReport:
         """Analyze recent telemetry metrics and compute optimal parameter adjustments."""
         curr_top_k = int(current_settings.get("top_k", 5))
-        curr_threshold = float(current_settings.get("reranking_threshold", current_settings.get("rerank_threshold", 0.30)))
+        curr_threshold = float(
+            current_settings.get(
+                "reranking_threshold", current_settings.get("rerank_threshold", 0.30)
+            )
+        )
         curr_rrf_k = int(current_settings.get("rrf_k", 60))
         curr_enable_rerank = bool(current_settings.get("enable_reranking", True))
         curr_enable_graph = bool(current_settings.get("enable_graph_search", False))
-
 
         if not recent_metrics or len(recent_metrics) < self.min_sample_size:
             return SelfTuningReport(
@@ -64,8 +67,12 @@ class SelfTuningEngine:
             )
 
         # Compute rolling averages
-        avg_faithfulness = sum(m.faithfulness for m in recent_metrics) / len(recent_metrics)
-        avg_precision = sum(m.context_precision for m in recent_metrics) / len(recent_metrics)
+        avg_faithfulness = sum(m.faithfulness for m in recent_metrics) / len(
+            recent_metrics
+        )
+        avg_precision = sum(m.context_precision for m in recent_metrics) / len(
+            recent_metrics
+        )
         avg_hallucination = round(1.0 - avg_faithfulness, 4)
 
         new_top_k = curr_top_k
@@ -78,7 +85,9 @@ class SelfTuningEngine:
         if avg_faithfulness < 0.60 or avg_hallucination > 0.35:
             # Raise reranking threshold to aggressively discard hallucinated/irrelevant contexts
             delta_threshold = 0.08 if avg_faithfulness < 0.45 else 0.04
-            new_threshold = min(self.MAX_RERANK_THRESHOLD, round(curr_threshold + delta_threshold, 2))
+            new_threshold = min(
+                self.MAX_RERANK_THRESHOLD, round(curr_threshold + delta_threshold, 2)
+            )
             if new_threshold != curr_threshold:
                 adjustments.append(
                     f"Raised reranking_threshold from {curr_threshold:.2f} to {new_threshold:.2f} "
@@ -88,17 +97,23 @@ class SelfTuningEngine:
             # Boost top-ranked fusion candidates by narrowing RRF denominator
             if curr_rrf_k > 40:
                 new_rrf_k = max(self.MIN_RRF_K, curr_rrf_k - 15)
-                adjustments.append(f"Tightened rrf_k from {curr_rrf_k} to {new_rrf_k} to prioritize top-fused candidates.")
+                adjustments.append(
+                    f"Tightened rrf_k from {curr_rrf_k} to {new_rrf_k} to prioritize top-fused candidates."
+                )
 
             # Suggest activating graph evidence if available
             if not curr_enable_graph:
                 new_enable_graph = True
-                adjustments.append("Enabled GraphRAG entity search pass to reinforce factual grounding.")
+                adjustments.append(
+                    "Enabled GraphRAG entity search pass to reinforce factual grounding."
+                )
 
         elif avg_faithfulness > 0.90 and avg_precision > 0.80:
             # High-confidence regime: gently relax threshold if it was overly restrictive
             if curr_threshold > 0.25:
-                new_threshold = max(self.MIN_RERANK_THRESHOLD, round(curr_threshold - 0.03, 2))
+                new_threshold = max(
+                    self.MIN_RERANK_THRESHOLD, round(curr_threshold - 0.03, 2)
+                )
                 adjustments.append(
                     f"Relaxed reranking_threshold from {curr_threshold:.2f} to {new_threshold:.2f} "
                     f"given high factual stability ({avg_faithfulness:.2f})."
@@ -121,11 +136,17 @@ class SelfTuningEngine:
                 )
 
         # Check for user negative feedback trend
-        feedback_scores = [m.user_feedback_score for m in recent_metrics if m.user_feedback_score is not None]
+        feedback_scores = [
+            m.user_feedback_score
+            for m in recent_metrics
+            if m.user_feedback_score is not None
+        ]
         if feedback_scores and sum(feedback_scores) / len(feedback_scores) < 0.5:
             # Explicit negative user feedback: enable hybrid search & reranker
             if not curr_enable_rerank:
-                adjustments.append("Forced enable_reranking=True in response to negative user feedback.")
+                adjustments.append(
+                    "Forced enable_reranking=True in response to negative user feedback."
+                )
 
         recommended = {
             "top_k": new_top_k,
@@ -139,7 +160,9 @@ class SelfTuningEngine:
 
         status = "tuned" if adjustments else "stable"
         if not adjustments:
-            adjustments.append("Retrieval parameters are optimal for current traffic characteristics.")
+            adjustments.append(
+                "Retrieval parameters are optimal for current traffic characteristics."
+            )
 
         return SelfTuningReport(
             tenant_id=tenant_id,
@@ -177,15 +200,22 @@ class SelfTuningEngine:
         # 3. Apply changes if tuned
         if report.status == "tuned":
             tenant_cfg.retrieval_settings.top_k = report.recommended_settings["top_k"]
-            tenant_cfg.retrieval_settings.reranking_threshold = report.recommended_settings["reranking_threshold"]
+            tenant_cfg.retrieval_settings.reranking_threshold = (
+                report.recommended_settings["reranking_threshold"]
+            )
             if hasattr(tenant_cfg.retrieval_settings, "rrf_k"):
-                tenant_cfg.retrieval_settings.rrf_k = report.recommended_settings["rrf_k"]
+                tenant_cfg.retrieval_settings.rrf_k = report.recommended_settings[
+                    "rrf_k"
+                ]
             if hasattr(tenant_cfg.feature_flags, "enable_graph_rag"):
-                tenant_cfg.feature_flags.enable_graph_rag = report.recommended_settings["enable_graph_search"]
+                tenant_cfg.feature_flags.enable_graph_rag = report.recommended_settings[
+                    "enable_graph_search"
+                ]
             if hasattr(tenant_cfg.feature_flags, "enable_reranking"):
-                tenant_cfg.feature_flags.enable_reranking = report.recommended_settings["enable_reranking"]
+                tenant_cfg.feature_flags.enable_reranking = report.recommended_settings[
+                    "enable_reranking"
+                ]
 
             await config_service.update_tenant_config(tenant_id, tenant_cfg)
 
         return report
-

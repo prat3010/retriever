@@ -48,7 +48,10 @@ async def apply_llm_safety_guard(
 ) -> str:
     # 1. Fast heuristic pre-check (bypass for immediate known injection patterns)
     if check_heuristic_injection(query_text):
-        logger.warning("Prompt injection detected via heuristic pre-filter", extra={"query": query_text[:80]})
+        logger.warning(
+            "Prompt injection detected via heuristic pre-filter",
+            extra={"query": query_text[:80]},
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Safety check failed: prompt injection or system prompt override attempt detected.",
@@ -72,7 +75,9 @@ async def apply_llm_safety_guard(
 
     safety_client = openai.AsyncOpenAI(**client_opts)
     llm_prompt_template = (
-        guard.get("llm_prompt_template") if isinstance(guard, dict) else getattr(guard, "llm_prompt_template", None)
+        guard.get("llm_prompt_template")
+        if isinstance(guard, dict)
+        else getattr(guard, "llm_prompt_template", None)
     )
 
     # Standard Llama Guard 3 instruction template
@@ -101,7 +106,9 @@ async def apply_llm_safety_guard(
             max_tokens=30,
         )
         raw_output = safety_response.choices[0].message.content or ""
-        lines = [line.strip() for line in raw_output.strip().split("\n") if line.strip()]
+        lines = [
+            line.strip() for line in raw_output.strip().split("\n") if line.strip()
+        ]
         first_line = lines[0].lower() if lines else "safe"
 
         if "unsafe" in first_line:
@@ -117,6 +124,8 @@ async def apply_llm_safety_guard(
     except HTTPException:
         raise
     except Exception as err:
-        logger.warning(f"Llama Guard 3 evaluation encountered error, failing open safely: {err}")
+        logger.warning(
+            f"Llama Guard 3 evaluation encountered error, failing open safely: {err}"
+        )
 
     return query_text

@@ -5,7 +5,6 @@ AlertSeverity = Literal["info", "warning", "critical"]
 
 
 class NotificationProvider(ABC):
-
     @abstractmethod
     async def send_alert(
         self,

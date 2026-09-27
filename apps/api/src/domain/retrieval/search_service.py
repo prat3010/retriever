@@ -47,7 +47,8 @@ class HybridSearchService:
         self_query: SelfQueryProvider | None = None,
         query_rewriter: QueryRewriterProvider | None = None,
         query_intent_classifier: QueryIntentClassifier | None = None,
-        web_search_factory: Callable[[str, str], WebSearchProvider | None] | None = None,
+        web_search_factory: Callable[[str, str], WebSearchProvider | None]
+        | None = None,
         graph_repository: BaseGraphRepository | None = None,
     ) -> None:
         self.vector_search = vector_search
@@ -76,7 +77,9 @@ class HybridSearchService:
                 query.enable_reranking = intent.enable_reranking
                 query.enable_web_search = intent.enable_web_search
             except Exception as exc:
-                logger.warning(f"Query intent classification failed for query '{query.query[:50]}': {exc}")
+                logger.warning(
+                    f"Query intent classification failed for query '{query.query[:50]}': {exc}"
+                )
 
         # 0. Speculative pre-retrieval execution: fan-out Self-Query, HyDE, and Raw Query Embedding concurrently
         async def _run_self_query() -> list[MetadataFilter]:
@@ -89,7 +92,9 @@ class HybridSearchService:
                 try:
                     return await self.query_rewriter.rewrite(query.query)
                 except Exception as exc:
-                    logger.warning(f"Query rewriting failed for query '{query.query[:50]}': {exc}")
+                    logger.warning(
+                        f"Query rewriting failed for query '{query.query[:50]}': {exc}"
+                    )
                     return []
             return []
 
@@ -97,7 +102,9 @@ class HybridSearchService:
             try:
                 return await self.embedder.embed_text(query.query)
             except Exception as exc:
-                logger.warning(f"Raw query embedding failed for query '{query.query[:50]}': {exc}")
+                logger.warning(
+                    f"Raw query embedding failed for query '{query.query[:50]}': {exc}"
+                )
                 return []
 
         sq_res, hyde_res, raw_embed_res = await asyncio.gather(
@@ -117,7 +124,9 @@ class HybridSearchService:
         # Check semantic cache table using raw query embedding
         if self.cache_provider is not None and raw_embedding:
             try:
-                cached_results = await self.cache_provider.get_cached_search(query.tenant_id, raw_embedding)
+                cached_results = await self.cache_provider.get_cached_search(
+                    query.tenant_id, raw_embedding
+                )
                 if cached_results is not None:
                     return SearchResponse(
                         query=query.query,
@@ -126,11 +135,13 @@ class HybridSearchService:
                             strategy="semantic_cache_hit",
                             total_candidates=len(cached_results),
                             returned_results=len(cached_results),
-                            duration_ms=0.0
-                        )
+                            duration_ms=0.0,
+                        ),
                     )
             except Exception as exc:
-                logger.warning(f"Semantic cache lookup failed for tenant '{query.tenant_id}': {exc}")
+                logger.warning(
+                    f"Semantic cache lookup failed for tenant '{query.tenant_id}': {exc}"
+                )
 
         # Determine target embedding for dense vector search (HyDE rewritten vs raw query)
         query_embedding = raw_embedding
@@ -157,6 +168,7 @@ class HybridSearchService:
         if query.enable_lora_adapter and query_embedding:
             try:
                 from src.domain.embeddings.lora_adapter import LoraEmbeddingAdapter
+
                 adapter = LoraEmbeddingAdapter(dim=len(query_embedding))
                 query_embedding = adapter.adapt_vector(query_embedding)
             except Exception as exc:
@@ -171,27 +183,23 @@ class HybridSearchService:
         )
 
         # 4. Determine strategy and fuse results
-        strategy = self._determine_strategy(
-            query, vector_results, keyword_results
-        )
-        fused = self._fuse_results(
-            query, strategy, vector_results, keyword_results
-        )
+        strategy = self._determine_strategy(query, vector_results, keyword_results)
+        fused = self._fuse_results(query, strategy, vector_results, keyword_results)
 
         # 4b. Optional BM25 re-ranking (Stage 2) — re-scores fused candidates
         if query.enable_bm25 and fused:
             from src.domain.retrieval.bm25_reranker import bm25_rerank
+
             fused = bm25_rerank(query.query, fused)
 
         # 5. Optional reranking pass
         if query.enable_reranking and fused:
-            fused, strategy = await self._apply_reranking(
-                query, fused, strategy
-            )
+            fused, strategy = await self._apply_reranking(query, fused, strategy)
 
         # 5b. Optional MMR diversity sampling
         if query.enable_mmr and fused:
             from src.domain.retrieval.mmr import mmr_diversify
+
             fused = mmr_diversify(fused)
 
         # 5c. Optional GraphRAG evidence pass
@@ -229,10 +237,12 @@ class HybridSearchService:
                     tenant_id=query.tenant_id,
                     query_text=query.query,
                     query_embedding=query_embedding,
-                    results=response.results
+                    results=response.results,
                 )
             except Exception as exc:
-                logger.warning(f"Failed to write results to semantic cache for tenant '{query.tenant_id}': {exc}")
+                logger.warning(
+                    f"Failed to write results to semantic cache for tenant '{query.tenant_id}': {exc}"
+                )
 
         return response
 
@@ -245,22 +255,30 @@ class HybridSearchService:
         if provider is None:
             return results
         try:
-            web_results = await provider.search(query.query, query.web_search_max_results)
+            web_results = await provider.search(
+                query.query, query.web_search_max_results
+            )
             max_local = max(r.score for r in results)
             for i, wr in enumerate(web_results):
-                results.append(SearchResult(
-                    chunk_id=f"web_{uuid4().hex[:12]}",
-                    document_id="__web__",
-                    content=f"[Web: {wr.title}]({wr.url})\n{wr.content}",
-                    score=max(0.001, max_local * (0.9 - i * 0.1)),
-                ))
+                results.append(
+                    SearchResult(
+                        chunk_id=f"web_{uuid4().hex[:12]}",
+                        document_id="__web__",
+                        content=f"[Web: {wr.title}]({wr.url})\n{wr.content}",
+                        score=max(0.001, max_local * (0.9 - i * 0.1)),
+                    )
+                )
             results.sort(key=lambda r: r.score, reverse=True)
             return results[: query.top_k]
         except Exception as exc:
-            logger.warning(f"Web search fallback failed for query '{query.query[:50]}': {exc}")
+            logger.warning(
+                f"Web search fallback failed for query '{query.query[:50]}': {exc}"
+            )
             return results
 
-    def _resolve_web_search_provider(self, query: SearchQuery) -> WebSearchProvider | None:
+    def _resolve_web_search_provider(
+        self, query: SearchQuery
+    ) -> WebSearchProvider | None:
         provider_name = query.web_search_provider
         api_key = query.web_search_api_key
         if api_key:
@@ -304,7 +322,9 @@ class HybridSearchService:
                 enable_acl_filter=query.enable_acl_filter,
             )
         except Exception as exc:
-            logger.warning(f"Vector search leg failed for tenant '{query.tenant_id}': {exc}")
+            logger.warning(
+                f"Vector search leg failed for tenant '{query.tenant_id}': {exc}"
+            )
 
         if query.enable_hybrid or query.enable_bm25:
             try:
@@ -321,8 +341,9 @@ class HybridSearchService:
                     enable_acl_filter=query.enable_acl_filter,
                 )
             except Exception as exc:
-                logger.warning(f"Keyword search leg failed for tenant '{query.tenant_id}': {exc}")
-
+                logger.warning(
+                    f"Keyword search leg failed for tenant '{query.tenant_id}': {exc}"
+                )
 
         return vector_results, keyword_results
 
@@ -341,7 +362,11 @@ class HybridSearchService:
                 return "hybrid_rrf"
             if strat in ("normalized", "normalized_hybrid"):
                 return "normalized_hybrid"
-            if hasattr(query, "hybrid_alpha") and query.hybrid_alpha is not None and 0.0 <= query.hybrid_alpha <= 1.0:
+            if (
+                hasattr(query, "hybrid_alpha")
+                and query.hybrid_alpha is not None
+                and 0.0 <= query.hybrid_alpha <= 1.0
+            ):
                 return "hybrid_convex"
             return "hybrid_rrf"
         if vector_results:
@@ -363,9 +388,7 @@ class HybridSearchService:
                 vector_results, keyword_results, getattr(query, "hybrid_alpha", 0.7)
             )
         if strategy == "hybrid_rrf":
-            return self._fuse_rrf(
-                vector_results, keyword_results, query.rrf_k
-            )
+            return self._fuse_rrf(vector_results, keyword_results, query.rrf_k)
         if strategy == "normalized_hybrid":
             return self._fuse_normalized_hybrid(
                 vector_results, keyword_results, query.rrf_k
@@ -402,13 +425,17 @@ class HybridSearchService:
 
         for result in vector_results:
             d_norm = norm_vec.get(result.chunk_id, 0.0)
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + alpha_clamped * d_norm
+            scores[result.chunk_id] = (
+                scores.get(result.chunk_id, 0.0) + alpha_clamped * d_norm
+            )
             if result.chunk_id not in best_result:
                 best_result[result.chunk_id] = result
 
         for result in keyword_results:
             s_norm = norm_kw.get(result.chunk_id, 0.0)
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0.0) + (1.0 - alpha_clamped) * s_norm
+            scores[result.chunk_id] = (
+                scores.get(result.chunk_id, 0.0) + (1.0 - alpha_clamped) * s_norm
+            )
             if result.chunk_id not in best_result:
                 best_result[result.chunk_id] = result
 
@@ -519,7 +546,9 @@ class HybridSearchService:
                 )
                 return reranked, strategy + "_colbert_maxsim"
             except Exception as exc:
-                logger.warning(f"ColBERT MaxSim reranking failed for query '{query.query[:50]}': {exc}")
+                logger.warning(
+                    f"ColBERT MaxSim reranking failed for query '{query.query[:50]}': {exc}"
+                )
                 return candidates, strategy
 
         if reranker_engine == "none":
@@ -534,7 +563,9 @@ class HybridSearchService:
             )
             return reranked, strategy + "_reranked"
         except Exception as exc:
-            logger.warning(f"Reranking leg failed for query '{query.query[:50]}': {exc}")
+            logger.warning(
+                f"Reranking leg failed for query '{query.query[:50]}': {exc}"
+            )
             return candidates, strategy
 
     async def _apply_graph_search_pass(
@@ -556,7 +587,9 @@ class HybridSearchService:
                 if g_res and g_res.triples:
                     graph_triples.extend(g_res.triples)
             except Exception as exc:
-                logger.warning(f"Graph triple search failed for term '{term}' on tenant '{query.tenant_id}': {exc}")
+                logger.warning(
+                    f"Graph triple search failed for term '{term}' on tenant '{query.tenant_id}': {exc}"
+                )
 
         if not graph_triples:
             return results

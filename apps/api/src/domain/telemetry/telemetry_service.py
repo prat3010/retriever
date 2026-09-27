@@ -17,7 +17,9 @@ class LiveTelemetryService:
 
     async def get_live_telemetry(self, tenant_id: str) -> TenantLiveTelemetry:
         """Fetch live aggregated telemetry from database or fallback defaults."""
-        if self.repository is not None and hasattr(self.repository, "get_tenant_live_telemetry"):
+        if self.repository is not None and hasattr(
+            self.repository, "get_tenant_live_telemetry"
+        ):
             try:
                 return await self.repository.get_tenant_live_telemetry(tenant_id)
             except Exception:

@@ -153,7 +153,9 @@ class EdgeSearchResponse(BaseModel):
 
     @property
     def hybrid_mode(self) -> bool:
-        return self.total_hits > 0 and any(r.match_type == "hybrid" for r in self.results)
+        return self.total_hits > 0 and any(
+            r.match_type == "hybrid" for r in self.results
+        )
 
 
 class EdgeBundleManifest(BaseModel):

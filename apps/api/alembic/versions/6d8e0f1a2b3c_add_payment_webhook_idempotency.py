@@ -29,9 +29,21 @@ def upgrade() -> None:
         sa.Column("currency", sa.String(10), nullable=False, server_default="INR"),
         sa.Column("status", sa.String(50), nullable=False, server_default="completed"),
         sa.Column("external_reference", sa.String(255), nullable=True),
-        sa.Column("meta_data", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"),
+        sa.Column(
+            "meta_data",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
+        ),
+        sa.ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("transaction_id"),
         if_not_exists=True,
     )

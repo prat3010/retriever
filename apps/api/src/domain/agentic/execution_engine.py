@@ -137,7 +137,9 @@ class AgenticExecutionEngine:
         for step_idx in range(request.max_steps):
             try:
                 response = await self.llm.generate(
-                    InferenceRequest(messages=messages, temperature=0.1, max_tokens=1000)
+                    InferenceRequest(
+                        messages=messages, temperature=0.1, max_tokens=1000
+                    )
                 )
                 raw_text = response.content.strip()
                 if raw_text.startswith("```json"):

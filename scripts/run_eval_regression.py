@@ -25,19 +25,53 @@ from src.domain.evaluation.regression_gate import RegressionGateEngine  # noqa: 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Retriever CI/CD Cognitive Regression Gate")
-    parser.add_argument("--faithfulness", type=float, default=0.95, help="Measured Faithfulness score")
-    parser.add_argument("--precision", type=float, default=0.90, help="Measured Context Precision score")
-    parser.add_argument("--relevancy", type=float, default=0.90, help="Measured Answer Relevancy score")
-    parser.add_argument("--hallucination", type=float, default=0.04, help="Measured Hallucination Index")
+    parser = argparse.ArgumentParser(
+        description="Retriever CI/CD Cognitive Regression Gate"
+    )
+    parser.add_argument(
+        "--faithfulness", type=float, default=0.95, help="Measured Faithfulness score"
+    )
+    parser.add_argument(
+        "--precision", type=float, default=0.90, help="Measured Context Precision score"
+    )
+    parser.add_argument(
+        "--relevancy", type=float, default=0.90, help="Measured Answer Relevancy score"
+    )
+    parser.add_argument(
+        "--hallucination", type=float, default=0.04, help="Measured Hallucination Index"
+    )
 
-    parser.add_argument("--min-faithfulness", type=float, default=0.90, help="Minimum acceptable faithfulness")
-    parser.add_argument("--min-precision", type=float, default=0.85, help="Minimum acceptable context precision")
-    parser.add_argument("--min-relevancy", type=float, default=0.85, help="Minimum acceptable answer relevancy")
-    parser.add_argument("--max-hallucination", type=float, default=0.10, help="Maximum allowable hallucination index")
+    parser.add_argument(
+        "--min-faithfulness",
+        type=float,
+        default=0.90,
+        help="Minimum acceptable faithfulness",
+    )
+    parser.add_argument(
+        "--min-precision",
+        type=float,
+        default=0.85,
+        help="Minimum acceptable context precision",
+    )
+    parser.add_argument(
+        "--min-relevancy",
+        type=float,
+        default=0.85,
+        help="Minimum acceptable answer relevancy",
+    )
+    parser.add_argument(
+        "--max-hallucination",
+        type=float,
+        default=0.10,
+        help="Maximum allowable hallucination index",
+    )
 
-    parser.add_argument("--output-json", type=str, default=None, help="Filepath to write JSON report")
-    parser.add_argument("--output-md", type=str, default=None, help="Filepath to write Markdown summary")
+    parser.add_argument(
+        "--output-json", type=str, default=None, help="Filepath to write JSON report"
+    )
+    parser.add_argument(
+        "--output-md", type=str, default=None, help="Filepath to write Markdown summary"
+    )
 
     args = parser.parse_args()
 

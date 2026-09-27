@@ -32,11 +32,30 @@ def upgrade() -> None:
         sa.Column("display_name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("version", sa.String(32), nullable=False, server_default="1.0.0"),
-        sa.Column("persona", sa.String(32), nullable=False, server_default="fde_engineer"),
-        sa.Column("manifest", JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "persona", sa.String(32), nullable=False, server_default="fde_engineer"
+        ),
+        sa.Column(
+            "manifest",
+            JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
     )
 
 

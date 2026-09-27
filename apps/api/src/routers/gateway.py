@@ -52,7 +52,11 @@ async def list_gateway_models() -> list[GatewayModelInfo]:
     return gateway_router.list_available_models()
 
 
-@router.post("/probe", response_model=list[GatewayProbeResult], dependencies=[Depends(verify_admin_key)])
+@router.post(
+    "/probe",
+    response_model=list[GatewayProbeResult],
+    dependencies=[Depends(verify_admin_key)],
+)
 async def probe_gateway_providers() -> list[GatewayProbeResult]:
     """Execute live latency and reachability probes across upstream providers."""
     gateway_router = container.gateway_router
@@ -123,8 +127,12 @@ async def get_tenant_gateway_budget(tenantId: str) -> VirtualTenantBudget:
     default_budget = VirtualTenantBudget(
         daily_budget=bg.daily_cost_budget if bg else None,
         monthly_budget=bg.monthly_cost_budget if bg else None,
-        hard_limit_action=getattr(bg, "hard_limit_action", "warn_only") if bg else "warn_only",
-        free_fallback_model=getattr(bg, "free_fallback_model", "ollama/qwen2.5:14b") if bg else "ollama/qwen2.5:14b",
+        hard_limit_action=getattr(bg, "hard_limit_action", "warn_only")
+        if bg
+        else "warn_only",
+        free_fallback_model=getattr(bg, "free_fallback_model", "ollama/qwen2.5:14b")
+        if bg
+        else "ollama/qwen2.5:14b",
         currency=getattr(bg, "currency", "USD") if bg else "USD",
     )
 

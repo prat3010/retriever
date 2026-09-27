@@ -39,7 +39,9 @@ class SqlIdentityProvider(IdentityProvider):
             row = result.first()
 
             if not row:
-                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
+                raise AuthenticationError(
+                    "Invalid, inactive, or suspended API key token."
+                )
 
             db_key = row[0] if hasattr(row, "__getitem__") else row
             tenant_status = (
@@ -54,12 +56,14 @@ class SqlIdentityProvider(IdentityProvider):
                 )
 
             if getattr(db_key, "status", None) != "active":
-                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
+                raise AuthenticationError(
+                    "Invalid, inactive, or suspended API key token."
+                )
 
             if tenant_status != "active":
-                raise AuthenticationError("Invalid, inactive, or suspended API key token.")
-
-
+                raise AuthenticationError(
+                    "Invalid, inactive, or suspended API key token."
+                )
 
             # Validate expiration timestamp
             if db_key.expires_at:
@@ -78,7 +82,12 @@ class SqlIdentityProvider(IdentityProvider):
             elif db_scopes and isinstance(db_scopes, list):
                 scopes = db_scopes
             else:
-                scopes = ["document:write", "document:read", "search:read", "chat:write"]
+                scopes = [
+                    "document:write",
+                    "document:read",
+                    "search:read",
+                    "chat:write",
+                ]
 
             return UserContext(
                 user_id="",
@@ -89,7 +98,11 @@ class SqlIdentityProvider(IdentityProvider):
             )
 
     async def create_api_key(
-        self, tenant_id: str, name: str, expires_in_days: int | None = None, role: str = "client"
+        self,
+        tenant_id: str,
+        name: str,
+        expires_in_days: int | None = None,
+        role: str = "client",
     ) -> tuple[str, ApiKeyMetadata]:
         """Generate a new API key, hash it, save to DB, and return (raw_key, metadata)."""
         # Prefix format: ret_live_<random>

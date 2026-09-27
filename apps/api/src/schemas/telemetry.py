@@ -27,7 +27,10 @@ class TenantLiveTelemetryDTO(BaseModel):
 class TestAlertRequest(BaseModel):
     """Request model to test webhook alert delivery."""
 
-    channel: str = Field("slack", description="Target notification channel: 'slack', 'discord', or 'webhook'")
+    channel: str = Field(
+        "slack",
+        description="Target notification channel: 'slack', 'discord', or 'webhook'",
+    )
     webhook_url: str = Field(..., description="Target webhook endpoint URL")
 
 

@@ -23,5 +23,7 @@ def test_zero_toy_invariants_pass() -> None:
         text=True,
     )
 
-    assert result.returncode == 0, f"Zero-Toy Audit Failed:\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, (
+        f"Zero-Toy Audit Failed:\n{result.stdout}\n{result.stderr}"
+    )
     assert "0 violations" in result.stdout

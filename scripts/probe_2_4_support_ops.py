@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Probe 2.4: Conversational Long-Horizon Memory (support_ops)"""
+
 import urllib.request
 import json
 import time
@@ -17,10 +18,7 @@ create_session_url = "http://localhost:8000/v1/tenants/support_ops/chat/sessions
 req_session = urllib.request.Request(
     create_session_url,
     data=b"{}",
-    headers={
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
 )
 
 with urllib.request.urlopen(req_session, timeout=15) as resp:
@@ -28,26 +26,28 @@ with urllib.request.urlopen(req_session, timeout=15) as resp:
     session_id = sess_data["sessionId"]
     print(f"  • Created Session: {session_id}")
 
-msg_url = f"http://localhost:8000/v1/tenants/support_ops/chat/sessions/{session_id}/messages"
+msg_url = (
+    f"http://localhost:8000/v1/tenants/support_ops/chat/sessions/{session_id}/messages"
+)
 
 turns = [
-    ("Turn 1 (State Tracking ID)", "My tracking ID is TRK-88192 and my package was damaged."),
+    (
+        "Turn 1 (State Tracking ID)",
+        "My tracking ID is TRK-88192 and my package was damaged.",
+    ),
     ("Turn 2 (Distractor Query)", "What is your standard return window policy?"),
-    ("Turn 3 (Recall & RMA Request)", "Can you initiate an RMA for my order?")
+    ("Turn 3 (Recall & RMA Request)", "Can you initiate an RMA for my order?"),
 ]
 
 for turn_label, turn_content in turns:
-    payload = {
-        "query": turn_content,
-        "stream": False
-    }
+    payload = {"query": turn_content, "stream": False}
     req_msg = urllib.request.Request(
         msg_url,
         data=json.dumps(payload).encode(),
         headers={
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+            "Content-Type": "application/json",
+        },
     )
     start = time.perf_counter()
     with urllib.request.urlopen(req_msg, timeout=45) as resp:
@@ -58,11 +58,13 @@ for turn_label, turn_content in turns:
         print(f"\n[{turn_label}] ({round(duration, 2)}ms)")
         print(f"  • User: {turn_content}")
         print(f"  • Assistant: {snippet}...")
-        
+
         if "Turn 3" in turn_label:
             assert "TRK-88192" in content or "88192" in content, (
                 f"Expected tracking ID 'TRK-88192' in Turn 3 response, but got: {content}"
             )
-            print("  ✓ PASS: Agent automatically recalled 'TRK-88192' from episodic memory!")
+            print(
+                "  ✓ PASS: Agent automatically recalled 'TRK-88192' from episodic memory!"
+            )
 
 print("\n✅ PROBE 2.4 ALL ASSERTIONS PASSED (100% Green)!\n")

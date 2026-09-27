@@ -16,9 +16,13 @@ def test_global_config_crud_admin_auth() -> None:
     mock_payload = TenantConfiguration(
         feature_flags=FeatureFlags(enable_hybrid_search=False)
     )
-    with patch("src.main.config_service.update_global_config", new_callable=AsyncMock) as mock_update:
+    with patch(
+        "src.main.config_service.update_global_config", new_callable=AsyncMock
+    ) as mock_update:
         headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
-        response = client.put("/v1/config/global", json=mock_payload.model_dump(), headers=headers)
+        response = client.put(
+            "/v1/config/global", json=mock_payload.model_dump(), headers=headers
+        )
         assert response.status_code == 200
         assert response.json()["scope"] == "global"
         mock_update.assert_called_once()
@@ -29,7 +33,9 @@ def test_global_config_crud_admin_auth() -> None:
     )
     mock_config.ai_provider.api_key = "supersecretkey"
 
-    with patch("src.main.config_service.get_global_config", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "src.main.config_service.get_global_config", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = mock_config
         headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
         response = client.get("/v1/config/global", headers=headers)
@@ -39,7 +45,9 @@ def test_global_config_crud_admin_auth() -> None:
         assert response.json()["feature_flags"]["enable_hybrid_search"] is False
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 def test_tenant_config_inheritance_override(mock_validate) -> None:
     tenant_id = "tnt_999"
     mock_validate.return_value = UserContext(
@@ -51,11 +59,13 @@ def test_tenant_config_inheritance_override(mock_validate) -> None:
 
     mock_merged_config = TenantConfiguration(
         tenant_id=tenant_id,
-        feature_flags=FeatureFlags(enable_hybrid_search=False)  # overridden value
+        feature_flags=FeatureFlags(enable_hybrid_search=False),  # overridden value
     )
     mock_merged_config.ai_provider.api_key = "secret_key"
 
-    with patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "src.main.config_service.get_tenant_config", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = mock_merged_config
         headers = {"Authorization": "Bearer ret_live_somekey.secretpart"}
         response = client.get(f"/v1/tenants/{tenant_id}/config", headers=headers)
@@ -69,8 +79,10 @@ def test_env_resolution_fallback_logic() -> None:
     from unittest.mock import MagicMock
 
     from src.domain.config.config_service import ConfigurationService
+
     service = ConfigurationService(
-        registry=MagicMock(), cache=MagicMock(),
+        registry=MagicMock(),
+        cache=MagicMock(),
         env_secrets={"OPENAI_API_KEY": "env-resolved-key-value"},
     )
 
@@ -92,6 +104,7 @@ def test_merge_configurations_overlay() -> None:
     from unittest.mock import MagicMock
 
     from src.domain.config.config_service import ConfigurationService
+
     service = ConfigurationService(registry=MagicMock(), cache=MagicMock())
 
     base_config = TenantConfiguration(

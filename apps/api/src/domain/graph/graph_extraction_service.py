@@ -18,7 +18,9 @@ class GraphExtractionService:
         re.IGNORECASE,
     )
 
-    def extract_triples(self, text: str, chunk_id: str | None = None, document_id: str | None = None) -> list[EntityTriple]:
+    def extract_triples(
+        self, text: str, chunk_id: str | None = None, document_id: str | None = None
+    ) -> list[EntityTriple]:
         """Extract subject-predicate-object triples from plain text content."""
         if not text or not text.strip():
             return []
@@ -27,7 +29,11 @@ class GraphExtractionService:
         seen: set[tuple[str, str, str]] = set()
 
         for match in self.TRIPLE_REGEX.finditer(text):
-            sub, pred, obj = match.group(1).strip(), match.group(2).strip().upper(), match.group(3).strip()
+            sub, pred, obj = (
+                match.group(1).strip(),
+                match.group(2).strip().upper(),
+                match.group(3).strip(),
+            )
             key = (sub.lower(), pred, obj.lower())
             if key not in seen and len(sub) > 1 and len(obj) > 1:
                 seen.add(key)
@@ -50,7 +56,13 @@ class GraphExtractionService:
 
         return triples
 
-    def format_triples_for_graph_store(self, tenant_id: str, document_id: str, chunk_id: str, triples: list[EntityTriple]) -> list[dict[str, Any]]:
+    def format_triples_for_graph_store(
+        self,
+        tenant_id: str,
+        document_id: str,
+        chunk_id: str,
+        triples: list[EntityTriple],
+    ) -> list[dict[str, Any]]:
         """Format extracted triples for bulk insertion into graph_triples database table."""
         return [
             {
@@ -68,4 +80,3 @@ class GraphExtractionService:
 
 
 GraphExtractor = GraphExtractionService
-

@@ -37,7 +37,9 @@ TERM_SYNONYMS: dict[str, list[tuple[str, float]]] = {
 class SpladeSparseSearchAdapter(KeywordSearchProvider):
     """Learned sparse term expansion adapter for vocabulary-enriched keyword search."""
 
-    def __init__(self, synonym_map: dict[str, list[tuple[str, float]]] | None = None) -> None:
+    def __init__(
+        self, synonym_map: dict[str, list[tuple[str, float]]] | None = None
+    ) -> None:
         self.synonym_map = synonym_map or TERM_SYNONYMS
 
     def extract_sparse_weights(self, text_input: str) -> dict[str, float]:

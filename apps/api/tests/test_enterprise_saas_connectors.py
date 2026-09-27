@@ -1,4 +1,5 @@
 """Automated test suite for Turn-Key Enterprise SaaS Connectors (Milestone 125)."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -59,7 +60,11 @@ def test_google_drive_acl_parsing():
     # Restricted access with specific user and group
     perms_restricted = [
         {"type": "user", "role": "reader", "emailAddress": "alice@corp.internal"},
-        {"type": "group", "role": "writer", "emailAddress": "security-team@corp.internal"},
+        {
+            "type": "group",
+            "role": "writer",
+            "emailAddress": "security-team@corp.internal",
+        },
         {"type": "domain", "role": "reader", "domain": "corp.internal"},
     ]
     u, g, is_pub = GoogleDriveConnector._parse_permissions(perms_restricted)
@@ -82,7 +87,9 @@ async def test_google_drive_sandbox_and_incremental():
     docs = await connector.fetch_documents(config)
     assert len(docs) == 2
     assert any(d.is_public is True for d in docs)
-    assert any(d.is_public is False and "security-team" in d.allowed_groups for d in docs)
+    assert any(
+        d.is_public is False and "security-team" in d.allowed_groups for d in docs
+    )
 
     state = ConnectorSyncState()
     inc_docs, new_state = await connector.fetch_incremental(config, state)
@@ -171,15 +178,15 @@ async def test_notion_sandbox_and_incremental():
 
 def test_confluence_html_macro_conversion():
     raw_xhtml = (
-        '<h1>Sprint Goals</h1>'
+        "<h1>Sprint Goals</h1>"
         '<ac:structured-macro ac:name="info">'
-        '<ac:rich-text-body>Remember to tag reviewers.</ac:rich-text-body>'
-        '</ac:structured-macro>'
-        '<p>Please check <strong>architecture</strong> guidelines.</p>'
-        '<table><tr><th>Component</th><th>Owner</th></tr><tr><td>Vector Rerank</td><td>Search Team</td></tr></table>'
+        "<ac:rich-text-body>Remember to tag reviewers.</ac:rich-text-body>"
+        "</ac:structured-macro>"
+        "<p>Please check <strong>architecture</strong> guidelines.</p>"
+        "<table><tr><th>Component</th><th>Owner</th></tr><tr><td>Vector Rerank</td><td>Search Team</td></tr></table>"
         '<ac:structured-macro ac:name="code">'
-        '<ac:plain-text-body><![CDATA[def search(): pass]]></ac:plain-text-body>'
-        '</ac:structured-macro>'
+        "<ac:plain-text-body><![CDATA[def search(): pass]]></ac:plain-text-body>"
+        "</ac:structured-macro>"
     )
     md = _html_to_markdown(raw_xhtml)
     assert "# Sprint Goals" in md
@@ -253,7 +260,10 @@ async def test_jira_connector_sandbox_and_formatting():
             "status": {"name": "In Progress"},
             "issuetype": {"name": "Bug"},
             "priority": {"name": "High"},
-            "assignee": {"emailAddress": "dev@corp.internal", "displayName": "Dev User"},
+            "assignee": {
+                "emailAddress": "dev@corp.internal",
+                "displayName": "Dev User",
+            },
             "reporter": {"emailAddress": "qa@corp.internal", "displayName": "QA User"},
             "created": "2026-09-20",
             "updated": "2026-09-22",
@@ -271,7 +281,9 @@ async def test_jira_connector_sandbox_and_formatting():
             },
         },
     }
-    md, users, groups, is_pub = JiraConnector._format_issue_markdown(mock_issue, "https://jira.corp.internal")
+    md, users, groups, is_pub = JiraConnector._format_issue_markdown(
+        mock_issue, "https://jira.corp.internal"
+    )
     assert "[DEV-42] Fix connection pooling latency" in md
     assert "dev@corp.internal" in users
     assert "qa@corp.internal" in users
@@ -360,11 +372,19 @@ def test_connector_registry_catalog():
     assert "microsoft365" in types
 
     # Check resolution
-    assert isinstance(ConnectorRegistry.get_connector("confluence"), ConfluenceConnector)
+    assert isinstance(
+        ConnectorRegistry.get_connector("confluence"), ConfluenceConnector
+    )
     assert isinstance(ConnectorRegistry.get_connector("jira"), JiraConnector)
-    assert isinstance(ConnectorRegistry.get_connector("microsoft365"), Microsoft365Connector)
-    assert isinstance(ConnectorRegistry.get_connector("sharepoint"), Microsoft365Connector)
-    assert isinstance(ConnectorRegistry.get_connector("google_drive"), GoogleDriveConnector)
+    assert isinstance(
+        ConnectorRegistry.get_connector("microsoft365"), Microsoft365Connector
+    )
+    assert isinstance(
+        ConnectorRegistry.get_connector("sharepoint"), Microsoft365Connector
+    )
+    assert isinstance(
+        ConnectorRegistry.get_connector("google_drive"), GoogleDriveConnector
+    )
     assert isinstance(ConnectorRegistry.get_connector("notion"), NotionConnector)
 
 

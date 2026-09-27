@@ -46,13 +46,19 @@ class DocumentRepository(ABC):
 
     @abstractmethod
     async def list_documents_cursor(
-        self, tenant_id: str, limit: int = 50, cursor: str | None = None, bypass_rls: bool = False
+        self,
+        tenant_id: str,
+        limit: int = 50,
+        cursor: str | None = None,
+        bypass_rls: bool = False,
     ) -> tuple[list[Document], str | None, bool]:
         """List documents using cursor-based pagination. Returns (items, next_cursor, has_more)."""
         pass
 
     @abstractmethod
-    async def get_document(self, tenant_id: str, document_id: str, bypass_rls: bool = False) -> Document | None:
+    async def get_document(
+        self, tenant_id: str, document_id: str, bypass_rls: bool = False
+    ) -> Document | None:
         """Get a single document by ID, scoped to tenant."""
         pass
 
@@ -103,10 +109,11 @@ class DocumentStorage(ABC):
         pass
 
     @abstractmethod
-    async def generate_presigned_url(self, storage_path: str, expiry_seconds: int = 300) -> str:
+    async def generate_presigned_url(
+        self, storage_path: str, expiry_seconds: int = 300
+    ) -> str:
         """Generate a temporary, secure, signed URL for downloading a file."""
         pass
-
 
 
 class DocumentParser(ABC):
@@ -118,6 +125,8 @@ class DocumentParser(ABC):
 
 class TextChunker(ABC):
     @abstractmethod
-    def split_text(self, text: str, chunk_size: int, chunk_overlap: int) -> list[dict[str, Any]]:
+    def split_text(
+        self, text: str, chunk_size: int, chunk_overlap: int
+    ) -> list[dict[str, Any]]:
         """Split text contents into size-bounded chunks using sliding window boundaries."""
         pass

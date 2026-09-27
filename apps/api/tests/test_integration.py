@@ -8,6 +8,7 @@ Run with::
     docker compose -f docker-compose.test.yml up -d
     INTEGRATION_TEST=1 uv run python -m pytest tests/test_integration.py -v
 """
+
 import os
 from uuid import uuid4
 
@@ -16,7 +17,10 @@ import pytest
 if not os.environ.get("INTEGRATION_TEST"):
     pytest.skip("Set INTEGRATION_TEST=1 to run", allow_module_level=True)
 
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5433/retriever_test")
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgres@localhost:5433/retriever_test",
+)
 os.environ.setdefault("REDIS_URL", "redis://localhost:6380/1")
 
 from sqlalchemy import text
@@ -32,7 +36,9 @@ from src.domain.abstractions.ingestion import Document
 async def setup_database():
     async with engine.connect() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        row = await conn.execute(text("SELECT COUNT(*) FROM pg_tables WHERE schemaname='public'"))
+        row = await conn.execute(
+            text("SELECT COUNT(*) FROM pg_tables WHERE schemaname='public'")
+        )
         if row.scalar() == 0:
             await initialize_database()
 
@@ -55,7 +61,9 @@ async def test_redis_connection():
 @pytest.mark.asyncio(loop_scope="module")
 async def test_tenant_crud():
     registry = SqlTenantRegistry()
-    tenant = await registry.create_tenant(name="int-test", tier="standard", isolation_level="strict")
+    tenant = await registry.create_tenant(
+        name="int-test", tier="standard", isolation_level="strict"
+    )
     assert tenant.status == "active"
     assert tenant.name == "int-test"
 
@@ -73,7 +81,9 @@ async def test_tenant_crud():
 @pytest.mark.asyncio(loop_scope="module")
 async def test_document_crud():
     registry = SqlTenantRegistry()
-    tenant = await registry.create_tenant(name="doc-test", tier="standard", isolation_level="strict")
+    tenant = await registry.create_tenant(
+        name="doc-test", tier="standard", isolation_level="strict"
+    )
     tenant_id = str(tenant.tenant_id)
 
     doc = Document(

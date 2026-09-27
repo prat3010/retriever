@@ -66,7 +66,6 @@ stream_router = APIRouter(
 )
 
 
-
 # ── Request / Response DTOs ───────────────────────────────────────────────────
 
 
@@ -84,7 +83,9 @@ class CreateVoiceSessionRequest(BaseModel):
 class TranscribeAudioRequest(BaseModel):
     """Payload containing raw or base64-encoded audio bytes for Whisper recognition."""
 
-    audio_base64: str = Field(..., description="Base64-encoded PCM16 or WAV audio bytes")
+    audio_base64: str = Field(
+        ..., description="Base64-encoded PCM16 or WAV audio bytes"
+    )
     sample_rate_hz: int = Field(default=16000)
 
 
@@ -222,7 +223,9 @@ async def process_conversational_turn(
                 )
             )
             if search_res and search_res.results:
-                chunks_text = " ".join(c.content[:200].strip() for c in search_res.results[:2])
+                chunks_text = " ".join(
+                    c.content[:200].strip() for c in search_res.results[:2]
+                )
                 return f"Grounded response for '{user_query}': {chunks_text}"
         except Exception as exc:
             logger.warning("Voice turn search failed for tenant %s: %s", tenantId, exc)
@@ -299,16 +302,20 @@ async def authenticate_websocket(
     tenantId: str,
 ) -> bool:
     """Authenticates a WebSocket connection using token/admin_key in query params or headers."""
-    admin_key = (
-        websocket.headers.get("x-admin-master-key")
-        or websocket.query_params.get("admin_key")
-    )
+    admin_key = websocket.headers.get(
+        "x-admin-master-key"
+    ) or websocket.query_params.get("admin_key")
     if admin_key and secrets.compare_digest(admin_key, settings.ADMIN_MASTER_KEY):
         return True
 
-    token = websocket.headers.get("authorization") or websocket.query_params.get("token")
+    token = websocket.headers.get("authorization") or websocket.query_params.get(
+        "token"
+    )
     if not token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Missing authentication credentials")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Missing authentication credentials",
+        )
         return False
 
     clean_token = token[7:] if token.lower().startswith("bearer ") else token
@@ -319,12 +326,17 @@ async def authenticate_websocket(
     try:
         user_ctx = await identity_provider.validate_token(clean_token)
         if "admin" not in user_ctx.roles and user_ctx.tenant_id != tenantId:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Tenancy boundary violation")
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Tenancy boundary violation",
+            )
             return False
         return True
     except Exception as exc:
         logger.warning("WebSocket auth failed for tenant %s: %s", tenantId, exc)
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed"
+        )
         return False
 
 
@@ -391,10 +403,14 @@ async def voice_stream_websocket(
                 )
             )
             if search_res and search_res.results:
-                chunks_text = " ".join(c.content[:200].strip() for c in search_res.results[:2])
+                chunks_text = " ".join(
+                    c.content[:200].strip() for c in search_res.results[:2]
+                )
                 return f"Grounded response for '{user_query}': {chunks_text}"
         except Exception as exc:
-            logger.warning("Streaming voice search failed for tenant %s: %s", tenantId, exc)
+            logger.warning(
+                "Streaming voice search failed for tenant %s: %s", tenantId, exc
+            )
 
         return f"Voice query received: '{user_query}'. No grounded knowledge matches found for tenant {tenantId}."
 
@@ -411,15 +427,21 @@ async def voice_stream_websocket(
                 elif hasattr(chunk_or_msg, "audio_bytes"):
                     await websocket.send_bytes(chunk_or_msg.audio_bytes)
         except asyncio.CancelledError:
-            logger.info("Agent turn processing cancelled (barge-in) for session %s", sessionId)
+            logger.info(
+                "Agent turn processing cancelled (barge-in) for session %s", sessionId
+            )
             raise
         except Exception as err:
-            logger.error("Error running streaming agent turn for session %s: %s", sessionId, err)
-            await websocket.send_json({
-                "event_type": VoiceStreamEventType.ERROR.value,
-                "session_id": sessionId,
-                "payload": {"error": str(err)},
-            })
+            logger.error(
+                "Error running streaming agent turn for session %s: %s", sessionId, err
+            )
+            await websocket.send_json(
+                {
+                    "event_type": VoiceStreamEventType.ERROR.value,
+                    "session_id": sessionId,
+                    "payload": {"error": str(err)},
+                }
+            )
 
     try:
         while True:
@@ -432,7 +454,10 @@ async def voice_stream_websocket(
             # Handle raw PCM16 audio frames
             if message.get("bytes"):
                 raw_bytes = message["bytes"]
-                messages, completed_audio = await container.voice_stream_service.ingest_audio_frame(
+                (
+                    messages,
+                    completed_audio,
+                ) = await container.voice_stream_service.ingest_audio_frame(
                     session_id=sessionId,
                     frame_bytes=raw_bytes,
                 )
@@ -442,8 +467,12 @@ async def voice_stream_websocket(
                 if completed_audio:
                     if active_agent_task and not active_agent_task.done():
                         active_agent_task.cancel()
-                    active_agent_task = asyncio.create_task(run_agent_turn(completed_audio))
-                    stream_state = container.voice_stream_service.get_stream_state(sessionId)
+                    active_agent_task = asyncio.create_task(
+                        run_agent_turn(completed_audio)
+                    )
+                    stream_state = container.voice_stream_service.get_stream_state(
+                        sessionId
+                    )
                     if stream_state:
                         stream_state.active_agent_task = active_agent_task
 
@@ -455,11 +484,13 @@ async def voice_stream_websocket(
                     event_type = control_data.get("event_type")
 
                     if event_type == "ping":
-                        await websocket.send_json({
-                            "event_type": VoiceStreamEventType.PONG.value,
-                            "session_id": sessionId,
-                            "payload": {"timestamp": time.time()},
-                        })
+                        await websocket.send_json(
+                            {
+                                "event_type": VoiceStreamEventType.PONG.value,
+                                "session_id": sessionId,
+                                "payload": {"timestamp": time.time()},
+                            }
+                        )
                     elif event_type == "interrupt":
                         interruption = await container.voice_stream_service.interrupt(
                             session_id=sessionId,
@@ -468,11 +499,13 @@ async def voice_stream_websocket(
                         if active_agent_task and not active_agent_task.done():
                             active_agent_task.cancel()
                             active_agent_task = None
-                        await websocket.send_json({
-                            "event_type": VoiceStreamEventType.INTERRUPTED.value,
-                            "session_id": sessionId,
-                            "payload": interruption.model_dump(mode="json"),
-                        })
+                        await websocket.send_json(
+                            {
+                                "event_type": VoiceStreamEventType.INTERRUPTED.value,
+                                "session_id": sessionId,
+                                "payload": interruption.model_dump(mode="json"),
+                            }
+                        )
                     elif event_type == "text_input":
                         user_text = control_data.get("text", "")
                         if active_agent_task and not active_agent_task.done():
@@ -483,9 +516,15 @@ async def voice_stream_websocket(
                                 yield_trans = VoiceStreamControlMessage(
                                     event_type=VoiceStreamEventType.TRANSCRIPT_FINAL,
                                     session_id=sessionId,
-                                    payload={"turn_id": f"vct_txt_{time.time_ns():x}", "text": t_input, "confidence": 1.0},
+                                    payload={
+                                        "turn_id": f"vct_txt_{time.time_ns():x}",
+                                        "text": t_input,
+                                        "confidence": 1.0,
+                                    },
                                 )
-                                await websocket.send_json(yield_trans.model_dump(mode="json"))
+                                await websocket.send_json(
+                                    yield_trans.model_dump(mode="json")
+                                )
 
                                 agent_resp = await rag_copilot_response(t_input)
                                 yield_resp = VoiceStreamControlMessage(
@@ -493,10 +532,18 @@ async def voice_stream_websocket(
                                     session_id=sessionId,
                                     payload={"delta": agent_resp},
                                 )
-                                await websocket.send_json(yield_resp.model_dump(mode="json"))
+                                await websocket.send_json(
+                                    yield_resp.model_dump(mode="json")
+                                )
 
-                                state = container.voice_stream_service.get_stream_state(sessionId)
-                                voice = state.selected_voice if state else SpeechTimbre.NEURAL_NATURAL
+                                state = container.voice_stream_service.get_stream_state(
+                                    sessionId
+                                )
+                                voice = (
+                                    state.selected_voice
+                                    if state
+                                    else SpeechTimbre.NEURAL_NATURAL
+                                )
                                 speed_val = state.speed if state else 1.0
 
                                 async for chunk in container.voice_orchestrator._synthesis.stream_speech(
@@ -506,34 +553,48 @@ async def voice_stream_websocket(
                                 ):
                                     await websocket.send_bytes(chunk.audio_bytes)
 
-                                await websocket.send_json({
-                                    "event_type": VoiceStreamEventType.TURN_COMPLETE.value,
-                                    "session_id": sessionId,
-                                    "payload": {"turn_id": f"vct_txt_{time.time_ns():x}", "status": "completed"},
-                                })
+                                await websocket.send_json(
+                                    {
+                                        "event_type": VoiceStreamEventType.TURN_COMPLETE.value,
+                                        "session_id": sessionId,
+                                        "payload": {
+                                            "turn_id": f"vct_txt_{time.time_ns():x}",
+                                            "status": "completed",
+                                        },
+                                    }
+                                )
                             except asyncio.CancelledError:
-                                logger.info("Text turn cancelled for session %s", sessionId)
+                                logger.info(
+                                    "Text turn cancelled for session %s", sessionId
+                                )
                             except Exception as e:
                                 logger.error("Text turn error: %s", e)
 
-                        active_agent_task = asyncio.create_task(run_text_turn(user_text))
-                        stream_state = container.voice_stream_service.get_stream_state(sessionId)
+                        active_agent_task = asyncio.create_task(
+                            run_text_turn(user_text)
+                        )
+                        stream_state = container.voice_stream_service.get_stream_state(
+                            sessionId
+                        )
                         if stream_state:
                             stream_state.active_agent_task = active_agent_task
 
                 except json.JSONDecodeError:
-                    await websocket.send_json({
-                        "event_type": VoiceStreamEventType.ERROR.value,
-                        "session_id": sessionId,
-                        "payload": {"error": "Invalid JSON format"},
-                    })
+                    await websocket.send_json(
+                        {
+                            "event_type": VoiceStreamEventType.ERROR.value,
+                            "session_id": sessionId,
+                            "payload": {"error": "Invalid JSON format"},
+                        }
+                    )
 
     except WebSocketDisconnect:
         logger.info("Voice stream WebSocket disconnected for session %s", sessionId)
     except Exception as exc:
-        logger.warning("Voice stream WebSocket error for session %s: %s", sessionId, exc)
+        logger.warning(
+            "Voice stream WebSocket error for session %s: %s", sessionId, exc
+        )
     finally:
         if active_agent_task and not active_agent_task.done():
             active_agent_task.cancel()
         await container.voice_stream_service.unregister_stream(sessionId)
-

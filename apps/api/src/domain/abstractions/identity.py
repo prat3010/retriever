@@ -34,7 +34,11 @@ class IdentityProvider(ABC):
 
     @abstractmethod
     async def create_api_key(
-        self, tenant_id: str, name: str, expires_in_days: int | None = None, role: str = "client"
+        self,
+        tenant_id: str,
+        name: str,
+        expires_in_days: int | None = None,
+        role: str = "client",
     ) -> tuple[str, ApiKeyMetadata]:
         """Generate a new API key, hash it, save to DB, and return (raw_key, metadata)."""
         pass

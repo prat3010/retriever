@@ -24,7 +24,9 @@ SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 def check_ollama_online(tags_urls: list[str]) -> tuple[bool, list[str]]:
     for url in tags_urls:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "RetrieverSelfIngest/1.0"})
+            req = urllib.request.Request(
+                url, headers={"User-Agent": "RetrieverSelfIngest/1.0"}
+            )
             with urllib.request.urlopen(req, timeout=3) as resp:
                 if resp.status == 200:
                     data = json.loads(resp.read().decode("utf-8"))
@@ -41,9 +43,13 @@ def check_ollama_online(tags_urls: list[str]) -> tuple[bool, list[str]]:
 
 def ensure_ollama_running(base_url: str, model_name: str):
     """Check if Ollama service is active. If offline, auto-launch it. If model is missing, auto-pull it."""
-    is_local_host = any(h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal"))
+    is_local_host = any(
+        h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal")
+    )
     if not is_local_host:
-        print(f"[Ollama Check] Target base URL is remote ({base_url}). Skipping local Ollama auto-launch check.")
+        print(
+            f"[Ollama Check] Target base URL is remote ({base_url}). Skipping local Ollama auto-launch check."
+        )
         return
 
     clean_base = base_url.rstrip("/").removesuffix("/v1")
@@ -57,19 +63,29 @@ def ensure_ollama_running(base_url: str, model_name: str):
     is_online, models = check_ollama_online(tags_urls)
 
     if not is_online:
-        print("[Ollama Probe] Ollama service is not responding. Attempting auto-launch...")
+        print(
+            "[Ollama Probe] Ollama service is not responding. Attempting auto-launch..."
+        )
         started = False
         try:
-            res = subprocess.run(["open", "-a", "Ollama"], capture_output=True, text=True)
+            res = subprocess.run(
+                ["open", "-a", "Ollama"], capture_output=True, text=True
+            )
             if res.returncode == 0:
-                print("  [Ollama Launch] Launched Ollama application via macOS ('open -a Ollama').")
+                print(
+                    "  [Ollama Launch] Launched Ollama application via macOS ('open -a Ollama')."
+                )
                 started = True
         except Exception:
             pass
 
         if not started:
             try:
-                subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(
+                    ["ollama", "serve"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 print("  [Ollama Launch] Started 'ollama serve' in background process.")
                 started = True
             except Exception as e:
@@ -80,7 +96,9 @@ def ensure_ollama_running(base_url: str, model_name: str):
             time.sleep(1)
             is_online, models = check_ollama_online(tags_urls)
             if is_online:
-                print(f"  [Ollama Probe] Ollama is online and healthy (after {sec + 1}s)!")
+                print(
+                    f"  [Ollama Probe] Ollama is online and healthy (after {sec + 1}s)!"
+                )
                 break
 
         if not is_online:
@@ -90,8 +108,12 @@ def ensure_ollama_running(base_url: str, model_name: str):
 
     model_found = any(model_name in m for m in models)
     if not model_found and is_online:
-        print(f"[Ollama Model Probe] Model '{model_name}' not found in installed Ollama models.")
-        print(f"  [Ollama Pull] Automatically pulling '{model_name}' via 'ollama pull'...")
+        print(
+            f"[Ollama Model Probe] Model '{model_name}' not found in installed Ollama models."
+        )
+        print(
+            f"  [Ollama Pull] Automatically pulling '{model_name}' via 'ollama pull'..."
+        )
         try:
             subprocess.run(["ollama", "pull", model_name], check=True)
             print(f"  [Ollama Pull] Model '{model_name}' pulled successfully!")
@@ -104,65 +126,74 @@ def ensure_ollama_running(base_url: str, model_name: str):
 
 # Directories to ignore
 IGNORE_DIRS = {
-    ".git", "node_modules", ".next", ".venv", "venv", 
-    ".pytest_cache", ".ruff_cache", "__pycache__", "dist", "storage", ".deepeval"
+    ".git",
+    "node_modules",
+    ".next",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "dist",
+    "storage",
+    ".deepeval",
 }
 
-IGNORE_FILES = {
-    ".DS_Store", ".env"
-}
+IGNORE_FILES = {".DS_Store", ".env"}
 
 # Index all files to make the RAG complete
 SUPPORTED_EXTENSIONS = {".py", ".md", ".yml", ".yaml", ".json", ".ini", ".toml"}
 
+
 def get_file_hash(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+
 class OllamaEmbeddingAdapter(OpenAIEmbeddingAdapter):
     """Custom adapter extending OpenAIEmbeddingAdapter to make it compatible with Ollama and Gemini responses."""
-    
+
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         # Process in batches of 32
         batch_size = 32
         all_embeddings = []
-        
+
         for idx in range(0, len(texts), batch_size):
-            sub_texts = texts[idx:idx+batch_size]
+            sub_texts = texts[idx : idx + batch_size]
             sub_embeddings = None
-            
+
             for attempt in range(5):
                 try:
-                    kwargs = {
-                        "input": sub_texts,
-                        "model": self._model,
-                        "timeout": 30
-                    }
+                    kwargs = {"input": sub_texts, "model": self._model, "timeout": 30}
                     # If using gemini-embedding-2 or text-embedding-3-small, pass dimensions
                     if self._model in ("gemini-embedding-2", "text-embedding-3-small"):
                         kwargs["extra_body"] = {"dimensions": 768}
-                        
+
                     response = await self.client.embeddings.create(**kwargs)
-                    
+
                     # Handle index null/None issues safely
-                    sorted_data = sorted(response.data, key=lambda x: x.index if x.index is not None else 0)
+                    sorted_data = sorted(
+                        response.data,
+                        key=lambda x: x.index if x.index is not None else 0,
+                    )
                     sub_embeddings = [item.embedding for item in sorted_data]
                     break
                 except Exception as e:
                     if attempt == 4:
                         print(f"  [ERROR] Exhausted embedding retries: {e}")
                         raise
-                    sleep_time = (2 ** attempt) + 1
+                    sleep_time = (2**attempt) + 1
                     print(f"  [Error] Waiting {sleep_time}s to retry sub-batch...")
                     await asyncio.sleep(sleep_time)
-            
+
             if sub_embeddings:
                 all_embeddings.extend(sub_embeddings)
-                
+
             # If using Gemini, add a small delay to stay under RPM limits; Ollama can run unthrottled
             if "generativelanguage" in str(self._base_url):
                 await asyncio.sleep(3.0)
-            
+
         return all_embeddings
+
 
 def chunk_code_ast(file_content: str, rel_path: str) -> list[dict]:
     """Parse python code using AST to create logical chunks (Classes, Functions)."""
@@ -174,15 +205,17 @@ def chunk_code_ast(file_content: str, rel_path: str) -> list[dict]:
         lines = file_content.split("\n")
         chunk_size = 50
         for i in range(0, len(lines), chunk_size):
-            block = "\n".join(lines[i:i+chunk_size])
-            chunks.append({
-                "content": block,
-                "meta": {
-                    "data_type": "source_code",
-                    "ast_node_type": "fallback",
-                    "file_path": rel_path
+            block = "\n".join(lines[i : i + chunk_size])
+            chunks.append(
+                {
+                    "content": block,
+                    "meta": {
+                        "data_type": "source_code",
+                        "ast_node_type": "fallback",
+                        "file_path": rel_path,
+                    },
                 }
-            })
+            )
         return chunks
 
     lines = file_content.split("\n")
@@ -194,113 +227,132 @@ def chunk_code_ast(file_content: str, rel_path: str) -> list[dict]:
             doc = ast.get_docstring(node)
             if doc:
                 class_header += f'    """{doc}"""\n'
-            
-            chunks.append({
-                "content": class_header,
-                "meta": {
-                    "data_type": "source_code",
-                    "ast_node_type": "class",
-                    "name": node.name,
-                    "file_path": rel_path
+
+            chunks.append(
+                {
+                    "content": class_header,
+                    "meta": {
+                        "data_type": "source_code",
+                        "ast_node_type": "class",
+                        "name": node.name,
+                        "file_path": rel_path,
+                    },
                 }
-            })
+            )
 
             # Method Chunks
             for sub_node in node.body:
                 if isinstance(sub_node, ast.FunctionDef | ast.AsyncFunctionDef):
-                    fn_content = "\n".join(lines[sub_node.lineno-1:sub_node.end_lineno])
-                    chunks.append({
-                        "content": f"class {node.name}:\n    " + fn_content.replace("\n", "\n    "),
-                        "meta": {
-                            "data_type": "source_code",
-                            "ast_node_type": "function",
-                            "name": f"{node.name}.{sub_node.name}",
-                            "parent_class": node.name,
-                            "file_path": rel_path
+                    fn_content = "\n".join(
+                        lines[sub_node.lineno - 1 : sub_node.end_lineno]
+                    )
+                    chunks.append(
+                        {
+                            "content": f"class {node.name}:\n    "
+                            + fn_content.replace("\n", "\n    "),
+                            "meta": {
+                                "data_type": "source_code",
+                                "ast_node_type": "function",
+                                "name": f"{node.name}.{sub_node.name}",
+                                "parent_class": node.name,
+                                "file_path": rel_path,
+                            },
                         }
-                    })
+                    )
 
         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             # Top-level Function
-            fn_content = "\n".join(lines[node.lineno-1:node.end_lineno])
-            chunks.append({
-                "content": fn_content,
+            fn_content = "\n".join(lines[node.lineno - 1 : node.end_lineno])
+            chunks.append(
+                {
+                    "content": fn_content,
+                    "meta": {
+                        "data_type": "source_code",
+                        "ast_node_type": "function",
+                        "name": node.name,
+                        "file_path": rel_path,
+                    },
+                }
+            )
+
+    if not chunks:
+        chunks.append(
+            {
+                "content": file_content,
                 "meta": {
                     "data_type": "source_code",
-                    "ast_node_type": "function",
-                    "name": node.name,
-                    "file_path": rel_path
-                }
-            })
-            
-    if not chunks:
-        chunks.append({
-            "content": file_content,
-            "meta": {
-                "data_type": "source_code",
-                "ast_node_type": "module",
-                "file_path": rel_path
+                    "ast_node_type": "module",
+                    "file_path": rel_path,
+                },
             }
-        })
+        )
     return chunks
+
 
 def chunk_markdown(content: str, rel_path: str) -> list[dict]:
     chunks = []
     lines = content.split("\n")
     current_chunk = []
     current_header = "Introduction"
-    
+
     for line in lines:
         if line.startswith(("# ", "## ", "### ")):
             if current_chunk:
-                chunks.append({
-                    "content": "\n".join(current_chunk),
-                    "meta": {
-                        "data_type": "documentation",
-                        "section": current_header,
-                        "file_path": rel_path
+                chunks.append(
+                    {
+                        "content": "\n".join(current_chunk),
+                        "meta": {
+                            "data_type": "documentation",
+                            "section": current_header,
+                            "file_path": rel_path,
+                        },
                     }
-                })
+                )
                 current_chunk = []
             current_header = line.strip("# ")
         current_chunk.append(line)
-        
+
     if current_chunk:
-        chunks.append({
-            "content": "\n".join(current_chunk),
-            "meta": {
-                "data_type": "documentation",
-                "section": current_header,
-                "file_path": rel_path
+        chunks.append(
+            {
+                "content": "\n".join(current_chunk),
+                "meta": {
+                    "data_type": "documentation",
+                    "section": current_header,
+                    "file_path": rel_path,
+                },
             }
-        })
+        )
     return chunks
+
 
 def chunk_config(content: str, rel_path: str) -> list[dict]:
     chunks = []
     lines = content.split("\n")
     for i in range(0, len(lines), 40):
-        block = "\n".join(lines[i:i+40])
-        chunks.append({
-            "content": block,
-            "meta": {
-                "data_type": "configuration",
-                "file_path": rel_path
+        block = "\n".join(lines[i : i + 40])
+        chunks.append(
+            {
+                "content": block,
+                "meta": {"data_type": "configuration", "file_path": rel_path},
             }
-        })
+        )
     return chunks
 
-async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbeddingAdapter):
+
+async def ingest_file(
+    file_path: Path, root_dir: Path, embedder: OllamaEmbeddingAdapter
+):
     rel_path = str(file_path.relative_to(root_dir))
     print(f"Indexing: {rel_path}")
-    
+
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
     except Exception as e:
         print(f"  Error reading {rel_path}: {e}")
         return
-        
+
     file_hash = get_file_hash(content)
     file_size = file_path.stat().st_size
     mime_type = "text/plain"
@@ -310,7 +362,7 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
         mime_type = "text/markdown"
     elif file_path.suffix in (".yml", ".yaml"):
         mime_type = "text/yaml"
-        
+
     # Get chunks
     if file_path.suffix == ".py":
         chunks = chunk_code_ast(content, rel_path)
@@ -318,7 +370,7 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
         chunks = chunk_markdown(content, rel_path)
     else:
         chunks = chunk_config(content, rel_path)
-        
+
     # Generate embeddings
     texts_to_embed = [c["content"] for c in chunks]
     try:
@@ -326,24 +378,26 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
     except Exception as e:
         print(f"  Failed to generate embeddings for {rel_path}: {e}")
         return
-        
+
     # Save to database
     async with tenant_session(tenant_id=SYSTEM_TENANT_ID) as session:
         # Check if document already exists
         stmt = select(DocumentDb).where(
             DocumentDb.tenant_id == uuid.UUID(SYSTEM_TENANT_ID),
             DocumentDb.filename == rel_path,
-            DocumentDb.is_deleted == False
+            DocumentDb.is_deleted == False,
         )
         existing_doc = (await session.execute(stmt)).scalar_one_or_none()
-        
+
         if existing_doc:
             if existing_doc.file_hash == file_hash:
                 print(f"  No changes detected for {rel_path}. Skipping.")
                 return
             # Delete old version chunks
             await session.execute(
-                delete(DocumentChunkDb).where(DocumentChunkDb.document_id == existing_doc.document_id)
+                delete(DocumentChunkDb).where(
+                    DocumentChunkDb.document_id == existing_doc.document_id
+                )
             )
             doc_id = existing_doc.document_id
             existing_doc.file_hash = file_hash
@@ -359,12 +413,12 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
                 storage_path=f"local://codebase/{rel_path}",
                 file_size=file_size,
                 mime_type=mime_type,
-                status="INDEXED"
+                status="INDEXED",
             )
             session.add(db_doc)
-            
+
         await session.flush()
-        
+
         # Save chunks and vectors
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=True)):
             chunk_id = uuid.uuid4()
@@ -375,65 +429,67 @@ async def ingest_file(file_path: Path, root_dir: Path, embedder: OllamaEmbedding
                 content=chunk["content"],
                 token_count=len(chunk["content"]) // 4,  # Rough token estimate
                 chunk_index=i,
-                meta_data=chunk["meta"]
+                meta_data=chunk["meta"],
             )
             session.add(db_chunk)
-            
+
             db_vector = VectorRecordDb(
                 chunk_id=chunk_id,
                 tenant_id=uuid.UUID(SYSTEM_TENANT_ID),
-                embedding=embedding
+                embedding=embedding,
             )
             session.add(db_vector)
-            
+
         await session.flush()
         print(f"  Successfully indexed {len(chunks)} chunks.")
+
 
 async def main():
     root_dir = Path(__file__).resolve().parents[3]
     if not root_dir.exists():
         root_dir = Path("/workspace")
-        
+
     print(f"Starting Ingestion of codebase in {root_dir}")
-    
+
     # Configure custom/Ollama settings explicitly decoupled from Chat LLM env vars
     base_url = os.getenv("EMBEDDING_BASE_URL", "http://localhost:11434/v1")
     model_name = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-    
-    is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal"))
+
+    is_local = any(
+        h in base_url for h in ("localhost", "127.0.0.1", "host.docker.internal")
+    )
     api_key = "ollama" if is_local else os.getenv("EMBEDDING_API_KEY", "ollama")
-    
+
     print(f"Using Embedding Model: {model_name}")
     print(f"Using API Base URL: {base_url}")
-    
+
     # Auto-detect, launch Ollama, and pull target model if offline
     ensure_ollama_running(base_url, model_name)
-    
+
     embedder = OllamaEmbeddingAdapter(
-        api_key=api_key,
-        base_url=base_url,
-        model=model_name
+        api_key=api_key, base_url=base_url, model=model_name
     )
-    
+
     files_to_ingest = []
-    
+
     for root, dirs, files in os.walk(root_dir):
         # Filter directories in-place to avoid traversing them
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-        
+
         for file in files:
             if file in IGNORE_FILES:
                 continue
             file_path = Path(root) / file
             if file_path.suffix in SUPPORTED_EXTENSIONS:
                 files_to_ingest.append(file_path)
-                
+
     print(f"Found {len(files_to_ingest)} candidate files to index.")
-    
+
     for file_path in files_to_ingest:
         await ingest_file(file_path, root_dir, embedder)
-        
+
     print("Ingestion complete.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

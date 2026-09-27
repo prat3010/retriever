@@ -32,6 +32,7 @@ async def test_whisper_transcription_and_vad():
 
     # 2. Synthetic speech audio frame (high energy waveform)
     import struct
+
     speech_samples = [int(15000 * (i % 2 * 2 - 1)) for i in range(320)]
     speech_frame = struct.pack("<320h", *speech_samples)
     vad_state_speech = adapter.detect_voice_activity(speech_frame, sensitivity=0.65)
@@ -127,7 +128,9 @@ async def test_voice_orchestrator_turn_lifecycle():
     )
 
     assert turn.session_id == session.session_id
-    assert turn.agent_response_text == "Local knowledge retrieved successfully in 0.4ms."
+    assert (
+        turn.agent_response_text == "Local knowledge retrieved successfully in 0.4ms."
+    )
     assert turn.time_to_transcribe_ms >= 0.0
     assert turn.time_to_first_audio_byte_ms >= 0.0
     assert turn.total_turn_duration_ms >= 0.0

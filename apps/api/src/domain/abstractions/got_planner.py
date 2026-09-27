@@ -61,19 +61,41 @@ class GoTThoughtNode(BaseModel):
     id: str = Field(..., description="Unique identifier of the thought vertex")
     tenant_id: str = Field(..., description="Tenant namespace owner")
     prompt: str = Field(..., description="Prompt or goal steering this thought")
-    content: str = Field(..., description="Synthesized reasoning content, hypothesis, or solution")
+    content: str = Field(
+        ..., description="Synthesized reasoning content, hypothesis, or solution"
+    )
     thought_type: GoTThoughtType = Field(default=GoTThoughtType.GENERATION)
     status: GoTThoughtStatus = Field(default=GoTThoughtStatus.PENDING)
-    parent_ids: list[str] = Field(default_factory=list, description="In-degree antecedent thought IDs")
-    child_ids: list[str] = Field(default_factory=list, description="Out-degree descendant thought IDs")
-    score: float = Field(default=0.0, ge=0.0, le=1.0, description="Composite evaluation score S(v)")
-    grounding_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Contextual grounding score")
-    coherence_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Logical coherence score")
-    constraint_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Constraint satisfaction score")
-    token_cost: int = Field(default=0, ge=0, description="Tokens expended to generate/score thought")
-    latency_ms: float = Field(default=0.0, ge=0.0, description="Inference latency in milliseconds")
-    iteration_depth: int = Field(default=0, ge=0, description="Topological depth in the DAG")
-    is_optimal_path: bool = Field(default=False, description="Whether thought lies on best converged path")
+    parent_ids: list[str] = Field(
+        default_factory=list, description="In-degree antecedent thought IDs"
+    )
+    child_ids: list[str] = Field(
+        default_factory=list, description="Out-degree descendant thought IDs"
+    )
+    score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Composite evaluation score S(v)"
+    )
+    grounding_score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Contextual grounding score"
+    )
+    coherence_score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Logical coherence score"
+    )
+    constraint_score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Constraint satisfaction score"
+    )
+    token_cost: int = Field(
+        default=0, ge=0, description="Tokens expended to generate/score thought"
+    )
+    latency_ms: float = Field(
+        default=0.0, ge=0.0, description="Inference latency in milliseconds"
+    )
+    iteration_depth: int = Field(
+        default=0, ge=0, description="Topological depth in the DAG"
+    )
+    is_optimal_path: bool = Field(
+        default=False, description="Whether thought lies on best converged path"
+    )
     created_at: float = Field(default_factory=time.time)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -84,7 +106,9 @@ class GoTEdge(BaseModel):
     source_id: str = Field(..., description="Antecedent thought vertex ID")
     target_id: str = Field(..., description="Successor thought vertex ID")
     edge_type: GoTEdgeType = Field(default=GoTEdgeType.DERIVATION)
-    weight: float = Field(default=1.0, ge=0.0, description="Edge affinity or derivation confidence")
+    weight: float = Field(
+        default=1.0, ge=0.0, description="Edge affinity or derivation confidence"
+    )
 
 
 class GoTGraph(BaseModel):
@@ -94,13 +118,27 @@ class GoTGraph(BaseModel):
     tenant_id: str = Field(..., description="Tenant namespace owner")
     query: str = Field(..., description="Original complex prompt or objective")
     root_id: str = Field(..., description="Root thought vertex ID")
-    nodes: dict[str, GoTThoughtNode] = Field(default_factory=dict, description="Map of vertex ID to thought")
-    edges: list[GoTEdge] = Field(default_factory=list, description="Directed dependency edges")
-    optimal_path: list[str] = Field(default_factory=list, description="Optimal vertex sequence root -> terminal")
-    best_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Highest score along optimal path")
-    is_converged: bool = Field(default=False, description="Whether graph reached terminal convergence")
-    total_tokens: int = Field(default=0, ge=0, description="Cumulative tokens across all thoughts")
-    total_latency_ms: float = Field(default=0.0, ge=0.0, description="Total execution time in ms")
+    nodes: dict[str, GoTThoughtNode] = Field(
+        default_factory=dict, description="Map of vertex ID to thought"
+    )
+    edges: list[GoTEdge] = Field(
+        default_factory=list, description="Directed dependency edges"
+    )
+    optimal_path: list[str] = Field(
+        default_factory=list, description="Optimal vertex sequence root -> terminal"
+    )
+    best_score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Highest score along optimal path"
+    )
+    is_converged: bool = Field(
+        default=False, description="Whether graph reached terminal convergence"
+    )
+    total_tokens: int = Field(
+        default=0, ge=0, description="Cumulative tokens across all thoughts"
+    )
+    total_latency_ms: float = Field(
+        default=0.0, ge=0.0, description="Total execution time in ms"
+    )
     created_at: float = Field(default_factory=time.time)
     updated_at: float = Field(default_factory=time.time)
 
@@ -108,11 +146,27 @@ class GoTGraph(BaseModel):
 class GoTPlanRequest(BaseModel):
     """Request to initiate a new Graph-of-Thoughts planning session."""
 
-    query: str = Field(..., min_length=2, description="Target prompt or goal to plan with GoT")
-    branching_factor: int = Field(default=3, ge=1, le=10, description="Successors generated per branch (k)")
-    max_depth: int = Field(default=4, ge=1, le=10, description="Maximum search / reasoning depth")
-    pruning_threshold: float = Field(default=0.4, ge=0.0, le=1.0, description="Score threshold below which thoughts are pruned (tau)")
-    aggregation_threshold: int = Field(default=2, ge=2, le=5, description="Min candidate branches required to aggregate (m)")
+    query: str = Field(
+        ..., min_length=2, description="Target prompt or goal to plan with GoT"
+    )
+    branching_factor: int = Field(
+        default=3, ge=1, le=10, description="Successors generated per branch (k)"
+    )
+    max_depth: int = Field(
+        default=4, ge=1, le=10, description="Maximum search / reasoning depth"
+    )
+    pruning_threshold: float = Field(
+        default=0.4,
+        ge=0.0,
+        le=1.0,
+        description="Score threshold below which thoughts are pruned (tau)",
+    )
+    aggregation_threshold: int = Field(
+        default=2,
+        ge=2,
+        le=5,
+        description="Min candidate branches required to aggregate (m)",
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -126,16 +180,25 @@ class GoTPlanResponse(BaseModel):
 class GoTStepRequest(BaseModel):
     """Request to execute a single graph transformation step."""
 
-    action: str = Field(..., description="Step action: 'generate', 'aggregate', 'refine', 'score', 'prune'")
-    target_node_ids: list[str] = Field(default_factory=list, description="Specific nodes to transform")
+    action: str = Field(
+        ...,
+        description="Step action: 'generate', 'aggregate', 'refine', 'score', 'prune'",
+    )
+    target_node_ids: list[str] = Field(
+        default_factory=list, description="Specific nodes to transform"
+    )
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class GoTAggregateRequest(BaseModel):
     """Request to combine multiple independent thought branches into one synthesis."""
 
-    source_node_ids: list[str] = Field(..., min_length=2, description="Vertices to combine into aggregate")
-    synthesis_prompt: str | None = Field(default=None, description="Optional custom synthesis guidance")
+    source_node_ids: list[str] = Field(
+        ..., min_length=2, description="Vertices to combine into aggregate"
+    )
+    synthesis_prompt: str | None = Field(
+        default=None, description="Optional custom synthesis guidance"
+    )
 
 
 class HierarchicalMemoryNode(BaseModel):
@@ -143,12 +206,20 @@ class HierarchicalMemoryNode(BaseModel):
 
     id: str = Field(..., description="Memory record identifier")
     tenant_id: str = Field(..., description="Tenant namespace owner")
-    layer: MemoryLayer = Field(..., description="L1 Scratchpad, L2 Episodic, or L3 Semantic")
+    layer: MemoryLayer = Field(
+        ..., description="L1 Scratchpad, L2 Episodic, or L3 Semantic"
+    )
     title: str = Field(..., description="Short cognitive title or concept label")
     content: str = Field(..., description="Distilled knowledge or thought content")
-    activation: float = Field(default=1.0, ge=0.0, description="Current spreading activation level A(v)")
-    stability_days: float = Field(default=1.0, ge=0.1, description="Ebbinghaus memory stability S")
-    retention_score: float = Field(default=1.0, ge=0.0, le=1.0, description="Current Ebbinghaus retention R(t)")
+    activation: float = Field(
+        default=1.0, ge=0.0, description="Current spreading activation level A(v)"
+    )
+    stability_days: float = Field(
+        default=1.0, ge=0.1, description="Ebbinghaus memory stability S"
+    )
+    retention_score: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Current Ebbinghaus retention R(t)"
+    )
     access_count: int = Field(default=0, ge=0)
     linked_graph_id: str | None = None
     linked_thought_ids: list[str] = Field(default_factory=list)
@@ -225,7 +296,9 @@ class GoTPlannerProtocol(ABC):
         """Retrieve full state of a GoT plan graph."""
 
     @abstractmethod
-    async def step_plan(self, tenant_id: str, graph_id: str, request: GoTStepRequest) -> GoTGraph:
+    async def step_plan(
+        self, tenant_id: str, graph_id: str, request: GoTStepRequest
+    ) -> GoTGraph:
         """Execute a single graph transformation step (generate/refine/score/prune)."""
 
     @abstractmethod
@@ -233,7 +306,9 @@ class GoTPlannerProtocol(ABC):
         """Autonomously drive GoT loop to terminal convergence."""
 
     @abstractmethod
-    async def aggregate_thoughts(self, tenant_id: str, graph_id: str, request: GoTAggregateRequest) -> GoTGraph:
+    async def aggregate_thoughts(
+        self, tenant_id: str, graph_id: str, request: GoTAggregateRequest
+    ) -> GoTGraph:
         """Combine multiple independent thought vertices into a synthesis vertex."""
 
     @abstractmethod
@@ -241,7 +316,9 @@ class GoTPlannerProtocol(ABC):
         """Retrieve L1, L2, and L3 memory tiers for a tenant."""
 
     @abstractmethod
-    async def distill_graph(self, tenant_id: str, request: DistillationRequest) -> DistillationResult:
+    async def distill_graph(
+        self, tenant_id: str, request: DistillationRequest
+    ) -> DistillationResult:
         """Distill high-scoring GoT reasoning graph into long-term hierarchical memory."""
 
     @abstractmethod

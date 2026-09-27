@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 class EvalRunService:
-
     def __init__(
         self,
         eval_dataset_repo: EvalDatasetRepository,
@@ -41,12 +40,16 @@ class EvalRunService:
         self.ragas_fn = ragas_fn
         self.deepeval_fn = deepeval_fn
 
-    async def run_evaluation(self, tenant_id: str, dataset_id: str, trigger: str = "manual") -> EvalRun:
-        run = await self.run_repo.create_run(EvalRun(
-            tenant_id=tenant_id,
-            dataset_id=dataset_id,
-            trigger=trigger,
-        ))
+    async def run_evaluation(
+        self, tenant_id: str, dataset_id: str, trigger: str = "manual"
+    ) -> EvalRun:
+        run = await self.run_repo.create_run(
+            EvalRun(
+                tenant_id=tenant_id,
+                dataset_id=dataset_id,
+                trigger=trigger,
+            )
+        )
 
         await self.run_repo.update_run_status(run.run_id, "running")
 
@@ -77,9 +80,15 @@ class EvalRunService:
                         tenant_id=tenant_id,
                     )
                 )
-                generated_answer = result.answer if hasattr(result, "answer") else getattr(result, "content", str(result))
+                generated_answer = (
+                    result.answer
+                    if hasattr(result, "answer")
+                    else getattr(result, "content", str(result))
+                )
             except Exception as err:
-                logger.warning(f"Evaluation orchestrator generation failed for question {question.question_id}: {err}")
+                logger.warning(
+                    f"Evaluation orchestrator generation failed for question {question.question_id}: {err}"
+                )
 
             search_metrics = compute_search_metrics(
                 retrieved_chunk_ids=retrieved_chunk_ids,
@@ -130,7 +139,9 @@ class EvalRunService:
             all_scores.append(result.scores)
 
         aggregate = self._compute_aggregate(all_scores)
-        await self.run_repo.update_run_status(run.run_id, "completed", aggregate_scores=aggregate.model_dump())
+        await self.run_repo.update_run_status(
+            run.run_id, "completed", aggregate_scores=aggregate.model_dump()
+        )
 
         run.status = "completed"
         run.aggregate_scores = AggregateScores(**aggregate.model_dump())
@@ -153,8 +164,12 @@ class EvalRunService:
         agg.deepeval.toxicity = sum(s.deepeval.toxicity for s in scores) / n
         agg.deepeval.bias = sum(s.deepeval.bias for s in scores) / n
 
-        agg.search_metrics.ndcg_at_10 = sum(s.search_metrics.ndcg_at_10 for s in scores) / n
+        agg.search_metrics.ndcg_at_10 = (
+            sum(s.search_metrics.ndcg_at_10 for s in scores) / n
+        )
         agg.search_metrics.mrr = sum(s.search_metrics.mrr for s in scores) / n
-        agg.search_metrics.hit_rate_at_10 = sum(s.search_metrics.hit_rate_at_10 for s in scores) / n
+        agg.search_metrics.hit_rate_at_10 = (
+            sum(s.search_metrics.hit_rate_at_10 for s in scores) / n
+        )
 
         return agg

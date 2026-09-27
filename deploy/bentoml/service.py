@@ -72,7 +72,10 @@ class RetrieverVllmService:
                         lora_path=lora_path,
                     )
 
-            prompt_parts = [f"<|im_start|>{m.get('role', 'user')}\n{m.get('content', '')}<|im_end|>" for m in messages]
+            prompt_parts = [
+                f"<|im_start|>{m.get('role', 'user')}\n{m.get('content', '')}<|im_end|>"
+                for m in messages
+            ]
             prompt_parts.append("<|im_start|>assistant\n")
             full_prompt = "\n".join(prompt_parts)
 
@@ -84,26 +87,37 @@ class RetrieverVllmService:
             request_id = f"bento-{int(time.time() * 1000)}"
 
             results_gen = self.engine.generate(
-                full_prompt, sampling_params, request_id=request_id, lora_request=lora_req
+                full_prompt,
+                sampling_params,
+                request_id=request_id,
+                lora_request=lora_req,
             )
 
             if stream:
+
                 async def event_generator() -> AsyncGenerator[str, None]:
                     prev = ""
                     async for out in results_gen:
                         txt = out.outputs[0].text
-                        delta = txt[len(prev):]
+                        delta = txt[len(prev) :]
                         prev = txt
                         chunk = {
                             "id": request_id,
                             "object": "chat.completion.chunk",
                             "model": target_model,
-                            "choices": [{"delta": {"content": delta}, "finish_reason": out.outputs[0].finish_reason}],
+                            "choices": [
+                                {
+                                    "delta": {"content": delta},
+                                    "finish_reason": out.outputs[0].finish_reason,
+                                }
+                            ],
                         }
                         yield f"data: {json.dumps(chunk)}\n\n"
                     yield "data: [DONE]\n\n"
 
-                return StreamingResponse(event_generator(), media_type="text/event-stream")
+                return StreamingResponse(
+                    event_generator(), media_type="text/event-stream"
+                )
 
             final_out = None
             async for out in results_gen:
@@ -112,16 +126,26 @@ class RetrieverVllmService:
             if final_out is None:
                 raise HTTPException(status_code=500, detail="Generation failed")
 
-            return JSONResponse({
-                "id": request_id,
-                "object": "chat.completion",
-                "model": target_model,
-                "choices": [{"message": {"role": "assistant", "content": final_out.outputs[0].text}}],
-                "usage": {
-                    "prompt_tokens": len(final_out.prompt_token_ids),
-                    "completion_tokens": len(final_out.outputs[0].token_ids),
-                    "total_tokens": len(final_out.prompt_token_ids) + len(final_out.outputs[0].token_ids),
-                },
-            })
+            return JSONResponse(
+                {
+                    "id": request_id,
+                    "object": "chat.completion",
+                    "model": target_model,
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                                "content": final_out.outputs[0].text,
+                            }
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": len(final_out.prompt_token_ids),
+                        "completion_tokens": len(final_out.outputs[0].token_ids),
+                        "total_tokens": len(final_out.prompt_token_ids)
+                        + len(final_out.outputs[0].token_ids),
+                    },
+                }
+            )
 
         return web_app

@@ -27,6 +27,7 @@ from src.domain.agentic.tool_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
+
 # State schema for the agent computation graph
 class GraphState(TypedDict, total=False):
     tenant_id: str
@@ -123,7 +124,9 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
             logger.info("Successfully compiled LangGraph StateGraph topology.")
             return builder.compile()
         except ImportError:
-            logger.info("langgraph package not directly available; using resilient cyclic graph engine.")
+            logger.info(
+                "langgraph package not directly available; using resilient cyclic graph engine."
+            )
             return None
 
     # ── Graph Node Callbacks ─────────────────────────────────────────────────
@@ -187,7 +190,9 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
 
         except Exception as err:
             logger.debug(f"JSON parse fallback in reasoner node ({err})")
-            thought = raw_text if "raw_text" in locals() else f"Reasoning error: {err!s}"
+            thought = (
+                raw_text if "raw_text" in locals() else f"Reasoning error: {err!s}"
+            )
             parsed_calls = []
             final_ans = thought
 
@@ -198,7 +203,16 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
 
         # Append assistant reasoning to chat messages
         state.setdefault("messages", []).append(
-            {"role": "assistant", "content": json.dumps({"thought": thought, "tool_calls": parsed_calls, "final_answer": final_ans})}
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "thought": thought,
+                        "tool_calls": parsed_calls,
+                        "final_answer": final_ans,
+                    }
+                ),
+            }
         )
 
         # Record step thought
@@ -300,7 +314,11 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
         tool_call_objs = active_step.get("tool_calls", []) if active_step else []
 
         for idx, call_data in enumerate(calls):
-            call_id = tool_call_objs[idx]["call_id"] if idx < len(tool_call_objs) else f"call_{uuid4().hex[:8]}"
+            call_id = (
+                tool_call_objs[idx]["call_id"]
+                if idx < len(tool_call_objs)
+                else f"call_{uuid4().hex[:8]}"
+            )
             tool_name = call_data.get("tool_name", "")
             args = call_data.get("arguments", {})
 
@@ -339,7 +357,11 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
         state["status"] = "completed"
         if not state.get("final_answer"):
             steps = state.get("steps", [])
-            state["final_answer"] = steps[-1].get("thought", "Task completed.") if steps else "Workflow completed."
+            state["final_answer"] = (
+                steps[-1].get("thought", "Task completed.")
+                if steps
+                else "Workflow completed."
+            )
 
         chk_id = f"chk_{state['thread_id']}_step{state.get('step_count', 0)}_final"
         state["active_checkpoint_id"] = chk_id
@@ -400,12 +422,16 @@ class LangGraphOrchestrator(AgentGraphEngineProtocol):
             tenant_id=tenant_id, thread_id=thread_id
         )
         if not latest_chk:
-            raise ValueError(f"No checkpoint found for thread '{thread_id}' in tenant '{tenant_id}'.")
+            raise ValueError(
+                f"No checkpoint found for thread '{thread_id}' in tenant '{tenant_id}'."
+            )
 
         state: GraphState = dict(latest_chk.state_snapshot)  # type: ignore
         pending = state.get("pending_approval")
         if not pending or state.get("status") != "waiting_approval":
-            raise ValueError(f"Thread '{thread_id}' is not in a 'waiting_approval' state.")
+            raise ValueError(
+                f"Thread '{thread_id}' is not in a 'waiting_approval' state."
+            )
 
         if pending.get("action_id") != decision.action_id:
             raise ValueError(

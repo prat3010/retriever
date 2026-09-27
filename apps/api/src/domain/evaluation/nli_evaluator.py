@@ -43,11 +43,34 @@ class NliEvaluator(BaseNliEvaluator):
     }
 
     STOPWORDS: ClassVar[set[str]] = {
-        "the", "a", "an", "is", "are", "was", "were", "and", "or", "in", "on", "at",
-        "to", "for", "of", "with", "by", "from", "it", "this", "that", "these", "those",
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "and",
+        "or",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "it",
+        "this",
+        "that",
+        "these",
+        "those",
     }
 
-    def __init__(self, entailment_threshold: float = 0.50, contradiction_threshold: float = 0.35) -> None:
+    def __init__(
+        self, entailment_threshold: float = 0.50, contradiction_threshold: float = 0.35
+    ) -> None:
         self.entailment_threshold = entailment_threshold
         self.contradiction_threshold = contradiction_threshold
 
@@ -60,7 +83,16 @@ class NliEvaluator(BaseNliEvaluator):
         raw_sentences = re.split(r"(?<=[.!?])\s+", text.strip())
         claims: list[str] = []
 
-        conversational = ("hello", "hi", "thanks", "thank you", "sure,", "cheers", "regards", "best regards")
+        conversational = (
+            "hello",
+            "hi",
+            "thanks",
+            "thank you",
+            "sure,",
+            "cheers",
+            "regards",
+            "best regards",
+        )
         for s in raw_sentences:
             cleaned = s.strip()
             # Filter out tiny fragments or conversational prefixes
@@ -68,8 +100,6 @@ class NliEvaluator(BaseNliEvaluator):
                 claims.append(cleaned)
 
         return claims if claims else [text.strip()]
-
-
 
     def classify_claim_premise(self, claim: str, premise: str) -> NliClassification:
         """Classify directional NLI relation between a single claim and a premise context."""
@@ -90,7 +120,9 @@ class NliEvaluator(BaseNliEvaluator):
         claim_tokens = [w.lower() for w in re.findall(r"\b\w+\b", claim_clean)]
         premise_tokens = [w.lower() for w in re.findall(r"\b\w+\b", premise_clean)]
 
-        claim_content = [w for w in claim_tokens if w not in self.STOPWORDS and len(w) > 2]
+        claim_content = [
+            w for w in claim_tokens if w not in self.STOPWORDS and len(w) > 2
+        ]
         premise_content_set = set(premise_tokens)
 
         if not claim_content:
@@ -118,13 +150,17 @@ class NliEvaluator(BaseNliEvaluator):
             # High lexical/semantic overlap but opposite negation polarity -> Contradiction
             contradiction_prob = round(min(0.95, 0.40 + content_overlap * 0.55), 4)
             entailment_prob = round(max(0.0, 0.20 - contradiction_prob * 0.2), 4)
-            neutral_prob = round(max(0.0, 1.0 - (contradiction_prob + entailment_prob)), 4)
+            neutral_prob = round(
+                max(0.0, 1.0 - (contradiction_prob + entailment_prob)), 4
+            )
             status = "contradiction"
         elif content_overlap >= self.entailment_threshold and not polarity_conflict:
             # High overlap and matching polarity -> Entailment
             entailment_prob = round(min(0.98, content_overlap * 0.95), 4)
             contradiction_prob = 0.02
-            neutral_prob = round(max(0.0, 1.0 - (entailment_prob + contradiction_prob)), 4)
+            neutral_prob = round(
+                max(0.0, 1.0 - (entailment_prob + contradiction_prob)), 4
+            )
             status = "entailment"
         else:
             # Low overlap or weak signal -> Neutral
@@ -189,10 +225,17 @@ class NliEvaluator(BaseNliEvaluator):
                 candidate = self.classify_claim_premise(claim, ctx)
                 # Prioritize contradiction (critical safety signal), then highest entailment
                 if candidate.status == "contradiction":
-                    if best_match is None or best_match.status != "contradiction" or candidate.contradiction_prob > best_match.contradiction_prob:
+                    if (
+                        best_match is None
+                        or best_match.status != "contradiction"
+                        or candidate.contradiction_prob > best_match.contradiction_prob
+                    ):
                         best_match = candidate
                 elif candidate.status == "entailment":
-                    if best_match is None or (best_match.status != "contradiction" and candidate.entailment_prob > best_match.entailment_prob):
+                    if best_match is None or (
+                        best_match.status != "contradiction"
+                        and candidate.entailment_prob > best_match.entailment_prob
+                    ):
                         best_match = candidate
                 elif best_match is None:
                     best_match = candidate

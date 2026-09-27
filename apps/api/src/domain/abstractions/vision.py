@@ -32,16 +32,24 @@ class BoundingBox(BaseModel):
 
     ymin: float = Field(..., ge=0.0, le=1.0, description="Top coordinate (normalized)")
     xmin: float = Field(..., ge=0.0, le=1.0, description="Left coordinate (normalized)")
-    ymax: float = Field(..., ge=0.0, le=1.0, description="Bottom coordinate (normalized)")
-    xmax: float = Field(..., ge=0.0, le=1.0, description="Right coordinate (normalized)")
-    confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Detection confidence")
+    ymax: float = Field(
+        ..., ge=0.0, le=1.0, description="Bottom coordinate (normalized)"
+    )
+    xmax: float = Field(
+        ..., ge=0.0, le=1.0, description="Right coordinate (normalized)"
+    )
+    confidence: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Detection confidence"
+    )
 
     @field_validator("ymax")
     @classmethod
     def validate_vertical(cls, v: float, info: Any) -> float:
         ymin = info.data.get("ymin")
         if ymin is not None and v < ymin:
-            raise ValueError(f"ymax ({v}) must be greater than or equal to ymin ({ymin})")
+            raise ValueError(
+                f"ymax ({v}) must be greater than or equal to ymin ({ymin})"
+            )
         return v
 
     @field_validator("xmax")
@@ -49,7 +57,9 @@ class BoundingBox(BaseModel):
     def validate_horizontal(cls, v: float, info: Any) -> float:
         xmin = info.data.get("xmin")
         if xmin is not None and v < xmin:
-            raise ValueError(f"xmax ({v}) must be greater than or equal to xmin ({xmin})")
+            raise ValueError(
+                f"xmax ({v}) must be greater than or equal to xmin ({xmin})"
+            )
         return v
 
     def to_list(self) -> list[float]:
@@ -80,10 +90,17 @@ class BoundingBox(BaseModel):
 class VisualElement(BaseModel):
     """A classified visual entity detected inside a technical schematic or blueprint."""
 
-    element_id: str = Field(..., description="Unique element identifier inside the diagram")
-    label: str = Field(..., description="Extracted label or service name (e.g. 'API Gateway', 'PostgreSQL')")
+    element_id: str = Field(
+        ..., description="Unique element identifier inside the diagram"
+    )
+    label: str = Field(
+        ...,
+        description="Extracted label or service name (e.g. 'API Gateway', 'PostgreSQL')",
+    )
     element_type: VisualElementType = Field(default=VisualElementType.UNKNOWN)
-    bounding_box: BoundingBox = Field(..., description="Normalized coordinates on diagram canvas")
+    bounding_box: BoundingBox = Field(
+        ..., description="Normalized coordinates on diagram canvas"
+    )
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     properties: dict[str, Any] = Field(default_factory=dict)
 
@@ -94,9 +111,16 @@ class VisualConnector(BaseModel):
     connector_id: str = Field(..., description="Unique connector identifier")
     source_element_id: str = Field(..., description="Source visual element ID")
     target_element_id: str = Field(..., description="Target visual element ID")
-    label: str = Field(default="", description="Protocol, action, or payload label (e.g. 'HTTPS POST', 'gRPC')")
-    directionality: str = Field(default="directed", description="'directed', 'bidirectional', or 'undirected'")
-    protocol: str | None = Field(default=None, description="Inferred network/data protocol (e.g. 'SQL', 'AMQP')")
+    label: str = Field(
+        default="",
+        description="Protocol, action, or payload label (e.g. 'HTTPS POST', 'gRPC')",
+    )
+    directionality: str = Field(
+        default="directed", description="'directed', 'bidirectional', or 'undirected'"
+    )
+    protocol: str | None = Field(
+        default=None, description="Inferred network/data protocol (e.g. 'SQL', 'AMQP')"
+    )
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -105,14 +129,22 @@ class SchematicDiagram(BaseModel):
     """Complete structured representation of an architectural schematic or system blueprint."""
 
     diagram_id: str = Field(..., description="Unique diagram identifier")
-    filename: str = Field(..., description="Origin file name (e.g. 'architecture.png', 'system_topology.svg')")
-    document_id: str | None = Field(default=None, description="Parent document ID if part of multi-page doc")
+    filename: str = Field(
+        ...,
+        description="Origin file name (e.g. 'architecture.png', 'system_topology.svg')",
+    )
+    document_id: str | None = Field(
+        default=None, description="Parent document ID if part of multi-page doc"
+    )
     page_number: int = Field(default=1, ge=1)
     width: float = Field(default=1920.0, gt=0.0)
     height: float = Field(default=1080.0, gt=0.0)
     elements: list[VisualElement] = Field(default_factory=list)
     connectors: list[VisualConnector] = Field(default_factory=list)
-    summary: str = Field(default="", description="Algorithmic architectural narrative of diagram topology")
+    summary: str = Field(
+        default="",
+        description="Algorithmic architectural narrative of diagram topology",
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -121,7 +153,9 @@ class MultimodalGraphNode(BaseModel):
 
     id: str
     label: str
-    node_type: str = Field(..., description="'visual_component', 'textual_entity', or 'table_entity'")
+    node_type: str = Field(
+        ..., description="'visual_component', 'textual_entity', or 'table_entity'"
+    )
     element_type: VisualElementType | None = None
     bounding_box: BoundingBox | None = None
     diagram_id: str | None = None
@@ -136,7 +170,9 @@ class MultimodalGraphEdge(BaseModel):
     target: str
     relation: str
     protocol: str | None = None
-    is_cross_modal: bool = Field(default=False, description="True if edge links visual element to text entity")
+    is_cross_modal: bool = Field(
+        default=False, description="True if edge links visual element to text entity"
+    )
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

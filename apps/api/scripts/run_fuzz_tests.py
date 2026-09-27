@@ -19,6 +19,7 @@ for p in [src_dir, apps_api_dir, repo_root / "packages" / "processing-core" / "s
     if p.exists() and str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+
 def main():
     try:
         import schemathesis
@@ -41,6 +42,7 @@ def main():
     except Exception as exc:
         print(f"Schemathesis execution error: {exc}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,9 @@ class ComplianceCertificateService:
     def _canonicalize_records(self, records_purged: dict[str, int]) -> str:
         """Deterministically sort records for canonical signature string construction."""
         sorted_keys = sorted(records_purged.keys())
-        return json.dumps({k: records_purged[k] for k in sorted_keys}, separators=(",", ":"))
+        return json.dumps(
+            {k: records_purged[k] for k in sorted_keys}, separators=(",", ":")
+        )
 
     def _compute_signature(
         self,

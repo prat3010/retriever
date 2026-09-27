@@ -91,6 +91,7 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
         Uses a Lua script for atomic sliding-window check-and-add.
         """
         import uuid
+
         now = time.time()
         suffix = uuid.uuid4().hex
         try:
@@ -106,7 +107,9 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
             )
             return _parse_rate_limit_result(res, self._max_requests)
         except Exception as err:
-            logger.warning(f"Redis rate limiter failed on key {key}, failing open: {err}")
+            logger.warning(
+                f"Redis rate limiter failed on key {key}, failing open: {err}"
+            )
             # Fail open on Redis errors — allow the request
             return RateLimitResult(
                 allowed=True,

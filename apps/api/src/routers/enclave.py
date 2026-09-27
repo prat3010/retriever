@@ -47,14 +47,18 @@ tenant_router = APIRouter(
 
 @admin_router.get("/attestation/nonce", response_model=AttestationNonce)
 async def get_attestation_nonce(
-    ttl_seconds: int = Query(default=300, ge=30, le=3600, description="Nonce validity window in seconds"),
+    ttl_seconds: int = Query(
+        default=300, ge=30, le=3600, description="Nonce validity window in seconds"
+    ),
 ) -> AttestationNonce:
     """Generate a fresh single-use cryptographic challenge nonce."""
     try:
         enclave = container.enclave_adapter
         return enclave.generate_nonce(ttl_seconds=ttl_seconds)
     except Exception as exc:
-        logger.error(f"Failed to generate attestation challenge nonce: {exc}", exc_info=True)
+        logger.error(
+            f"Failed to generate attestation challenge nonce: {exc}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Nonce generation failed: {exc}",
@@ -64,12 +68,16 @@ async def get_attestation_nonce(
 @admin_router.post("/attestation/verify", response_model=EnclaveVerificationReport)
 async def verify_attestation_evidence(
     evidence: AttestationEvidence,
-    expected_nonce: str | None = Query(default=None, description="Optional expected challenge nonce"),
+    expected_nonce: str | None = Query(
+        default=None, description="Optional expected challenge nonce"
+    ),
 ) -> EnclaveVerificationReport:
     """Verify cryptographic remote attestation evidence and platform PCR measurements."""
     try:
         enclave = container.enclave_adapter
-        report = enclave.verify_evidence(evidence=evidence, expected_nonce=expected_nonce)
+        report = enclave.verify_evidence(
+            evidence=evidence, expected_nonce=expected_nonce
+        )
         return report
     except Exception as exc:
         logger.error(f"Attestation evidence verification error: {exc}", exc_info=True)
@@ -86,10 +94,14 @@ async def get_system_attestation_report() -> EnclaveVerificationReport:
         enclave = container.enclave_adapter
         nonce_obj = enclave.generate_nonce(ttl_seconds=60)
         evidence = enclave.generate_evidence(nonce=nonce_obj.nonce)
-        report = enclave.verify_evidence(evidence=evidence, expected_nonce=nonce_obj.nonce)
+        report = enclave.verify_evidence(
+            evidence=evidence, expected_nonce=nonce_obj.nonce
+        )
         return report
     except Exception as exc:
-        logger.error(f"Failed to generate self-attestation report: {exc}", exc_info=True)
+        logger.error(
+            f"Failed to generate self-attestation report: {exc}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Self-attestation failed: {exc}",
@@ -139,7 +151,9 @@ async def seal_tenant_payload(
         )
         return sealed
     except Exception as exc:
-        logger.error(f"Failed to seal payload for tenant {tenantId}: {exc}", exc_info=True)
+        logger.error(
+            f"Failed to seal payload for tenant {tenantId}: {exc}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Sealing operation failed: {exc}",

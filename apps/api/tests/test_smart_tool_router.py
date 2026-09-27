@@ -234,7 +234,10 @@ async def test_fastapi_gateway_endpoints():
         # 1. Test POST /v1/tenants/{tenantId}/agentic/gateway/classify
         classify_resp = await client.post(
             "/v1/tenants/tenant_e2e/agentic/gateway/classify",
-            json={"query": "Debug python memory profiling script", "allowed_tools": ["python_sandbox"]},
+            json={
+                "query": "Debug python memory profiling script",
+                "allowed_tools": ["python_sandbox"],
+            },
             headers=headers,
         )
         assert classify_resp.status_code == 200

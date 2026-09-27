@@ -59,7 +59,9 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
         ).hex()
 
         # Cache: document_id -> (DocumentMerkleRoot, list_of_levels, chunk_id_to_index)
-        self._merkle_cache: dict[str, tuple[DocumentMerkleRoot, list[list[str]], dict[str, int]]] = {}
+        self._merkle_cache: dict[
+            str, tuple[DocumentMerkleRoot, list[list[str]], dict[str, int]]
+        ] = {}
         # Certificate ledger: list of recent certificates (in-memory audit trail)
         self._certificate_store: list[ZkpGroundingCertificate] = []
 
@@ -112,7 +114,12 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
         for idx, chunk in enumerate(chunks):
             cid = str(chunk.get("chunk_id") or chunk.get("id") or f"chk_{idx}")
             chunk_id_map[cid] = idx
-            text = chunk.get("content") or chunk.get("chunk_text") or chunk.get("text") or ""
+            text = (
+                chunk.get("content")
+                or chunk.get("chunk_text")
+                or chunk.get("text")
+                or ""
+            )
             c_hash = chunk.get("content_hash")
             leaf = self._compute_leaf_hash(tenant_id, document_id, idx, text, c_hash)
             leaf_hashes.append(leaf)
@@ -167,7 +174,9 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
         doc_root, levels, chunk_id_map = self._merkle_cache[cache_key]
 
         if chunk_id not in chunk_id_map:
-            raise ValueError(f"Chunk ID '{chunk_id}' not found in document '{document_id}' chunks.")
+            raise ValueError(
+                f"Chunk ID '{chunk_id}' not found in document '{document_id}' chunks."
+            )
 
         leaf_idx = chunk_id_map[chunk_id]
         leaf_hash = levels[0][leaf_idx]
@@ -262,7 +271,9 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
         response_hash = hashlib.sha256(response.encode("utf-8")).hexdigest()
 
         # Compute document Merkle root
-        doc_root = self.compute_document_merkle_tree(tenant_id, document_id, all_document_chunks)
+        doc_root = self.compute_document_merkle_tree(
+            tenant_id, document_id, all_document_chunks
+        )
 
         # Build chunk commitments with Merkle proofs
         commitments: list[ChunkCommitment] = []
@@ -270,7 +281,9 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
             cid = str(chunk.get("chunk_id") or chunk.get("id") or "")
             if not cid:
                 continue
-            proof = self.generate_chunk_inclusion_proof(tenant_id, document_id, cid, all_document_chunks)
+            proof = self.generate_chunk_inclusion_proof(
+                tenant_id, document_id, cid, all_document_chunks
+            )
             score = chunk.get("similarity") or chunk.get("score") or similarity_bound
             commitments.append(
                 ChunkCommitment(
@@ -354,7 +367,9 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
         # 3. Response hash integrity check (if response provided)
         response_match = True
         if response is not None:
-            computed_response_hash = hashlib.sha256(response.encode("utf-8")).hexdigest()
+            computed_response_hash = hashlib.sha256(
+                response.encode("utf-8")
+            ).hexdigest()
             if computed_response_hash != certificate.response_hash:
                 return GroundingVerificationResult(
                     status=VerificationStatus.RESPONSE_MISMATCH,
@@ -443,7 +458,13 @@ class ZkpAttestationAdapter(ZkpAttestationPort):
             execution_time_ms=round(elapsed_ms, 3),
         )
 
-    def list_recent_certificates(self, tenant_id: str | None = None, limit: int = 50) -> list[ZkpGroundingCertificate]:
+    def list_recent_certificates(
+        self, tenant_id: str | None = None, limit: int = 50
+    ) -> list[ZkpGroundingCertificate]:
         """Return recently issued grounding certificates, optionally filtered by tenant."""
-        certs = [c for c in self._certificate_store if tenant_id is None or c.tenant_id == tenant_id]
+        certs = [
+            c
+            for c in self._certificate_store
+            if tenant_id is None or c.tenant_id == tenant_id
+        ]
         return list(reversed(certs[-limit:]))

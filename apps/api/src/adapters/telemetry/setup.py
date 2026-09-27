@@ -45,6 +45,7 @@ def get_rate_limiter() -> RedisSlidingWindowRateLimiter | None:
     global _rate_limiter
     if _rate_limiter is None and settings.RATE_LIMIT_ENABLED:
         from src.adapters.cache.config_cache import redis_client
+
         _rate_limiter = RedisSlidingWindowRateLimiter(
             redis_client=redis_client,
             window_seconds=settings.RATE_LIMIT_WINDOW_SECONDS,
@@ -63,6 +64,7 @@ def init_telemetry(app: FastAPI) -> None:
 
     # 3. Auto-Instrumentation (SQLAlchemy, HTTPX, Celery)
     from src.adapters.telemetry.auto_instrumentation import registry
+
     registry.instrument_all()
 
     # 4. Metrics
@@ -75,10 +77,10 @@ def init_telemetry(app: FastAPI) -> None:
     @app.get("/metrics", include_in_schema=False)
     async def metrics_endpoint() -> PlainTextResponse:
         from src.adapters.telemetry.prometheus_metrics import PrometheusMetricsRegistry
+
         return PlainTextResponse(
             content=PrometheusMetricsRegistry.generate_latest().decode("utf-8"),
             media_type="text/plain; version=0.0.4",
         )
 
     logger.info("telemetry_initialised", environment=settings.ENVIRONMENT)
-

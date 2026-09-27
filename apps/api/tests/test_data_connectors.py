@@ -22,10 +22,18 @@ client = TestClient(app)
 
 def test_connector_registry_resolution() -> None:
     """Verify ConnectorRegistry resolves connector instances by strategy name."""
-    assert isinstance(ConnectorRegistry.get_connector("web_crawler"), WebCrawlerConnector)
-    assert isinstance(ConnectorRegistry.get_connector("cloud_drive"), LocalFolderConnector)
-    assert isinstance(ConnectorRegistry.get_connector("local_folder"), LocalFolderConnector)
-    assert isinstance(ConnectorRegistry.get_connector("google_drive"), GoogleDriveConnector)
+    assert isinstance(
+        ConnectorRegistry.get_connector("web_crawler"), WebCrawlerConnector
+    )
+    assert isinstance(
+        ConnectorRegistry.get_connector("cloud_drive"), LocalFolderConnector
+    )
+    assert isinstance(
+        ConnectorRegistry.get_connector("local_folder"), LocalFolderConnector
+    )
+    assert isinstance(
+        ConnectorRegistry.get_connector("google_drive"), GoogleDriveConnector
+    )
 
     with pytest.raises(NotImplementedError):
         ConnectorRegistry.get_connector("unknown_connector_type")
@@ -36,9 +44,13 @@ async def test_local_folder_connector_fetch() -> None:
     """Verify LocalFolderConnector fetches genuine discovered documents from disk."""
     with tempfile.TemporaryDirectory() as tmpdir:
         doc1 = Path(tmpdir) / "doc1.txt"
-        doc1.write_text("Quarterly engineering overview and technical roadmap.", encoding="utf-8")
+        doc1.write_text(
+            "Quarterly engineering overview and technical roadmap.", encoding="utf-8"
+        )
         doc2 = Path(tmpdir) / "doc2.md"
-        doc2.write_text("SaaS Architecture and multi-cloud security specs.", encoding="utf-8")
+        doc2.write_text(
+            "SaaS Architecture and multi-cloud security specs.", encoding="utf-8"
+        )
 
         connector = LocalFolderConnector()
         config = ConnectorConfig(
@@ -85,8 +97,12 @@ def test_admin_connector_lifecycle_crud(
     mock_ingest_sync.return_value = AsyncMock()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        (Path(tmpdir) / "sample_a.txt").write_text("Sample file A content", encoding="utf-8")
-        (Path(tmpdir) / "sample_b.txt").write_text("Sample file B content", encoding="utf-8")
+        (Path(tmpdir) / "sample_a.txt").write_text(
+            "Sample file A content", encoding="utf-8"
+        )
+        (Path(tmpdir) / "sample_b.txt").write_text(
+            "Sample file B content", encoding="utf-8"
+        )
 
         # Create Connector
         create_payload = {
@@ -108,12 +124,16 @@ def test_admin_connector_lifecycle_crud(
         assert conn_data["connector_type"] == "local_folder"
 
         # List Connectors
-        list_res = client.get(f"/v1/admin/tenants/{tenant_id}/connectors", headers=headers)
+        list_res = client.get(
+            f"/v1/admin/tenants/{tenant_id}/connectors", headers=headers
+        )
         assert list_res.status_code == 200
         assert any(c["id"] == conn_id for c in list_res.json())
 
         # Get Single Connector
-        get_res = client.get(f"/v1/admin/tenants/{tenant_id}/connectors/{conn_id}", headers=headers)
+        get_res = client.get(
+            f"/v1/admin/tenants/{tenant_id}/connectors/{conn_id}", headers=headers
+        )
         assert get_res.status_code == 200
         assert get_res.json()["id"] == conn_id
 
@@ -129,6 +149,8 @@ def test_admin_connector_lifecycle_crud(
         assert sync_data["documentsIngested"] == 2
 
         # Delete Connector
-        del_res = client.delete(f"/v1/admin/tenants/{tenant_id}/connectors/{conn_id}", headers=headers)
+        del_res = client.delete(
+            f"/v1/admin/tenants/{tenant_id}/connectors/{conn_id}", headers=headers
+        )
         assert del_res.status_code == 200
         assert del_res.json()["status"] == "deleted"

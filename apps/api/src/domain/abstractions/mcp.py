@@ -23,12 +23,18 @@ class McpToolInputSchema(BaseModel):
 
 class McpToolDefinition(BaseModel):
     name: str = Field(..., description="Unique tool identifier, e.g. 'hybrid_search'")
-    description: str = Field(..., description="Description of the tool purpose for the AI model")
+    description: str = Field(
+        ..., description="Description of the tool purpose for the AI model"
+    )
     inputSchema: McpToolInputSchema = Field(default_factory=McpToolInputSchema)
     category: str = Field(default="general")
-    risk_level: str = Field(default="low", description="'low' | 'medium' | 'high' | 'critical'")
+    risk_level: str = Field(
+        default="low", description="'low' | 'medium' | 'high' | 'critical'"
+    )
     requires_approval: bool = Field(default=False)
-    battery_id: str | None = Field(default=None, description="Linked PlatformBattery identifier if applicable")
+    battery_id: str | None = Field(
+        default=None, description="Linked PlatformBattery identifier if applicable"
+    )
 
 
 class McpToolCallRequest(BaseModel):

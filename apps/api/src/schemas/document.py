@@ -13,7 +13,9 @@ class DocumentResponse(BaseModel):
 
 
 class ExtractRequest(BaseModel):
-    json_schema: dict[str, object] = Field(..., description="JSON Schema to shape the extraction output")
+    json_schema: dict[str, object] = Field(
+        ..., description="JSON Schema to shape the extraction output"
+    )
     model: str | None = None
 
 

@@ -64,4 +64,3 @@ def evaluate_inference_nli(
         "faithfulness_score": res.faithfulness_score,
         "hallucination_index": res.hallucination_index,
     }
-

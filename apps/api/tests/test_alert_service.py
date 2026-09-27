@@ -17,6 +17,7 @@ client = TestClient(app)
 
 # ── 1. Unit Tests: Payload Formatters ────────────────────────────────────────
 
+
 def test_alert_format_slack_payload():
     """Verify Slack Block Kit format includes severity emoji and mrkdwn blocks."""
     alert_svc = AlertService()
@@ -83,6 +84,7 @@ def test_alert_format_custom_webhook():
 
 # ── 2. Unit Tests: SLA Rule Triggers & Debounce ───────────────────────────────
 
+
 def test_alert_evaluation_hallucination_trigger():
     """Verify hallucination spike rule fires when index > 30%."""
     alert_svc = AlertService()
@@ -108,7 +110,9 @@ def test_alert_evaluation_quota_trigger():
         monthly_tokens_used=92_000,
         hallucination_index=0.05,
     )
-    alerts_warn = alert_svc.evaluate_rules("tn_test", telemetry_warn, token_quota_max=100_000)
+    alerts_warn = alert_svc.evaluate_rules(
+        "tn_test", telemetry_warn, token_quota_max=100_000
+    )
     assert len(alerts_warn) == 1
     assert alerts_warn[0].rule_name == "token_quota_threshold"
     assert alerts_warn[0].severity == "WARNING"
@@ -119,7 +123,9 @@ def test_alert_evaluation_quota_trigger():
         monthly_tokens_used=105_000,
         hallucination_index=0.05,
     )
-    alerts_crit = alert_svc.evaluate_rules("tn_test", telemetry_crit, token_quota_max=100_000)
+    alerts_crit = alert_svc.evaluate_rules(
+        "tn_test", telemetry_crit, token_quota_max=100_000
+    )
     assert len(alerts_crit) == 1
     assert alerts_crit[0].rule_name == "token_quota_threshold"
     assert alerts_crit[0].severity == "CRITICAL"
@@ -164,6 +170,7 @@ async def test_alert_debouncing():
 
 
 # ── 3. API Tests: Admin Alert Endpoints ───────────────────────────────────────
+
 
 def test_admin_test_alert_endpoint():
     """Verify POST /v1/admin/tenants/{tenantId}/alerts/test endpoint."""

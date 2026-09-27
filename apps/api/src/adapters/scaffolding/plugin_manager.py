@@ -65,7 +65,10 @@ class PluginManager(PluginManagerProtocol):
                     try:
                         data = json.loads(manifest_file.read_text(encoding="utf-8"))
                         manifest = PluginManifest.model_validate(data)
-                        is_mounted = manifest.id in self._mounted_routers or manifest.id in self._active_plugins
+                        is_mounted = (
+                            manifest.id in self._mounted_routers
+                            or manifest.id in self._active_plugins
+                        )
                         summaries.append(
                             CustomPluginSummary(
                                 plugin_id=manifest.id,
@@ -79,7 +82,9 @@ class PluginManager(PluginManagerProtocol):
                             )
                         )
                     except Exception as e:
-                        logger.warning("Failed to parse manifest for plugin '%s': %s", item.name, e)
+                        logger.warning(
+                            "Failed to parse manifest for plugin '%s': %s", item.name, e
+                        )
                         summaries.append(
                             CustomPluginSummary(
                                 plugin_id=item.name,
@@ -135,19 +140,37 @@ class PluginManager(PluginManagerProtocol):
                 if res.get("mounted"):
                     mounted.append(plugin_id)
                 else:
-                    errors.append({"plugin_id": plugin_id, "error": res.get("error", "Unknown mount error")})
+                    errors.append(
+                        {
+                            "plugin_id": plugin_id,
+                            "error": res.get("error", "Unknown mount error"),
+                        }
+                    )
             except Exception as e:
-                logger.exception("Fault barrier caught exception loading plugin '%s'", plugin_id)
+                logger.exception(
+                    "Fault barrier caught exception loading plugin '%s'", plugin_id
+                )
                 errors.append({"plugin_id": plugin_id, "error": str(e)})
 
-        logger.info("PluginManager completed scan: %d mounted, %d errors", len(mounted), len(errors))
-        return {"mounted_count": len(mounted), "mounted_plugins": mounted, "errors": errors}
+        logger.info(
+            "PluginManager completed scan: %d mounted, %d errors",
+            len(mounted),
+            len(errors),
+        )
+        return {
+            "mounted_count": len(mounted),
+            "mounted_plugins": mounted,
+            "errors": errors,
+        }
 
     def mount_single_plugin(self, plugin_id: str, app: Any = None) -> dict[str, Any]:
         """Validate and hot-mount a single plugin into the running FastAPI application."""
         plugin_dir = self.plugins_root / plugin_id
         if not plugin_dir.exists():
-            return {"mounted": False, "error": f"Plugin directory '{plugin_id}' not found."}
+            return {
+                "mounted": False,
+                "error": f"Plugin directory '{plugin_id}' not found.",
+            }
 
         manifest = self.get_plugin_manifest(plugin_id)
         if not manifest:
@@ -168,8 +191,15 @@ class PluginManager(PluginManagerProtocol):
 
         ast_check = self.validator.validate_plugin_files(domain_files)
         if not ast_check.is_valid:
-            logger.error("AST validation failed for plugin '%s': %s", plugin_id, ast_check.violations)
-            return {"mounted": False, "error": f"AST Gate rejected plugin: {'; '.join(ast_check.violations)}"}
+            logger.error(
+                "AST validation failed for plugin '%s': %s",
+                plugin_id,
+                ast_check.violations,
+            )
+            return {
+                "mounted": False,
+                "error": f"AST Gate rejected plugin: {'; '.join(ast_check.violations)}",
+            }
 
         # 2. Dynamic Import & FastAPI Router Mounting
         module_path = f"src.plugins.custom.{plugin_id}.router"
@@ -182,11 +212,19 @@ class PluginManager(PluginManagerProtocol):
 
                 if router and plugin_id not in self._mounted_routers:
                     prefix = f"/v1/plugins/{plugin_id}"
-                    app.include_router(router, prefix=prefix, tags=[f"Plugin: {manifest.name}"])
+                    app.include_router(
+                        router, prefix=prefix, tags=[f"Plugin: {manifest.name}"]
+                    )
                     self._mounted_routers.add(plugin_id)
-                    logger.info("Mounted plugin router for '%s' at prefix '%s'", plugin_id, prefix)
+                    logger.info(
+                        "Mounted plugin router for '%s' at prefix '%s'",
+                        plugin_id,
+                        prefix,
+                    )
             except Exception as e:
-                logger.warning("Could not mount router for plugin '%s': %s", plugin_id, e)
+                logger.warning(
+                    "Could not mount router for plugin '%s': %s", plugin_id, e
+                )
 
         self._active_plugins[plugin_id] = manifest
         return {

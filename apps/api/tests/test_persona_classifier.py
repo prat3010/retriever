@@ -26,7 +26,9 @@ def lead_scorer():
 
 @pytest.fixture
 def service(clusterer, lead_scorer):
-    return PersonaIntelligenceService(persona_classifier=clusterer, lead_scorer=lead_scorer)
+    return PersonaIntelligenceService(
+        persona_classifier=clusterer, lead_scorer=lead_scorer
+    )
 
 
 @pytest.fixture
@@ -159,7 +161,14 @@ def test_hexagonal_boundary_conformance():
     with open(domain_file) as f:
         tree = ast.parse(f.read())
 
-    forbidden_modules = ["fastapi", "sqlalchemy", "starlette", "requests", "httpx", "sklearn"]
+    forbidden_modules = [
+        "fastapi",
+        "sqlalchemy",
+        "starlette",
+        "requests",
+        "httpx",
+        "sklearn",
+    ]
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:

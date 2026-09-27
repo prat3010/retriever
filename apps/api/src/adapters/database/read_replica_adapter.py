@@ -51,9 +51,16 @@ class ReadReplicaAdapter:
 
         # Initialize optional regional read-replicas
         self._init_replica(RegionCode.US_EAST, settings.REPLICA_US_EAST_DATABASE_URL)
-        self._init_replica(RegionCode.EU_CENTRAL, settings.REPLICA_EU_CENTRAL_DATABASE_URL)
-        if settings.REPLICA_AP_SOUTH_DATABASE_URL and self.primary_region != RegionCode.AP_SOUTH:
-            self._init_replica(RegionCode.AP_SOUTH, settings.REPLICA_AP_SOUTH_DATABASE_URL)
+        self._init_replica(
+            RegionCode.EU_CENTRAL, settings.REPLICA_EU_CENTRAL_DATABASE_URL
+        )
+        if (
+            settings.REPLICA_AP_SOUTH_DATABASE_URL
+            and self.primary_region != RegionCode.AP_SOUTH
+        ):
+            self._init_replica(
+                RegionCode.AP_SOUTH, settings.REPLICA_AP_SOUTH_DATABASE_URL
+            )
 
     def _init_replica(self, region: RegionCode, url: str | None) -> None:
         if not url:
@@ -76,7 +83,9 @@ class ReadReplicaAdapter:
             self.router_service.set_node_status(region, ReplicaHealthStatus.HEALTHY)
             logger.info("Initialized read-replica engine for region: %s", region.value)
         except Exception as e:
-            logger.warning("Failed to initialize read-replica for %s: %s", region.value, e)
+            logger.warning(
+                "Failed to initialize read-replica for %s: %s", region.value, e
+            )
             self.router_service.set_node_status(region, ReplicaHealthStatus.UNREACHABLE)
 
     async def probe_regional_health(self) -> RegionProbeResponse:
@@ -96,7 +105,9 @@ class ReadReplicaAdapter:
                         latency_ms=0.0,
                     )
                 )
-                self.router_service.set_node_status(region, ReplicaHealthStatus.FALLBACK_PRIMARY)
+                self.router_service.set_node_status(
+                    region, ReplicaHealthStatus.FALLBACK_PRIMARY
+                )
                 continue
 
             start_t = time.perf_counter()
@@ -109,7 +120,11 @@ class ReadReplicaAdapter:
                 logger.debug("Probe failed for region %s: %s", region.value, e)
                 elapsed_ms = round((time.perf_counter() - start_t) * 1000.0, 2)
                 # Primary should not be marked unreachable lightly; replicas fallback
-                status = ReplicaHealthStatus.UNREACHABLE if region == self.primary_region else ReplicaHealthStatus.FALLBACK_PRIMARY
+                status = (
+                    ReplicaHealthStatus.UNREACHABLE
+                    if region == self.primary_region
+                    else ReplicaHealthStatus.FALLBACK_PRIMARY
+                )
 
             self.router_service.set_node_status(region, status, elapsed_ms)
             probe_results.append(
@@ -120,7 +135,15 @@ class ReadReplicaAdapter:
                 )
             )
 
-        overall = "HEALTHY" if all(r.status in (ReplicaHealthStatus.HEALTHY, ReplicaHealthStatus.FALLBACK_PRIMARY) for r in probe_results) else "DEGRADED"
+        overall = (
+            "HEALTHY"
+            if all(
+                r.status
+                in (ReplicaHealthStatus.HEALTHY, ReplicaHealthStatus.FALLBACK_PRIMARY)
+                for r in probe_results
+            )
+            else "DEGRADED"
+        )
 
         return RegionProbeResponse(
             results=probe_results,
@@ -135,7 +158,10 @@ class ReadReplicaAdapter:
     ) -> AsyncGenerator[AsyncSession, None]:
         """Provide a read-only transactional session targeting the optimal regional replica or master."""
         target_region = region or self.primary_region
-        maker = self._session_makers.get(target_region) or self._session_makers[self.primary_region]
+        maker = (
+            self._session_makers.get(target_region)
+            or self._session_makers[self.primary_region]
+        )
 
         async with maker() as session:
             async with session.begin():
@@ -143,7 +169,9 @@ class ReadReplicaAdapter:
                     try:
                         valid_uuid = uuid.UUID(str(tenant_id))
                     except ValueError as e:
-                        raise TenantIsolationViolationError(f"Invalid tenant ID format: {e}") from e
+                        raise TenantIsolationViolationError(
+                            f"Invalid tenant ID format: {e}"
+                        ) from e
                     await session.execute(
                         text(f"SET LOCAL app.current_tenant_id = '{valid_uuid}'"),
                     )

@@ -23,6 +23,7 @@ from src.main import app
 
 # ── 1. Sandbox AST Safety Tests ─────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_sandbox_ast_safety_blocks_imports():
     """Verify RestrictedPythonSandboxAdapter blocks illegal module imports."""
@@ -53,6 +54,7 @@ print(f"Average: {result}")
 
 # ── 2. RlmExecutionEngine Tests ─────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_rlm_engine_analysis():
     """Verify RlmExecutionEngine workflow with search service and sandbox."""
@@ -71,8 +73,12 @@ async def test_rlm_engine_analysis():
     mock_search.search = AsyncMock(
         return_value=SearchResponse(
             results=[
-                SearchResult(chunk_id="c1", document_id="d1", content="Text 1", score=0.9),
-                SearchResult(chunk_id="c2", document_id="d2", content="Text 2", score=0.8),
+                SearchResult(
+                    chunk_id="c1", document_id="d1", content="Text 1", score=0.9
+                ),
+                SearchResult(
+                    chunk_id="c2", document_id="d2", content="Text 2", score=0.8
+                ),
             ],
             query="test analytical task",
             search_meta=SearchMeta(
@@ -108,15 +114,21 @@ async def test_rlm_engine_multi_turn_repl_loop():
     """Verify multi-turn REPL loop self-corrects and finishes."""
     mock_llm = MagicMock(spec=LlmProvider)
     # Turn 1 produces bad code (syntax error), Turn 2 produces valid code
-    bad_code_resp = InferenceResponse(content="```python\nresult = undefined_variable + 1\n```")
-    good_code_resp = InferenceResponse(content="```python\nresult = len(chunks) * 10\n```")
+    bad_code_resp = InferenceResponse(
+        content="```python\nresult = undefined_variable + 1\n```"
+    )
+    good_code_resp = InferenceResponse(
+        content="```python\nresult = len(chunks) * 10\n```"
+    )
     mock_llm.generate = AsyncMock(side_effect=[bad_code_resp, good_code_resp])
 
     mock_search = MagicMock(spec=HybridSearchService)
     mock_search.search = AsyncMock(
         return_value=SearchResponse(
             results=[
-                SearchResult(chunk_id="c1", document_id="d1", content="Text 1", score=0.9),
+                SearchResult(
+                    chunk_id="c1", document_id="d1", content="Text 1", score=0.9
+                ),
             ],
             query="test loop",
             search_meta=SearchMeta(
@@ -150,6 +162,7 @@ async def test_rlm_engine_multi_turn_repl_loop():
 
 
 # ── 3. Router Endpoint Tests ─────────────────────────────────────────────────
+
 
 @patch("src.container.container.rlm_engine.analyze")
 def test_rlm_analyze_endpoint(mock_analyze):

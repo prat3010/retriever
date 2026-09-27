@@ -1,4 +1,5 @@
 """Ecosystem integrations routes for Slack, Chrome Extension, and Cloud Drives."""
+
 import io
 import logging
 import os
@@ -38,13 +39,17 @@ async def handle_slack_slash_command(
     request: Request,
     background_tasks: BackgroundTasks,
     x_slack_signature: str | None = Header(None, alias="X-Slack-Signature"),
-    x_slack_request_timestamp: str | None = Header(None, alias="X-Slack-Request-Timestamp"),
+    x_slack_request_timestamp: str | None = Header(
+        None, alias="X-Slack-Request-Timestamp"
+    ),
 ) -> dict[str, Any]:
     """Handle incoming Slack slash command (e.g. `/ask-retriever <query>`)."""
     raw_body = await request.body()
 
     # 1. Verify cryptographic Slack signature if secret is configured
-    slack_secret = getattr(settings, "SLACK_SIGNING_SECRET", None) or os.environ.get("SLACK_SIGNING_SECRET")
+    slack_secret = getattr(settings, "SLACK_SIGNING_SECRET", None) or os.environ.get(
+        "SLACK_SIGNING_SECRET"
+    )
     if slack_secret:
         is_valid = slack_service.verify_slack_signature(
             signing_secret=slack_secret,
@@ -111,7 +116,8 @@ async def handle_slack_slash_command(
             context_blocks.append(f"[{res.document_id}]: {snippet}")
             citations.append(
                 {
-                    "title": res.metadata.get("filename") or f"Doc {res.document_id[:8]}",
+                    "title": res.metadata.get("filename")
+                    or f"Doc {res.document_id[:8]}",
                     "snippet": snippet,
                     "url": f"http://localhost:3000?tenant={tenant_id}",
                     "score": res.score,
@@ -142,7 +148,9 @@ async def handle_slack_slash_command(
     except Exception as exc:
         logger.warning("Slack inference failed: %s", exc)
         if context_blocks:
-            answer_text = "Found relevant context chunks:\n\n" + "\n\n".join(context_blocks[:2])
+            answer_text = "Found relevant context chunks:\n\n" + "\n\n".join(
+                context_blocks[:2]
+            )
         else:
             answer_text = "I searched the workspace knowledge base but found no relevant documents matching your query."
 
@@ -219,7 +227,10 @@ async def download_chrome_extension_bundle() -> Response:
 )
 async def get_integrations_overview() -> dict[str, Any]:
     """Return overview of all available ecosystem plugins and connection states."""
-    slack_configured = bool(getattr(settings, "SLACK_SIGNING_SECRET", None) or os.environ.get("SLACK_SIGNING_SECRET"))
+    slack_configured = bool(
+        getattr(settings, "SLACK_SIGNING_SECRET", None)
+        or os.environ.get("SLACK_SIGNING_SECRET")
+    )
 
     return {
         "plugins": [

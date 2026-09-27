@@ -137,9 +137,7 @@ class SqlCompiledPromptRepository(CompiledPromptRepositoryProtocol):
 
         return self._memory_store.get(t_id, {}).get(program_id)
 
-    async def get_active_program(
-        self, tenant_id: str
-    ) -> CompiledPromptProgram | None:
+    async def get_active_program(self, tenant_id: str) -> CompiledPromptProgram | None:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
@@ -173,9 +171,7 @@ class SqlCompiledPromptRepository(CompiledPromptRepositoryProtocol):
         self._active_cache[t_id] = None
         return None
 
-    async def list_programs(
-        self, tenant_id: str
-    ) -> list[CompiledPromptProgram]:
+    async def list_programs(self, tenant_id: str) -> list[CompiledPromptProgram]:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
@@ -199,9 +195,7 @@ class SqlCompiledPromptRepository(CompiledPromptRepositoryProtocol):
             reverse=True,
         )
 
-    async def activate_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def activate_program(self, tenant_id: str, program_id: str) -> bool:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
@@ -247,9 +241,7 @@ class SqlCompiledPromptRepository(CompiledPromptRepositoryProtocol):
         self._active_cache[t_id] = active
         return True
 
-    async def deactivate_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def deactivate_program(self, tenant_id: str, program_id: str) -> bool:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
@@ -274,16 +266,18 @@ class SqlCompiledPromptRepository(CompiledPromptRepositoryProtocol):
             self._active_cache[t_id] = None
             return True
 
-    async def delete_program(
-        self, tenant_id: str, program_id: str
-    ) -> bool:
+    async def delete_program(self, tenant_id: str, program_id: str) -> bool:
         tenant_uuid = self._validate_tenant_uuid(tenant_id)
         t_id = str(tenant_uuid)
 
         if t_id in self._memory_store and program_id in self._memory_store[t_id]:
             del self._memory_store[t_id][program_id]
 
-        if t_id in self._active_cache and self._active_cache[t_id] and self._active_cache[t_id].program_id == program_id:
+        if (
+            t_id in self._active_cache
+            and self._active_cache[t_id]
+            and self._active_cache[t_id].program_id == program_id
+        ):
             self._active_cache[t_id] = None
 
         try:

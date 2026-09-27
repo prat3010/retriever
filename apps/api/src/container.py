@@ -12,6 +12,7 @@ try:
     from src.adapters.broker.rabbitmq_event_publisher import (
         RabbitMQEventPublisher,
     )
+
     _event_publisher_available = True
 except Exception:
     _event_publisher_available = False
@@ -195,7 +196,8 @@ class Container:
             base_url=settings.OPENAI_BASE_URL,
         )
         anthropic_adapter = AnthropicLLMAdapter(
-            api_key=settings.ANTHROPIC_API_KEY or os.environ.get("ANTHROPIC_API_KEY", ""),
+            api_key=settings.ANTHROPIC_API_KEY
+            or os.environ.get("ANTHROPIC_API_KEY", ""),
         )
         serverless_gpu_client = ServerlessGpuClientAdapter(
             endpoint_url=settings.MODAL_ENDPOINT_URL or settings.BENTOML_ENDPOINT_URL,
@@ -218,7 +220,9 @@ class Container:
 
         self._cache["embedder"] = (
             HFEmbeddingAdapter(
-                api_key=os.environ.get("HF_API_KEY") or os.environ.get("HF_API_TOKEN") or "",
+                api_key=os.environ.get("HF_API_KEY")
+                or os.environ.get("HF_API_TOKEN")
+                or "",
                 model=os.environ.get("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5"),
             )
             if os.environ.get("EMBEDDING_PROVIDER") == "hf"
@@ -234,7 +238,10 @@ class Container:
         # --- Graph Repository ---
         pg_graph = PgGraphRepository()
         infra = InfraCapabilities.detect()
-        if infra.neo4j_viable or getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j":
+        if (
+            infra.neo4j_viable
+            or getattr(settings, "GRAPH_ENGINE", "postgres") == "neo4j"
+        ):
             self._cache["graph_repository"] = Neo4jGraphRepository(
                 uri=getattr(settings, "NEO4J_URI", "bolt://localhost:7687"),
                 user=getattr(settings, "NEO4J_USER", "neo4j"),
@@ -269,8 +276,12 @@ class Container:
             embedder=embedder,
             reranker=reranker_instance,
             cache_provider=PgSemanticCacheAdapter(),
-            web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None,
-            brave_search=BraveSearchAdapter(api_key=settings.BRAVE_API_KEY) if settings.BRAVE_API_KEY else None,
+            web_search=TavilySearchAdapter(api_key=settings.TAVILY_API_KEY)
+            if settings.TAVILY_API_KEY
+            else None,
+            brave_search=BraveSearchAdapter(api_key=settings.BRAVE_API_KEY)
+            if settings.BRAVE_API_KEY
+            else None,
             self_query=LLMSelfQueryAdapter(llm=llm),
             query_rewriter=LLMQueryRewriterAdapter(llm=llm),
             query_intent_classifier=LLMQueryIntentAdapter(llm=llm),
@@ -320,7 +331,9 @@ class Container:
         self._cache["eval_dataset_repo"] = eval_dataset_repo
         self._cache["eval_run_repo"] = eval_run_repo
         self._cache["online_eval_repo"] = online_eval_repo
-        self._cache["online_evaluator"] = OnlineHallucinationEvaluator(repository=online_eval_repo)
+        self._cache["online_evaluator"] = OnlineHallucinationEvaluator(
+            repository=online_eval_repo
+        )
 
         self._cache["eval_service"] = EvalRunService(
             eval_dataset_repo=eval_dataset_repo,
@@ -380,7 +393,9 @@ class Container:
 
         # --- Security & Compression ---
         self._cache["context_compressor"] = IntelligentContextCompressor()
-        self._cache["field_encryptor"] = Aes256FieldEncryptor(master_key=settings.KEY_ENCRYPTION_KEY)
+        self._cache["field_encryptor"] = Aes256FieldEncryptor(
+            master_key=settings.KEY_ENCRYPTION_KEY
+        )
 
         from src.adapters.database.compliance_repository import SqlComplianceRepository
         from src.domain.compliance.certificate_service import (
@@ -391,7 +406,9 @@ class Container:
         from src.domain.compliance.retention_worker import RetentionWorker
 
         compliance_repo = SqlComplianceRepository()
-        certificate_service = ComplianceCertificateService(signing_key=settings.SECRET_KEY)
+        certificate_service = ComplianceCertificateService(
+            signing_key=settings.SECRET_KEY
+        )
         pii_anonymizer = PiiAnonymizer()
         hard_purge_service = HardPurgeService(
             compliance_repo=compliance_repo,
@@ -434,8 +451,12 @@ class Container:
         )
 
         contextual_header_generator = ContextualHeaderGeneratorAdapter(
-            api_key=settings.OPENAI_API_KEY if hasattr(settings, "OPENAI_API_KEY") else "",
-            base_url=settings.OPENAI_BASE_URL if hasattr(settings, "OPENAI_BASE_URL") else "",
+            api_key=settings.OPENAI_API_KEY
+            if hasattr(settings, "OPENAI_API_KEY")
+            else "",
+            base_url=settings.OPENAI_BASE_URL
+            if hasattr(settings, "OPENAI_BASE_URL")
+            else "",
         )
         self._cache["contextual_header_generator"] = contextual_header_generator
 
@@ -480,7 +501,9 @@ class Container:
 
         effort_regressor = ScikitEffortRegressor()
         self._cache["effort_regressor"] = effort_regressor
-        self._cache["effort_estimation_service"] = EffortEstimationService(effort_regressor)
+        self._cache["effort_estimation_service"] = EffortEstimationService(
+            effort_regressor
+        )
 
         persona_clusterer = ScikitPersonaClusterer()
         lead_scorer = ScikitLeadPropensityScorer()
@@ -569,7 +592,9 @@ class Container:
 
         nemo_adapter = NeMoGuardrailsAdapter()
         self._cache["nemo_guardrails_adapter"] = nemo_adapter
-        self._cache["nemo_guardrail_service"] = NeMoGuardrailService(adapter=nemo_adapter)
+        self._cache["nemo_guardrail_service"] = NeMoGuardrailService(
+            adapter=nemo_adapter
+        )
 
         # --- Milestone 95: Durable Asynchronous Execution & Background AI Workflow Engine ---
         wf_repo = SqlWorkflowRepository()
@@ -585,7 +610,9 @@ class Container:
         # --- Milestone 97: Autonomous FDE Metaprogrammer & Self-Extending Capability Studio ---
         ast_checker = AstBoundaryValidator()
         req_analyzer = RequirementAnalyzer()
-        metaprog = AutonomousMetaprogrammer(analyzer=req_analyzer, validator=ast_checker)
+        metaprog = AutonomousMetaprogrammer(
+            analyzer=req_analyzer, validator=ast_checker
+        )
         pr_gen = PullRequestGenerator()
         code_scaff = CodeScaffolderAdapter()
         plugin_mgr = PluginManager(validator=ast_checker)
@@ -601,7 +628,9 @@ class Container:
         edge_delta_calc = EdgeDeltaCalculator()
         edge_ranker = EdgeFusionRanker()
         sqlite_engine = SqliteEdgeEngine(ranker=edge_ranker)
-        edge_sync = EdgeSyncAdapter(delta_calculator=edge_delta_calc, edge_engine=sqlite_engine)
+        edge_sync = EdgeSyncAdapter(
+            delta_calculator=edge_delta_calc, edge_engine=sqlite_engine
+        )
         edge_reconciler = EdgeMutationReconciler()
 
         self._cache["edge_delta_calculator"] = edge_delta_calc
@@ -657,8 +686,14 @@ class Container:
         from src.adapters.security.memory_sanitizer import EphemeralMemorySanitizer
 
         mem_sanitizer = EphemeralMemorySanitizer(register_signals=True)
-        enclave_seed = settings.ENCLAVE_ROOT_SEED.encode() if getattr(settings, "ENCLAVE_ROOT_SEED", None) else None
-        enclave_adp = HardwareEnclaveAdapter(master_seed=enclave_seed, memory_sanitizer=mem_sanitizer)
+        enclave_seed = (
+            settings.ENCLAVE_ROOT_SEED.encode()
+            if getattr(settings, "ENCLAVE_ROOT_SEED", None)
+            else None
+        )
+        enclave_adp = HardwareEnclaveAdapter(
+            master_seed=enclave_seed, memory_sanitizer=mem_sanitizer
+        )
 
         self._cache["memory_sanitizer"] = mem_sanitizer
         self._cache["enclave_adapter"] = enclave_adp
@@ -723,7 +758,9 @@ class Container:
 
         schematic_extractor_engine = DomainSchematicExtractor()
         schematic_extractor = VisionParserAdapter(extractor=schematic_extractor_engine)
-        multimodal_graph_service = MultimodalGraphService(graph_repository=self._cache.get("graph_repository"))
+        multimodal_graph_service = MultimodalGraphService(
+            graph_repository=self._cache.get("graph_repository")
+        )
         self._cache["schematic_extractor"] = schematic_extractor
         self._cache["multimodal_graph_service"] = multimodal_graph_service
 
@@ -734,9 +771,15 @@ class Container:
 
         mesh_service = McpMeshService(
             local_node_id=os.getenv("RETRIEVER_MESH_NODE_ID", "node_cluster_primary"),
-            local_cluster_id=os.getenv("RETRIEVER_MESH_CLUSTER_ID", "cluster_us_primary"),
-            endpoint_url=os.getenv("RETRIEVER_MESH_ENDPOINT_URL", "http://localhost:8000"),
-            cluster_secret=os.getenv("RETRIEVER_MESH_SECRET", "retriever_mcp_mesh_internal_trust_key_v1"),
+            local_cluster_id=os.getenv(
+                "RETRIEVER_MESH_CLUSTER_ID", "cluster_us_primary"
+            ),
+            endpoint_url=os.getenv(
+                "RETRIEVER_MESH_ENDPOINT_URL", "http://localhost:8000"
+            ),
+            cluster_secret=os.getenv(
+                "RETRIEVER_MESH_SECRET", "retriever_mcp_mesh_internal_trust_key_v1"
+            ),
         )
         federation_service = AgentFederationService(mesh_service=mesh_service)
         load_balancer_service = MeshLoadBalancerService(mesh_service=mesh_service)
@@ -800,6 +843,44 @@ class Container:
 
         got_planner_adapter = GoTPlannerAdapter()
         self._cache["got_planner_adapter"] = got_planner_adapter
+
+        # --- Sovereign Air-Gapped Appliance & Embedded Edge Engine (M127) ---
+        from src.adapters.appliance.hardware_vector_sealer import HardwareVectorSealer
+        from src.domain.abstractions.edge_sync import EdgeSearchRequest
+        from src.domain.appliance.airgap_sentinel import AirgapNetworkSentinel
+        from src.domain.appliance.appliance_manager import SovereignApplianceManager
+        from src.domain.appliance.voice_rag_engine import SovereignVoiceRAGEngine
+
+        hardware_vector_sealer = HardwareVectorSealer(
+            master_seed=enclave_seed,
+            memory_sanitizer=mem_sanitizer,
+        )
+        airgap_sentinel = AirgapNetworkSentinel()
+
+        sqlite_engine = self._cache.get("sqlite_edge_engine")
+
+        async def _appliance_search_bridge(tenant_id: str, query: str, top_k: int = 5):
+            if sqlite_engine:
+                req = EdgeSearchRequest(tenant_id=tenant_id, query=query, top_k=top_k)
+                return sqlite_engine.hybrid_search(req)
+            return []
+
+        sovereign_voice_rag_engine = SovereignVoiceRAGEngine(
+            transcription_service=self._cache.get("whisper_transcription_adapter"),
+            synthesis_service=self._cache.get("speech_synthesis_adapter"),
+            hybrid_search_fn=_appliance_search_bridge,
+        )
+
+        appliance_manager = SovereignApplianceManager(
+            vector_sealer=hardware_vector_sealer,
+            airgap_sentinel=airgap_sentinel,
+            voice_rag_engine=sovereign_voice_rag_engine,
+        )
+
+        self._cache["hardware_vector_sealer"] = hardware_vector_sealer
+        self._cache["airgap_sentinel"] = airgap_sentinel
+        self._cache["sovereign_voice_rag_engine"] = sovereign_voice_rag_engine
+        self._cache["appliance_manager"] = appliance_manager
 
     def reset(self) -> None:
         self._cache.clear()
@@ -929,4 +1010,7 @@ continuous_tuning_adapter = container.continuous_tuning_adapter
 mpc_enclave_adapter = container.mpc_enclave_adapter
 benchmark_gatekeeper_adapter = container.benchmark_gatekeeper_adapter
 got_planner_adapter = container.got_planner_adapter
-
+hardware_vector_sealer = container.hardware_vector_sealer
+airgap_sentinel = container.airgap_sentinel
+sovereign_voice_rag_engine = container.sovereign_voice_rag_engine
+appliance_manager = container.appliance_manager

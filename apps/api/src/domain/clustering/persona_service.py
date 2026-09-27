@@ -21,7 +21,9 @@ class PersonaIntelligenceService:
         self.persona_classifier = persona_classifier
         self.lead_scorer = lead_scorer
 
-    def classify_visitor(self, telemetry: VisitorTelemetryVector) -> VisitorPersonaPrediction:
+    def classify_visitor(
+        self, telemetry: VisitorTelemetryVector
+    ) -> VisitorPersonaPrediction:
         """Assign an anonymous session telemetry vector to a persona cluster with intent affinity."""
         return self.persona_classifier.classify_visitor(telemetry)
 

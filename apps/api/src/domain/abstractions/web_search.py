@@ -11,7 +11,6 @@ class WebSearchResult(BaseModel):
 
 
 class WebSearchProvider(ABC):
-
     @abstractmethod
     async def search(self, query: str, max_results: int = 5) -> list[WebSearchResult]:
         pass

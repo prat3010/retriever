@@ -14,6 +14,7 @@ client = TestClient(app)
 
 # ── 1. Unit Tests: Synthetic Generator ──────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_synthetic_dataset_generator_heuristic_factual():
     """Verify heuristic extractor identifies definition statements and generates questions."""
@@ -73,7 +74,12 @@ async def test_synthetic_dataset_generator_with_mock_llm():
     """
 
     generator = SyntheticDatasetGenerator(llm_provider=mock_llm)
-    chunks = [{"chunk_id": "chk_llm_01", "content": "Tier specifications: Starter 250k, Growth 1.5M."}]
+    chunks = [
+        {
+            "chunk_id": "chk_llm_01",
+            "content": "Tier specifications: Starter 250k, Growth 1.5M.",
+        }
+    ]
 
     candidates = await generator.synthesize_from_chunks(chunks, count_per_chunk=2)
     assert len(candidates) == 2
@@ -86,10 +92,15 @@ def test_synthetic_dataset_format_dataset():
     """Verify formatting candidates into EvalDataset and EvalQuestion entities."""
     generator = SyntheticDatasetGenerator()
     chunks = [
-        {"chunk_id": "chk_01", "content": "Vector similarity search uses Cosine Distance by default in pgvector."}
+        {
+            "chunk_id": "chk_01",
+            "content": "Vector similarity search uses Cosine Distance by default in pgvector.",
+        }
     ]
     candidates = generator._heuristic_generate("chk_01", chunks[0]["content"], count=1)
-    dataset, questions = generator.format_dataset("tn_test", "Golden Benchmark v1", candidates)
+    dataset, questions = generator.format_dataset(
+        "tn_test", "Golden Benchmark v1", candidates
+    )
 
     assert dataset.tenant_id == "tn_test"
     assert dataset.name == "Golden Benchmark v1"
@@ -100,6 +111,7 @@ def test_synthetic_dataset_format_dataset():
 
 
 # ── 2. API Tests: Admin Synthesis Endpoint ───────────────────────────────────
+
 
 def test_admin_synthesize_dataset_endpoint():
     """Verify POST /v1/admin/tenants/{tenantId}/datasets/synthesize endpoint."""
@@ -128,4 +140,3 @@ def test_admin_synthesize_dataset_endpoint():
         assert data["question_count"] == 1
         assert len(data["questions"]) == 1
         assert "Retriever Engine" in data["questions"][0]["question"]
-

@@ -1,4 +1,5 @@
 """Authentic Microsoft 365 (SharePoint & OneDrive) Microsoft Graph API v1.0 Connector."""
+
 import logging
 from typing import Any
 
@@ -72,7 +73,11 @@ class Microsoft365Connector(BaseConnector):
                     if res.status_code == 200:
                         return res.json().get("access_token", "")
                     else:
-                        logger.error("Azure AD token grant failed: %d - %s", res.status_code, res.text[:200])
+                        logger.error(
+                            "Azure AD token grant failed: %d - %s",
+                            res.status_code,
+                            res.text[:200],
+                        )
             except Exception as exc:
                 logger.error("Failed to acquire Azure AD token: %s", exc)
 
@@ -94,7 +99,10 @@ class Microsoft365Connector(BaseConnector):
             async with httpx.AsyncClient(timeout=8.0) as client:
                 res = await client.get(
                     f"{self.GRAPH_BASE}/drives/{drive_id}",
-                    headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/json",
+                    },
                 )
                 return res.status_code in (200, 404)
         except Exception as exc:
@@ -102,7 +110,9 @@ class Microsoft365Connector(BaseConnector):
             return False
 
     @staticmethod
-    def _parse_graph_permissions(permissions: list[dict[str, Any]] | None) -> tuple[list[str], list[str], bool]:
+    def _parse_graph_permissions(
+        permissions: list[dict[str, Any]] | None,
+    ) -> tuple[list[str], list[str], bool]:
         """Extract allowed_users, allowed_groups, and is_public from Microsoft Graph item permissions."""
         if not permissions:
             return [], [], True
@@ -125,7 +135,9 @@ class Microsoft365Connector(BaseConnector):
             granted_to = perm.get("grantedToV2", {})
             user = granted_to.get("user")
             if user:
-                upn = user.get("userPrincipalName") or user.get("email") or user.get("id")
+                upn = (
+                    user.get("userPrincipalName") or user.get("email") or user.get("id")
+                )
                 if upn and upn not in allowed_users:
                     allowed_users.append(upn)
 
@@ -154,7 +166,9 @@ class Microsoft365Connector(BaseConnector):
 
         return allowed_users, allowed_groups, is_public
 
-    def _get_sandbox_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    def _get_sandbox_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         drive_id = config.configuration.get("drive_id", "m365_sandbox_drive")
         return [
             DiscoveredDocument(
@@ -198,7 +212,9 @@ class Microsoft365Connector(BaseConnector):
             ),
         ]
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         drive_id = config.configuration.get("drive_id")
         if not drive_id:
             logger.warning("Microsoft 365 connector '%s' missing drive_id", config.id)
@@ -209,7 +225,10 @@ class Microsoft365Connector(BaseConnector):
 
         token = await self._get_access_token(config)
         if not token:
-            logger.error("Microsoft 365 connector '%s' missing authentication credentials", config.id)
+            logger.error(
+                "Microsoft 365 connector '%s' missing authentication credentials",
+                config.id,
+            )
             return []
 
         discovered: list[DiscoveredDocument] = []
@@ -220,7 +239,11 @@ class Microsoft365Connector(BaseConnector):
                 url = f"{self.GRAPH_BASE}/drives/{drive_id}/root/children?$top=100&$expand=permissions"
                 res = await client.get(url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Graph API children returned HTTP %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Graph API children returned HTTP %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return []
 
                 items = res.json().get("value", [])
@@ -236,7 +259,9 @@ class Microsoft365Connector(BaseConnector):
                     perms = item.get("permissions", [])
 
                     # Download content
-                    content_url = f"{self.GRAPH_BASE}/drives/{drive_id}/items/{item_id}/content"
+                    content_url = (
+                        f"{self.GRAPH_BASE}/drives/{drive_id}/items/{item_id}/content"
+                    )
                     c_res = await client.get(content_url, headers=headers)
                     if c_res.status_code != 200:
                         continue
@@ -245,7 +270,9 @@ class Microsoft365Connector(BaseConnector):
                     content_text = c_res.text
                     mime_type = item.get("file", {}).get("mimeType", "text/plain")
 
-                    allowed_users, allowed_groups, is_public = self._parse_graph_permissions(perms)
+                    allowed_users, allowed_groups, is_public = (
+                        self._parse_graph_permissions(perms)
+                    )
 
                     discovered.append(
                         DiscoveredDocument(
@@ -289,13 +316,20 @@ class Microsoft365Connector(BaseConnector):
 
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
         # Delta URL or initial call
-        delta_url = state.cursor or f"{self.GRAPH_BASE}/drives/{drive_id}/root/delta?$top=100&$expand=permissions"
+        delta_url = (
+            state.cursor
+            or f"{self.GRAPH_BASE}/drives/{drive_id}/root/delta?$top=100&$expand=permissions"
+        )
 
         try:
             async with httpx.AsyncClient(timeout=35.0) as client:
                 res = await client.get(delta_url, headers=headers)
                 if res.status_code != 200:
-                    logger.error("Incremental Graph delta error %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Incremental Graph delta error %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return [], state
 
                 data = res.json()
@@ -322,7 +356,9 @@ class Microsoft365Connector(BaseConnector):
                         )
                         continue
 
-                    content_url = f"{self.GRAPH_BASE}/drives/{drive_id}/items/{item_id}/content"
+                    content_url = (
+                        f"{self.GRAPH_BASE}/drives/{drive_id}/items/{item_id}/content"
+                    )
                     c_res = await client.get(content_url, headers=headers)
                     if c_res.status_code != 200:
                         continue
@@ -330,7 +366,9 @@ class Microsoft365Connector(BaseConnector):
                     content_text = c_res.text
                     mime_type = item.get("file", {}).get("mimeType", "text/plain")
                     perms = item.get("permissions", [])
-                    allowed_users, allowed_groups, is_public = self._parse_graph_permissions(perms)
+                    allowed_users, allowed_groups, is_public = (
+                        self._parse_graph_permissions(perms)
+                    )
 
                     discovered.append(
                         DiscoveredDocument(
@@ -351,7 +389,9 @@ class Microsoft365Connector(BaseConnector):
                         )
                     )
 
-                next_delta_link = data.get("@odata.deltaLink") or data.get("@odata.nextLink")
+                next_delta_link = data.get("@odata.deltaLink") or data.get(
+                    "@odata.nextLink"
+                )
                 if next_delta_link:
                     state.cursor = next_delta_link
 

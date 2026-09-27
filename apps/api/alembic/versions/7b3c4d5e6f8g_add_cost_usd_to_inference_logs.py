@@ -20,7 +20,9 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "inference_logs",
-        sa.Column("cost_usd", sa.Float(), nullable=False, server_default=sa.text("0.0")),
+        sa.Column(
+            "cost_usd", sa.Float(), nullable=False, server_default=sa.text("0.0")
+        ),
     )
 
 

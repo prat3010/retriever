@@ -14,7 +14,6 @@ from src.domain.retrieval.search_service import HybridSearchService
 
 
 class CorrectiveRetrievalService:
-
     def __init__(
         self,
         search_service: HybridSearchService,
@@ -65,7 +64,9 @@ class CorrectiveRetrievalService:
         elif decision.status == "AMBIGUOUS":
             # Knowledge gap: reformulate query and trigger supplementary search / web search
             search_q_str = decision.reformulated_query or query
-            sec_query = search_query.model_copy(update={"query": search_q_str, "enable_web_search": True})
+            sec_query = search_query.model_copy(
+                update={"query": search_q_str, "enable_web_search": True}
+            )
             sec_resp = await self.search_service.search(sec_query)
             # Combine initial candidates and secondary/web results
             seen_ids = {c.chunk_id for c in candidates}
@@ -81,7 +82,9 @@ class CorrectiveRetrievalService:
         else:  # INCORRECT
             # Suppress ungrounded internal chunks and execute pure web search fallback
             search_q_str = decision.reformulated_query or query
-            web_fallback_query = search_query.model_copy(update={"query": search_q_str, "enable_web_search": True})
+            web_fallback_query = search_query.model_copy(
+                update={"query": search_q_str, "enable_web_search": True}
+            )
             web_resp = await self.search_service.search(web_fallback_query)
             refined = refine_search_results(query, web_resp.results)
             decision.refined_chunks = refined
@@ -101,7 +104,9 @@ class CorrectiveRetrievalService:
         experiment_id: str | None = None,
         experiment_variant: str | None = None,
     ) -> InferenceResponse:
-        settings: CorrectiveRetrievalSettings = tenant_config.corrective_retrieval_settings
+        settings: CorrectiveRetrievalSettings = (
+            tenant_config.corrective_retrieval_settings
+        )
         if not settings.enable_corrective_retrieval:
             search_resp = await self.search_service.search(search_query)
             return await self.orchestrator.generate(
@@ -150,7 +155,9 @@ class CorrectiveRetrievalService:
                 break
 
             refined_query = decision.reformulated_query or query
-            refined_search_query = search_query.model_copy(update={"query": refined_query})
+            refined_search_query = search_query.model_copy(
+                update={"query": refined_query}
+            )
             search_resp = await self.search_service.search(refined_search_query)
             context_chunks = search_resp.results
             response = await self.orchestrator.generate(

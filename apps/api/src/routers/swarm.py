@@ -63,7 +63,9 @@ class ProbeSwarmNodeRequest(BaseModel):
     tenant_id: str
     prober_node_id: str
     target_node_id: str
-    simulated_ack: bool = Field(default=True, description="True for ping success; False for timeout/suspect")
+    simulated_ack: bool = Field(
+        default=True, description="True for ping success; False for timeout/suspect"
+    )
 
 
 class SyncAntiEntropyRequest(BaseModel):
@@ -97,7 +99,9 @@ async def get_swarm_topology(
     return container.swarm_mesh_adapter.get_topology(tenant_id=tenant_id)
 
 
-@admin_router.post("/join", response_model=SwarmNode, status_code=status.HTTP_201_CREATED)
+@admin_router.post(
+    "/join", response_model=SwarmNode, status_code=status.HTTP_201_CREATED
+)
 async def join_swarm_mesh(payload: RegisterSwarmNodeRequest) -> SwarmNode:
     """Register a new peer device into the swarm mesh."""
     node = SwarmNode(
@@ -118,7 +122,9 @@ async def leave_swarm_mesh(
     node_id: str = Query(...),
 ) -> dict[str, Any]:
     """Gracefully detach an edge node from the swarm mesh."""
-    success = container.swarm_mesh_adapter.deregister_node(tenant_id=tenant_id, node_id=node_id)
+    success = container.swarm_mesh_adapter.deregister_node(
+        tenant_id=tenant_id, node_id=node_id
+    )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -138,7 +144,9 @@ async def probe_swarm_node(payload: ProbeSwarmNodeRequest) -> SwarmNode:
             simulated_ack=payload.simulated_ack,
         )
     except KeyError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 @admin_router.post("/refute", response_model=SwarmNode)
@@ -148,9 +156,13 @@ async def refute_node_suspicion(
 ) -> SwarmNode:
     """Refute a suspicion rumor by advancing incarnation and restoring HEALTHY status."""
     try:
-        return container.swarm_mesh_adapter.refute_suspicion(tenant_id=tenant_id, node_id=node_id)
+        return container.swarm_mesh_adapter.refute_suspicion(
+            tenant_id=tenant_id, node_id=node_id
+        )
     except KeyError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 @admin_router.post("/gossip")
@@ -180,7 +192,9 @@ async def sync_anti_entropy(payload: SyncAntiEntropyRequest) -> AntiEntropySyncR
 
 
 @admin_router.post("/partition-heal", response_model=PartitionReconciliationReport)
-async def reconcile_partitions(payload: PartitionHealRequest) -> PartitionReconciliationReport:
+async def reconcile_partitions(
+    payload: PartitionHealRequest,
+) -> PartitionReconciliationReport:
     """Reconcile diverged cluster partitions using causal vector clocks and deterministic LWW."""
     return container.swarm_mesh_adapter.reconcile_partitions(
         tenant_id=payload.tenant_id,

@@ -16,7 +16,6 @@ logger = logging.getLogger("api")
 
 
 class RoutingLLMProvider(LlmProvider):
-
     def __init__(
         self, openai_adapter: OpenAILLMAdapter, anthropic_adapter: AnthropicLLMAdapter
     ) -> None:
@@ -53,7 +52,7 @@ class RoutingLLMProvider(LlmProvider):
                     return response
                 except ProviderUnavailableError:
                     if attempt < retries:
-                        sleep_sec = (2 ** attempt) * delay / 1000
+                        sleep_sec = (2**attempt) * delay / 1000
                         await asyncio.sleep(sleep_sec)
                         continue
                     break
@@ -85,7 +84,10 @@ class RoutingLLMProvider(LlmProvider):
             try:
                 if len(attempted) > 1:
                     config["_actual_provider"] = provider_name
-                    yield {"event": "info", "message": f"Failing over to {provider_name}"}
+                    yield {
+                        "event": "info",
+                        "message": f"Failing over to {provider_name}",
+                    }
                 async for chunk in provider.generate_stream(request, configuration):
                     yield chunk
                 return
@@ -93,8 +95,12 @@ class RoutingLLMProvider(LlmProvider):
                 if provider_name == providers_to_try[-1]:
                     if isinstance(exc, ProviderUnavailableError):
                         raise
-                    raise ProviderUnavailableError(f"Provider {provider_name} failed: {exc}") from exc
-                logger.warning(f"Provider {provider_name} streaming failed ({exc}), attempting failover...")
+                    raise ProviderUnavailableError(
+                        f"Provider {provider_name} failed: {exc}"
+                    ) from exc
+                logger.warning(
+                    f"Provider {provider_name} streaming failed ({exc}), attempting failover..."
+                )
                 sleep_sec = (2 ** (retries or 1)) * delay / 1000
                 await asyncio.sleep(sleep_sec)
                 continue

@@ -8,7 +8,9 @@ from src.domain.ingestion.ragignore import RagIgnoreFilter
 
 def test_ragignore_security_filter(tmp_path: Path):
     """Verify RagIgnoreFilter blocks sensitive files and secrets."""
-    (tmp_path / ".ragignore").write_text("*.secret\nprivate_config.json\n", encoding="utf-8")
+    (tmp_path / ".ragignore").write_text(
+        "*.secret\nprivate_config.json\n", encoding="utf-8"
+    )
 
     filter_obj = RagIgnoreFilter(root_dir=tmp_path)
 
@@ -16,7 +18,10 @@ def test_ragignore_security_filter(tmp_path: Path):
     assert filter_obj.is_ignored(tmp_path / ".env.local") is True
     assert filter_obj.is_ignored(tmp_path / "server.key") is True
     assert filter_obj.is_ignored(tmp_path / "id_rsa") is True
-    assert filter_obj.is_ignored(tmp_path / "node_modules" / "express" / "index.js") is True
+    assert (
+        filter_obj.is_ignored(tmp_path / "node_modules" / "express" / "index.js")
+        is True
+    )
 
     # Custom .ragignore rules must be ignored
     assert filter_obj.is_ignored(tmp_path / "app.secret") is True
@@ -51,7 +56,7 @@ class PaymentProcessor:
 
 def test_markdown_section_chunker():
     """Verify Markdown chunking splits headers correctly."""
-    sample_md = '''# Architecture Overview
+    sample_md = """# Architecture Overview
 This is the architecture description.
 
 ## Section 1: Ingestion
@@ -59,7 +64,7 @@ Ingestion processes PDF files.
 
 ## Section 2: Retrieval
 Retrieval uses HNSW index.
-'''
+"""
     chunker = AstCodeChunker()
     chunks = chunker.chunk_markdown(sample_md, filename="arch.md")
 

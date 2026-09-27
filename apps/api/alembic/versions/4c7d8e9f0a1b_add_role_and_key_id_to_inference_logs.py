@@ -32,9 +32,7 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
-    op.create_index(
-        "ix_inference_logs_key_id", "inference_logs", ["key_id"]
-    )
+    op.create_index("ix_inference_logs_key_id", "inference_logs", ["key_id"])
 
 
 def downgrade() -> None:

@@ -28,14 +28,31 @@ def upgrade() -> None:
             sa.ForeignKey("tenants.tenant_id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column("name", sa.String(128), nullable=False, server_default="rag_cot_optimized"),
-        sa.Column("signature_name", sa.String(128), nullable=False, server_default="RAGAnswerSignature"),
-        sa.Column("optimizer", sa.String(64), nullable=False, server_default="BootstrapFewShot"),
+        sa.Column(
+            "name", sa.String(128), nullable=False, server_default="rag_cot_optimized"
+        ),
+        sa.Column(
+            "signature_name",
+            sa.String(128),
+            nullable=False,
+            server_default="RAGAnswerSignature",
+        ),
+        sa.Column(
+            "optimizer",
+            sa.String(64),
+            nullable=False,
+            server_default="BootstrapFewShot",
+        ),
         sa.Column("dataset_id", sa.String(128), nullable=True),
         sa.Column("baseline_score", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("compiled_score", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("improvement_pct", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("metric_name", sa.String(64), nullable=False, server_default="faithfulness_and_relevancy"),
+        sa.Column(
+            "metric_name",
+            sa.String(64),
+            nullable=False,
+            server_default="faithfulness_and_relevancy",
+        ),
         sa.Column("compiled_instruction", sa.Text(), nullable=False, server_default=""),
         sa.Column("few_shot_demos", JSONB, nullable=False, server_default="[]"),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="false"),
@@ -59,6 +76,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_compiled_prompts_tenant_active", table_name="compiled_prompt_programs")
+    op.drop_index(
+        "ix_compiled_prompts_tenant_active", table_name="compiled_prompt_programs"
+    )
     op.drop_index("ix_compiled_prompts_tenant", table_name="compiled_prompt_programs")
     op.drop_table("compiled_prompt_programs")

@@ -82,14 +82,24 @@ async def test_topology_graph_construction(swarm_engine: MultiAgentSwarmQuorumEn
         assert r.value in graph.nodes
 
     # Verify key dialectic edges
-    assert graph.has_edge(SwarmAgentRole.PLANNER.value, SwarmAgentRole.SKEPTIC_CRITIC.value)
-    assert graph.has_edge(SwarmAgentRole.SKEPTIC_CRITIC.value, SwarmAgentRole.CODE_SYNTHESIZER.value)
-    assert graph.has_edge(SwarmAgentRole.CODE_SYNTHESIZER.value, SwarmAgentRole.FORENSIC_AUDITOR.value)
-    assert graph.has_edge(SwarmAgentRole.FORENSIC_AUDITOR.value, SwarmAgentRole.PLANNER.value)
+    assert graph.has_edge(
+        SwarmAgentRole.PLANNER.value, SwarmAgentRole.SKEPTIC_CRITIC.value
+    )
+    assert graph.has_edge(
+        SwarmAgentRole.SKEPTIC_CRITIC.value, SwarmAgentRole.CODE_SYNTHESIZER.value
+    )
+    assert graph.has_edge(
+        SwarmAgentRole.CODE_SYNTHESIZER.value, SwarmAgentRole.FORENSIC_AUDITOR.value
+    )
+    assert graph.has_edge(
+        SwarmAgentRole.FORENSIC_AUDITOR.value, SwarmAgentRole.PLANNER.value
+    )
 
 
 @pytest.mark.asyncio
-async def test_execute_swarm_debate_full_cycle(swarm_engine: MultiAgentSwarmQuorumEngine):
+async def test_execute_swarm_debate_full_cycle(
+    swarm_engine: MultiAgentSwarmQuorumEngine,
+):
     """Verify full 3-round dialectic debate execution and quorum consensus."""
     request = SwarmDebateRequest(
         tenant_id="tenant_alpha",
@@ -144,7 +154,9 @@ async def test_hallucination_pruning(swarm_engine: MultiAgentSwarmQuorumEngine):
 
 
 @pytest.mark.asyncio
-async def test_operational_telemetry_tracking(swarm_engine: MultiAgentSwarmQuorumEngine):
+async def test_operational_telemetry_tracking(
+    swarm_engine: MultiAgentSwarmQuorumEngine,
+):
     """Verify aggregate debate telemetry metrics are properly tracked and calculated."""
     tenant = "tenant_telemetry"
     initial_stats = await swarm_engine.get_stats(tenant)
@@ -197,7 +209,9 @@ async def test_api_endpoints_integration():
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # 1. Get Roles
-        roles_res = await client.get("/v1/tenants/test_tenant/agentic/swarm/roles", headers=headers)
+        roles_res = await client.get(
+            "/v1/tenants/test_tenant/agentic/swarm/roles", headers=headers
+        )
         assert roles_res.status_code == 200
         roles_data = roles_res.json()
         assert len(roles_data) == 4
@@ -239,7 +253,9 @@ async def test_api_endpoints_integration():
         assert "[DONE]" in text
 
         # 4. Get Stats
-        stats_res = await client.get("/v1/tenants/test_tenant/agentic/swarm/stats", headers=headers)
+        stats_res = await client.get(
+            "/v1/tenants/test_tenant/agentic/swarm/stats", headers=headers
+        )
         assert stats_res.status_code == 200
         stats_data = stats_res.json()
         assert stats_data["total_debates"] >= 1

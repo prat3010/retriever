@@ -48,7 +48,9 @@ class EphemeralMemorySanitizer(MemorySanitizerProtocol):
             signal.signal(signal.SIGTERM, _signal_wipe_handler)
             signal.signal(signal.SIGINT, _signal_wipe_handler)
         except (ValueError, AttributeError) as exc:
-            logger.debug(f"Signal registration skipped (non-main thread or unsupported platform): {exc}")
+            logger.debug(
+                f"Signal registration skipped (non-main thread or unsupported platform): {exc}"
+            )
 
     def allocate_ephemeral_key(self, key_id: str, key_bytes: bytes) -> str:
         """Store volatile key bytes in a tracked mutable bytearray."""
@@ -82,6 +84,10 @@ class EphemeralMemorySanitizer(MemorySanitizerProtocol):
         except Exception:
             pass
 
+    def sanitize_buffer(self, buf: bytearray) -> None:
+        """Aggressively zero a raw mutable bytearray buffer in-place."""
+        self._zero_buffer(buf)
+
     def wipe_key(self, key_id: str) -> bool:
         """Aggressively zero memory buffer for specific key in-place and remove reference."""
         with self._lock:
@@ -98,7 +104,9 @@ class EphemeralMemorySanitizer(MemorySanitizerProtocol):
             for buf in self._key_store.values():
                 self._zero_buffer(buf)
             self._key_store.clear()
-            logger.info(f"Confidential Enclave sanitized {count} volatile keys from RAM.")
+            logger.info(
+                f"Confidential Enclave sanitized {count} volatile keys from RAM."
+            )
             return count
 
     @property

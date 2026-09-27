@@ -22,15 +22,21 @@ class SqlConfigRegistry(ConfigRegistry):
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.encrypt(provider["api_key"])
             copied["ai_provider"] = provider
-        if "embedding_provider" in copied and isinstance(copied["embedding_provider"], dict):
+        if "embedding_provider" in copied and isinstance(
+            copied["embedding_provider"], dict
+        ):
             provider = dict(copied["embedding_provider"])
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.encrypt(provider["api_key"])
             copied["embedding_provider"] = provider
-        if "retrieval_settings" in copied and isinstance(copied["retrieval_settings"], dict):
+        if "retrieval_settings" in copied and isinstance(
+            copied["retrieval_settings"], dict
+        ):
             rs = dict(copied["retrieval_settings"])
             if rs.get("web_search_api_key") and rs["web_search_api_key"] != "********":
-                rs["web_search_api_key"] = self.encrypter.encrypt(rs["web_search_api_key"])
+                rs["web_search_api_key"] = self.encrypter.encrypt(
+                    rs["web_search_api_key"]
+                )
             copied["retrieval_settings"] = rs
         return copied
 
@@ -41,15 +47,21 @@ class SqlConfigRegistry(ConfigRegistry):
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.decrypt(provider["api_key"])
             copied["ai_provider"] = provider
-        if "embedding_provider" in copied and isinstance(copied["embedding_provider"], dict):
+        if "embedding_provider" in copied and isinstance(
+            copied["embedding_provider"], dict
+        ):
             provider = dict(copied["embedding_provider"])
             if provider.get("api_key"):
                 provider["api_key"] = self.encrypter.decrypt(provider["api_key"])
             copied["embedding_provider"] = provider
-        if "retrieval_settings" in copied and isinstance(copied["retrieval_settings"], dict):
+        if "retrieval_settings" in copied and isinstance(
+            copied["retrieval_settings"], dict
+        ):
             rs = dict(copied["retrieval_settings"])
             if rs.get("web_search_api_key"):
-                rs["web_search_api_key"] = self.encrypter.decrypt(rs["web_search_api_key"])
+                rs["web_search_api_key"] = self.encrypter.decrypt(
+                    rs["web_search_api_key"]
+                )
             copied["retrieval_settings"] = rs
         return copied
 
@@ -77,7 +89,9 @@ class SqlConfigRegistry(ConfigRegistry):
                 return None
             return self._decrypt_payload(db_config.value)
 
-    async def save_raw_config(self, tenant_id: str | None, config_data: dict[str, Any]) -> None:
+    async def save_raw_config(
+        self, tenant_id: str | None, config_data: dict[str, Any]
+    ) -> None:
         """Persist raw configuration dictionary to database, versioning changes."""
         ctx_tenant = tenant_id if tenant_id else None
         bypass = True if tenant_id is None else False

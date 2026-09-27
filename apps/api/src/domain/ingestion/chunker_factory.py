@@ -48,26 +48,30 @@ class SlidingChunker(BaseChunker):
             start_char_idx = char_pos
             end_char_idx = start_char_idx + len(chunk_content)
 
-            chunks.append({
-                "content": chunk_content,
-                "token_count": len(chunk_tokens),
-                "char_count": len(chunk_content),
-                "chunk_index": chunk_index,
-                "start_char_idx": start_char_idx,
-                "end_char_idx": end_char_idx,
-                "meta_data": {
-                    "token_start": start_token,
-                    "token_end": end_token,
-                    "strategy": "sliding",
-                },
-            })
+            chunks.append(
+                {
+                    "content": chunk_content,
+                    "token_count": len(chunk_tokens),
+                    "char_count": len(chunk_content),
+                    "chunk_index": chunk_index,
+                    "start_char_idx": start_char_idx,
+                    "end_char_idx": end_char_idx,
+                    "meta_data": {
+                        "token_start": start_token,
+                        "token_end": end_token,
+                        "strategy": "sliding",
+                    },
+                }
+            )
 
             chunk_index += 1
             step = max(1, chunk_size - chunk_overlap)
             start_token += step
 
             # Advance search_start_char slightly for overlapping text
-            next_start_tokens = tokens[start_token : min(start_token + step, len(tokens))]
+            next_start_tokens = tokens[
+                start_token : min(start_token + step, len(tokens))
+            ]
             if next_start_tokens:
                 next_prefix = self.encoding.decode(next_start_tokens[:5])
                 next_pos = text.find(next_prefix, search_start_char)
@@ -110,18 +114,20 @@ class SemanticChunker(BaseChunker):
                 start_char = current_unit_group[0][1]
                 end_char = start_char + len(combined_text)
 
-                chunks.append({
-                    "content": combined_text,
-                    "token_count": current_tokens,
-                    "char_count": len(combined_text),
-                    "chunk_index": chunk_index,
-                    "start_char_idx": start_char,
-                    "end_char_idx": end_char,
-                    "meta_data": {
-                        "strategy": "semantic",
-                        "units_count": len(current_unit_group),
-                    },
-                })
+                chunks.append(
+                    {
+                        "content": combined_text,
+                        "token_count": current_tokens,
+                        "char_count": len(combined_text),
+                        "chunk_index": chunk_index,
+                        "start_char_idx": start_char,
+                        "end_char_idx": end_char,
+                        "meta_data": {
+                            "strategy": "semantic",
+                            "units_count": len(current_unit_group),
+                        },
+                    }
+                )
                 chunk_index += 1
                 current_unit_group = []
                 current_tokens = 0
@@ -135,18 +141,20 @@ class SemanticChunker(BaseChunker):
             start_char = current_unit_group[0][1]
             end_char = start_char + len(combined_text)
 
-            chunks.append({
-                "content": combined_text,
-                "token_count": current_tokens,
-                "char_count": len(combined_text),
-                "chunk_index": chunk_index,
-                "start_char_idx": start_char,
-                "end_char_idx": end_char,
-                "meta_data": {
-                    "strategy": "semantic",
-                    "units_count": len(current_unit_group),
-                },
-            })
+            chunks.append(
+                {
+                    "content": combined_text,
+                    "token_count": current_tokens,
+                    "char_count": len(combined_text),
+                    "chunk_index": chunk_index,
+                    "start_char_idx": start_char,
+                    "end_char_idx": end_char,
+                    "meta_data": {
+                        "strategy": "semantic",
+                        "units_count": len(current_unit_group),
+                    },
+                }
+            )
 
         return chunks
 
@@ -164,7 +172,9 @@ class HierarchicalChunker(BaseChunker):
 
         # Parent chunks (large context window: at least 500 tokens or 2x chunk_size)
         parent_size = max(500, chunk_size * 2)
-        parent_chunks = self.sliding.split_text_with_offsets(text, parent_size, chunk_overlap)
+        parent_chunks = self.sliding.split_text_with_offsets(
+            text, parent_size, chunk_overlap
+        )
 
         child_size = max(64, chunk_size // 2)
         all_chunks: list[dict[str, Any]] = []
@@ -176,51 +186,57 @@ class HierarchicalChunker(BaseChunker):
             p_start_char = p_chunk["start_char_idx"]
 
             # Store Parent Chunk
-            all_chunks.append({
-                "chunk_id": parent_id,
-                "parent_chunk_id": None,
-                "is_parent": True,
-                "content": p_content,
-                "token_count": p_chunk["token_count"],
-                "char_count": len(p_content),
-                "chunk_index": chunk_index,
-                "start_char_idx": p_start_char,
-                "end_char_idx": p_chunk["end_char_idx"],
-                "meta_data": {
-                    "strategy": "hierarchical",
-                    "role": "parent",
-                    "parent_chunk_index": p_idx,
-                },
-            })
+            all_chunks.append(
+                {
+                    "chunk_id": parent_id,
+                    "parent_chunk_id": None,
+                    "is_parent": True,
+                    "content": p_content,
+                    "token_count": p_chunk["token_count"],
+                    "char_count": len(p_content),
+                    "chunk_index": chunk_index,
+                    "start_char_idx": p_start_char,
+                    "end_char_idx": p_chunk["end_char_idx"],
+                    "meta_data": {
+                        "strategy": "hierarchical",
+                        "role": "parent",
+                        "parent_chunk_index": p_idx,
+                    },
+                }
+            )
             chunk_index += 1
 
             # Sub-chunk parent content into smaller child chunks
-            c_sub_chunks = self.sliding.split_text_with_offsets(p_content, child_size, max(0, chunk_overlap // 2))
+            c_sub_chunks = self.sliding.split_text_with_offsets(
+                p_content, child_size, max(0, chunk_overlap // 2)
+            )
 
             for c_chunk in c_sub_chunks:
                 child_id = str(uuid.uuid4())
                 c_start = p_start_char + c_chunk["start_char_idx"]
                 c_end = p_start_char + c_chunk["end_char_idx"]
 
-                all_chunks.append({
-                    "chunk_id": child_id,
-                    "parent_chunk_id": parent_id,
-                    "is_parent": False,
-                    "content": c_chunk["content"],
-                    "token_count": c_chunk["token_count"],
-                    "char_count": len(c_chunk["content"]),
-                    "chunk_index": chunk_index,
-                    "start_char_idx": c_start,
-                    "end_char_idx": c_end,
-                    "meta_data": {
-                        "strategy": "hierarchical",
-                        "role": "child",
+                all_chunks.append(
+                    {
+                        "chunk_id": child_id,
                         "parent_chunk_id": parent_id,
-                        "parent_chunk_index": p_idx,
-                        "parent_char_start": p_start_char,
-                        "parent_char_end": p_chunk["end_char_idx"],
-                    },
-                })
+                        "is_parent": False,
+                        "content": c_chunk["content"],
+                        "token_count": c_chunk["token_count"],
+                        "char_count": len(c_chunk["content"]),
+                        "chunk_index": chunk_index,
+                        "start_char_idx": c_start,
+                        "end_char_idx": c_end,
+                        "meta_data": {
+                            "strategy": "hierarchical",
+                            "role": "child",
+                            "parent_chunk_id": parent_id,
+                            "parent_chunk_index": p_idx,
+                            "parent_char_start": p_start_char,
+                            "parent_char_end": p_chunk["end_char_idx"],
+                        },
+                    }
+                )
                 chunk_index += 1
 
         return all_chunks
@@ -233,7 +249,9 @@ class ContextualChunker(BaseChunker):
     to chunk content before vector embedding to prevent orphan chunk syndrome.
     """
 
-    def __init__(self, base_chunker: BaseChunker | None = None, context_prefix: str = "") -> None:
+    def __init__(
+        self, base_chunker: BaseChunker | None = None, context_prefix: str = ""
+    ) -> None:
         self.base_chunker = base_chunker or SlidingChunker()
         self.context_prefix = context_prefix.strip()
         self.encoding = tiktoken.get_encoding("cl100k_base")
@@ -241,7 +259,9 @@ class ContextualChunker(BaseChunker):
     def split_text_with_offsets(
         self, text: str, chunk_size: int, chunk_overlap: int
     ) -> list[dict[str, Any]]:
-        base_chunks = self.base_chunker.split_text_with_offsets(text, chunk_size, chunk_overlap)
+        base_chunks = self.base_chunker.split_text_with_offsets(
+            text, chunk_size, chunk_overlap
+        )
         if not self.context_prefix:
             return base_chunks
 
@@ -256,18 +276,20 @@ class ContextualChunker(BaseChunker):
             new_meta["context_prepended"] = True
             new_meta["context_prefix"] = self.context_prefix
 
-            contextual_chunks.append({
-                "chunk_id": chunk.get("chunk_id"),
-                "parent_chunk_id": chunk.get("parent_chunk_id"),
-                "is_parent": chunk.get("is_parent", False),
-                "content": new_content,
-                "token_count": chunk["token_count"] + header_tokens,
-                "char_count": len(new_content),
-                "chunk_index": chunk["chunk_index"],
-                "start_char_idx": chunk["start_char_idx"],
-                "end_char_idx": chunk["end_char_idx"] + header_chars,
-                "meta_data": new_meta,
-            })
+            contextual_chunks.append(
+                {
+                    "chunk_id": chunk.get("chunk_id"),
+                    "parent_chunk_id": chunk.get("parent_chunk_id"),
+                    "is_parent": chunk.get("is_parent", False),
+                    "content": new_content,
+                    "token_count": chunk["token_count"] + header_tokens,
+                    "char_count": len(new_content),
+                    "chunk_index": chunk["chunk_index"],
+                    "start_char_idx": chunk["start_char_idx"],
+                    "end_char_idx": chunk["end_char_idx"] + header_chars,
+                    "meta_data": new_meta,
+                }
+            )
 
         return contextual_chunks
 
@@ -290,4 +312,3 @@ class ChunkerFactory:
         if context_prefix and not isinstance(chunker, ContextualChunker):
             return ContextualChunker(chunker, context_prefix=context_prefix)
         return chunker
-

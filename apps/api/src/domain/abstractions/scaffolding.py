@@ -46,9 +46,15 @@ class PluginCategory(StrEnum):
 class AgenticToolDeclaration(BaseModel):
     """Declaration of an agent-callable tool provided by this plugin."""
 
-    name: str = Field(..., description="Unique tool identifier for LLM function calling")
-    description: str = Field(..., description="Detailed description guiding LLM when to invoke tool")
-    method_name: str = Field(default="execute", description="Method name on the domain service")
+    name: str = Field(
+        ..., description="Unique tool identifier for LLM function calling"
+    )
+    description: str = Field(
+        ..., description="Detailed description guiding LLM when to invoke tool"
+    )
+    method_name: str = Field(
+        default="execute", description="Method name on the domain service"
+    )
 
 
 class IntegrationHooksDeclaration(BaseModel):
@@ -75,7 +81,9 @@ class IntegrationHooksDeclaration(BaseModel):
 class PluginManifest(BaseModel):
     """Strict contract manifest defining metadata, dependencies, and hooks for a plugin."""
 
-    id: str = Field(..., description="Unique snake_case slug identifier e.g. 'hubspot_crm_sync'")
+    id: str = Field(
+        ..., description="Unique snake_case slug identifier e.g. 'hubspot_crm_sync'"
+    )
     name: str = Field(..., description="Human-readable display name")
     version: str = Field(default="1.0.0", description="Semver release version")
     category: PluginCategory = Field(default=PluginCategory.SYSTEM_EXTENSIBILITY)
@@ -85,7 +93,9 @@ class PluginManifest(BaseModel):
         default="Hexagonal Domain Service with Dependency Injection",
         description="Algorithmic or mathematical foundation",
     )
-    latency_profile: str = Field(default="~20ms", description="Benchmark latency estimate")
+    latency_profile: str = Field(
+        default="~20ms", description="Benchmark latency estimate"
+    )
     integration_hooks: IntegrationHooksDeclaration = Field(
         default_factory=IntegrationHooksDeclaration,
         description="Runtime hooks into core platform systems",
@@ -103,12 +113,16 @@ class PluginManifest(BaseModel):
 class UseCaseRequirement(BaseModel):
     """Input specification describing a business problem or technical integration requirement."""
 
-    prompt: str = Field(..., description="Natural language description of problem or integration")
+    prompt: str = Field(
+        ..., description="Natural language description of problem or integration"
+    )
     target_domain: str = Field(
         default="general",
         description="Domain context e.g. 'healthcare', 'fintech', 'crm', 'ecommerce'",
     )
-    tenant_id: str = Field(default="system", description="Tenant requesting or owning this capability")
+    tenant_id: str = Field(
+        default="system", description="Tenant requesting or owning this capability"
+    )
     persona: SolutionPersona = Field(
         default=SolutionPersona.BUSINESS,
         description="Target user persona (business wizard vs FDE code generator)",
@@ -177,7 +191,9 @@ class CustomPluginSummary(BaseModel):
     persona: str
     description: str
     is_active: bool = True
-    hooks: IntegrationHooksDeclaration = Field(default_factory=IntegrationHooksDeclaration)
+    hooks: IntegrationHooksDeclaration = Field(
+        default_factory=IntegrationHooksDeclaration
+    )
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -203,7 +219,9 @@ class AstBoundaryValidatorProtocol(ABC):
     """Port for parsing Python code via AST and asserting Hexagonal boundaries."""
 
     @abstractmethod
-    def validate_code(self, code: str, filename: str, is_domain: bool = True) -> AstValidationResult:
+    def validate_code(
+        self, code: str, filename: str, is_domain: bool = True
+    ) -> AstValidationResult:
         """Inspect source code string and assert Hexagonal rules."""
         ...
 

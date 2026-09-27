@@ -38,7 +38,8 @@ class InMemoryKubernetesClient(IKubernetesClient):
     async def list_clusters(self, namespace: str | None = None) -> list[dict[str, Any]]:
         if namespace:
             return [
-                c for k, c in self.clusters.items()
+                c
+                for k, c in self.clusters.items()
                 if c.get("metadata", {}).get("namespace") == namespace
             ]
         return list(self.clusters.values())
@@ -100,7 +101,9 @@ class ClusterReconciler:
     ) -> ClusterCondition:
         return ClusterCondition(
             type=cond_type,
-            status="True" if status == "True" else ("False" if status == "False" else "Unknown"),
+            status="True"
+            if status == "True"
+            else ("False" if status == "False" else "Unknown"),
             last_transition_time=datetime.now(UTC).isoformat(),
             reason=reason,
             message=message,
@@ -138,15 +141,22 @@ class ClusterReconciler:
         new_status = current_status.model_copy(deep=True)
         new_status.desired_replicas = spec.replicas
         new_status.last_reconciled_at = now_iso
-        conditions_map: dict[str, ClusterCondition] = {c.type: c for c in new_status.conditions}
+        conditions_map: dict[str, ClusterCondition] = {
+            c.type: c for c in new_status.conditions
+        }
 
         # 2. State machine transitions
         if new_status.phase == "Pending":
             # Transition to Provisioning
             new_status.phase = "Provisioning"
-            new_status.message = "Provisioning database statefulsets and network services."
+            new_status.message = (
+                "Provisioning database statefulsets and network services."
+            )
             conditions_map["Progressing"] = self._create_condition(
-                "Progressing", "True", "ProvisioningStarted", "Deploying database and API pods"
+                "Progressing",
+                "True",
+                "ProvisioningStarted",
+                "Deploying database and API pods",
             )
             conditions_map["Available"] = self._create_condition(
                 "Available", "False", "PodsStarting", "FastAPI replicas not yet healthy"
@@ -164,18 +174,30 @@ class ClusterReconciler:
             new_status.message = "All pods healthy and serving traffic."
 
             conditions_map["DatabaseReady"] = self._create_condition(
-                "DatabaseReady", "True", "PgvectorHealthy", f"pgvector PVC size {spec.postgres_pvc_size} mounted"
+                "DatabaseReady",
+                "True",
+                "PgvectorHealthy",
+                f"pgvector PVC size {spec.postgres_pvc_size} mounted",
             )
             conditions_map["Progressing"] = self._create_condition(
-                "Progressing", "False", "ProvisioningComplete", "Cluster successfully provisioned"
+                "Progressing",
+                "False",
+                "ProvisioningComplete",
+                "Cluster successfully provisioned",
             )
             conditions_map["Available"] = self._create_condition(
-                "Available", "True", "AllPodsReady", f"{new_status.ready_replicas}/{spec.replicas} replicas available"
+                "Available",
+                "True",
+                "AllPodsReady",
+                f"{new_status.ready_replicas}/{spec.replicas} replicas available",
             )
 
         elif new_status.phase == "Running":
             # Check for Image Tag Update (Rolling Upgrade)
-            if new_status.active_image_tag and new_status.active_image_tag != spec.image_tag:
+            if (
+                new_status.active_image_tag
+                and new_status.active_image_tag != spec.image_tag
+            ):
                 logger.info(
                     "Rolling upgrade triggered from %s to %s for %s",
                     new_status.active_image_tag,
@@ -185,7 +207,10 @@ class ClusterReconciler:
                 new_status.phase = "Upgrading"
                 new_status.message = f"Upgrading image from {new_status.active_image_tag} to {spec.image_tag}"
                 conditions_map["Progressing"] = self._create_condition(
-                    "Progressing", "True", "RollingUpgrade", f"Upgrading to image tag {spec.image_tag}"
+                    "Progressing",
+                    "True",
+                    "RollingUpgrade",
+                    f"Upgrading to image tag {spec.image_tag}",
                 )
 
                 # Deploy new image
@@ -194,17 +219,28 @@ class ClusterReconciler:
                 new_status.phase = "Running"
                 new_status.message = f"Upgraded to image {spec.image_tag} successfully."
                 conditions_map["Progressing"] = self._create_condition(
-                    "Progressing", "False", "UpgradeComplete", f"Now running {spec.image_tag}"
+                    "Progressing",
+                    "False",
+                    "UpgradeComplete",
+                    f"Now running {spec.image_tag}",
                 )
             else:
                 # Standard replica scaling check
-                if new_status.ready_replicas != spec.replicas or new_status.web_ready_replicas != spec.web_replicas:
-                    logger.info("Scaling replicas to %d for %s", spec.replicas, spec.name)
+                if (
+                    new_status.ready_replicas != spec.replicas
+                    or new_status.web_ready_replicas != spec.web_replicas
+                ):
+                    logger.info(
+                        "Scaling replicas to %d for %s", spec.replicas, spec.name
+                    )
                     await self.client.reconcile_deployment(spec)
                     new_status.ready_replicas = spec.replicas
                     new_status.web_ready_replicas = spec.web_replicas
                     conditions_map["Available"] = self._create_condition(
-                        "Available", "True", "ReplicaScaled", f"Scaled to {spec.replicas} replicas"
+                        "Available",
+                        "True",
+                        "ReplicaScaled",
+                        f"Scaled to {spec.replicas} replicas",
                     )
 
         elif new_status.phase == "Upgrading":
@@ -261,5 +297,7 @@ class ClusterReconciler:
         if cluster_data and "status" in cluster_data:
             current_status = RetrieverClusterStatus(**cluster_data["status"])
             current_status.last_backup_at = datetime.now(UTC).isoformat()
-            await self.client.update_cluster_status(spec.name, spec.namespace, current_status)
+            await self.client.update_cluster_status(
+                spec.name, spec.namespace, current_status
+            )
         return job_id

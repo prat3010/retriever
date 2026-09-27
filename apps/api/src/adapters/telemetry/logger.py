@@ -26,7 +26,8 @@ def setup_logging(environment: str = "development", log_level: str = "INFO") -> 
             structlog.processors.StackInfoRenderer(),
             structlog.processors.UnicodeDecoder(),
             _add_trace_context,
-            structlog.dev.ConsoleRenderer() if environment == "development"
+            structlog.dev.ConsoleRenderer()
+            if environment == "development"
             else structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
@@ -37,18 +38,24 @@ def setup_logging(environment: str = "development", log_level: str = "INFO") -> 
 
     root = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(structlog.stdlib.ProcessorFormatter(
-        processor=structlog.dev.ConsoleRenderer() if environment == "development"
-        else structlog.processors.JSONRenderer(),
-    ))
+    handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            processor=structlog.dev.ConsoleRenderer()
+            if environment == "development"
+            else structlog.processors.JSONRenderer(),
+        )
+    )
     root.addHandler(handler)
     root.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
 
-def _add_trace_context(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def _add_trace_context(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """Inject OpenTelemetry trace / span IDs into log records."""
     try:
         from opentelemetry import trace
+
         span = trace.get_current_span()
         span_context = span.get_span_context()
         if span_context.is_valid:

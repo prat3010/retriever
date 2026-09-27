@@ -93,7 +93,6 @@ def _setup_search_return(service, results: list[SearchResult]):
 
 @pytest.mark.asyncio
 class TestCorrectiveRetrievalService:
-
     async def test_skips_correction_when_confidence_is_high(
         self, service, mock_corrective_provider, tenant_config
     ):
@@ -120,7 +119,9 @@ class TestCorrectiveRetrievalService:
     ):
         _setup_search_return(service, [_make_result("a", 0.95)])
         mock_corrective_provider.evaluate_response.return_value = _make_decision(
-            needs_re_retrieval=True, confidence_score=0.2, reformulated_query="refined query"
+            needs_re_retrieval=True,
+            confidence_score=0.2,
+            reformulated_query="refined query",
         )
 
         response = await service.generate_with_correction(
@@ -217,13 +218,18 @@ class TestCorrectiveRetrievalService:
             tenant_config=tenant_config,
         )
 
-        assert service.search_service.search.call_args_list[1][0][0].query == "original query"
+        assert (
+            service.search_service.search.call_args_list[1][0][0].query
+            == "original query"
+        )
 
     async def test_stops_if_provider_evaluation_fails(
         self, service, mock_corrective_provider, tenant_config
     ):
         _setup_search_return(service, [_make_result("a", 0.95)])
-        mock_corrective_provider.evaluate_response.side_effect = Exception("evaluation failed")
+        mock_corrective_provider.evaluate_response.side_effect = Exception(
+            "evaluation failed"
+        )
 
         response = await service.generate_with_correction(
             tenant_id="t1",
@@ -239,7 +245,6 @@ class TestCorrectiveRetrievalService:
 
 
 class TestLLMCorrectiveRetrievalAdapter:
-
     @pytest.mark.asyncio
     async def test_adapter_returns_decision_on_success(self):
         from src.adapters.cognitive.corrective_retrieval_adapter import (
@@ -248,9 +253,7 @@ class TestLLMCorrectiveRetrievalAdapter:
 
         mock_llm = AsyncMock()
         mock_llm.generate = AsyncMock()
-        mock_llm.generate.return_value.content = (
-            '{"needs_re_retrieval": true, "confidence_score": 0.3, "reason": "low confidence", "reformulated_query": "improved query"}'
-        )
+        mock_llm.generate.return_value.content = '{"needs_re_retrieval": true, "confidence_score": 0.3, "reason": "low confidence", "reformulated_query": "improved query"}'
 
         adapter = LLMCorrectiveRetrievalAdapter(llm=mock_llm)
         decision = await adapter.evaluate_response(

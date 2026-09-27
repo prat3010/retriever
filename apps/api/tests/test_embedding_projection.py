@@ -2,10 +2,13 @@
 
 try:
     import pytest
+
     fixture = pytest.fixture
 except ImportError:
+
     def fixture(func):
         return func
+
 
 import numpy as np
 
@@ -91,7 +94,11 @@ def test_pca_3d_projection_and_normalization(projection_adapter):
     document_ids = [f"doc_{i // 5}" for i in range(15)]
     document_titles = [f"Document_{i // 5}.pdf" for i in range(15)]
     cluster_ids = [0] * 5 + [1] * 5 + [2] * 5
-    cluster_labels = {0: "Authentication & OAuth", 1: "Stripe & Invoicing", 2: "RAG & Vector Search"}
+    cluster_labels = {
+        0: "Authentication & OAuth",
+        1: "Stripe & Invoicing",
+        2: "RAG & Vector Search",
+    }
 
     res = projection_adapter.project_embeddings(
         tenant_id="tenant-proj-3",

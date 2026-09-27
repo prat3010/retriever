@@ -15,7 +15,6 @@ router = APIRouter(prefix="/v1", tags=["Multi-Agent Consensus"])
     dependencies=[Depends(verify_tenant_or_admin)],
     response_model=ConsensusResult,
 )
-
 async def generate_consensus_response(
     tenantId: str,
     request: ConsensusRequest,

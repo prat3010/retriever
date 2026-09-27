@@ -33,16 +33,24 @@ class BenchmarkRunStatus(StrEnum):
 class BenchmarkItemSample(BaseModel):
     query_id: str = Field(..., description="Unique ID for test query")
     query_text: str = Field(..., description="Query input text")
-    ground_truth_chunks: list[str] = Field(default_factory=list, description="IDs of ground truth relevant chunks")
-    retrieved_chunks: list[str] = Field(default_factory=list, description="IDs of chunks retrieved by system")
+    ground_truth_chunks: list[str] = Field(
+        default_factory=list, description="IDs of ground truth relevant chunks"
+    )
+    retrieved_chunks: list[str] = Field(
+        default_factory=list, description="IDs of chunks retrieved by system"
+    )
     ground_truth_answer: str | None = None
     generated_answer: str | None = None
     latency_ms: float = Field(0.0, description="Latency of execution in milliseconds")
     tokens_used: int = Field(0, description="Tokens consumed")
     ndcg_at_k: float = Field(0.0, description="Computed NDCG at cutoff K")
     mrr: float = Field(0.0, description="Reciprocal rank of first relevant chunk")
-    faithfulness: float = Field(0.0, description="Groundedness in retrieved context (0-1)")
-    answer_relevancy: float = Field(0.0, description="Relevance to original prompt (0-1)")
+    faithfulness: float = Field(
+        0.0, description="Groundedness in retrieved context (0-1)"
+    )
+    answer_relevancy: float = Field(
+        0.0, description="Relevance to original prompt (0-1)"
+    )
 
 
 class BenchmarkMetricsSummary(BaseModel):
@@ -79,12 +87,24 @@ class MetricRegressionDiff(BaseModel):
 
 
 class GatePolicy(BaseModel):
-    max_latency_p95_increase_pct: float = Field(15.0, description="Maximum acceptable % increase in P95 latency")
-    max_ndcg_drop_abs: float = Field(0.03, description="Maximum acceptable absolute drop in NDCG@K")
-    max_faithfulness_drop_abs: float = Field(0.05, description="Maximum acceptable absolute drop in Faithfulness")
-    significance_alpha: float = Field(0.05, description="p-value alpha significance threshold")
-    min_sample_size: int = Field(10, description="Minimum samples required for statistical significance")
-    auto_rollback_on_regression: bool = Field(True, description="Whether to trigger rollback signal on regression")
+    max_latency_p95_increase_pct: float = Field(
+        15.0, description="Maximum acceptable % increase in P95 latency"
+    )
+    max_ndcg_drop_abs: float = Field(
+        0.03, description="Maximum acceptable absolute drop in NDCG@K"
+    )
+    max_faithfulness_drop_abs: float = Field(
+        0.05, description="Maximum acceptable absolute drop in Faithfulness"
+    )
+    significance_alpha: float = Field(
+        0.05, description="p-value alpha significance threshold"
+    )
+    min_sample_size: int = Field(
+        10, description="Minimum samples required for statistical significance"
+    )
+    auto_rollback_on_regression: bool = Field(
+        True, description="Whether to trigger rollback signal on regression"
+    )
 
 
 class BenchmarkSuite(BaseModel):
@@ -167,7 +187,9 @@ class BenchmarkGatekeeperPort(ABC):
         """Register a new benchmark suite."""
 
     @abstractmethod
-    def list_runs(self, tenant_id: str, suite_id: str | None = None) -> list[BenchmarkRun]:
+    def list_runs(
+        self, tenant_id: str, suite_id: str | None = None
+    ) -> list[BenchmarkRun]:
         """List historical benchmark runs."""
 
     @abstractmethod

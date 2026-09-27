@@ -25,13 +25,26 @@ logger = logging.getLogger("api")
 
 # High-speed pre-execution jailbreak, instruction override, and system extraction patterns
 FAST_PATH_INJECTION_PATTERNS = [
-    re.compile(r"ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts|rules)", re.IGNORECASE),
-    re.compile(r"disregard\s+(all\s+)?(previous|prior)\s+(instructions|prompt)", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now\s+(DAN|jailbroken|unrestricted|god\s*mode|an\s+actor)", re.IGNORECASE),
+    re.compile(
+        r"ignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts|rules)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"disregard\s+(all\s+)?(previous|prior)\s+(instructions|prompt)", re.IGNORECASE
+    ),
+    re.compile(
+        r"you\s+are\s+now\s+(DAN|jailbroken|unrestricted|god\s*mode|an\s+actor)",
+        re.IGNORECASE,
+    ),
     re.compile(r"override\s+(all\s+)?system\s+(prompts?|instructions?)", re.IGNORECASE),
-    re.compile(r"(reveal|print|show|repeat|dump)\s+(the\s+)?(internal|hidden|system)\s+(prompt|instructions)", re.IGNORECASE),
+    re.compile(
+        r"(reveal|print|show|repeat|dump)\s+(the\s+)?(internal|hidden|system)\s+(prompt|instructions)",
+        re.IGNORECASE,
+    ),
     re.compile(r"act\s+as\s+an?\s+unfiltered\s+ai", re.IGNORECASE),
-    re.compile(r"bypass\s+(safety|content)\s+(filters?|rails?|guardrails?)", re.IGNORECASE),
+    re.compile(
+        r"bypass\s+(safety|content)\s+(filters?|rails?|guardrails?)", re.IGNORECASE
+    ),
     re.compile(r"base64\s+decode\s+and\s+execute", re.IGNORECASE),
     re.compile(r"jailbreak:\s*true", re.IGNORECASE),
 ]
@@ -39,16 +52,28 @@ FAST_PATH_INJECTION_PATTERNS = [
 # Sensitive topic regex heuristics for quick classification
 OFF_TOPIC_CATEGORIES = {
     "medical_advice": [
-        re.compile(r"\b(diagnose|symptom|prescription|dosage|take\s+\d+\s*mg|disease\s+cure)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(diagnose|symptom|prescription|dosage|take\s+\d+\s*mg|disease\s+cure)\b",
+            re.IGNORECASE,
+        ),
     ],
     "legal_advice": [
-        re.compile(r"\b(sue\s+them|file\s+a\s+lawsuit|guarantee\s+legal\s+outcome|court\s+defense)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(sue\s+them|file\s+a\s+lawsuit|guarantee\s+legal\s+outcome|court\s+defense)\b",
+            re.IGNORECASE,
+        ),
     ],
     "financial_advice": [
-        re.compile(r"\b(guaranteed\s+stock\s+tip|crypto\s+pump|insider\s+trading|invest\s+all\s+savings)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(guaranteed\s+stock\s+tip|crypto\s+pump|insider\s+trading|invest\s+all\s+savings)\b",
+            re.IGNORECASE,
+        ),
     ],
     "malicious_code": [
-        re.compile(r"\b(reverse\s+shell|keylogger|ddos\s+script|sql\s+injection\s+payload|ransomware)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(reverse\s+shell|keylogger|ddos\s+script|sql\s+injection\s+payload|ransomware)\b",
+            re.IGNORECASE,
+        ),
     ],
 }
 
@@ -247,7 +272,13 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
             )
 
         # ── 2. Competitor Shield Check ───────────────────────────────────────
-        competitors = config.competitor_names or ["competitor", "pinecone", "weaviate", "qdrant", "langchain"]
+        competitors = config.competitor_names or [
+            "competitor",
+            "pinecone",
+            "weaviate",
+            "qdrant",
+            "langchain",
+        ]
         if config.competitor_shield_enabled:
             for comp in competitors:
                 if re.search(rf"\b{re.escape(comp)}\b", query_clean, re.IGNORECASE):
@@ -291,9 +322,14 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
                 intent_lower = intent_phrase.lower()
                 # Substring or token overlap match
                 if intent_lower in query_clean.lower() or (
-                    len(intent_lower.split()) >= 3 and self._token_overlap(intent_lower, query_clean.lower()) > 0.65
+                    len(intent_lower.split()) >= 3
+                    and self._token_overlap(intent_lower, query_clean.lower()) > 0.65
                 ):
-                    bot_resp = flow.bot_responses[0] if flow.bot_responses else config.fallback_response
+                    bot_resp = (
+                        flow.bot_responses[0]
+                        if flow.bot_responses
+                        else config.fallback_response
+                    )
                     latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                     action = GuardrailAction.STEER
                     if "jailbreak" in flow.flow_id or "unsafe" in flow.flow_id:
@@ -366,7 +402,10 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
         """Evaluate generated assistant response for factual grounding and hallucination."""
         start_time = time.perf_counter()
 
-        if config.mode in (GuardrailExecutionMode.OFF, GuardrailExecutionMode.FAST_INPUT_ONLY):
+        if config.mode in (
+            GuardrailExecutionMode.OFF,
+            GuardrailExecutionMode.FAST_INPUT_ONLY,
+        ):
             return GuardrailCheckResult(
                 allowed=True,
                 action=GuardrailAction.ALLOW,
@@ -375,7 +414,9 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
             )
 
         # ── 1. Check Factual Context Entailment / Grounding ──────────────────
-        grounding_score = self._calculate_grounding_score(generated_response, retrieved_contexts)
+        grounding_score = self._calculate_grounding_score(
+            generated_response, retrieved_contexts
+        )
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
         if config.mode == GuardrailExecutionMode.STRICT_FACTUAL:
@@ -393,7 +434,11 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
                 )
                 logger.warning(
                     "Output failed factual grounding threshold",
-                    extra={"tenant_id": tenant_id, "score": grounding_score, "threshold": config.grounding_threshold},
+                    extra={
+                        "tenant_id": tenant_id,
+                        "score": grounding_score,
+                        "threshold": config.grounding_threshold,
+                    },
                 )
                 return GuardrailCheckResult(
                     allowed=False,
@@ -432,8 +477,27 @@ class NeMoGuardrailsAdapter(INeMoGuardrailsAdapter):
         context_tokens = set(re.findall(r"\b[a-zA-Z0-9_]{4,}\b", combined_context))
 
         response_tokens = [
-            t for t in re.findall(r"\b[a-zA-Z0-9_]{4,}\b", response.lower())
-            if t not in {"this", "that", "with", "from", "have", "will", "would", "could", "should", "your", "their", "about", "which", "there", "these", "those"}
+            t
+            for t in re.findall(r"\b[a-zA-Z0-9_]{4,}\b", response.lower())
+            if t
+            not in {
+                "this",
+                "that",
+                "with",
+                "from",
+                "have",
+                "will",
+                "would",
+                "could",
+                "should",
+                "your",
+                "their",
+                "about",
+                "which",
+                "there",
+                "these",
+                "those",
+            }
         ]
 
         if not response_tokens:

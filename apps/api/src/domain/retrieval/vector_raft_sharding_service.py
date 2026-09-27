@@ -127,7 +127,9 @@ class VectorRaftShardingService:
         for i in range(self.num_shards):
             shard_id = f"shard_{i:03d}"
             h_start = i * range_step
-            h_end = (i + 1) * range_step - 1 if i < self.num_shards - 1 else RING_MAX_INT
+            h_end = (
+                (i + 1) * range_step - 1 if i < self.num_shards - 1 else RING_MAX_INT
+            )
             leader_node = default_nodes[i % len(default_nodes)]
             replicas = [n for n in default_nodes if n != leader_node]
 
@@ -161,7 +163,9 @@ class VectorRaftShardingService:
     # Consistent Hash Partitioning
     # -------------------------------------------------------------------------
 
-    def get_shard_for_key(self, tenant_id: str, document_id: str = "") -> ShardPartition:
+    def get_shard_for_key(
+        self, tenant_id: str, document_id: str = ""
+    ) -> ShardPartition:
         """Resolve the target shard for a given tenant and document via consistent hashing."""
         # 1. Check for dedicated tenant shard
         for s in self.shards.values():
@@ -198,7 +202,11 @@ class VectorRaftShardingService:
         """Return current cluster-wide Raft consensus telemetry."""
         total_nodes = len(self.nodes)
         quorum_count = (total_nodes // 2) + 1
-        active_nodes = sum(1 for n in self.nodes.values() if (time.time() - n.heartbeat_timestamp) < 5.0)
+        active_nodes = sum(
+            1
+            for n in self.nodes.values()
+            if (time.time() - n.heartbeat_timestamp) < 5.0
+        )
 
         return RaftConsensusStatus(
             cluster_id=self.cluster_id,
@@ -214,7 +222,9 @@ class VectorRaftShardingService:
     def trigger_election(self, candidate_node_id: str) -> bool:
         """Simulate Raft leader election for a candidate node."""
         if candidate_node_id not in self.nodes:
-            raise ShardNotFoundError(f"Candidate node '{candidate_node_id}' does not exist.")
+            raise ShardNotFoundError(
+                f"Candidate node '{candidate_node_id}' does not exist."
+            )
 
         self.current_term += 1
         candidate = self.nodes[candidate_node_id]
@@ -240,7 +250,9 @@ class VectorRaftShardingService:
                 if nid != candidate_node_id:
                     node.role = RaftRole.FOLLOWER
                     node.leader_id = candidate_node_id
-            logger.info(f"Node '{candidate_node_id}' elected as new Raft leader for term {self.current_term}.")
+            logger.info(
+                f"Node '{candidate_node_id}' elected as new Raft leader for term {self.current_term}."
+            )
             return True
 
         return False
@@ -256,7 +268,9 @@ class VectorRaftShardingService:
     # Vector Mutation & Raft Log Replication
     # -------------------------------------------------------------------------
 
-    async def commit_vector_mutation(self, request: ShardMutationRequest) -> ShardMutationResponse:
+    async def commit_vector_mutation(
+        self, request: ShardMutationRequest
+    ) -> ShardMutationResponse:
         """Replicate vector index mutation across shard replica group via Raft consensus."""
         start_time = time.perf_counter()
 
@@ -268,11 +282,14 @@ class VectorRaftShardingService:
 
         # Validate write quorum requirement
         total_replicas = 1 + len(target_shard.replica_node_ids)
-        required_acks = 1 if request.write_quorum == WriteQuorum.ONE else (total_replicas // 2) + 1
+        required_acks = (
+            1 if request.write_quorum == WriteQuorum.ONE else (total_replicas // 2) + 1
+        )
         active_healthy_replicas = 1 + sum(
             1
             for nid in target_shard.replica_node_ids
-            if nid in self.nodes and (time.time() - self.nodes[nid].heartbeat_timestamp) < 5.0
+            if nid in self.nodes
+            and (time.time() - self.nodes[nid].heartbeat_timestamp) < 5.0
         )
         if active_healthy_replicas < required_acks:
             raise RaftQuorumNotReachedError(
@@ -314,7 +331,9 @@ class VectorRaftShardingService:
             node.log_length = len(self.replicated_log)
 
         target_shard.vector_count = len(self._shard_vectors[shard_id])
-        target_shard.index_size_bytes = target_shard.vector_count * 1536 * 4  # approx 1536 dims float32
+        target_shard.index_size_bytes = (
+            target_shard.vector_count * 1536 * 4
+        )  # approx 1536 dims float32
         target_shard.updated_at = time.time()
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
@@ -332,7 +351,9 @@ class VectorRaftShardingService:
     # Parallel Scatter-Gather Vector Search
     # -------------------------------------------------------------------------
 
-    async def scatter_gather_search(self, query: ScatterGatherQuery) -> ScatterGatherResponse:
+    async def scatter_gather_search(
+        self, query: ScatterGatherQuery
+    ) -> ScatterGatherResponse:
         """Execute parallel scatter-gather vector search across shards with global rank score fusion."""
         start_time = time.perf_counter()
         query_id = f"q_{uuid.uuid4().hex[:8]}"
@@ -349,25 +370,39 @@ class VectorRaftShardingService:
 
         # 2. Check Read Quorum requirement
         total_target_shards = len(candidate_shards)
-        healthy_shards = [s for s in candidate_shards if s.status == ShardStatus.HEALTHY]
+        healthy_shards = [
+            s for s in candidate_shards if s.status == ShardStatus.HEALTHY
+        ]
         healthy_count = len(healthy_shards)
 
         if query.read_quorum in (ReadQuorum.QUORUM, ReadQuorum.ALL):
-            quorum_needed = total_target_shards if query.read_quorum == ReadQuorum.ALL else (total_target_shards // 2) + 1
+            quorum_needed = (
+                total_target_shards
+                if query.read_quorum == ReadQuorum.ALL
+                else (total_target_shards // 2) + 1
+            )
             if healthy_count < quorum_needed:
                 raise RaftQuorumNotReachedError(
                     f"Read quorum '{query.read_quorum}' requires {quorum_needed} healthy shards, but only {healthy_count} are available."
                 )
 
-        shards_to_query = healthy_shards if query.read_quorum in (ReadQuorum.QUORUM, ReadQuorum.ALL) else [s for s in candidate_shards if s.status != ShardStatus.OFFLINE]
+        shards_to_query = (
+            healthy_shards
+            if query.read_quorum in (ReadQuorum.QUORUM, ReadQuorum.ALL)
+            else [s for s in candidate_shards if s.status != ShardStatus.OFFLINE]
+        )
 
         # 3. Concurrent shard search helper
-        async def _query_single_shard(shard: ShardPartition) -> tuple[ShardQueryBreakdown, list[ShardCandidate]]:
+        async def _query_single_shard(
+            shard: ShardPartition,
+        ) -> tuple[ShardQueryBreakdown, list[ShardCandidate]]:
             s_start = time.perf_counter()
             vectors = self._shard_vectors.get(shard.shard_id, [])
 
             # Filter by tenant
-            tenant_vectors = [v for v in vectors if v.get("tenant_id") == query.tenant_id]
+            tenant_vectors = [
+                v for v in vectors if v.get("tenant_id") == query.tenant_id
+            ]
 
             # Compute similarities
             scored_candidates: list[ShardCandidate] = []
@@ -375,7 +410,9 @@ class VectorRaftShardingService:
                 # Apply metadata filters if provided
                 if query.filter_metadata:
                     m = item.get("metadata", {})
-                    match = all(m.get(k) == val for k, val in query.filter_metadata.items())
+                    match = all(
+                        m.get(k) == val for k, val in query.filter_metadata.items()
+                    )
                     if not match:
                         continue
 
@@ -422,7 +459,9 @@ class VectorRaftShardingService:
             if c.chunk_id not in deduped or c.score > deduped[c.chunk_id].score:
                 deduped[c.chunk_id] = c
 
-        final_results = sorted(deduped.values(), key=lambda c: c.score, reverse=True)[: query.top_k]
+        final_results = sorted(deduped.values(), key=lambda c: c.score, reverse=True)[
+            : query.top_k
+        ]
         total_latency = (time.perf_counter() - start_time) * 1000.0
 
         return ScatterGatherResponse(
@@ -449,10 +488,15 @@ class VectorRaftShardingService:
 
         total_vectors = sum(node_counts.values())
         mean_vectors = total_vectors / max(1, len(node_counts))
-        variance = sum((c - mean_vectors) ** 2 for c in node_counts.values()) / max(1, len(node_counts))
+        variance = sum((c - mean_vectors) ** 2 for c in node_counts.values()) / max(
+            1, len(node_counts)
+        )
         std_dev = math.sqrt(variance)
 
-        is_skewed = std_dev > 50.0 or (max(node_counts.values()) - min(node_counts.values())) > 100
+        is_skewed = (
+            std_dev > 50.0
+            or (max(node_counts.values()) - min(node_counts.values())) > 100
+        )
 
         return {
             "cluster_id": self.cluster_id,
@@ -485,14 +529,20 @@ class VectorRaftShardingService:
 
         # Select a shard currently led by source node
         if not shard_id:
-            eligible = [s for s in self.shards.values() if s.leader_node_id == source_node_id]
+            eligible = [
+                s for s in self.shards.values() if s.leader_node_id == source_node_id
+            ]
             if not eligible:
-                raise ShardNotFoundError(f"No shards found currently led by node '{source_node_id}'.")
+                raise ShardNotFoundError(
+                    f"No shards found currently led by node '{source_node_id}'."
+                )
             shard_id = eligible[0].shard_id
 
         shard = self.get_shard(shard_id)
         if shard.status == ShardStatus.REBALANCING:
-            raise ShardRebalanceConflictError(f"Shard '{shard_id}' is already undergoing rebalancing.")
+            raise ShardRebalanceConflictError(
+                f"Shard '{shard_id}' is already undergoing rebalancing."
+            )
 
         plan_id = f"reb_{uuid.uuid4().hex[:8]}"
         plan = ShardRebalancePlan(
@@ -513,7 +563,11 @@ class VectorRaftShardingService:
             index=len(self.replicated_log) + 1,
             term=self.current_term,
             command_type="REBALANCE_SHARD",
-            payload={"plan_id": plan_id, "shard_id": shard_id, "target_node": target_node_id},
+            payload={
+                "plan_id": plan_id,
+                "shard_id": shard_id,
+                "target_node": target_node_id,
+            },
             timestamp=time.time(),
         )
         self.replicated_log.append(rebalance_log)

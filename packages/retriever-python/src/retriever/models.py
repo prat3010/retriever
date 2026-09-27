@@ -122,6 +122,7 @@ class ConnectorSyncResponseDTO(BaseModel):
 
 # ── Multimodal Vision GraphRAG (Battery #29) ─────────────────────────────────
 
+
 class VisionBoundingBoxDTO(BaseModel):
     ymin: float
     xmin: float
@@ -403,6 +404,3 @@ class ShardRebalancePlan(BaseModel):
     start_time: float = Field(default_factory=time.time)
     completion_time: float | None = None
     error_message: str | None = None
-
-
-

@@ -136,7 +136,9 @@ class EdgeSyncAdapter(EdgeSyncAdapterProtocol):
 
         async with tenant_session(str(t_uuid)) as session:
             # 1. Fetch all documents
-            res_docs = await session.execute(select(DocumentDb).where(DocumentDb.tenant_id == t_uuid))
+            res_docs = await session.execute(
+                select(DocumentDb).where(DocumentDb.tenant_id == t_uuid)
+            )
             docs = list(res_docs.scalars().all())
 
             # 2. Fetch all chunks
@@ -217,4 +219,6 @@ class EdgeSyncAdapter(EdgeSyncAdapterProtocol):
         """Create a temporary standalone bundle and return its manifest."""
         temp_fd, temp_path = tempfile.mkstemp(suffix=".sqlite")
         os.close(temp_fd)
-        return await self.export_sovereign_bundle(tenant_id=tenant_id, output_path=temp_path)
+        return await self.export_sovereign_bundle(
+            tenant_id=tenant_id, output_path=temp_path
+        )

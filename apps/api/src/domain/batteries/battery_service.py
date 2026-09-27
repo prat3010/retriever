@@ -43,7 +43,12 @@ class BatteryService:
                 milestone="M1 (v0.1.0)",
                 latency_profile="~8ms",
                 description="High-dimensional cosine distance approximate nearest neighbor vector search with strict PostgreSQL RLS tenant isolation.",
-                active_parameters={"distance_metric": "cosine", "m": 16, "ef_construction": 64, "embedding_dim": 768},
+                active_parameters={
+                    "distance_metric": "cosine",
+                    "m": 16,
+                    "ef_construction": 64,
+                    "embedding_dim": 768,
+                },
                 health_check_endpoint="/v1/search/dense",
             ),
             PlatformBatteryDTO(
@@ -55,7 +60,11 @@ class BatteryService:
                 milestone="M80 (v0.65.0)",
                 latency_profile="~14ms",
                 description="Preserves individual token representations across query and document tokens, scoring relevance via MaxSim sum without lossy pooling.",
-                active_parameters={"engine": "colbert_maxsim", "precision": "fp32", "top_k_candidates": 50},
+                active_parameters={
+                    "engine": "colbert_maxsim",
+                    "precision": "fp32",
+                    "top_k_candidates": 50,
+                },
                 health_check_endpoint="/v1/search/rerank",
             ),
             PlatformBatteryDTO(
@@ -67,7 +76,11 @@ class BatteryService:
                 milestone="M72 (v0.58.0)",
                 latency_profile="~250ms/page",
                 description="Transforms complex enterprise PDFs, scanned tables, and multi-column research papers into clean hierarchical markdown structures.",
-                active_parameters={"enable_table_extraction": True, "enable_ocr": True, "format": "markdown"},
+                active_parameters={
+                    "enable_table_extraction": True,
+                    "enable_ocr": True,
+                    "format": "markdown",
+                },
                 health_check_endpoint="/v1/documents/parse-status",
             ),
             PlatformBatteryDTO(
@@ -79,7 +92,17 @@ class BatteryService:
                 milestone="M48 / M56 (v0.45.0)",
                 latency_profile="~18ms",
                 description="Executes sandboxed Python scripts on-the-fly to perform mathematical aggregations, financial tax math, and dynamic data filtering.",
-                active_parameters={"max_runtime_sec": 5, "allowed_builtins": ["sum", "len", "min", "max", "math", "statistics"]},
+                active_parameters={
+                    "max_runtime_sec": 5,
+                    "allowed_builtins": [
+                        "sum",
+                        "len",
+                        "min",
+                        "max",
+                        "math",
+                        "statistics",
+                    ],
+                },
                 health_check_endpoint="/v1/rlm/sandbox/health",
             ),
             PlatformBatteryDTO(
@@ -91,7 +114,11 @@ class BatteryService:
                 milestone="M81 (v0.66.0)",
                 latency_profile="~35ms",
                 description="Discovers semantic knowledge topics and multi-hop entity relationships without requiring predefined cluster counts (k).",
-                active_parameters={"min_cluster_size": 3, "metric": "euclidean", "cluster_selection_epsilon": 0.15},
+                active_parameters={
+                    "min_cluster_size": 3,
+                    "metric": "euclidean",
+                    "cluster_selection_epsilon": 0.15,
+                },
                 health_check_endpoint="/v1/graph/communities",
             ),
             PlatformBatteryDTO(
@@ -103,7 +130,11 @@ class BatteryService:
                 milestone="M37 / M44 (v0.35.0)",
                 latency_profile="<5ms",
                 description="High-throughput multi-hop entity traversal, community clustering, and labeled property graph path finding with automatic PostgreSQL Recursive CTE fallback.",
-                active_parameters={"engine": "neo4j", "fallback_engine": "postgres_recursive_cte", "max_hops": 5},
+                active_parameters={
+                    "engine": "neo4j",
+                    "fallback_engine": "postgres_recursive_cte",
+                    "max_hops": 5,
+                },
                 health_check_endpoint="/v1/admin/tenants/{tenantId}/graph/capabilities",
             ),
             PlatformBatteryDTO(
@@ -115,7 +146,11 @@ class BatteryService:
                 milestone="M83 (v0.68.0)",
                 latency_profile="~4ms",
                 description="Detects automated API scraping, token abuse, and distributed request bursts via unsupervised multi-dimensional anomaly scoring.",
-                active_parameters={"n_estimators": 100, "contamination": 0.05, "entropy_threshold": 0.82},
+                active_parameters={
+                    "n_estimators": 100,
+                    "contamination": 0.05,
+                    "entropy_threshold": 0.82,
+                },
                 health_check_endpoint="/v1/telemetry/sentinel/status",
             ),
             PlatformBatteryDTO(
@@ -127,7 +162,11 @@ class BatteryService:
                 milestone="M84 (v0.69.0)",
                 latency_profile="~6ms",
                 description="Estimates software engineering effort, duration, and confidence intervals for scoping proposals based on DAG complexity.",
-                active_parameters={"quantiles": [0.1, 0.5, 0.9], "n_estimators": 120, "max_depth": 4},
+                active_parameters={
+                    "quantiles": [0.1, 0.5, 0.9],
+                    "n_estimators": 120,
+                    "max_depth": 4,
+                },
                 health_check_endpoint="/v1/ml/estimate-effort",
             ),
             PlatformBatteryDTO(
@@ -139,7 +178,11 @@ class BatteryService:
                 milestone="M85 (v0.70.0)",
                 latency_profile="~3ms",
                 description="Clusters anonymous visitors into commercial archetypes (Buyer, Recruiter, Evaluator, Peer) and scores B2B deal propensity.",
-                active_parameters={"n_clusters": 4, "random_state": 42, "class_weight": "balanced"},
+                active_parameters={
+                    "n_clusters": 4,
+                    "random_state": 42,
+                    "class_weight": "balanced",
+                },
                 health_check_endpoint="/v1/ml/classify-visitor",
             ),
             PlatformBatteryDTO(
@@ -151,7 +194,12 @@ class BatteryService:
                 milestone="M86 (v0.71.0)",
                 latency_profile="~2ms",
                 description="Protects LLM inference endpoints from runaway infinite loops, replay attacks, and DDoS spikes with RFC 429 headers.",
-                active_parameters={"scoping_limit": 10, "rfp_limit": 5, "copilot_limit": 20, "window_seconds": 60},
+                active_parameters={
+                    "scoping_limit": 10,
+                    "rfp_limit": 5,
+                    "copilot_limit": 20,
+                    "window_seconds": 60,
+                },
                 health_check_endpoint="/v1/telemetry/rate-limit/status",
             ),
             PlatformBatteryDTO(
@@ -163,7 +211,23 @@ class BatteryService:
                 milestone="M85.1 (v0.70.1)",
                 latency_profile="~80ms",
                 description="Pre-inference content moderation classifying prompts against safety categories (hate, violence, self-harm, sexual, PII).",
-                active_parameters={"policy_categories": ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12", "S13"]},
+                active_parameters={
+                    "policy_categories": [
+                        "S1",
+                        "S2",
+                        "S3",
+                        "S4",
+                        "S5",
+                        "S6",
+                        "S7",
+                        "S8",
+                        "S9",
+                        "S10",
+                        "S11",
+                        "S12",
+                        "S13",
+                    ]
+                },
                 health_check_endpoint="/v1/safety/guardrails/status",
             ),
             PlatformBatteryDTO(
@@ -175,7 +239,10 @@ class BatteryService:
                 milestone="M85.2 (v0.70.2)",
                 latency_profile="~45ms",
                 description="Compresses retrieved chunk context by 2x-3x while preserving critical reasoning tokens, slashing prompt costs.",
-                active_parameters={"compression_target_ratio": 0.5, "min_retained_tokens": 150},
+                active_parameters={
+                    "compression_target_ratio": 0.5,
+                    "min_retained_tokens": 150,
+                },
                 health_check_endpoint="/v1/cognitive/compress/status",
             ),
             PlatformBatteryDTO(
@@ -187,7 +254,11 @@ class BatteryService:
                 milestone="M94 (v0.79.0)",
                 latency_profile="~14ms",
                 description="Enforces conversational scope boundaries, brand tone, anti-jailbreak defenses, and post-inference factual grounding.",
-                active_parameters={"mode": "full_conversational", "competitor_shield": True, "grounding_threshold": 0.70},
+                active_parameters={
+                    "mode": "full_conversational",
+                    "competitor_shield": True,
+                    "grounding_threshold": 0.70,
+                },
                 health_check_endpoint="/v1/guardrails/overview",
             ),
             PlatformBatteryDTO(
@@ -199,7 +270,12 @@ class BatteryService:
                 milestone="M95 (v0.80.0)",
                 latency_profile="~12ms",
                 description="Guarantees resilient multi-step execution for vault chunking, graph synthesis, and benchmarks with step-level memoization and automatic backoff.",
-                active_parameters={"max_concurrent_per_tenant": 3, "default_retries": 3, "backoff_factor": 2.0, "checkpoint_store": "PostgreSQL+Redis"},
+                active_parameters={
+                    "max_concurrent_per_tenant": 3,
+                    "default_retries": 3,
+                    "backoff_factor": 2.0,
+                    "checkpoint_store": "PostgreSQL+Redis",
+                },
                 health_check_endpoint="/v1/admin/workflows/overview",
             ),
             PlatformBatteryDTO(
@@ -211,7 +287,12 @@ class BatteryService:
                 milestone="M96 (v0.81.0)",
                 latency_profile="~25ms warm / <3s cold-boot",
                 description="Serverless GPU auto-scaling down to 0 instances during idle traffic, cutting cloud compute costs by 70%+ with dynamic runtime LoRA weight swapping on a shared base model.",
-                active_parameters={"base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct", "gpu_tier": "A10G", "scale_to_zero_window_sec": 300, "max_loras": 16},
+                active_parameters={
+                    "base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+                    "gpu_tier": "A10G",
+                    "scale_to_zero_window_sec": 300,
+                    "max_loras": 16,
+                },
                 health_check_endpoint="/v1/admin/serverless/status",
             ),
             PlatformBatteryDTO(
@@ -223,7 +304,11 @@ class BatteryService:
                 milestone="M97 (v0.82.0)",
                 latency_profile="~15ms analysis / ~45ms code synthesis",
                 description="Dual-persona solution engine: zero-code battery orchestration for business users, and AST-verified Hexagonal architecture code generation for Forward Deployed Engineers.",
-                active_parameters={"supported_personas": ["business", "fde_engineer"], "ast_enforcement": True, "plugin_directory": "src/plugins/custom/"},
+                active_parameters={
+                    "supported_personas": ["business", "fde_engineer"],
+                    "ast_enforcement": True,
+                    "plugin_directory": "src/plugins/custom/",
+                },
                 health_check_endpoint="/v1/scaffold/status",
             ),
             PlatformBatteryDTO(
@@ -235,7 +320,15 @@ class BatteryService:
                 milestone="M98 (v0.83.0)",
                 latency_profile="<2ms local search / ~10ms delta sync",
                 description="Bidirectional vector and chunk delta synchronization between cloud PostgreSQL and standalone edge SQLite databases for offline-first RAG and air-gapped field operations.",
-                active_parameters={"storage_format": "sqlite3_fts5_vectorblob", "sync_protocol": "differential_checkpoint_stream", "offline_resolution_tiers": ["local_slm", "grounded_extraction", "speculative_queue"]},
+                active_parameters={
+                    "storage_format": "sqlite3_fts5_vectorblob",
+                    "sync_protocol": "differential_checkpoint_stream",
+                    "offline_resolution_tiers": [
+                        "local_slm",
+                        "grounded_extraction",
+                        "speculative_queue",
+                    ],
+                },
                 health_check_endpoint="/v1/admin/edge/overview",
             ),
             PlatformBatteryDTO(
@@ -247,7 +340,12 @@ class BatteryService:
                 milestone="M99 (v0.84.0)",
                 latency_profile="<1ms local replica reads / <800ms failover quorum",
                 description="Multi-cloud edge active-active replication using Turso LibSQL embedded replicas with automatic multi-cloud failover, cross-region read replicas, and distributed quorum election.",
-                active_parameters={"replication_engine": "libsql_embedded_wal", "quorum_threshold": 0.67, "probe_interval_seconds": 10, "supported_clouds": ["oracle", "aws", "fly_io", "cloudflare"]},
+                active_parameters={
+                    "replication_engine": "libsql_embedded_wal",
+                    "quorum_threshold": 0.67,
+                    "probe_interval_seconds": 10,
+                    "supported_clouds": ["oracle", "aws", "fly_io", "cloudflare"],
+                },
                 health_check_endpoint="/v1/admin/multicloud/clusters",
             ),
             PlatformBatteryDTO(
@@ -259,7 +357,12 @@ class BatteryService:
                 milestone="M100 (v0.85.0)",
                 latency_profile="<250ms TTFAB (Time-to-First-Audio-Byte)",
                 description="Zero-cloud audio egress sovereign voice conversational interface with on-device Whisper speech recognition, VAD turn endpointing, and streaming WebRTC speech synthesis.",
-                active_parameters={"stt_engine": "whisper_cpp_embedded", "vad_endpoint_ms": 400, "sample_rate_hz": 16000, "signaling": "webrtc_sdp_ice"},
+                active_parameters={
+                    "stt_engine": "whisper_cpp_embedded",
+                    "vad_endpoint_ms": 400,
+                    "sample_rate_hz": 16000,
+                    "signaling": "webrtc_sdp_ice",
+                },
                 health_check_endpoint="/v1/admin/voice/telemetry",
             ),
             PlatformBatteryDTO(
@@ -271,7 +374,18 @@ class BatteryService:
                 milestone="M101 (v0.86.0)",
                 latency_profile="<1ms key derivation / <2ms AES-256-GCM sealing",
                 description="End-to-end confidential computing layer with hardware-rooted remote attestation, zero-knowledge ephemeral memory wiping, and tamper-proof AES-256-GCM edge vector sealing.",
-                active_parameters={"cipher_suite": "AES-256-GCM", "kdf": "HKDF-SHA256", "supported_platforms": ["intel_sgx", "amd_sev", "aws_nitro", "apple_secure_enclave", "tpm2"], "ephemeral_sanitizer": True},
+                active_parameters={
+                    "cipher_suite": "AES-256-GCM",
+                    "kdf": "HKDF-SHA256",
+                    "supported_platforms": [
+                        "intel_sgx",
+                        "amd_sev",
+                        "aws_nitro",
+                        "apple_secure_enclave",
+                        "tpm2",
+                    ],
+                    "ephemeral_sanitizer": True,
+                },
                 health_check_endpoint="/v1/admin/edge/attestation/report",
             ),
             PlatformBatteryDTO(
@@ -283,7 +397,12 @@ class BatteryService:
                 milestone="M102 (v0.87.0)",
                 latency_profile="<5ms gossip dissemination / <50ms anti-entropy sync",
                 description="Decentralized peer-to-peer edge coordination mesh providing leaderless discovery, gossip-disseminated membership, causal vector clock conflict resolution, and partition-healing delta replication.",
-                active_parameters={"protocol": "SWIM_P2P", "anti_entropy": "push_pull", "failure_detector": "ping_req_indirect", "vector_clock_causality": True},
+                active_parameters={
+                    "protocol": "SWIM_P2P",
+                    "anti_entropy": "push_pull",
+                    "failure_detector": "ping_req_indirect",
+                    "vector_clock_causality": True,
+                },
                 health_check_endpoint="/v1/admin/swarm/topology",
             ),
             PlatformBatteryDTO(
@@ -295,7 +414,11 @@ class BatteryService:
                 milestone="M103 (v0.88.0)",
                 latency_profile="<2ms protocol dispatch overhead",
                 description="Exposes platform retrieval, guardrails, workflows, and calculations as standardized MCP tools for Claude Desktop, Cursor, and external LLM agents.",
-                active_parameters={"transport": "sse_stdio", "jsonrpc_version": "2.0", "exposed_tools": 20},
+                active_parameters={
+                    "transport": "sse_stdio",
+                    "jsonrpc_version": "2.0",
+                    "exposed_tools": 20,
+                },
                 health_check_endpoint="/v1/mcp",
             ),
             PlatformBatteryDTO(
@@ -307,7 +430,11 @@ class BatteryService:
                 milestone="M104 (v0.89.0)",
                 latency_profile="<10ms per loop iteration",
                 description="Autonomous multi-turn agentic execution loop resolving complex information-seeking and operational requests with cycle breakers and error recovery.",
-                active_parameters={"max_iterations": 10, "cycle_breaker": True, "memoize_intermediate": True},
+                active_parameters={
+                    "max_iterations": 10,
+                    "cycle_breaker": True,
+                    "memoize_intermediate": True,
+                },
                 health_check_endpoint="/v1/agentic/react",
             ),
             PlatformBatteryDTO(
@@ -319,7 +446,11 @@ class BatteryService:
                 milestone="M108 (v0.93.0)",
                 latency_profile="<8ms memory retrieval",
                 description="Long-horizon agent experience distillation synthesizing episodic interactions into semantic guidelines and procedural reflexes with logarithmic forgetting decay.",
-                active_parameters={"decay_lambda": 0.05, "consolidation_batch_size": 25, "retrieval_k": 5},
+                active_parameters={
+                    "decay_lambda": 0.05,
+                    "consolidation_batch_size": 25,
+                    "retrieval_k": 5,
+                },
                 health_check_endpoint="/v1/agentic/memory",
             ),
             PlatformBatteryDTO(
@@ -331,7 +462,11 @@ class BatteryService:
                 milestone="M109 (v0.94.0)",
                 latency_profile="<45ms multi-agent debate synthesis",
                 description="Multi-agent consensus mechanism running thesis, antithesis, and synthesis dialectics with reputation-weighted quorum voting to eliminate hallucinations.",
-                active_parameters={"quorum_threshold": 0.67, "agents_count": 3, "dialectic_rounds": 2},
+                active_parameters={
+                    "quorum_threshold": 0.67,
+                    "agents_count": 3,
+                    "dialectic_rounds": 2,
+                },
                 health_check_endpoint="/v1/consensus/swarm",
             ),
             PlatformBatteryDTO(
@@ -375,7 +510,14 @@ class BatteryService:
                     "crd_group": "retriever.run",
                     "crd_version": "v1alpha1",
                     "crd_kind": "RetrieverCluster",
-                    "supported_phases": ["Pending", "Provisioning", "Running", "Degraded", "Upgrading", "Failed"],
+                    "supported_phases": [
+                        "Pending",
+                        "Provisioning",
+                        "Running",
+                        "Degraded",
+                        "Upgrading",
+                        "Failed",
+                    ],
                     "helm_chart_version": "1.2.0-alpha1",
                 },
                 health_check_endpoint="/v1/admin/operator/status",
@@ -523,7 +665,11 @@ class BatteryService:
                 latency_profile="<12ms 2-party share protocol / <25ms 3-party Beaver inner product",
                 description="Enables collaborative cross-tenant semantic search and vector similarity retrieval across sovereign enterprise consortiums without exposing raw vector coordinates, proprietary text, or query terms using information-theoretic additive secret sharing and Beaver multiplication triples.",
                 active_parameters={
-                    "supported_protocols": ["additive_sharing", "beaver_triples", "shamir_threshold"],
+                    "supported_protocols": [
+                        "additive_sharing",
+                        "beaver_triples",
+                        "shamir_threshold",
+                    ],
                     "fixed_point_scale": 65536,
                     "default_privacy_threshold": 0.70,
                     "default_top_k": 5,
@@ -542,7 +688,13 @@ class BatteryService:
                 latency_profile="<5ms gate evaluation / <15ms Welch's t-test distribution calculation",
                 description="Governs continuous platform deployments, LoRA adapter promotions, and prompt versioning by comparing empirical baseline and candidate distributions using statistical hypothesis testing (Welch's t-test, p < 0.05) and authentic IR / RAG metrics (NDCG@K, MRR, Faithfulness) with automated rollback signal dispatch.",
                 active_parameters={
-                    "supported_metrics": ["ndcg_at_k", "mrr", "faithfulness", "answer_relevancy", "latency_p95"],
+                    "supported_metrics": [
+                        "ndcg_at_k",
+                        "mrr",
+                        "faithfulness",
+                        "answer_relevancy",
+                        "latency_p95",
+                    ],
                     "default_significance_alpha": 0.05,
                     "default_max_latency_increase_pct": 15.0,
                     "default_max_ndcg_drop_abs": 0.03,
@@ -562,7 +714,13 @@ class BatteryService:
                 latency_profile="<15ms DAG step / <25ms multi-in-degree aggregation / <5ms memory retrieval",
                 description="Cognitive reasoning and planning engine executing Graph-of-Thoughts (GoT) transformations (generate, aggregate, refine, score, prune) over a 3-tier hierarchical working memory (L1 Scratchpad, L2 Episodic with Ebbinghaus decay, L3 Semantic with graph contraction).",
                 active_parameters={
-                    "supported_transformations": ["generate", "aggregate", "refine", "score", "prune"],
+                    "supported_transformations": [
+                        "generate",
+                        "aggregate",
+                        "refine",
+                        "score",
+                        "prune",
+                    ],
                     "default_branching_factor": 3,
                     "default_max_depth": 4,
                     "default_pruning_threshold": 0.40,
@@ -631,8 +789,32 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/tenants/{tenantId}/workflows/dag/templates",
             ),
+            PlatformBatteryDTO(
+                id="sovereign_air_gapped_appliance",
+                name="Sovereign Air-Gapped Appliance & Hardware Vector Sealing",
+                category=BatteryCategory.EDGE_DISTRIBUTION,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="TPM 2.0 / Apple Secure Enclave AES-256-GCM Hardware Vector Sealing & Zero-Egress Network Sentinel",
+                milestone="M127 (v2.5.0)",
+                latency_profile="<15ms (Search) / <350ms (Voice RAG)",
+                description="Self-contained sovereign edge appliance bundling embedded SQLite vector/FTS5 indexing, hardware-bound AES-256-GCM vector sealing, fail-closed zero-egress network enforcement, and offline full-duplex Whisper/Piper neural voice RAG.",
+                active_parameters={
+                    "sealing_cipher": "aes_256_gcm",
+                    "zero_egress_strict": True,
+                    "hardware_roots": [
+                        "tpm2_pcr",
+                        "apple_secure_enclave",
+                        "linux_keyring",
+                    ],
+                    "voice_asr_engine": "whisper_cpp",
+                    "voice_tts_engine": "piper_neural",
+                    "embedded_storage": "sqlite_fts5_vector",
+                    "distroless_ready": True,
+                    "zero_toy_verified": True,
+                },
+                health_check_endpoint="/v1/appliance/status",
+            ),
         ]
-
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:
         resolved = [b.model_copy() for b in self._batteries]

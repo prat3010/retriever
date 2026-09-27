@@ -18,7 +18,9 @@ from src.domain.retrieval.search_service import HybridSearchService
 def test_contextual_chunker_prepending():
     """Verify ContextualChunker prepends document context header to every chunk."""
     base_chunker = SlidingChunker()
-    chunker = ContextualChunker(base_chunker=base_chunker, context_prefix="Q3 Financial Audit")
+    chunker = ContextualChunker(
+        base_chunker=base_chunker, context_prefix="Q3 Financial Audit"
+    )
 
     text = "Revenue grew by 24% year-over-year in the enterprise segment."
     chunks = chunker.split_text_with_offsets(text, chunk_size=100, chunk_overlap=10)
@@ -31,7 +33,9 @@ def test_contextual_chunker_prepending():
 
 def test_chunker_factory_contextual_strategy():
     """Verify ChunkerFactory instantiates ContextualChunker when requested."""
-    chunker = ChunkerFactory.get_chunker(strategy="contextual", context_prefix="API Reference")
+    chunker = ChunkerFactory.get_chunker(
+        strategy="contextual", context_prefix="API Reference"
+    )
     assert isinstance(chunker, ContextualChunker)
 
 
@@ -63,7 +67,9 @@ def test_normalized_rrf_hybrid_fusion():
 async def test_multi_query_decomposition():
     """Verify LLMQueryRewriterAdapter generates sub-queries for multi-query decomposition."""
     mock_llm = MagicMock()
-    mock_llm.generate = AsyncMock(return_value=MagicMock(content="Subquery 1\nSubquery 2\nSubquery 3"))
+    mock_llm.generate = AsyncMock(
+        return_value=MagicMock(content="Subquery 1\nSubquery 2\nSubquery 3")
+    )
 
     rewriter = LLMQueryRewriterAdapter(llm=mock_llm)
     subqueries = await rewriter.rewrite_multi_query("Compare compliance risks")

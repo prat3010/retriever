@@ -70,6 +70,7 @@ class TestFlowPayload(BaseModel):
 
 # ── Global Endpoints ─────────────────────────────────────────────────────────
 
+
 @router.get("/templates")
 async def get_guardrail_templates() -> dict[str, Any]:
     """Retrieve pre-packaged enterprise Colang flow templates."""
@@ -83,7 +84,11 @@ async def get_global_guardrails_overview() -> dict[str, Any]:
     battery_service = container.battery_service
     platform_batteries = battery_service.get_platform_batteries()
     nemo_battery = next(
-        (b for b in platform_batteries.batteries if b.id == "nemo_conversational_guardrails"),
+        (
+            b
+            for b in platform_batteries.batteries
+            if b.id == "nemo_conversational_guardrails"
+        ),
         None,
     )
     return {
@@ -97,6 +102,7 @@ async def get_global_guardrails_overview() -> dict[str, Any]:
 
 
 # ── Tenant-Scoped Endpoints ──────────────────────────────────────────────────
+
 
 @tenant_router.get("/config", response_model=TenantGuardrailsConfig)
 async def get_tenant_guardrails_config(tenantId: str) -> TenantGuardrailsConfig:

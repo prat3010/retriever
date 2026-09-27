@@ -64,7 +64,9 @@ async def test_trace_consolidation_episodic(memory_engine: CognitiveMemoryEngine
         success=True,
     )
 
-    res: ConsolidationResult = await memory_engine.consolidate_trace("tenant_alpha", req)
+    res: ConsolidationResult = await memory_engine.consolidate_trace(
+        "tenant_alpha", req
+    )
     assert res.node_id.startswith("mem_")
     assert res.memory_type == MemoryType.EPISODIC
     assert res.importance_score >= 0.70
@@ -79,7 +81,9 @@ async def test_trace_consolidation_episodic(memory_engine: CognitiveMemoryEngine
 
 
 @pytest.mark.asyncio
-async def test_trace_consolidation_procedural_self_healing(memory_engine: CognitiveMemoryEngine):
+async def test_trace_consolidation_procedural_self_healing(
+    memory_engine: CognitiveMemoryEngine,
+):
     """Test that self-healing traces with errors consolidate into procedural recovery rules."""
     req = ConsolidationRequest(
         tenant_id="tenant_alpha",
@@ -110,7 +114,9 @@ async def test_trace_consolidation_procedural_self_healing(memory_engine: Cognit
 
 
 @pytest.mark.asyncio
-async def test_experience_distillation_and_stability_reinforcement(memory_engine: CognitiveMemoryEngine):
+async def test_experience_distillation_and_stability_reinforcement(
+    memory_engine: CognitiveMemoryEngine,
+):
     """Test experience retrieval, guidance prompt synthesis, and Ebbinghaus stability boost."""
     req = ConsolidationRequest(
         tenant_id="tenant_alpha",
@@ -158,7 +164,9 @@ async def test_multi_tenancy_isolation(memory_engine: CognitiveMemoryEngine):
     )
 
     # Query as Tenant Beta
-    beta_guidance = await memory_engine.retrieve_guidance("tenant_beta", "Confidential Alpha patent roadmap")
+    beta_guidance = await memory_engine.retrieve_guidance(
+        "tenant_beta", "Confidential Alpha patent roadmap"
+    )
     assert len(beta_guidance.relevant_nodes) == 0
 
     beta_nodes = await memory_engine.list_memories("tenant_beta")
@@ -187,7 +195,9 @@ async def test_ebbinghaus_pruning_and_deletion(memory_engine: CognitiveMemoryEng
     store[node_id].last_accessed_at = store[node_id].last_accessed_at - (30 * 86400)
 
     # Prune with retention threshold 0.15 (decay exp(-30/1) ≈ 9.3e-14 < 0.15)
-    pruned_count = await memory_engine.prune_memories("tenant_alpha", min_retention=0.15)
+    pruned_count = await memory_engine.prune_memories(
+        "tenant_alpha", min_retention=0.15
+    )
     assert pruned_count == 1
 
     remaining = await memory_engine.list_memories("tenant_alpha")
@@ -263,22 +273,30 @@ async def test_fastapi_memory_router():
         node_id = data["node_id"]
 
         # 2. Query stats (verify /memory and /agentic/memory dual routes)
-        stats_res = await client.get("/v1/tenants/tn_test_mem/memory/stats", headers=headers)
+        stats_res = await client.get(
+            "/v1/tenants/tn_test_mem/memory/stats", headers=headers
+        )
         assert stats_res.status_code == 200
         stats = stats_res.json()
         assert stats["total_memories"] >= 1
 
-        agentic_stats_res = await client.get("/v1/tenants/tn_test_mem/agentic/memory/stats", headers=headers)
+        agentic_stats_res = await client.get(
+            "/v1/tenants/tn_test_mem/agentic/memory/stats", headers=headers
+        )
         assert agentic_stats_res.status_code == 200
         assert agentic_stats_res.json()["total_memories"] == stats["total_memories"]
 
         # 3. List nodes
-        list_res = await client.get("/v1/tenants/tn_test_mem/memory/nodes", headers=headers)
+        list_res = await client.get(
+            "/v1/tenants/tn_test_mem/memory/nodes", headers=headers
+        )
         assert list_res.status_code == 200
         nodes = list_res.json()
         assert any(n["id"] == node_id for n in nodes)
 
-        agentic_list_res = await client.get("/v1/tenants/tn_test_mem/agentic/memory/nodes", headers=headers)
+        agentic_list_res = await client.get(
+            "/v1/tenants/tn_test_mem/agentic/memory/nodes", headers=headers
+        )
         assert agentic_list_res.status_code == 200
         assert len(agentic_list_res.json()) == len(nodes)
 
@@ -286,13 +304,18 @@ async def test_fastapi_memory_router():
         guidance_res = await client.post(
             "/v1/tenants/tn_test_mem/agentic/memory/guidance",
             headers=headers,
-            json={"query": "Database index optimization for Postgres", "min_similarity": 0.40},
+            json={
+                "query": "Database index optimization for Postgres",
+                "min_similarity": 0.40,
+            },
         )
         assert guidance_res.status_code == 200
         guidance = guidance_res.json()
         assert len(guidance["relevant_nodes"]) >= 1
 
         # 5. Delete node via /agentic/memory alias
-        del_res = await client.delete(f"/v1/tenants/tn_test_mem/agentic/memory/nodes/{node_id}", headers=headers)
+        del_res = await client.delete(
+            f"/v1/tenants/tn_test_mem/agentic/memory/nodes/{node_id}", headers=headers
+        )
         assert del_res.status_code == 200
         assert del_res.json()["deleted"] is True

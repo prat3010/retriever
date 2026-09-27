@@ -57,8 +57,11 @@ def test_admin_list_tenants(mock_list) -> None:
     mock_list.return_value = (
         [
             Tenant(
-                tenant_id="t1", name="Test", status="active",
-                tier="standard", created_at="2026-01-01T00:00:00",
+                tenant_id="t1",
+                name="Test",
+                status="active",
+                tier="standard",
+                created_at="2026-01-01T00:00:00",
             )
         ],
         1,
@@ -87,8 +90,11 @@ def test_admin_list_tenants_empty(mock_list) -> None:
 def test_admin_get_tenant(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id} returns tenant details."""
     mock_get.return_value = Tenant(
-        tenant_id=tenant_id, name="Test", status="active",
-        tier="standard", created_at="2026-01-01T00:00:00",
+        tenant_id=tenant_id,
+        name="Test",
+        status="active",
+        tier="standard",
+        created_at="2026-01-01T00:00:00",
     )
     response = client.get(f"/v1/admin/tenants/{tenant_id}", headers=auth_header)
     assert response.status_code == 200
@@ -130,13 +136,17 @@ def test_admin_list_users(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/users returns user list."""
     mock_list.return_value = [
         UserInfo(
-            user_id="u1", tenant_id=tenant_id,
-            external_id="ext1", display_name="Alice", is_active=True,
+            user_id="u1",
+            tenant_id=tenant_id,
+            external_id="ext1",
+            display_name="Alice",
+            is_active=True,
             created_at="2026-01-01T00:00:00",
         )
     ]
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/users", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/users",
+        headers=auth_header,
     )
     assert response.status_code == 200
     body = response.json()
@@ -148,8 +158,11 @@ def test_admin_list_users(mock_list, tenant_id) -> None:
 def test_admin_create_user(mock_create, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/users creates and returns 201."""
     mock_create.return_value = UserInfo(
-        user_id="u1", tenant_id=tenant_id,
-        external_id="new_ext", display_name="Bob", is_active=True,
+        user_id="u1",
+        tenant_id=tenant_id,
+        external_id="new_ext",
+        display_name="Bob",
+        is_active=True,
         created_at="2026-01-01T00:00:00",
     )
     response = client.post(
@@ -182,15 +195,21 @@ def test_admin_create_user_duplicate(mock_create, tenant_id) -> None:
 def test_admin_list_api_keys(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/api-keys returns key list."""
     from src.domain.abstractions.identity import ApiKeyMetadata
+
     mock_list.return_value = [
         ApiKeyMetadata(
-            key_id="k1", tenant_id=tenant_id, name="my-key",
-            prefix="ret_live_abc", role="client", status="active",
+            key_id="k1",
+            tenant_id=tenant_id,
+            name="my-key",
+            prefix="ret_live_abc",
+            role="client",
+            status="active",
             created_at="2026-01-01T00:00:00",
         )
     ]
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/api-keys", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/api-keys",
+        headers=auth_header,
     )
     assert response.status_code == 200
     body = response.json()
@@ -212,11 +231,16 @@ def test_admin_create_api_key_invalid_name(tenant_id) -> None:
 def test_admin_create_api_key(mock_create, tenant_id) -> None:
     """POST /v1/admin/tenants/{id}/api-keys creates and returns 201."""
     from src.domain.abstractions.identity import ApiKeyMetadata
+
     mock_create.return_value = (
         "ret_live_abc.secret123",
         ApiKeyMetadata(
-            key_id="k1", tenant_id=tenant_id, name="new-key",
-            prefix="ret_live_abc", role="admin", status="active",
+            key_id="k1",
+            tenant_id=tenant_id,
+            name="new-key",
+            prefix="ret_live_abc",
+            role="admin",
+            status="active",
             created_at="2026-01-01T00:00:00",
         ),
     )
@@ -236,7 +260,8 @@ def test_admin_revoke_api_key(mock_revoke, tenant_id, key_id) -> None:
     """DELETE /v1/admin/tenants/{id}/api-keys/{keyId} revokes and returns status."""
     mock_revoke.return_value = True
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/api-keys/{key_id}", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/api-keys/{key_id}",
+        headers=auth_header,
     )
     assert response.status_code == 200
     assert response.json() == {"status": "revoked", "keyId": key_id}
@@ -247,7 +272,8 @@ def test_admin_revoke_api_key_not_found(mock_revoke, tenant_id) -> None:
     """DELETE returns 404 when API key not found."""
     mock_revoke.return_value = False
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/api-keys/{uuid.uuid4()}", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/api-keys/{uuid.uuid4()}",
+        headers=auth_header,
     )
     assert response.status_code == 404
 
@@ -259,9 +285,11 @@ def test_admin_revoke_api_key_not_found(mock_revoke, tenant_id) -> None:
 def test_admin_get_tenant_config(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/config returns config."""
     from src.domain.abstractions.config import TenantConfiguration
+
     mock_get.return_value = TenantConfiguration(tenant_id=tenant_id)
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/config", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/config",
+        headers=auth_header,
     )
     assert response.status_code == 200
     body = response.json()
@@ -288,6 +316,7 @@ def test_admin_update_tenant_config(mock_update, tenant_id) -> None:
 def test_admin_list_documents(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/documents returns document list."""
     from src.domain.abstractions.ingestion import Document
+
     now = datetime.now()
     mock_list.return_value = [
         Document(
@@ -303,7 +332,9 @@ def test_admin_list_documents(mock_list, tenant_id) -> None:
             storage_path="/tmp/doc",
         )
     ]
-    response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
+    response = client.get(
+        f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header
+    )
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
@@ -316,7 +347,9 @@ def test_admin_list_documents(mock_list, tenant_id) -> None:
 def test_admin_list_documents_empty(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/documents returns empty list."""
     mock_list.return_value = []
-    response = client.get(f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header)
+    response = client.get(
+        f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header
+    )
     assert response.status_code == 200
     assert response.json() == []
 
@@ -325,32 +358,37 @@ def test_admin_list_documents_empty(mock_list, tenant_id) -> None:
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.local_storage.save_file", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
-def test_admin_upload_document(mock_find, mock_save, mock_create, mock_send_task, tenant_id) -> None:
+def test_admin_upload_document(
+    mock_find, mock_save, mock_create, mock_send_task, tenant_id
+) -> None:
     """POST /v1/admin/tenants/{id}/documents uploads file and kicks off Celery task."""
     mock_find.return_value = None
     mock_save.return_value = "/tmp/fake_storage/report.pdf"
-    
+
     file_content = b"fake PDF file content"
     files = {"file": ("report.pdf", file_content, "application/pdf")}
-    
+
     response = client.post(
-        f"/v1/admin/tenants/{tenant_id}/documents",
-        headers=auth_header,
-        files=files
+        f"/v1/admin/tenants/{tenant_id}/documents", headers=auth_header, files=files
     )
-    
+
     assert response.status_code == 202
     body = response.json()
     assert "documentId" in body
     assert body["status"] == "pending"
     assert "fileHash" in body
-    
+
     mock_find.assert_called_once_with(tenant_id, mock_find.call_args[0][1])
     mock_save.assert_called_once_with(tenant_id, "report.pdf", file_content)
     mock_create.assert_called_once()
     mock_send_task.assert_called_once_with(
         "process_document",
-        args=[body["documentId"], tenant_id, "/tmp/fake_storage/report.pdf", "application/pdf"],
+        args=[
+            body["documentId"],
+            tenant_id,
+            "/tmp/fake_storage/report.pdf",
+            "application/pdf",
+        ],
         queue="ingestion.parse",
     )
 
@@ -361,15 +399,14 @@ def test_admin_delete_document(mock_delete_db, mock_delete_storage, tenant_id) -
     """DELETE /v1/admin/tenants/{id}/documents/{doc_id} deletes document from DB and storage."""
     doc_id = str(uuid.uuid4())
     mock_delete_db.return_value = "/tmp/fake_storage/report.pdf"
-    
+
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}",
-        headers=auth_header
+        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}", headers=auth_header
     )
-    
+
     assert response.status_code == 200
     assert response.json() == {"status": "deleted", "documentId": doc_id}
-    
+
     mock_delete_db.assert_called_once_with(tenant_id, doc_id)
     mock_delete_storage.assert_called_once_with("/tmp/fake_storage/report.pdf")
 
@@ -379,12 +416,11 @@ def test_admin_delete_document_not_found(mock_delete_db, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id}/documents/{doc_id} returns 404 if document doesn't exist."""
     doc_id = str(uuid.uuid4())
     mock_delete_db.return_value = None
-    
+
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}",
-        headers=auth_header
+        f"/v1/admin/tenants/{tenant_id}/documents/{doc_id}", headers=auth_header
     )
-    
+
     assert response.status_code == 404
     assert "Document not found" in response.text
 
@@ -394,11 +430,11 @@ def test_admin_platform_stats(mock_session_ctx) -> None:
     """GET /v1/admin/platform/stats returns aggregated platform statistics."""
     mock_session = AsyncMock()
     mock_session_ctx.return_value.__aenter__.return_value = mock_session
-    
+
     mock_scalar = MagicMock()
     mock_scalar.scalar.return_value = 5
     mock_session.execute.return_value = mock_scalar
-    
+
     response = client.get("/v1/admin/platform/stats", headers=auth_header)
     assert response.status_code == 200
     body = response.json()
@@ -415,21 +451,21 @@ def test_admin_platform_reset(mock_session_ctx, mock_rmtree, mock_exists) -> Non
     """POST /v1/admin/platform/reset clears all non-system tenants and storage files."""
     mock_session = AsyncMock()
     mock_session_ctx.return_value.__aenter__.return_value = mock_session
-    
+
     mock_result = MagicMock()
     mock_session.execute.return_value = mock_result
-    fake_tenant = SimpleNamespace(tenant_id=uuid.UUID("11111111-1111-1111-1111-111111111111"))
+    fake_tenant = SimpleNamespace(
+        tenant_id=uuid.UUID("11111111-1111-1111-1111-111111111111")
+    )
     mock_result.scalars.return_value.all.return_value = [fake_tenant]
     mock_exists.return_value = True
-    
+
     response = client.post("/v1/admin/platform/reset", headers=auth_header)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
-    
+
     mock_session.delete.assert_called_once_with(fake_tenant)
     mock_rmtree.assert_called()
-
-
 
 
 # ── Prompt Template Endpoints ──────────────────────────────────────────────
@@ -439,11 +475,14 @@ def test_admin_platform_reset(mock_session_ctx, mock_rmtree, mock_exists) -> Non
 def test_admin_list_prompts(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts returns prompt list."""
     mock_list.return_value = [
-        PromptTemplate(name="qa", content="Answer the question.", is_system_prompt=True),
+        PromptTemplate(
+            name="qa", content="Answer the question.", is_system_prompt=True
+        ),
         PromptTemplate(name="chat", content="Chat with user.", is_system_prompt=False),
     ]
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/prompts", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts",
+        headers=auth_header,
     )
     assert response.status_code == 200
     body = response.json()
@@ -457,7 +496,8 @@ def test_admin_list_prompts_empty(mock_list, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts returns empty list."""
     mock_list.return_value = []
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/prompts", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts",
+        headers=auth_header,
     )
     assert response.status_code == 200
     assert response.json() == []
@@ -470,7 +510,11 @@ def test_admin_create_prompt(mock_save, mock_get, tenant_id) -> None:
     mock_get.return_value = None
     response = client.post(
         f"/v1/admin/tenants/{tenant_id}/prompts",
-        json={"name": "my-prompt", "content": "Hello {name}", "is_system_prompt": False},
+        json={
+            "name": "my-prompt",
+            "content": "Hello {name}",
+            "is_system_prompt": False,
+        },
         headers=auth_header,
     )
     assert response.status_code == 201
@@ -494,10 +538,13 @@ def test_admin_create_prompt_duplicate(mock_get, tenant_id) -> None:
 def test_admin_get_prompt(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts/{name} returns prompt."""
     mock_get.return_value = PromptTemplate(
-        name="greeting", content="Hi {name}!", is_system_prompt=False,
+        name="greeting",
+        content="Hi {name}!",
+        is_system_prompt=False,
     )
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/prompts/greeting", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts/greeting",
+        headers=auth_header,
     )
     assert response.status_code == 200
     body = response.json()
@@ -511,7 +558,8 @@ def test_admin_get_prompt_not_found(mock_get, tenant_id) -> None:
     """GET /v1/admin/tenants/{id}/prompts/{name} returns 404."""
     mock_get.return_value = None
     response = client.get(
-        f"/v1/admin/tenants/{tenant_id}/prompts/missing", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts/missing",
+        headers=auth_header,
     )
     assert response.status_code == 404
 
@@ -548,7 +596,8 @@ def test_admin_delete_prompt(mock_delete, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id}/prompts/{name} deletes and returns status."""
     mock_delete.return_value = True
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/prompts/to-delete", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts/to-delete",
+        headers=auth_header,
     )
     assert response.status_code == 200
     assert response.json() == {"name": "to-delete", "status": "deleted"}
@@ -559,7 +608,8 @@ def test_admin_delete_prompt_not_found(mock_delete, tenant_id) -> None:
     """DELETE /v1/admin/tenants/{id}/prompts/{name} returns 404."""
     mock_delete.return_value = False
     response = client.delete(
-        f"/v1/admin/tenants/{tenant_id}/prompts/missing", headers=auth_header,
+        f"/v1/admin/tenants/{tenant_id}/prompts/missing",
+        headers=auth_header,
     )
     assert response.status_code == 404
 
@@ -639,7 +689,10 @@ def test_admin_list_audit_logs_filtered(mock_list, tenant_id) -> None:
         headers=auth_header,
     )
     mock_list.assert_awaited_once_with(
-        tenant_id=tenant_id, action="tenant.created", limit=10, offset=5,
+        tenant_id=tenant_id,
+        action="tenant.created",
+        limit=10,
+        offset=5,
     )
 
 

@@ -105,7 +105,12 @@ class ScikitPersonaClusterer(PersonaClassifierInterface):
         # Inspect cluster centers to determine persona alignment
         centers = self._model.cluster_centers_
         assigned: dict[int, str] = {}
-        archetypes = ["commercial_buyer", "technical_evaluator", "talent_recruiter", "community_peer"]
+        archetypes = [
+            "commercial_buyer",
+            "technical_evaluator",
+            "talent_recruiter",
+            "community_peer",
+        ]
         used_indices = set()
 
         # Match each archetype to its dominant dimension
@@ -125,7 +130,9 @@ class ScikitPersonaClusterer(PersonaClassifierInterface):
         self._cluster_persona_map = assigned
         self._is_trained = True
 
-    def classify_visitor(self, vector: VisitorTelemetryVector) -> VisitorPersonaPrediction:
+    def classify_visitor(
+        self, vector: VisitorTelemetryVector
+    ) -> VisitorPersonaPrediction:
         if not self._is_trained:
             self._fit_baseline_clusters()
 
@@ -166,7 +173,9 @@ class ScikitLeadPropensityScorer(LeadScorerInterface):
 
     def __init__(self, random_state: int = 42):
         self.random_state = random_state
-        self._model = LogisticRegression(class_weight="balanced", random_state=random_state, max_iter=1000)
+        self._model = LogisticRegression(
+            class_weight="balanced", random_state=random_state, max_iter=1000
+        )
         self._is_trained = False
         self._fit_baseline_model()
 
@@ -232,13 +241,17 @@ class ScikitLeadPropensityScorer(LeadScorerInterface):
 
         drivers: list[str] = []
         if vector.tech_stack_affinity >= 0.75:
-            drivers.append("High engineering stack alignment (Python, FastAPI, Postgres, RAG)")
+            drivers.append(
+                "High engineering stack alignment (Python, FastAPI, Postgres, RAG)"
+            )
         if vector.role_seniority in ["founder_cxo", "engineering_leadership"]:
             drivers.append(f"Direct decision maker reach ({vector.role_seniority})")
         if vector.is_remote:
             drivers.append("Remote-first operating model matches engagement profile")
         if vector.budget_tier_usd >= 75000:
-            drivers.append(f"Strong enterprise budget allocation (${int(vector.budget_tier_usd):,})")
+            drivers.append(
+                f"Strong enterprise budget allocation (${int(vector.budget_tier_usd):,})"
+            )
 
         if prob >= 0.75:
             tier = "A+ High Value"

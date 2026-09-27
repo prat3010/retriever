@@ -38,7 +38,9 @@ class WebRtcSignalingAdapter(WebRtcSignalingProtocol):
         self._ice_candidates[session.session_id] = []
         return session
 
-    async def handle_signal(self, payload: WebRtcSignalingMessage) -> WebRtcSignalingMessage:
+    async def handle_signal(
+        self, payload: WebRtcSignalingMessage
+    ) -> WebRtcSignalingMessage:
         """Processes incoming WebRTC signaling messages and returns negotiation reply."""
         session = self._sessions.get(payload.session_id)
         if not session:
@@ -71,7 +73,9 @@ class WebRtcSignalingAdapter(WebRtcSignalingProtocol):
         elif payload.message_type == "ice_candidate":
             # Store trickle ICE candidate
             if payload.candidate:
-                self._ice_candidates.setdefault(payload.session_id, []).append(payload.candidate)
+                self._ice_candidates.setdefault(payload.session_id, []).append(
+                    payload.candidate
+                )
             session.state = VoiceSessionState.CONNECTED
             session.connected_at = session.connected_at or datetime.now(UTC)
 
@@ -111,6 +115,7 @@ class WebRtcSignalingAdapter(WebRtcSignalingProtocol):
     async def list_active_sessions(self, tenant_id: str) -> list[VoiceSession]:
         """Lists active voice sessions for a tenant."""
         return [
-            s for s in self._sessions.values()
+            s
+            for s in self._sessions.values()
             if s.tenant_id == tenant_id and s.state != VoiceSessionState.DISCONNECTED
         ]

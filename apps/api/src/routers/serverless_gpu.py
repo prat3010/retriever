@@ -39,7 +39,9 @@ tenant_router = APIRouter(
 class RegisterLoraAdapterPayload(BaseModel):
     """Payload for registering a new fine-tuned LoRA adapter."""
 
-    name: str = Field(..., min_length=2, max_length=255, description="Adapter display name")
+    name: str = Field(
+        ..., min_length=2, max_length=255, description="Adapter display name"
+    )
     base_model: str = Field(
         default="meta-llama/Meta-Llama-3.1-8B-Instruct",
         description="Base foundational model the adapter targets",
@@ -85,7 +87,10 @@ async def probe_serverless_cold_start() -> WarmBootMetrics:
 @admin_router.get("/cost-savings", response_model=ServerlessCostComparison)
 async def get_serverless_cost_savings(
     active_compute_hours: float = Query(
-        default=25.0, ge=0.0, le=720.0, description="Estimated active compute hours per month"
+        default=25.0,
+        ge=0.0,
+        le=720.0,
+        description="Estimated active compute hours per month",
     ),
     gpu_tier: ServerlessGpuTier = Query(
         default=ServerlessGpuTier.A10G, description="Target GPU accelerator tier"
@@ -103,14 +108,18 @@ async def get_serverless_cost_savings(
 @tenant_router.get("", response_model=list[LoraAdapterMetadata])
 async def list_tenant_lora_adapters(
     tenantId: str,
-    adapter_type: str | None = Query(default=None, description="Filter by 'llm' or 'embedding'"),
+    adapter_type: str | None = Query(
+        default=None, description="Filter by 'llm' or 'embedding'"
+    ),
 ) -> list[LoraAdapterMetadata]:
     """List all fine-tuned LoRA adapters registered for the specified tenant."""
     repo = container.tenant_lora_repository
     return await repo.list_adapters(tenantId, adapter_type=adapter_type)
 
 
-@tenant_router.post("", response_model=LoraAdapterMetadata, status_code=status.HTTP_201_CREATED)
+@tenant_router.post(
+    "", response_model=LoraAdapterMetadata, status_code=status.HTTP_201_CREATED
+)
 async def register_tenant_lora_adapter(
     tenantId: str, payload: RegisterLoraAdapterPayload
 ) -> LoraAdapterMetadata:
@@ -140,7 +149,9 @@ async def register_tenant_lora_adapter(
 @tenant_router.get("/active", response_model=LoraAdapterMetadata | None)
 async def get_tenant_active_lora_adapter(
     tenantId: str,
-    adapter_type: str = Query(default="llm", description="Adapter type ('llm' or 'embedding')"),
+    adapter_type: str = Query(
+        default="llm", description="Adapter type ('llm' or 'embedding')"
+    ),
 ) -> LoraAdapterMetadata | None:
     """Retrieve the currently active LoRA adapter for the tenant."""
     repo = container.tenant_lora_repository
@@ -148,9 +159,7 @@ async def get_tenant_active_lora_adapter(
 
 
 @tenant_router.get("/{adapterId}", response_model=LoraAdapterMetadata)
-async def get_tenant_lora_adapter(
-    tenantId: str, adapterId: str
-) -> LoraAdapterMetadata:
+async def get_tenant_lora_adapter(tenantId: str, adapterId: str) -> LoraAdapterMetadata:
     """Retrieve metadata for a specific LoRA adapter."""
     repo = container.tenant_lora_repository
     adapter = await repo.get_adapter(tenantId, adapterId)
@@ -188,9 +197,7 @@ async def deactivate_tenant_lora_adapter(
 
 
 @tenant_router.delete("/{adapterId}", response_model=dict[str, Any])
-async def delete_tenant_lora_adapter(
-    tenantId: str, adapterId: str
-) -> dict[str, Any]:
+async def delete_tenant_lora_adapter(tenantId: str, adapterId: str) -> dict[str, Any]:
     """Delete a LoRA adapter record for the tenant."""
     repo = container.tenant_lora_repository
     deleted = await repo.delete_adapter(tenantId, adapterId)

@@ -31,14 +31,33 @@ def upgrade() -> None:
             index=True,
         ),
         sa.Column("device_name", sa.String(255), nullable=False),
-        sa.Column("platform", sa.String(64), nullable=False, server_default="darwin_arm64"),
+        sa.Column(
+            "platform", sa.String(64), nullable=False, server_default="darwin_arm64"
+        ),
         sa.Column("last_synced_seq", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("last_heartbeat_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "last_heartbeat_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("status", sa.String(32), nullable=False, server_default="online"),
-        sa.Column("meta_data", JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "meta_data",
+            JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
     )
-    op.create_index("ix_edge_nodes_tenant_status", "edge_nodes", ["tenant_id", "status"])
+    op.create_index(
+        "ix_edge_nodes_tenant_status", "edge_nodes", ["tenant_id", "status"]
+    )
 
     # 2. edge_sync_checkpoints table
     op.create_table(
@@ -54,13 +73,24 @@ def upgrade() -> None:
         sa.Column("node_id", sa.String(128), nullable=False, index=True),
         sa.Column("sequence_num", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("checksum_sha256", sa.String(64), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
     )
-    op.create_index("ix_edge_sync_checkpoints_tenant_seq", "edge_sync_checkpoints", ["tenant_id", "sequence_num"])
+    op.create_index(
+        "ix_edge_sync_checkpoints_tenant_seq",
+        "edge_sync_checkpoints",
+        ["tenant_id", "sequence_num"],
+    )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_edge_sync_checkpoints_tenant_seq", table_name="edge_sync_checkpoints")
+    op.drop_index(
+        "ix_edge_sync_checkpoints_tenant_seq", table_name="edge_sync_checkpoints"
+    )
     op.drop_table("edge_sync_checkpoints")
     op.drop_index("ix_edge_nodes_tenant_status", table_name="edge_nodes")
     op.drop_table("edge_nodes")

@@ -1,4 +1,5 @@
 """Chat and session routes."""
+
 import asyncio
 import json
 import logging
@@ -61,7 +62,10 @@ router = APIRouter(tags=["Chat"])
     "/v1/tenants/{tenantId}/chat/sessions",
     status_code=status.HTTP_201_CREATED,
     response_model=CreateSessionResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["chat:write"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["chat:write"]),
+    ],
 )
 async def create_chat_session(
     tenantId: str,
@@ -69,7 +73,9 @@ async def create_chat_session(
     user_context: UserContext = Depends(get_current_user),
 ) -> CreateSessionResponse:
     """Create a new chat session for grounded inference."""
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
     session = await inference_orchestrator.create_session(resolved_tenant_id, user_id)
     return CreateSessionResponse(
         sessionId=session.session_id,
@@ -80,7 +86,11 @@ async def create_chat_session(
 @router.post(
     "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["chat:write"]), Depends(rate_limit(scope="chat", max_requests=30))],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["chat:write"]),
+        Depends(rate_limit(scope="chat", max_requests=30)),
+    ],
 )
 async def send_chat_message(
     tenantId: str,
@@ -93,17 +103,23 @@ async def send_chat_message(
     x_llm_provider: str | None = Header(None, alias="X-LLM-Provider"),
     last_event_id: str | None = Header(None, alias="Last-Event-ID"),
 ):
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
 
     session = await inference_orchestrator.get_session(sessionId, resolved_tenant_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
 
     session_user_id = getattr(session, "user_id", None)
-    if session_user_id and isinstance(session_user_id, str) and session_user_id != user_id:
+    if (
+        session_user_id
+        and isinstance(session_user_id, str)
+        and session_user_id != user_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access Forbidden: You do not own this chat session."
+            detail="Access Forbidden: You do not own this chat session.",
         )
 
     caller_role = user_context.roles[0] if user_context.roles else None
@@ -135,14 +151,22 @@ async def send_chat_message(
 
     nemo_guard_service = getattr(container, "nemo_guardrail_service", None)
     if nemo_guard_service:
-        nemo_res = await nemo_guard_service.evaluate_input(tenant_id=resolved_tenant_id, query=payload.query)
+        nemo_res = await nemo_guard_service.evaluate_input(
+            tenant_id=resolved_tenant_id, query=payload.query
+        )
         if not nemo_res.allowed:
             if nemo_res.action.value == "block":
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=nemo_res.reason)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=nemo_res.reason
+                )
             elif nemo_res.action.value == "steer" and nemo_res.bot_response:
                 return {
                     "content": nemo_res.bot_response,
-                    "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    "usage": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                    },
                     "finish_reason": "steered_by_guardrails",
                 }
 
@@ -151,11 +175,16 @@ async def send_chat_message(
     if x_llm_provider:
         tenant_config.ai_provider.provider_name = x_llm_provider
 
-    search_query = _build_search_query(resolved_tenant_id, tenant_config, payload, user_id=user_id, user_role=caller_role)
+    search_query = _build_search_query(
+        resolved_tenant_id,
+        tenant_config,
+        payload,
+        user_id=user_id,
+        user_role=caller_role,
+    )
     if tenant_config.corrective_retrieval_settings.enable_corrective_retrieval:
         context_chunks, _crag_decision = await corrective_service.prepare_crag_context(
             tenant_id=resolved_tenant_id,
-
             query=payload.query,
             search_query=search_query,
             tenant_config=tenant_config,
@@ -180,8 +209,12 @@ async def send_chat_message(
             experiment_id=experiment_id,
             experiment_variant=experiment_variant,
         )
-        formatted_content = _format_citations(response.content, context_chunks, citation_template)
-        formatted_content = await _apply_output_guardrails(formatted_content, tenant_config)
+        formatted_content = _format_citations(
+            response.content, context_chunks, citation_template
+        )
+        formatted_content = await _apply_output_guardrails(
+            formatted_content, tenant_config
+        )
 
         if nemo_guard_service:
             nemo_out = await nemo_guard_service.evaluate_output(
@@ -233,11 +266,21 @@ async def send_chat_message(
                 if event.get("event") == "token":
                     delta = event.get("delta", "")
                     buffer += delta
-                    buffer = _format_citations(buffer, search_response.results, citation_template)
+                    buffer = _format_citations(
+                        buffer, search_response.results, citation_template
+                    )
 
                     last_bracket = buffer.rfind("[")
-                    check_slice = buffer[last_bracket + 1 : last_bracket + 8].lower() if last_bracket != -1 else ""
-                    if last_bracket != -1 and ("source".startswith(check_slice) or check_slice.startswith("source") or len(buffer) - last_bracket < 50):
+                    check_slice = (
+                        buffer[last_bracket + 1 : last_bracket + 8].lower()
+                        if last_bracket != -1
+                        else ""
+                    )
+                    if last_bracket != -1 and (
+                        "source".startswith(check_slice)
+                        or check_slice.startswith("source")
+                        or len(buffer) - last_bracket < 50
+                    ):
                         safe_to_yield = buffer[:last_bracket]
                         buffer = buffer[last_bracket:]
                     else:
@@ -258,10 +301,14 @@ async def send_chat_message(
                     event["id"] = event_seq
                     yield f"id: {event_seq}\ndata: {json.dumps(event)}\n\n"
         except asyncio.CancelledError:
-            logger.info(f"SSE client disconnected for session {sessionId} on tenant {tenantId}.")
+            logger.info(
+                f"SSE client disconnected for session {sessionId} on tenant {tenantId}."
+            )
             raise
         except Exception as e:
-            logger.error(f"Error during SSE stream for session {sessionId}: {e}", exc_info=True)
+            logger.error(
+                f"Error during SSE stream for session {sessionId}: {e}", exc_info=True
+            )
             if buffer:
                 event_seq += 1
                 yield f"id: {event_seq}\ndata: {json.dumps({'event': 'token', 'delta': buffer, 'id': event_seq})}\n\n"
@@ -282,7 +329,10 @@ async def send_chat_message(
 @router.get(
     "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def list_session_messages(
     tenantId: str,
@@ -297,10 +347,14 @@ async def list_session_messages(
         raise HTTPException(status_code=404, detail="Session not found.")
 
     session_user_id = getattr(session, "user_id", None)
-    if session_user_id and isinstance(session_user_id, str) and session_user_id != user_id:
+    if (
+        session_user_id
+        and isinstance(session_user_id, str)
+        and session_user_id != user_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access Forbidden: You do not own this chat session."
+            detail="Access Forbidden: You do not own this chat session.",
         )
 
     items, next_cursor, has_more = await session_repo.get_messages_cursor(
@@ -324,14 +378,17 @@ async def list_session_messages(
             "nextCursor": next_cursor,
             "limit": limit,
             "hasMore": has_more,
-        }
+        },
     }
 
 
 @router.post(
     "/v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages/{messageId}/feedback",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def submit_message_feedback(
     tenantId: str,
@@ -347,7 +404,9 @@ async def submit_message_feedback(
 
     msg = await session_repo.get_message(tenantId, sessionId, messageId)
     if not msg:
-        raise HTTPException(status_code=404, detail="Message not found in this session.")
+        raise HTTPException(
+            status_code=404, detail="Message not found in this session."
+        )
 
     feedback = ChatMessageFeedback(
         tenant_id=tenantId,
@@ -373,7 +432,10 @@ class GroundingDiffRequest(BaseModel):
 @router.post(
     "/v1/tenants/{tenantId}/evaluations/grounding-diff",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def tenant_compute_grounding_diff(
     tenantId: str,
@@ -390,7 +452,9 @@ async def tenant_compute_grounding_diff(
         try:
             async with tenant_session(tenant_id=tenantId) as session:
                 res = await session.execute(
-                    text("SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 15"),
+                    text(
+                        "SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 15"
+                    ),
                     {"tenant_id": tenantId},
                 )
                 contexts = [row[0] for row in res.fetchall() if row[0]]
@@ -436,7 +500,9 @@ from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.retrieval import SearchQuery
 from src.domain.rlm.abstractions import RlmAnalysisRequest
 
-_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
 _redis_pool = None
 
 
@@ -474,7 +540,9 @@ async def chat_completions(
     user_context: UserContext = Depends(get_current_user),
 ):
     """OpenAI-compatible Chat Completions endpoint with REPL and Semantic Cache support."""
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
 
     user_query = ""
     for m in reversed(payload.messages):
@@ -487,7 +555,9 @@ async def chat_completions(
     # 1. REPL Code Sandbox Execution (Probe 2.1)
     if payload.use_repl:
         rlm_res = await container.rlm_engine.analyze_repl_loop(
-            RlmAnalysisRequest(tenant_id=resolved_tenant_id, prompt=user_query, max_depth=3)
+            RlmAnalysisRequest(
+                tenant_id=resolved_tenant_id, prompt=user_query, max_depth=3
+            )
         )
         response.headers["X-Cache-Lookup"] = "MISS"
         return {
@@ -531,7 +601,9 @@ async def chat_completions(
         SearchQuery(tenant_id=resolved_tenant_id, query=user_query, top_k=5)
     )
     context_chunks = search_res.results
-    context_text = "\n\n".join([f"[{i+1}] {c.content}" for i, c in enumerate(context_chunks)])
+    context_text = "\n\n".join(
+        [f"[{i + 1}] {c.content}" for i, c in enumerate(context_chunks)]
+    )
 
     grounded_system = (
         "You are a helpful, precise enterprise assistant. "
@@ -546,7 +618,11 @@ async def chat_completions(
     ]
 
     llm_resp = await container.gateway_router.generate(
-        InferenceRequest(messages=llm_messages, temperature=payload.temperature, max_tokens=payload.max_tokens or 1024),
+        InferenceRequest(
+            messages=llm_messages,
+            temperature=payload.temperature,
+            max_tokens=payload.max_tokens or 1024,
+        ),
         {"model": payload.model or "gemini-2.5-flash"},
     )
 
@@ -571,7 +647,11 @@ async def chat_completions(
             "total_tokens": llm_resp.usage.total_tokens,
         },
         "citations": [
-            {"document_id": str(c.document_id), "chunk_id": str(c.chunk_id), "score": c.score}
+            {
+                "document_id": str(c.document_id),
+                "chunk_id": str(c.chunk_id),
+                "score": c.score,
+            }
             for c in context_chunks
         ],
     }
@@ -582,4 +662,3 @@ async def chat_completions(
         logging.getLogger("api").warning(f"Redis cache write failed: {exc}")
 
     return completion_payload
-

@@ -10,10 +10,18 @@ class ReplExecutionResult(BaseModel):
     """Execution output returned by the REPL Sandbox."""
 
     output: str = Field(default="", description="Captured stdout / console log output")
-    return_value: Any = Field(default=None, description="Returned result value or evaluation expression")
-    is_error: bool = Field(default=False, description="True if script execution raised an exception")
-    error_message: str | None = Field(default=None, description="Optional error message on script failure")
-    execution_time_ms: float = Field(default=0.0, description="Execution duration in milliseconds")
+    return_value: Any = Field(
+        default=None, description="Returned result value or evaluation expression"
+    )
+    is_error: bool = Field(
+        default=False, description="True if script execution raised an exception"
+    )
+    error_message: str | None = Field(
+        default=None, description="Optional error message on script failure"
+    )
+    execution_time_ms: float = Field(
+        default=0.0, description="Execution duration in milliseconds"
+    )
 
 
 class ReplSandboxProvider(ABC):
@@ -35,11 +43,15 @@ class RlmAnalysisRequest(BaseModel):
     """Input payload to trigger a Recursive Language Model analytical synthesis."""
 
     tenant_id: str = Field(..., description="Target multi-tenant workspace ID")
-    prompt: str = Field(..., description="High-level analytical query or synthesis task")
+    prompt: str = Field(
+        ..., description="High-level analytical query or synthesis task"
+    )
     document_ids: list[str] | None = Field(
         default=None, description="Optional filter list of target document UUIDs"
     )
-    max_depth: int = Field(default=3, ge=1, le=5, description="Maximum recursive sub-call depth")
+    max_depth: int = Field(
+        default=3, ge=1, le=5, description="Maximum recursive sub-call depth"
+    )
 
 
 class RlmAnalysisResult(BaseModel):

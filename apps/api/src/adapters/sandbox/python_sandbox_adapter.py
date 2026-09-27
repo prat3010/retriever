@@ -77,11 +77,15 @@ class RestrictedASTValidator(ast.NodeVisitor):
         for alias in node.names:
             base_mod = alias.name.split(".")[0]
             if base_mod not in SAFE_MODULES:
-                raise SecurityError(f"Import of module '{alias.name}' is prohibited inside the REPL sandbox.")
+                raise SecurityError(
+                    f"Import of module '{alias.name}' is prohibited inside the REPL sandbox."
+                )
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if not node.module or node.module.split(".")[0] not in SAFE_MODULES:
-            raise SecurityError(f"Import from module '{node.module}' is prohibited inside the REPL sandbox.")
+            raise SecurityError(
+                f"Import from module '{node.module}' is prohibited inside the REPL sandbox."
+            )
 
     def visit_Name(self, node: ast.Name) -> None:
         if node.id in PROHIBITED_NAMES:
@@ -90,7 +94,9 @@ class RestrictedASTValidator(ast.NodeVisitor):
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         if node.attr.startswith("__"):
-            raise SecurityError(f"Access to private attribute '{node.attr}' is blocked.")
+            raise SecurityError(
+                f"Access to private attribute '{node.attr}' is blocked."
+            )
         self.generic_visit(node)
 
 
@@ -135,7 +141,9 @@ class RestrictedPythonSandboxAdapter(ReplSandboxProvider):
         def _safe_import(name: str, *args: Any, **kwargs: Any) -> Any:
             base_name = name.split(".")[0]
             if base_name not in SAFE_MODULES:
-                raise ImportError(f"Import of module '{name}' is prohibited in the sandbox.")
+                raise ImportError(
+                    f"Import of module '{name}' is prohibited in the sandbox."
+                )
             return __import__(name, *args, **kwargs)
 
         safe_builtins = {
@@ -176,7 +184,9 @@ class RestrictedPythonSandboxAdapter(ReplSandboxProvider):
                 asyncio.to_thread(_run_exec), timeout=timeout_seconds
             )
         except TimeoutError:
-            ret_val = f"TimeoutError: Script execution exceeded {timeout_seconds}s limit."
+            ret_val = (
+                f"TimeoutError: Script execution exceeded {timeout_seconds}s limit."
+            )
             is_err = True
             captured_out = stdout_capture.getvalue()
 

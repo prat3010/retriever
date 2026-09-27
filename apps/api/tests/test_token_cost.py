@@ -203,16 +203,17 @@ async def test_orchestrator_emits_metrics() -> None:
     assert mock_metrics.increment.call_count >= 3
     # Check that TOKEN_CONSUMPTION was called for input
     input_calls = [
-        c for c in mock_metrics.increment.call_args_list
-        if c.args[0] == "TOKEN_CONSUMPTION" and c.kwargs.get("labels", {}).get("type") == "input"
+        c
+        for c in mock_metrics.increment.call_args_list
+        if c.args[0] == "TOKEN_CONSUMPTION"
+        and c.kwargs.get("labels", {}).get("type") == "input"
     ]
     assert len(input_calls) == 1
     assert input_calls[0].kwargs["value"] == 100
 
     # Check that COST_SPEND was called
     cost_calls = [
-        c for c in mock_metrics.increment.call_args_list
-        if c.args[0] == "COST_SPEND"
+        c for c in mock_metrics.increment.call_args_list if c.args[0] == "COST_SPEND"
     ]
     assert len(cost_calls) == 1
 

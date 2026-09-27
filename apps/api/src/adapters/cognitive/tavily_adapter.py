@@ -4,7 +4,6 @@ from src.domain.abstractions.web_search import WebSearchProvider, WebSearchResul
 
 
 class TavilySearchAdapter(WebSearchProvider):
-
     def __init__(self, api_key: str, base_url: str = "https://api.tavily.com") -> None:
         self.api_key = api_key
         self.base_url = base_url

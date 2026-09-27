@@ -193,7 +193,9 @@ class GossipMeshAdapter(SwarmMeshProtocol):
         """
         tenant_nodes = self._nodes.get(tenant_id, {})
         if target_node_id not in tenant_nodes:
-            raise KeyError(f"Target node '{target_node_id}' not found in swarm mesh for tenant '{tenant_id}'")
+            raise KeyError(
+                f"Target node '{target_node_id}' not found in swarm mesh for tenant '{tenant_id}'"
+            )
 
         target_node = tenant_nodes[target_node_id]
         prober_node = tenant_nodes.get(prober_node_id)
@@ -214,9 +216,12 @@ class GossipMeshAdapter(SwarmMeshProtocol):
         # 2. Indirect Ping-Req Phase (Direct ping timed out)
         # Select up to k other peers to probe target on prober's behalf
         auxiliary_peers = [
-            nid for nid in tenant_nodes
-            if nid != prober_node_id and nid != target_node_id and tenant_nodes[nid].state == SwarmNodeState.HEALTHY
-        ][:self.ping_req_peers_k]
+            nid
+            for nid in tenant_nodes
+            if nid != prober_node_id
+            and nid != target_node_id
+            and tenant_nodes[nid].state == SwarmNodeState.HEALTHY
+        ][: self.ping_req_peers_k]
 
         # In pure failure scenario where target is unreachable via all routes
         target_node.state = SwarmNodeState.SUSPECT

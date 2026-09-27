@@ -55,16 +55,16 @@ class AsyncLoopManager:
         """Schedule an ack on the async loop thread to be safe."""
         if self._loop is None:
             return
-        self._loop.call_soon_threadsafe(
-            channel.basic_ack, delivery_tag=delivery_tag
-        )
+        self._loop.call_soon_threadsafe(channel.basic_ack, delivery_tag=delivery_tag)
 
 
 _loop_manager = AsyncLoopManager()
 
 
 def _declare_topology(channel: pika.channel.Channel) -> None:
-    channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type="topic", durable=True)
+    channel.exchange_declare(
+        exchange=EXCHANGE_NAME, exchange_type="topic", durable=True
+    )
     channel.exchange_declare(exchange=DLX_NAME, exchange_type="fanout", durable=True)
 
     channel.queue_declare(
@@ -75,7 +75,9 @@ def _declare_topology(channel: pika.channel.Channel) -> None:
             "x-dead-letter-routing-key": QUEUE_INGESTION,
         },
     )
-    channel.queue_bind(queue=QUEUE_INGESTION, exchange=EXCHANGE_NAME, routing_key=ROUTING_UPLOADED)
+    channel.queue_bind(
+        queue=QUEUE_INGESTION, exchange=EXCHANGE_NAME, routing_key=ROUTING_UPLOADED
+    )
 
     channel.queue_declare(
         queue=QUEUE_EMBED,
@@ -85,7 +87,9 @@ def _declare_topology(channel: pika.channel.Channel) -> None:
             "x-dead-letter-routing-key": QUEUE_EMBED,
         },
     )
-    channel.queue_bind(queue=QUEUE_EMBED, exchange=EXCHANGE_NAME, routing_key=ROUTING_PARSED)
+    channel.queue_bind(
+        queue=QUEUE_EMBED, exchange=EXCHANGE_NAME, routing_key=ROUTING_PARSED
+    )
 
     channel.queue_declare(
         queue="dead.letter",

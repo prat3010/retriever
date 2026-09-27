@@ -20,6 +20,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: Claim Extraction & Metric Scoring ───────────────────────────
 
+
 def test_extract_claims_and_scoring():
     """Verify claim extraction and faithfulness/precision math."""
     text = "Payment gateway supports credit cards. Database Z stores user tokens."
@@ -39,6 +40,7 @@ def test_extract_claims_and_scoring():
 
 
 # ── 2. Unit Test: Evaluator Scoring & SLA Threshold Alerting ─────────────────
+
 
 @pytest.mark.asyncio
 async def test_online_evaluator_alert_trigger():
@@ -75,6 +77,7 @@ async def test_online_evaluator_alert_trigger():
 
 # ── 3. Unit Test: Disabled Tracing Check ──────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_online_evaluator_disabled():
     """Verify evaluator returns default payload when online tracing is disabled."""
@@ -96,11 +99,13 @@ async def test_online_evaluator_disabled():
 
 # ── 4. Integration Test: Online Evaluation Admin APIs ────────────────────────
 
+
 @patch("src.routers.admin.online_eval_repo.get_online_summary", new_callable=AsyncMock)
 @patch("src.routers.admin.online_eval_repo.list_online_logs", new_callable=AsyncMock)
 def test_admin_online_evaluation_endpoints(mock_list_logs, mock_get_summary):
     """Verify GET /v1/tenants/{tenantId}/evaluation/online/summary and /logs endpoints."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
@@ -161,6 +166,7 @@ def test_admin_online_evaluation_endpoints(mock_list_logs, mock_get_summary):
 def test_admin_get_online_evaluation_log(mock_get_log):
     """Verify GET /v1/admin/tenants/{tenantId}/evaluation/online/logs/{evalId} returns claims breakdown."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
@@ -204,6 +210,7 @@ def test_admin_get_online_evaluation_log(mock_get_log):
 def test_admin_and_tenant_grounding_diff():
     """Verify on-demand claim grounding diff endpoint returns sentence breakdown."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
@@ -229,4 +236,3 @@ def test_admin_and_tenant_grounding_diff():
         assert "entailment_prob" in data["claims"][0]
     finally:
         app.dependency_overrides.clear()
-

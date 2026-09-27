@@ -14,7 +14,6 @@ from src.domain.abstractions.retrieval import (
 
 
 class PgVectorSearchAdapter(VectorSearchProvider):
-
     async def search_similar(
         self,
         tenant_id: str,
@@ -41,7 +40,6 @@ class PgVectorSearchAdapter(VectorSearchProvider):
             user_groups=user_groups,
             enable_acl_filter=enable_acl_filter,
         )
-
 
         async with tenant_session(tenant_id=tenant_id) as session:
             result = await session.execute(

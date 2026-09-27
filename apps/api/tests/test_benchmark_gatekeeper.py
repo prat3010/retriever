@@ -77,8 +77,12 @@ def test_welch_ttest_and_degrees_of_freedom() -> None:
     assert abs(df - 53.78) < 0.2
 
     res = compute_welch_ttest_from_stats(
-        m1=100.0, s1=15.0, n1=30,
-        m2=125.0, s2=20.0, n2=30,
+        m1=100.0,
+        s1=15.0,
+        n1=30,
+        m2=125.0,
+        s2=20.0,
+        n2=30,
         metric_name="latency",
         alpha=0.05,
     )
@@ -240,7 +244,9 @@ def test_fastapi_benchmark_endpoints() -> None:
     suite_id = suites_resp.json()[0]["suite_id"]
 
     # 3. List runs
-    runs_resp = client.get(f"/v1/tenants/tn_enterprise_corp/benchmarks/runs?suite_id={suite_id}")
+    runs_resp = client.get(
+        f"/v1/tenants/tn_enterprise_corp/benchmarks/runs?suite_id={suite_id}"
+    )
     assert runs_resp.status_code == 200
     runs = runs_resp.json()
     assert len(runs) >= 2
@@ -299,11 +305,21 @@ def test_battery_37_registration() -> None:
 
 def test_hexagonal_architecture_conformance() -> None:
     """Verify that domain abstraction contains no forbidden framework imports."""
-    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/benchmark_gatekeeper.py"
+    domain_file = (
+        Path(__file__).resolve().parent.parent
+        / "src/domain/abstractions/benchmark_gatekeeper.py"
+    )
     assert domain_file.exists()
 
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))
-    forbidden_prefixes = ("fastapi", "sqlalchemy", "torch", "scipy", "src.adapters", "src.routers")
+    forbidden_prefixes = (
+        "fastapi",
+        "sqlalchemy",
+        "torch",
+        "scipy",
+        "src.adapters",
+        "src.routers",
+    )
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

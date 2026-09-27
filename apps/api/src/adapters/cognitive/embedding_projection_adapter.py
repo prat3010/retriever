@@ -32,7 +32,9 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
 
             self._umap_available = True
         except ImportError:
-            logger.info("UMAP package not found; PCA and t-SNE will be used as standard engines.")
+            logger.info(
+                "UMAP package not found; PCA and t-SNE will be used as standard engines."
+            )
 
     def project_embeddings(
         self,
@@ -79,8 +81,8 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
             algo_used = "direct_identity"
             variance_explained = [1.0] * target_dims
         else:
-            coords_3d, algo_used, variance_explained, fitted_model = self._fit_transform(
-                embeddings_matrix, req, target_dims
+            coords_3d, algo_used, variance_explained, fitted_model = (
+                self._fit_transform(embeddings_matrix, req, target_dims)
             )
 
         # Normalize coordinates into [-100, 100] bounding space
@@ -93,14 +95,22 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
 
         for i in range(total_points):
             cid = cluster_ids[i] if i < len(cluster_ids) else 0
-            label = cluster_labels.get(cid, f"Topic {cid}" if cid != -1 else "Miscellaneous / Outliers")
+            label = cluster_labels.get(
+                cid, f"Topic {cid}" if cid != -1 else "Miscellaneous / Outliers"
+            )
             coord_list = [round(float(c), 4) for c in coords_3d[i]]
-            preview = (chunk_texts[i][:180] + "...") if len(chunk_texts[i]) > 180 else chunk_texts[i]
+            preview = (
+                (chunk_texts[i][:180] + "...")
+                if len(chunk_texts[i]) > 180
+                else chunk_texts[i]
+            )
 
             pt = ProjectedPoint(
                 chunk_id=chunk_ids[i],
                 document_id=document_ids[i] if i < len(document_ids) else "",
-                document_title=document_titles[i] if i < len(document_titles) else "Document",
+                document_title=document_titles[i]
+                if i < len(document_titles)
+                else "Document",
                 coordinates=coord_list,
                 cluster_id=cid,
                 cluster_label=label,
@@ -201,7 +211,9 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
 
             model = PCA(n_components=pca_dims, random_state=42)
             coords = model.fit_transform(X)
-            var_explained = [round(float(v), 4) for v in model.explained_variance_ratio_]
+            var_explained = [
+                round(float(v), 4) for v in model.explained_variance_ratio_
+            ]
         except Exception:
             mean = np.mean(X, axis=0)
             x_centered = X - mean
@@ -215,7 +227,6 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
             )
             model = None
 
-
         # Pad with zeros if pca_dims < dims
         if coords.shape[1] < dims:
             padding = np.zeros((n_samples, dims - coords.shape[1]), dtype=np.float32)
@@ -223,8 +234,9 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
 
         return coords, "pca", var_explained, model
 
-
-    def _normalize_coordinates(self, coords: np.ndarray, target_range: float = 90.0) -> np.ndarray:
+    def _normalize_coordinates(
+        self, coords: np.ndarray, target_range: float = 90.0
+    ) -> np.ndarray:
         """Center and scale coordinates to [-target_range, target_range]."""
         centered = coords - np.mean(coords, axis=0)
         max_dist = np.max(np.abs(centered))
@@ -305,7 +317,9 @@ class EmbeddingProjectionAdapter(BaseEmbeddingProjector):
         weights = np.maximum(0.01, sims[top_k_indices])
         weights /= np.sum(weights)
 
-        interpolated_coords = np.sum(coords_3d[top_k_indices] * weights[:, np.newaxis], axis=0)
+        interpolated_coords = np.sum(
+            coords_3d[top_k_indices] * weights[:, np.newaxis], axis=0
+        )
 
         return ProjectedPoint(
             chunk_id="query_vector",

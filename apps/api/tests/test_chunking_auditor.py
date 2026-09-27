@@ -25,7 +25,9 @@ def test_sliding_chunker_character_offsets() -> None:
         "facts from an external knowledge base to ground Large Language Models."
     )
     chunker = SlidingChunker()
-    chunks = chunker.split_text_with_offsets(sample_text, chunk_size=15, chunk_overlap=3)
+    chunks = chunker.split_text_with_offsets(
+        sample_text, chunk_size=15, chunk_overlap=3
+    )
 
     assert len(chunks) > 0
     for chunk in chunks:
@@ -61,7 +63,9 @@ def test_hierarchical_chunker_parent_child() -> None:
         "Second detailed sentence explaining vector embeddings and pgvector storage."
     )
     chunker = HierarchicalChunker()
-    chunks = chunker.split_text_with_offsets(sample_text, chunk_size=30, chunk_overlap=5)
+    chunks = chunker.split_text_with_offsets(
+        sample_text, chunk_size=30, chunk_overlap=5
+    )
 
     assert len(chunks) > 0
     for chunk in chunks:

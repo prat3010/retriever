@@ -12,6 +12,7 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
     Sliding window in-memory rate limiter per tenant_id / client IP.
     Protects multi-tenant inference, vector search, and ingestion against noisy neighbor starvation.
     """
+
     _instances: ClassVar[list["TenantRateLimiterMiddleware"]] = []
 
     def __init__(self, app, default_limit: int = 120, window_seconds: int = 60):
@@ -29,7 +30,9 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
 
     def _get_key(self, request: Request) -> str:
         # Check tenant_id from header or state
-        tenant_id = request.headers.get("x-tenant-id") or request.headers.get("X-Tenant-Id")
+        tenant_id = request.headers.get("x-tenant-id") or request.headers.get(
+            "X-Tenant-Id"
+        )
         if tenant_id:
             return f"tenant:{tenant_id}"
 
@@ -48,7 +51,11 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
 
         count = len(valid_timestamps)
         remaining = max(0, limit - count)
-        reset_in = int(self.window_seconds - (now - valid_timestamps[0])) if valid_timestamps else self.window_seconds
+        reset_in = (
+            int(self.window_seconds - (now - valid_timestamps[0]))
+            if valid_timestamps
+            else self.window_seconds
+        )
 
         if count >= limit:
             return True, remaining, max(1, reset_in)
@@ -57,12 +64,15 @@ class TenantRateLimiterMiddleware(BaseHTTPMiddleware):
         self._requests[key].append(now)
         return False, remaining - 1, reset_in
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         # Skip health check & options preflight
         if (
             request.url.path.startswith("/health")
             or request.url.path.startswith("/v1/health")
-            or request.url.path in ["/", "/health", "/v1/health", "/docs", "/openapi.json"]
+            or request.url.path
+            in ["/", "/health", "/v1/health", "/docs", "/openapi.json"]
             or request.method == "OPTIONS"
         ):
             return await call_next(request)

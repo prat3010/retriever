@@ -47,7 +47,9 @@ class LoraEmbeddingAdapter:
         else:
             # Gaussian init for A, Zero init for B (exact identity forward at start)
             rng = np.random.default_rng(seed=42)
-            self.matrix_a = (rng.standard_normal((self.rank, self.dim)) * (1.0 / np.sqrt(self.dim))).astype(np.float32)
+            self.matrix_a = (
+                rng.standard_normal((self.rank, self.dim)) * (1.0 / np.sqrt(self.dim))
+            ).astype(np.float32)
             self.matrix_b = np.zeros((self.dim, self.rank), dtype=np.float32)
 
     def adapt_vector(self, vector: list[float] | np.ndarray) -> list[float]:
@@ -192,16 +194,21 @@ class ContrastiveTrainer:
             grad_p_normed = grad_sim.T @ q_normed
 
             # Gradients through L2 normalization:
-            def backprop_norm(grad_out: np.ndarray, x: np.ndarray, norms: np.ndarray) -> np.ndarray:
+            def backprop_norm(
+                grad_out: np.ndarray, x: np.ndarray, norms: np.ndarray
+            ) -> np.ndarray:
                 dot = np.sum(grad_out * x, axis=1, keepdims=True)
-                return (grad_out - x * (dot / (norms ** 2))) / norms
+                return (grad_out - x * (dot / (norms**2))) / norms
 
             grad_q_hat = backprop_norm(grad_q_normed, q_hat, q_norms)
             grad_p_hat = backprop_norm(grad_p_normed, p_hat, p_norms)
 
             # Combined residual gradients
             grad_a = scale * (h_q.T @ grad_q_hat + h_p.T @ grad_p_hat)
-            grad_b = scale * (q_raw.T @ (grad_q_hat @ adapter.matrix_a.T) + p_raw.T @ (grad_p_hat @ adapter.matrix_a.T))
+            grad_b = scale * (
+                q_raw.T @ (grad_q_hat @ adapter.matrix_a.T)
+                + p_raw.T @ (grad_p_hat @ adapter.matrix_a.T)
+            )
 
             # 3. Adam weight update with gradient clipping
             np.clip(grad_a, -1.0, 1.0, out=grad_a)
@@ -209,18 +216,22 @@ class ContrastiveTrainer:
 
             step += 1
             m_a = beta1 * m_a + (1 - beta1) * grad_a
-            v_a = beta2 * v_a + (1 - beta2) * (grad_a ** 2)
+            v_a = beta2 * v_a + (1 - beta2) * (grad_a**2)
             m_b = beta1 * m_b + (1 - beta1) * grad_b
-            v_b = beta2 * v_b + (1 - beta2) * (grad_b ** 2)
+            v_b = beta2 * v_b + (1 - beta2) * (grad_b**2)
 
-            m_a_hat = m_a / (1 - beta1 ** step)
-            v_a_hat = v_a / (1 - beta2 ** step)
-            m_b_hat = m_b / (1 - beta1 ** step)
-            v_b_hat = v_b / (1 - beta2 ** step)
+            m_a_hat = m_a / (1 - beta1**step)
+            v_a_hat = v_a / (1 - beta2**step)
+            m_b_hat = m_b / (1 - beta1**step)
+            v_b_hat = v_b / (1 - beta2**step)
 
             # Cosine decay schedule
             current_lr = lr * 0.5 * (1.0 + np.cos(np.pi * epoch / epochs))
-            adapter.matrix_a -= (current_lr * m_a_hat / (np.sqrt(v_a_hat) + eps)).astype(np.float32)
-            adapter.matrix_b -= (current_lr * m_b_hat / (np.sqrt(v_b_hat) + eps)).astype(np.float32)
+            adapter.matrix_a -= (
+                current_lr * m_a_hat / (np.sqrt(v_a_hat) + eps)
+            ).astype(np.float32)
+            adapter.matrix_b -= (
+                current_lr * m_b_hat / (np.sqrt(v_b_hat) + eps)
+            ).astype(np.float32)
 
         return final_loss

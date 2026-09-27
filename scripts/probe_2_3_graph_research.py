@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Probe 2.3: Multi-Hop Knowledge Graph Reasoning (graph_research)"""
+
 import urllib.request
 import json
 import time
@@ -15,8 +16,7 @@ print("🔬 Running Probe 2.3: Multi-Hop Knowledge Graph Reasoning Verification.
 # 1. Summary Check
 summary_url = "http://localhost:8000/v1/tenants/graph_research/graph"
 req_sum = urllib.request.Request(
-    summary_url,
-    headers={"Authorization": f"Bearer {api_key}"}
+    summary_url, headers={"Authorization": f"Bearer {api_key}"}
 )
 
 start = time.perf_counter()
@@ -30,22 +30,18 @@ with urllib.request.urlopen(req_sum, timeout=15) as resp:
     assert data_sum.get("storage_engine") == "neo4j", "Storage engine must be neo4j"
     assert data_sum.get("neo4j_status") == "online", "Neo4j status must be online"
     assert data_sum.get("total_triples", 0) > 0, "Total triples must be > 0"
-    print("  ✓ PASS: Neo4j Knowledge Graph summary verified online with active triples!")
+    print(
+        "  ✓ PASS: Neo4j Knowledge Graph summary verified online with active triples!"
+    )
 
 # 2. Multi-Hop Query Check
 query_url = "http://localhost:8000/v1/tenants/graph_research/graph/query"
-payload = {
-    "entity": "index sharding",
-    "max_hops": 2
-}
+payload = {"entity": "index sharding", "max_hops": 2}
 
 req_query = urllib.request.Request(
     query_url,
     data=json.dumps(payload).encode(),
-    headers={
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
 )
 
 start = time.perf_counter()
@@ -60,7 +56,11 @@ with urllib.request.urlopen(req_query, timeout=15) as resp:
     print(f"  • Connected Entities: {connected}")
     assert len(triples) > 0, "Must return at least 1 triple"
     for t in triples:
-        print(f"    - ({t['subject']}) -[{t['predicate']}]-> ({t['object']}) [conf: {t.get('confidence')}]")
-    print("  ✓ PASS: Multi-hop graph query successfully traversed entity relationships!")
+        print(
+            f"    - ({t['subject']}) -[{t['predicate']}]-> ({t['object']}) [conf: {t.get('confidence')}]"
+        )
+    print(
+        "  ✓ PASS: Multi-hop graph query successfully traversed entity relationships!"
+    )
 
 print("\n✅ PROBE 2.3 ALL ASSERTIONS PASSED (100% Green)!\n")

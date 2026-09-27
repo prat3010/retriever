@@ -38,7 +38,9 @@ class PgCognitiveMemoryRepository(CognitiveMemoryRepositoryProtocol):
             db_node = CognitiveMemoryDb(
                 id=node.id,
                 tenant_id=tenant_uuid,
-                memory_type=node.memory_type.value if hasattr(node.memory_type, "value") else str(node.memory_type),
+                memory_type=node.memory_type.value
+                if hasattr(node.memory_type, "value")
+                else str(node.memory_type),
                 query=node.query,
                 distilled_insight=node.distilled_insight,
                 tool_chain=node.tool_chain,
@@ -65,9 +67,15 @@ class PgCognitiveMemoryRepository(CognitiveMemoryRepositoryProtocol):
             return []
 
         async with tenant_session(tenant_id) as session:
-            stmt = select(CognitiveMemoryDb).where(CognitiveMemoryDb.tenant_id == tenant_uuid)
+            stmt = select(CognitiveMemoryDb).where(
+                CognitiveMemoryDb.tenant_id == tenant_uuid
+            )
             if memory_type is not None:
-                m_type = memory_type.value if hasattr(memory_type, "value") else str(memory_type)
+                m_type = (
+                    memory_type.value
+                    if hasattr(memory_type, "value")
+                    else str(memory_type)
+                )
                 stmt = stmt.where(CognitiveMemoryDb.memory_type == m_type)
 
             result = await session.execute(stmt)
@@ -80,7 +88,9 @@ class PgCognitiveMemoryRepository(CognitiveMemoryRepositoryProtocol):
                 except ValueError:
                     mem_t = MemoryType.EPISODIC
 
-                last_acc = row.last_accessed_at.timestamp() if row.last_accessed_at else 0.0
+                last_acc = (
+                    row.last_accessed_at.timestamp() if row.last_accessed_at else 0.0
+                )
                 created = row.created_at.timestamp() if row.created_at else 0.0
 
                 node = EpisodicMemoryNode(

@@ -31,10 +31,19 @@ class GraphSearchResult(BaseModel):
 class GraphCapabilities(BaseModel):
     """Machine capability profile and supported graph engines."""
 
-    machine_profile: str = Field(..., description="Host hardware profile (e.g. 'macbook', 'oracle_vm_lean')")
-    supported_engines: list[str] = Field(default_factory=list, description="List of allowed graph engine types")
-    active_engine: str = Field(..., description="Currently active graph engine ('postgres' | 'neo4j')")
-    neo4j_status: str = Field(..., description="Status of Neo4j connection ('online' | 'offline' | 'unsupported')")
+    machine_profile: str = Field(
+        ..., description="Host hardware profile (e.g. 'macbook', 'oracle_vm_lean')"
+    )
+    supported_engines: list[str] = Field(
+        default_factory=list, description="List of allowed graph engine types"
+    )
+    active_engine: str = Field(
+        ..., description="Currently active graph engine ('postgres' | 'neo4j')"
+    )
+    neo4j_status: str = Field(
+        ...,
+        description="Status of Neo4j connection ('online' | 'offline' | 'unsupported')",
+    )
     message: str = Field(..., description="Human-readable status or guidance message")
 
 
@@ -69,10 +78,11 @@ class BaseGraphRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all_triples(self, tenant_id: str, limit: int = 1000) -> list[EntityTriple]:
+    async def get_all_triples(
+        self, tenant_id: str, limit: int = 1000
+    ) -> list[EntityTriple]:
         """Fetch all entity relationship triples for a tenant."""
         pass
-
 
 
 class GraphCommunity(BaseModel):
@@ -80,13 +90,26 @@ class GraphCommunity(BaseModel):
 
     community_id: str = Field(..., description="Unique community identifier")
     tenant_id: str = Field(..., description="Tenant ID owning the community")
-    level: int = Field(default=0, description="Hierarchy level (0: micro-cluster, 1: domain, 2: macro-theme)")
+    level: int = Field(
+        default=0,
+        description="Hierarchy level (0: micro-cluster, 1: domain, 2: macro-theme)",
+    )
     title: str = Field(..., description="Title or theme of the community")
-    entities: list[str] = Field(default_factory=list, description="List of entity names in this community")
-    triples: list[EntityTriple] = Field(default_factory=list, description="Core relationship triples in community")
-    weight: float = Field(default=1.0, description="Community modularity / edge density weight")
-    summary: str = Field(default="", description="Narrative summary of this community cluster")
-    sub_community_ids: list[str] = Field(default_factory=list, description="Child sub-community IDs")
+    entities: list[str] = Field(
+        default_factory=list, description="List of entity names in this community"
+    )
+    triples: list[EntityTriple] = Field(
+        default_factory=list, description="Core relationship triples in community"
+    )
+    weight: float = Field(
+        default=1.0, description="Community modularity / edge density weight"
+    )
+    summary: str = Field(
+        default="", description="Narrative summary of this community cluster"
+    )
+    sub_community_ids: list[str] = Field(
+        default_factory=list, description="Child sub-community IDs"
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -120,4 +143,3 @@ class BaseCommunitySummarizer(ABC):
     ) -> str:
         """Generate executive narrative summary for a community cluster."""
         pass
-

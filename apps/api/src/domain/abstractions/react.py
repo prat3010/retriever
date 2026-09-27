@@ -53,7 +53,9 @@ class ReActEvent(BaseModel):
 
     event_id: str = Field(..., description="Unique event UUID")
     event_type: ReActEventType
-    step_index: int = Field(default=0, ge=0, description="Zero-based reasoning iteration counter")
+    step_index: int = Field(
+        default=0, ge=0, description="Zero-based reasoning iteration counter"
+    )
     state: ReActState
     data: dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=_utc_now)
@@ -62,13 +64,26 @@ class ReActEvent(BaseModel):
 class ReActLoopConfig(BaseModel):
     """Configuration hyperparameters governing the autonomous ReAct loop."""
 
-    max_turns: int = Field(default=8, ge=1, le=20, description="Strict maximum reasoning loop turns")
-    timeout_seconds: float = Field(default=30.0, ge=5.0, le=120.0, description="Wall-clock loop execution timeout")
-    anti_loop_threshold: int = Field(
-        default=2, ge=2, le=5, description="Max allowed identical tool call signatures before tripping circuit breaker"
+    max_turns: int = Field(
+        default=8, ge=1, le=20, description="Strict maximum reasoning loop turns"
     )
-    self_healing_enabled: bool = Field(default=True, description="Whether tool execution errors trigger self-healing prompt recovery")
-    allowed_tools: list[str] | None = Field(default=None, description="Optional tool whitelist; None allows all registered batteries")
+    timeout_seconds: float = Field(
+        default=30.0, ge=5.0, le=120.0, description="Wall-clock loop execution timeout"
+    )
+    anti_loop_threshold: int = Field(
+        default=2,
+        ge=2,
+        le=5,
+        description="Max allowed identical tool call signatures before tripping circuit breaker",
+    )
+    self_healing_enabled: bool = Field(
+        default=True,
+        description="Whether tool execution errors trigger self-healing prompt recovery",
+    )
+    allowed_tools: list[str] | None = Field(
+        default=None,
+        description="Optional tool whitelist; None allows all registered batteries",
+    )
 
 
 class ReActExecutionTrace(BaseModel):

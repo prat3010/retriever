@@ -27,7 +27,12 @@ def _to_bounding_box(val: Any) -> BoundingBox | None:
         return val
     if isinstance(val, list | tuple) and len(val) == 4:
         try:
-            return BoundingBox(ymin=float(val[0]), xmin=float(val[1]), ymax=float(val[2]), xmax=float(val[3]))
+            return BoundingBox(
+                ymin=float(val[0]),
+                xmin=float(val[1]),
+                ymax=float(val[2]),
+                xmax=float(val[3]),
+            )
         except Exception:
             return None
     if isinstance(val, dict):
@@ -114,7 +119,10 @@ class MultimodalGraphService(BaseMultimodalGraphService):
 
         for t in all_triples:
             meta = t.metadata or {}
-            is_visual = meta.get("source") in {"visual_schematic", "cross_modal_linking"}
+            is_visual = meta.get("source") in {
+                "visual_schematic",
+                "cross_modal_linking",
+            }
             is_cross_modal = meta.get("source") == "cross_modal_linking"
             if is_cross_modal:
                 cross_modal_count += 1
@@ -128,7 +136,9 @@ class MultimodalGraphService(BaseMultimodalGraphService):
                 nodes_dict[src_key] = MultimodalGraphNode(
                     id=src_key,
                     label=src_label,
-                    node_type="visual_component" if is_visual and box_obj else "textual_entity",
+                    node_type="visual_component"
+                    if is_visual and box_obj
+                    else "textual_entity",
                     bounding_box=box_obj,
                     diagram_id=meta.get("diagram_id"),
                     document_id=t.document_id,
@@ -144,7 +154,9 @@ class MultimodalGraphService(BaseMultimodalGraphService):
                 nodes_dict[tgt_key] = MultimodalGraphNode(
                     id=tgt_key,
                     label=tgt_label,
-                    node_type="visual_component" if is_visual and box_obj else "textual_entity",
+                    node_type="visual_component"
+                    if is_visual and box_obj
+                    else "textual_entity",
                     bounding_box=box_obj,
                     diagram_id=meta.get("diagram_id"),
                     document_id=t.document_id,
@@ -171,7 +183,9 @@ class MultimodalGraphService(BaseMultimodalGraphService):
         if request.element_types:
             allowed = {et.value.lower() for et in request.element_types}
             nodes_dict = {
-                k: n for k, n in nodes_dict.items() if not n.element_type or n.element_type.value.lower() in allowed
+                k: n
+                for k, n in nodes_dict.items()
+                if not n.element_type or n.element_type.value.lower() in allowed
             }
 
         return MultimodalGraphResponse(
@@ -192,5 +206,7 @@ class MultimodalGraphService(BaseMultimodalGraphService):
         """Format an authentic visual diagram citation with normalized bounding box."""
         if bounding_box and len(bounding_box) == 4:
             box_str = ",".join(f"{coord:.3f}" for coord in bounding_box)
-            return f'[Schematic: {diagram_filename} | Box: {box_str} | "{element_label}"]'
+            return (
+                f'[Schematic: {diagram_filename} | Box: {box_str} | "{element_label}"]'
+            )
         return f'[Schematic: {diagram_filename} | "{element_label}"]'

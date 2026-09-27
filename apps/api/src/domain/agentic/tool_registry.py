@@ -63,9 +63,7 @@ class ToolRegistry:
         """List registered tool definitions, optionally filtered by whitelist."""
         if allowed_tools is None:
             return list(self._tools.values())
-        return [
-            defn for name, defn in self._tools.items() if name in allowed_tools
-        ]
+        return [defn for name, defn in self._tools.items() if name in allowed_tools]
 
     async def execute_tool(
         self,

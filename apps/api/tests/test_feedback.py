@@ -72,14 +72,20 @@ async def test_submit_feedback_success(
 
     # Patch the DB session inside the endpoint
     mock_db_session = AsyncMock()
-    mock_db_session.execute.return_value = MagicMock(scalar_one_or_none=lambda: mock_msg)
+    mock_db_session.execute.return_value = MagicMock(
+        scalar_one_or_none=lambda: mock_msg
+    )
 
     # Patch tenant_session from connection module where it is imported/used
-    with patch("src.adapters.database.inference_repository.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.database.inference_repository.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_db_session
 
         # Mock repository submit method
-        with patch.object(feedback_repo, "submit_feedback", new_callable=AsyncMock) as mock_submit:
+        with patch.object(
+            feedback_repo, "submit_feedback", new_callable=AsyncMock
+        ) as mock_submit:
             client = TestClient(app)
             response = client.post(
                 f"/v1/tenants/{tenant_id}/chat/sessions/{session_id}/messages/{message_id}/feedback",
@@ -117,7 +123,9 @@ async def test_submit_feedback_message_not_found(
     mock_db_session = AsyncMock()
     mock_db_session.execute.return_value = MagicMock(scalar_one_or_none=lambda: None)
 
-    with patch("src.adapters.database.inference_repository.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.database.inference_repository.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_db_session
 
         client = TestClient(app)
@@ -144,7 +152,9 @@ async def test_admin_get_analytics() -> None:
         "recent_comments": [{"rating": 1, "text": "excellent"}],
     }
 
-    with patch.object(feedback_repo, "get_feedback_analytics", new_callable=AsyncMock) as mock_get:
+    with patch.object(
+        feedback_repo, "get_feedback_analytics", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = mock_analytics
 
         client = TestClient(app)

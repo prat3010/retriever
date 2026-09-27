@@ -32,13 +32,10 @@ SYSTEM_TENANT_UUID = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
 class SqlAdminRepository(AdminRepository):
-
     async def get_platform_stats(self) -> dict[str, int]:
         async with tenant_session(bypass_rls=True) as session:
             tenants_total = (
-                await session.execute(
-                    select(func.count(TenantDb.tenant_id))
-                )
+                await session.execute(select(func.count(TenantDb.tenant_id)))
             ).scalar() or 0
             tenants_active = (
                 await session.execute(
@@ -64,46 +61,30 @@ class SqlAdminRepository(AdminRepository):
             ).scalar() or 0
 
             chunks_total = (
-                await session.execute(
-                    select(func.count(DocumentChunkDb.chunk_id))
-                )
+                await session.execute(select(func.count(DocumentChunkDb.chunk_id)))
             ).scalar() or 0
             vectors_total = (
-                await session.execute(
-                    select(func.count(VectorRecordDb.chunk_id))
-                )
+                await session.execute(select(func.count(VectorRecordDb.chunk_id)))
             ).scalar() or 0
 
             keys_total = (
-                await session.execute(
-                    select(func.count(ApiKeyDb.key_id))
-                )
+                await session.execute(select(func.count(ApiKeyDb.key_id)))
             ).scalar() or 0
             users_total = (
-                await session.execute(
-                    select(func.count(UserDb.user_id))
-                )
+                await session.execute(select(func.count(UserDb.user_id)))
             ).scalar() or 0
             sessions_total = (
-                await session.execute(
-                    select(func.count(ChatSessionDb.session_id))
-                )
+                await session.execute(select(func.count(ChatSessionDb.session_id)))
             ).scalar() or 0
             messages_total = (
-                await session.execute(
-                    select(func.count(ChatMessageDb.message_id))
-                )
+                await session.execute(select(func.count(ChatMessageDb.message_id)))
             ).scalar() or 0
 
             audit_logs_total = (
-                await session.execute(
-                    select(func.count(AuditLogDb.log_id))
-                )
+                await session.execute(select(func.count(AuditLogDb.log_id)))
             ).scalar() or 0
             eval_runs_total = (
-                await session.execute(
-                    select(func.count(EvalRunDb.run_id))
-                )
+                await session.execute(select(func.count(EvalRunDb.run_id)))
             ).scalar() or 0
 
         return {
@@ -125,14 +106,10 @@ class SqlAdminRepository(AdminRepository):
             "evaluations": {"runs": eval_runs_total},
         }
 
-    async def reset_platform(
-        self, include_system_tenant: bool = False
-    ) -> int:
+    async def reset_platform(self, include_system_tenant: bool = False) -> int:
         async with tenant_session(bypass_rls=True) as session:
             result = await session.execute(
-                select(TenantDb).where(
-                    TenantDb.tenant_id != SYSTEM_TENANT_UUID
-                )
+                select(TenantDb).where(TenantDb.tenant_id != SYSTEM_TENANT_UUID)
             )
             tenants = result.scalars().all()
 
@@ -144,19 +121,23 @@ class SqlAdminRepository(AdminRepository):
                         try:
                             shutil.rmtree(tenant_dir)
                         except Exception as err:
-                            logger.warning("Failed to remove tenant storage directory", extra={"tenant_dir": tenant_dir, "error": str(err)})
+                            logger.warning(
+                                "Failed to remove tenant storage directory",
+                                extra={"tenant_dir": tenant_dir, "error": str(err)},
+                            )
                 await session.delete(t)
 
             if include_system_tenant:
                 for base_dir in ["./storage", "apps/api/storage"]:
-                    tenant_dir = os.path.join(
-                        base_dir, str(SYSTEM_TENANT_UUID)
-                    )
+                    tenant_dir = os.path.join(base_dir, str(SYSTEM_TENANT_UUID))
                     if os.path.exists(tenant_dir):
                         try:
                             shutil.rmtree(tenant_dir)
                         except Exception as err:
-                            logger.warning("Failed to remove system tenant storage directory", extra={"tenant_dir": tenant_dir, "error": str(err)})
+                            logger.warning(
+                                "Failed to remove system tenant storage directory",
+                                extra={"tenant_dir": tenant_dir, "error": str(err)},
+                            )
 
                 tables = [
                     (
@@ -213,9 +194,7 @@ class SqlAdminRepository(AdminRepository):
                     ),
                 ]
                 for stmt, col in tables:
-                    await session.execute(
-                        stmt.where(col == SYSTEM_TENANT_UUID)
-                    )
+                    await session.execute(stmt.where(col == SYSTEM_TENANT_UUID))
                 await session.execute(
                     ConfigurationDb.__table__.delete().where(
                         (ConfigurationDb.tenant_id == SYSTEM_TENANT_UUID)

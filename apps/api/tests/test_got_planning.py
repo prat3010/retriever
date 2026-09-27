@@ -43,13 +43,23 @@ def test_battery_38_registration() -> None:
 
 def test_hexagonal_architecture_conformance() -> None:
     """Verify that got_planner domain abstraction contains no forbidden framework imports."""
-    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/got_planner.py"
+    domain_file = (
+        Path(__file__).resolve().parent.parent
+        / "src/domain/abstractions/got_planner.py"
+    )
     if not domain_file.exists():
         domain_file = Path("apps/api/src/domain/abstractions/got_planner.py")
     assert domain_file.exists()
 
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))
-    forbidden_prefixes = ("fastapi", "sqlalchemy", "torch", "scipy", "src.adapters", "src.routers")
+    forbidden_prefixes = (
+        "fastapi",
+        "sqlalchemy",
+        "torch",
+        "scipy",
+        "src.adapters",
+        "src.routers",
+    )
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -68,16 +78,22 @@ def test_ebbinghaus_retention_mathematics() -> None:
     now = 1000000.0
 
     # 1. At creation time (dt = 0): retention must be 1.0
-    ret_0 = compute_ebbinghaus_retention(created_at=now, stability_days=5.0, current_time=now)
+    ret_0 = compute_ebbinghaus_retention(
+        created_at=now, stability_days=5.0, current_time=now
+    )
     assert ret_0 == 1.0
 
     # 2. At dt = 5 days with stability S = 5 days: R = exp(-1) ≈ 0.3679
     five_days_sec = 5 * 86400.0
-    ret_5d = compute_ebbinghaus_retention(created_at=now, stability_days=5.0, current_time=now + five_days_sec)
+    ret_5d = compute_ebbinghaus_retention(
+        created_at=now, stability_days=5.0, current_time=now + five_days_sec
+    )
     assert pytest.approx(ret_5d, rel=1e-2) == 0.3679
 
     # 3. Very old memory with stability 1 day
-    ret_old = compute_ebbinghaus_retention(created_at=now, stability_days=1.0, current_time=now + (30 * 86400.0))
+    ret_old = compute_ebbinghaus_retention(
+        created_at=now, stability_days=1.0, current_time=now + (30 * 86400.0)
+    )
     assert ret_old < 0.001
 
 
@@ -106,7 +122,10 @@ def test_thought_scoring_heuristics() -> None:
 async def test_got_dag_lifecycle_and_acyclicity() -> None:
     """Test full GoT graph creation, branching, aggregation, and acyclicity."""
     adapter = GoTPlannerAdapter()
-    req = GoTPlanRequest(query="Decouple vector search from prompt synthesis in sovereign mesh", branching_factor=3)
+    req = GoTPlanRequest(
+        query="Decouple vector search from prompt synthesis in sovereign mesh",
+        branching_factor=3,
+    )
     graph = await adapter.create_plan("tn_test_got", req)
 
     assert graph.graph_id.startswith("got_plan_")
@@ -115,7 +134,11 @@ async def test_got_dag_lifecycle_and_acyclicity() -> None:
     assert graph.nodes[graph.root_id].thought_type == GoTThoughtType.ROOT
 
     # Step 1: Generate 3 branches
-    step_gen = GoTStepRequest(action="generate", target_node_ids=[graph.root_id], parameters={"branching_factor": 3})
+    step_gen = GoTStepRequest(
+        action="generate",
+        target_node_ids=[graph.root_id],
+        parameters={"branching_factor": 3},
+    )
     graph_gen = await adapter.step_plan("tn_test_got", graph.graph_id, step_gen)
     assert len(graph_gen.nodes) == 4
     assert len(graph_gen.edges) == 3
@@ -129,7 +152,11 @@ async def test_got_dag_lifecycle_and_acyclicity() -> None:
 
     assert len(graph_agg.nodes) == 5
     # Find aggregation node
-    agg_nodes = [n for n in graph_agg.nodes.values() if n.thought_type == GoTThoughtType.AGGREGATION]
+    agg_nodes = [
+        n
+        for n in graph_agg.nodes.values()
+        if n.thought_type == GoTThoughtType.AGGREGATION
+    ]
     assert len(agg_nodes) == 1
     agg_node = agg_nodes[0]
     assert len(agg_node.parent_ids) == 2
@@ -145,7 +172,9 @@ async def test_got_dag_lifecycle_and_acyclicity() -> None:
 async def test_autonomous_execution_and_hierarchical_memory() -> None:
     """Verify autonomous execution converges and populates L1 and L2 memories."""
     adapter = GoTPlannerAdapter()
-    req = GoTPlanRequest(query="Deploy zero-trust micro-enclave with Kyber post-quantum attestation")
+    req = GoTPlanRequest(
+        query="Deploy zero-trust micro-enclave with Kyber post-quantum attestation"
+    )
     graph = await adapter.create_plan("tn_quantum", req)
 
     # Autonomous execution
@@ -161,7 +190,9 @@ async def test_autonomous_execution_and_hierarchical_memory() -> None:
     assert mem_view.average_retention > 0.5
 
     # Distill into L3 Semantic memory
-    distill_req = DistillationRequest(graph_id=converged_graph.graph_id, target_layer=MemoryLayer.L3_SEMANTIC)
+    distill_req = DistillationRequest(
+        graph_id=converged_graph.graph_id, target_layer=MemoryLayer.L3_SEMANTIC
+    )
     distill_res = await adapter.distill_graph("tn_quantum", distill_req)
     assert distill_res.status == "distilled"
     assert distill_res.layer == MemoryLayer.L3_SEMANTIC
@@ -234,18 +265,24 @@ def test_fastapi_rest_endpoints() -> None:
     assert graph_id.startswith("got_plan_")
 
     # 4. Get plan DAG
-    get_resp = client.get(f"/v1/tenants/{tenant_id}/got/plans/{graph_id}", headers=headers)
+    get_resp = client.get(
+        f"/v1/tenants/{tenant_id}/got/plans/{graph_id}", headers=headers
+    )
     assert get_resp.status_code == 200
     assert get_resp.json()["graph_id"] == graph_id
 
     # 5. Autonomous execute plan
-    exec_resp = client.post(f"/v1/tenants/{tenant_id}/got/plans/{graph_id}/execute", headers=headers)
+    exec_resp = client.post(
+        f"/v1/tenants/{tenant_id}/got/plans/{graph_id}/execute", headers=headers
+    )
     assert exec_resp.status_code == 200
     exec_data = exec_resp.json()
     assert exec_data["is_converged"] is True
 
     # 6. Memory hierarchy
-    mem_resp = client.get(f"/v1/tenants/{tenant_id}/got/memory/hierarchy", headers=headers)
+    mem_resp = client.get(
+        f"/v1/tenants/{tenant_id}/got/memory/hierarchy", headers=headers
+    )
     assert mem_resp.status_code == 200
     mem_data = mem_resp.json()
     assert mem_data["total_nodes"] >= 2

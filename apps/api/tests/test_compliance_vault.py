@@ -27,6 +27,7 @@ client = TestClient(app)
 
 # ── 1. Luhn Checksum & Credit Card Entity Tests ──────────────────────────────
 
+
 def test_luhn_checksum_validation():
     """Verify Luhn algorithm correctly distinguishes real card checksums from random numbers."""
     # Valid Visa test numbers
@@ -45,7 +46,9 @@ def test_pii_anonymizer_credit_card_luhn():
         "Tracking number is 1234-5678-9012-3456 (invalid card)."
     )
 
-    res = anonymizer.redact(PiiRedactionRequest(text=text, categories=[PiiCategory.FINANCIAL]))
+    res = anonymizer.redact(
+        PiiRedactionRequest(text=text, categories=[PiiCategory.FINANCIAL])
+    )
 
     assert "4532-0151-1283-0366" not in res.redacted_text
     assert "[REDACTED_CREDIT_CARD]" in res.redacted_text
@@ -54,6 +57,7 @@ def test_pii_anonymizer_credit_card_luhn():
 
 
 # ── 2. Enterprise Secrets, Identifiers & Healthcare (HIPAA) ──────────────────
+
 
 def test_pii_anonymizer_enterprise_entities():
     """Verify recognition of secrets (AWS, OpenAI, GitHub), HIPAA medical IDs, and network IPs."""
@@ -78,6 +82,7 @@ def test_pii_anonymizer_enterprise_entities():
 
 
 # ── 3. Masking Modes: Synthetic vs Cryptographic Pseudonymization ────────────
+
 
 def test_pii_anonymizer_masking_modes():
     """Verify synthetic masking and deterministic cryptographic pseudonymization."""
@@ -105,6 +110,7 @@ def test_pii_anonymizer_masking_modes():
 
 
 # ── 4. Cryptographic GDPR Erasure Certificate Issuance & Verification ─────────
+
 
 def test_cryptographic_compliance_certificate():
     """Verify HMAC-SHA256 signature issuance, valid verification, and tamper detection."""
@@ -142,8 +148,15 @@ def test_cryptographic_compliance_certificate():
 
 # ── 5. Admin API Endpoints for Compliance Vault ─────────────────────────────
 
-@patch("src.routers.admin.hard_purge_service.purge_document_with_certificate", new_callable=AsyncMock)
-@patch("src.routers.admin.hard_purge_service.purge_tenant_with_certificate", new_callable=AsyncMock)
+
+@patch(
+    "src.routers.admin.hard_purge_service.purge_document_with_certificate",
+    new_callable=AsyncMock,
+)
+@patch(
+    "src.routers.admin.hard_purge_service.purge_tenant_with_certificate",
+    new_callable=AsyncMock,
+)
 def test_admin_compliance_vault_endpoints(mock_purge_tenant, mock_purge_doc):
     """Verify admin endpoints return signed compliance certificates upon hard-purges."""
     app.dependency_overrides[verify_admin_key] = lambda: True
@@ -177,7 +190,10 @@ def test_admin_compliance_vault_endpoints(mock_purge_tenant, mock_purge_doc):
     # 2. Anonymize endpoint with full entity detection
     anon_res = client.post(
         f"/v1/admin/tenants/{tenant_id}/compliance/anonymize",
-        json={"text": "Contact john@example.com with SSN 123-45-6789.", "masking_mode": "redact"},
+        json={
+            "text": "Contact john@example.com with SSN 123-45-6789.",
+            "masking_mode": "redact",
+        },
         headers={"X-Admin-Key": "test"},
     )
     assert anon_res.status_code == 200
@@ -189,6 +205,7 @@ def test_admin_compliance_vault_endpoints(mock_purge_tenant, mock_purge_doc):
 
 
 # ── 6. Hexagonal Architecture Boundaries ────────────────────────────────────
+
 
 def test_hexagonal_architecture_compliance():
     """Ensure compliance domain layer imports zero infrastructure or web frameworks."""
@@ -212,7 +229,11 @@ def test_hexagonal_architecture_compliance():
             if isinstance(node, ast.Import):
                 for name in node.names:
                     for f in forbidden:
-                        assert not name.name.startswith(f), f"Illegal import '{name.name}' in {p}"
+                        assert not name.name.startswith(f), (
+                            f"Illegal import '{name.name}' in {p}"
+                        )
             elif isinstance(node, ast.ImportFrom) and node.module:
                 for f in forbidden:
-                    assert not node.module.startswith(f), f"Illegal import from '{node.module}' in {p}"
+                    assert not node.module.startswith(f), (
+                        f"Illegal import from '{node.module}' in {p}"
+                    )

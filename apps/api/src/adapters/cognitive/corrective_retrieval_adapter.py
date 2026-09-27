@@ -34,8 +34,9 @@ Output JSON: {{"status": "CORRECT"|"AMBIGUOUS"|"INCORRECT", "confidence_score": 
 
 
 class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
-
-    def __init__(self, llm: LlmProvider, judge_model: str = "meta-llama/llama-3.3-70b-instruct") -> None:
+    def __init__(
+        self, llm: LlmProvider, judge_model: str = "meta-llama/llama-3.3-70b-instruct"
+    ) -> None:
         self.llm = llm
         self.judge_model = judge_model
 
@@ -66,7 +67,11 @@ class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
                             "reason": {"type": "string"},
                             "reformulated_query": {"type": "string"},
                         },
-                        "required": ["needs_re_retrieval", "confidence_score", "reason"],
+                        "required": [
+                            "needs_re_retrieval",
+                            "confidence_score",
+                            "reason",
+                        ],
                     },
                 ),
                 {"model": self.judge_model},
@@ -124,7 +129,10 @@ class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
                     json_schema={
                         "type": "object",
                         "properties": {
-                            "status": {"type": "string", "enum": ["CORRECT", "AMBIGUOUS", "INCORRECT"]},
+                            "status": {
+                                "type": "string",
+                                "enum": ["CORRECT", "AMBIGUOUS", "INCORRECT"],
+                            },
                             "confidence_score": {"type": "number"},
                             "reason": {"type": "string"},
                             "reformulated_query": {"type": "string"},
@@ -152,7 +160,9 @@ class LLMCorrectiveRetrievalAdapter(CorrectiveRetrievalProvider):
                 reformulated_query=data.get("reformulated_query") or None,
             )
         except Exception as err:
-            logger.warning(f"CRAG LLM evaluate_candidates failed, falling back to heuristic scoring: {err}")
+            logger.warning(
+                f"CRAG LLM evaluate_candidates failed, falling back to heuristic scoring: {err}"
+            )
             # Heuristic fallback based on candidate scores
             avg_score = sum(c.score for c in candidates) / len(candidates)
             if avg_score >= upper_threshold:

@@ -111,7 +111,9 @@ class AstBoundaryValidator(AstBoundaryValidatorProtocol):
                 # Ignore dunder methods like __init__
                 if not node.name.startswith("__"):
                     total_functions += 1
-                    if node.returns is not None or any(arg.annotation is not None for arg in node.args.args):
+                    if node.returns is not None or any(
+                        arg.annotation is not None for arg in node.args.args
+                    ):
                         annotated_functions += 1
 
         if total_functions > 0 and (annotated_functions / total_functions) < 0.5:
@@ -120,7 +122,10 @@ class AstBoundaryValidator(AstBoundaryValidatorProtocol):
                 f"Type annotation warning: Only {annotated_functions}/{total_functions} functions have type hints in {filename}."
             )
 
-        is_valid = len([v for v in violations if not v.startswith("Type annotation warning")]) == 0
+        is_valid = (
+            len([v for v in violations if not v.startswith("Type annotation warning")])
+            == 0
+        )
 
         summary = (
             f"Verified {filename}: All Hexagonal rules passed (0 framework imports in domain)."
@@ -152,7 +157,9 @@ class AstBoundaryValidator(AstBoundaryValidatorProtocol):
                 ScaffoldedModuleType.ABSTRACTIONS,
                 ScaffoldedModuleType.SERVICE,
             )
-            res = self.validate_code(f.content, filename=f.rel_path, is_domain=is_domain)
+            res = self.validate_code(
+                f.content, filename=f.rel_path, is_domain=is_domain
+            )
             if not res.is_valid:
                 all_valid = False
             all_violations.extend([f"[{f.rel_path}] {v}" for v in res.violations])

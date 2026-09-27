@@ -32,8 +32,15 @@ def test_effort_regressor_quantiles(regressor):
     """Verify that P90 is always strictly greater than P50 with a risk buffer."""
     test_vectors = [
         ScopeFeatureVector(engine_id="landing", total_features=1),
-        ScopeFeatureVector(engine_id="multipage", total_features=4, auth_security_count=1),
-        ScopeFeatureVector(engine_id="saas", total_features=8, ai_vector_count=2, realtime_voice_count=1),
+        ScopeFeatureVector(
+            engine_id="multipage", total_features=4, auth_security_count=1
+        ),
+        ScopeFeatureVector(
+            engine_id="saas",
+            total_features=8,
+            ai_vector_count=2,
+            realtime_voice_count=1,
+        ),
     ]
 
     for v in test_vectors:
@@ -46,7 +53,9 @@ def test_effort_regressor_quantiles(regressor):
 
 def test_effort_regressor_monotonicity(regressor):
     """Verify that expanding architectural scope monotonically increases hours and complexity."""
-    simple_landing = ScopeFeatureVector(engine_id="landing", total_features=0, dependency_depth=1)
+    simple_landing = ScopeFeatureVector(
+        engine_id="landing", total_features=0, dependency_depth=1
+    )
     complex_saas = ScopeFeatureVector(
         engine_id="saas",
         total_features=8,
@@ -89,7 +98,10 @@ def test_service_risk_factors_and_drivers(service):
     assert any("Voice AI" in rf or "WebRTC" in rf for rf in pred.risk_factors)
     assert len(pred.top_effort_drivers) >= 2
     # Verify driver ordering (Voice should be top estimate)
-    assert pred.top_effort_drivers[0].added_hours_estimate >= pred.top_effort_drivers[1].added_hours_estimate
+    assert (
+        pred.top_effort_drivers[0].added_hours_estimate
+        >= pred.top_effort_drivers[1].added_hours_estimate
+    )
 
 
 def test_scoping_estimate_timeline_api_endpoint(client):
@@ -123,19 +135,30 @@ def test_hexagonal_boundary_conformance():
 
     domain_file = os.path.join(
         os.path.dirname(__file__),
-        "../src/domain/estimation/effort_estimation_service.py"
+        "../src/domain/estimation/effort_estimation_service.py",
     )
 
     with open(domain_file) as f:
         tree = ast.parse(f.read())
 
-    forbidden_modules = ["fastapi", "sqlalchemy", "starlette", "requests", "httpx", "sklearn"]
+    forbidden_modules = [
+        "fastapi",
+        "sqlalchemy",
+        "starlette",
+        "requests",
+        "httpx",
+        "sklearn",
+    ]
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 for forbidden in forbidden_modules:
-                    assert forbidden not in alias.name, f"Domain violates Hexagonal boundary: {alias.name}"
+                    assert forbidden not in alias.name, (
+                        f"Domain violates Hexagonal boundary: {alias.name}"
+                    )
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 for forbidden in forbidden_modules:
-                    assert forbidden not in node.module, f"Domain violates Hexagonal boundary: {node.module}"
+                    assert forbidden not in node.module, (
+                        f"Domain violates Hexagonal boundary: {node.module}"
+                    )

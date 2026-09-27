@@ -33,13 +33,16 @@ router = APIRouter(tags=["Continuous DPO/ORPO Tuning Pipeline"])
 
 # --- Request/Response DTOs ---
 
+
 class TuningHealthResponse(BaseModel):
     """Operational status and parameters for Platform Battery #35."""
 
     battery_id: str = "continuous_preference_tuning"
     status: str = "healthy"
     category: str = "ML_INTELLIGENCE"
-    supported_objectives: list[str] = Field(default_factory=lambda: ["dpo", "orpo", "kto"])
+    supported_objectives: list[str] = Field(
+        default_factory=lambda: ["dpo", "orpo", "kto"]
+    )
     default_base_model: str = "meta-llama/Meta-Llama-3.1-8B-Instruct"
     auto_trigger_threshold: int = 50
     evaluation_gate_accuracy_threshold: float = 0.75
@@ -49,12 +52,25 @@ class TuningHealthResponse(BaseModel):
 class HarvestPreferenceRequest(BaseModel):
     """Payload for harvesting or recording a preference sample."""
 
-    prompt: str = Field(..., min_length=3, description="User query or context prompt (x)")
-    winning_response: str = Field(..., min_length=1, description="Chosen/upvoted completion (y_w)")
-    losing_response: str = Field(..., min_length=1, description="Rejected/downvoted completion (y_l)")
-    source_message_id: str | None = Field(default=None, description="Optional linked chat message UUID")
-    feedback_rating: int = Field(default=1, description="Feedback score (+1 upvote, -1 downvote)")
-    tags: list[str] = Field(default_factory=list, description="Descriptive tags (e.g. ['factual', 'concise'])")
+    prompt: str = Field(
+        ..., min_length=3, description="User query or context prompt (x)"
+    )
+    winning_response: str = Field(
+        ..., min_length=1, description="Chosen/upvoted completion (y_w)"
+    )
+    losing_response: str = Field(
+        ..., min_length=1, description="Rejected/downvoted completion (y_l)"
+    )
+    source_message_id: str | None = Field(
+        default=None, description="Optional linked chat message UUID"
+    )
+    feedback_rating: int = Field(
+        default=1, description="Feedback score (+1 upvote, -1 downvote)"
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Descriptive tags (e.g. ['factual', 'concise'])",
+    )
 
 
 class PreferenceListResponse(BaseModel):
@@ -69,7 +85,9 @@ class PreferenceListResponse(BaseModel):
 class TriggerJobRequest(BaseModel):
     """Payload for manually dispatching a preference fine-tuning job."""
 
-    objective: TuningObjective = Field(default=TuningObjective.DPO, description="Alignment objective (dpo, orpo)")
+    objective: TuningObjective = Field(
+        default=TuningObjective.DPO, description="Alignment objective (dpo, orpo)"
+    )
     hyperparameters: TuningHyperparameters | None = Field(
         default=None, description="Optional custom hyperparameter overrides"
     )
@@ -78,16 +96,31 @@ class TriggerJobRequest(BaseModel):
 class MathSimulationRequest(BaseModel):
     """Parameters for evaluating DPO vs ORPO mathematical formulation."""
 
-    prompt: str = Field(default="What is your return policy?", description="Context prompt")
-    beta: float = Field(default=0.1, ge=0.01, le=1.0, description="DPO temperature beta")
-    lambda_orpo: float = Field(default=0.1, ge=0.01, le=1.0, description="ORPO lambda parameter")
-    pi_theta_win_prob: float = Field(default=0.85, ge=0.01, le=0.99, description="P_theta(y_w | x)")
-    pi_ref_win_prob: float = Field(default=0.50, ge=0.01, le=0.99, description="P_ref(y_w | x)")
-    pi_theta_lose_prob: float = Field(default=0.15, ge=0.01, le=0.99, description="P_theta(y_l | x)")
-    pi_ref_lose_prob: float = Field(default=0.50, ge=0.01, le=0.99, description="P_ref(y_l | x)")
+    prompt: str = Field(
+        default="What is your return policy?", description="Context prompt"
+    )
+    beta: float = Field(
+        default=0.1, ge=0.01, le=1.0, description="DPO temperature beta"
+    )
+    lambda_orpo: float = Field(
+        default=0.1, ge=0.01, le=1.0, description="ORPO lambda parameter"
+    )
+    pi_theta_win_prob: float = Field(
+        default=0.85, ge=0.01, le=0.99, description="P_theta(y_w | x)"
+    )
+    pi_ref_win_prob: float = Field(
+        default=0.50, ge=0.01, le=0.99, description="P_ref(y_w | x)"
+    )
+    pi_theta_lose_prob: float = Field(
+        default=0.15, ge=0.01, le=0.99, description="P_theta(y_l | x)"
+    )
+    pi_ref_lose_prob: float = Field(
+        default=0.50, ge=0.01, le=0.99, description="P_ref(y_l | x)"
+    )
 
 
 # --- Route Handlers ---
+
 
 @router.get(
     "/v1/tuning/health",
@@ -205,7 +238,9 @@ def trigger_tuning_job(
 ) -> TuningJob:
     """Dispatch a DPO or ORPO fine-tuning job over buffered tenant samples."""
     adapter = container.continuous_tuning_adapter
-    job = adapter.trigger_tuning_job(tenant_id, objective=req.objective, hyperparams=req.hyperparameters)
+    job = adapter.trigger_tuning_job(
+        tenant_id, objective=req.objective, hyperparams=req.hyperparameters
+    )
     return job
 
 
@@ -257,7 +292,9 @@ def promote_tuning_job_adapter(
     try:
         return adapter.promote_adapter(tenant_id, job_id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.post(
@@ -267,7 +304,9 @@ def promote_tuning_job_adapter(
 )
 def rollback_adapter(
     tenant_id: str = Path(..., description="Tenant identifier"),
-    target_adapter_id: str | None = Query(None, description="Specific prior adapter ID or defaults to previous"),
+    target_adapter_id: str | None = Query(
+        None, description="Specific prior adapter ID or defaults to previous"
+    ),
 ) -> ContinuousTuningConfig:
     """Instantly roll back tenant model serving to a prior verified checkpoint."""
     adapter = container.continuous_tuning_adapter

@@ -12,10 +12,16 @@ from pathlib import Path
 
 # High-risk secret regex patterns
 SECRET_PATTERNS = [
-    (r"(?:resend|RESEND)_[A-Za-z0-9_]*\s*[:=]\s*['\"](re_[0-9a-zA-Z]{24,})['\"]", "Live Resend API Key"),
+    (
+        r"(?:resend|RESEND)_[A-Za-z0-9_]*\s*[:=]\s*['\"](re_[0-9a-zA-Z]{24,})['\"]",
+        "Live Resend API Key",
+    ),
     (r"(?:re_[0-9a-zA-Z]{24,32})", "Raw Resend Token Signature"),
     (r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----", "Private Cryptographic Key"),
-    (r"(?:ghp_[0-9a-zA-Z]{36}|github_pat_[0-9a-zA-Z_]{60,})", "GitHub Personal Access Token"),
+    (
+        r"(?:ghp_[0-9a-zA-Z]{36}|github_pat_[0-9a-zA-Z_]{60,})",
+        "GitHub Personal Access Token",
+    ),
     (r"(?:sk-ant-[0-9a-zA-Z_-]{40,})", "Anthropic Secret Key"),
     (r"(?:sk-proj-[0-9a-zA-Z_-]{40,})", "OpenAI Project Secret Key"),
     (r"(?:AIzaSy[0-9a-zA-Z_-]{33})", "Google Cloud / Gemini API Key"),
@@ -40,9 +46,32 @@ IGNORED_DIRS = {
 }
 
 IGNORED_EXTENSIONS = {
-    ".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".eot", ".mp4", ".pdf", ".lock",
-    ".so", ".dylib", ".dll", ".a", ".o", ".pyc", ".pyd", ".bin", ".tar", ".gz", ".zip"
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".svg",
+    ".ico",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".mp4",
+    ".pdf",
+    ".lock",
+    ".so",
+    ".dylib",
+    ".dll",
+    ".a",
+    ".o",
+    ".pyc",
+    ".pyd",
+    ".bin",
+    ".tar",
+    ".gz",
+    ".zip",
 }
+
 
 def scan_file(file_path: Path) -> list[tuple[int, str, str]]:
     findings = []
@@ -57,16 +86,30 @@ def scan_file(file_path: Path) -> list[tuple[int, str, str]]:
     lines = content.split("\n")
     for line_idx, line in enumerate(lines, start=1):
         line_clean = line.strip()
-        if line_clean.startswith("//") or line_clean.startswith("#") or line_clean.startswith("*"):
-            if "example" in line_clean.lower() or "placeholder" in line_clean.lower() or "your_" in line_clean.lower():
+        if (
+            line_clean.startswith("//")
+            or line_clean.startswith("#")
+            or line_clean.startswith("*")
+        ):
+            if (
+                "example" in line_clean.lower()
+                or "placeholder" in line_clean.lower()
+                or "your_" in line_clean.lower()
+            ):
                 continue
 
         for pattern, label in SECRET_PATTERNS:
             if re.search(pattern, line):
-                if "YOUR_" in line or "process.env" in line or "os.environ" in line or "os.getenv" in line:
+                if (
+                    "YOUR_" in line
+                    or "process.env" in line
+                    or "os.environ" in line
+                    or "os.getenv" in line
+                ):
                     continue
                 findings.append((line_idx, label, line_clean[:60] + "..."))
     return findings
+
 
 def main():
     repo_root = Path(__file__).resolve().parent.parent
@@ -89,16 +132,23 @@ def main():
         findings = scan_file(path)
         if findings:
             for line_no, label, preview in findings:
-                all_findings.append((path.relative_to(repo_root), line_no, label, preview))
+                all_findings.append(
+                    (path.relative_to(repo_root), line_no, label, preview)
+                )
 
     if all_findings:
-        print(f"\n❌ FAILED: Found {len(all_findings)} potential secret leaks across {total_scanned} files:")
+        print(
+            f"\n❌ FAILED: Found {len(all_findings)} potential secret leaks across {total_scanned} files:"
+        )
         for rel_path, line_no, label, preview in all_findings:
             print(f"  - {rel_path}:{line_no} [{label}]: {preview}")
         sys.exit(1)
     else:
-        print(f"✓ Scanned {total_scanned} files. 0 secrets or sensitive tokens detected!")
+        print(
+            f"✓ Scanned {total_scanned} files. 0 secrets or sensitive tokens detected!"
+        )
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

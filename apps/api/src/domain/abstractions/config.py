@@ -35,7 +35,9 @@ DEFAULT_PRICING: dict[str, ModelPricing] = {
     "gemini-1.5-pro": ModelPricing(input_cost_per_1k=1.25, output_cost_per_1k=5.0),
     "gpt-4o": ModelPricing(input_cost_per_1k=2.5, output_cost_per_1k=10.0),
     "gpt-4o-mini": ModelPricing(input_cost_per_1k=0.15, output_cost_per_1k=0.60),
-    "claude-3-5-sonnet-20240620": ModelPricing(input_cost_per_1k=3.0, output_cost_per_1k=15.0),
+    "claude-3-5-sonnet-20240620": ModelPricing(
+        input_cost_per_1k=3.0, output_cost_per_1k=15.0
+    ),
     "claude-3-haiku": ModelPricing(input_cost_per_1k=0.25, output_cost_per_1k=1.25),
 }
 
@@ -50,7 +52,9 @@ class AIProviderConfig(BaseModel):
     fallback_model: str = ""
     retry_attempts: int = 2
     retry_delay_ms: int = 500
-    pricing: dict[str, ModelPricing] = Field(default_factory=lambda: dict(DEFAULT_PRICING))
+    pricing: dict[str, ModelPricing] = Field(
+        default_factory=lambda: dict(DEFAULT_PRICING)
+    )
 
 
 class EmbeddingProviderConfig(BaseModel):
@@ -186,13 +190,21 @@ class TenantConfiguration(BaseModel):
     tenant_id: str | None = None
     feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
     ai_provider: AIProviderConfig = Field(default_factory=AIProviderConfig)
-    embedding_provider: EmbeddingProviderConfig = Field(default_factory=EmbeddingProviderConfig)
-    storage_provider: StorageProviderConfig = Field(default_factory=StorageProviderConfig)
+    embedding_provider: EmbeddingProviderConfig = Field(
+        default_factory=EmbeddingProviderConfig
+    )
+    storage_provider: StorageProviderConfig = Field(
+        default_factory=StorageProviderConfig
+    )
     retrieval_settings: RetrievalSettings = Field(default_factory=RetrievalSettings)
     bm25_settings: BM25Settings = Field(default_factory=BM25Settings)
     mmr_settings: MMRSettings = Field(default_factory=MMRSettings)
-    corrective_retrieval_settings: CorrectiveRetrievalSettings = Field(default_factory=CorrectiveRetrievalSettings)
-    query_intent_settings: QueryIntentSettings = Field(default_factory=QueryIntentSettings)
+    corrective_retrieval_settings: CorrectiveRetrievalSettings = Field(
+        default_factory=CorrectiveRetrievalSettings
+    )
+    query_intent_settings: QueryIntentSettings = Field(
+        default_factory=QueryIntentSettings
+    )
     graph_settings: GraphSettings = Field(default_factory=GraphSettings)
     evaluation_settings: EvaluationSettings = Field(default_factory=EvaluationSettings)
     budget_settings: BudgetSettings = Field(default_factory=BudgetSettings)
@@ -225,7 +237,9 @@ class ConfigRegistry(ABC):
         pass
 
     @abstractmethod
-    async def save_raw_config(self, tenant_id: str | None, config_data: dict[str, Any]) -> None:
+    async def save_raw_config(
+        self, tenant_id: str | None, config_data: dict[str, Any]
+    ) -> None:
         """Persist raw configuration dictionary to database."""
         pass
 
@@ -237,7 +251,9 @@ class ConfigCache(ABC):
         pass
 
     @abstractmethod
-    async def set_cached_config(self, tenant_id: str, config: TenantConfiguration) -> None:
+    async def set_cached_config(
+        self, tenant_id: str, config: TenantConfiguration
+    ) -> None:
         """Cache configuration parameters with TTL boundary."""
         pass
 

@@ -11,8 +11,6 @@ class AdminRepository(ABC):
         pass
 
     @abstractmethod
-    async def reset_platform(
-        self, include_system_tenant: bool = False
-    ) -> int:
+    async def reset_platform(self, include_system_tenant: bool = False) -> int:
         """Delete all tenant data. Returns count of tenants deleted."""
         pass

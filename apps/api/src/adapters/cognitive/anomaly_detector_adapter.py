@@ -104,9 +104,15 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
         deviations = np.abs(feat_matrix - self._feature_medians)
         self._feature_mads = np.median(deviations, axis=0)
         # Avoid zero MAD
-        self._feature_mads = np.where(self._feature_mads == 0.0, 1e-4, self._feature_mads)
+        self._feature_mads = np.where(
+            self._feature_mads == 0.0, 1e-4, self._feature_mads
+        )
 
-        if self._sklearn_available and self._scaler is not None and self._model is not None:
+        if (
+            self._sklearn_available
+            and self._scaler is not None
+            and self._model is not None
+        ):
             try:
                 from sklearn.ensemble import IsolationForest
                 from sklearn.preprocessing import StandardScaler
@@ -120,9 +126,10 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
                 )
                 self._model.fit(scaled_matrix)
             except Exception as e:
-                logger.warning(f"IsolationForest fit failed: {e}; falling back to NumPy baseline.")
+                logger.warning(
+                    f"IsolationForest fit failed: {e}; falling back to NumPy baseline."
+                )
                 self._sklearn_available = False
-
 
     def _generate_contributing_factors(
         self, raw_row: np.ndarray, normalized_features: dict[str, float]
@@ -136,7 +143,11 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
         error_rate = raw_row[5]
         cost_vel = raw_row[6]
 
-        meds = self._feature_medians if self._feature_medians is not None else np.zeros(len(FEATURE_NAMES))
+        meds = (
+            self._feature_medians
+            if self._feature_medians is not None
+            else np.zeros(len(FEATURE_NAMES))
+        )
 
         if velocity > max(50.0, meds[0] * 3.0):
             factors.append(
@@ -163,12 +174,12 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
                 f"P99 latency anomaly: {latency:.0f}ms (baseline: {meds[3]:.0f}ms)"
             )
         if cost_vel > max(10.0, meds[6] * 4.0):
-            factors.append(
-                f"Token cost surge: ${cost_vel:.2f}/hr consumption rate"
-            )
+            factors.append(f"Token cost surge: ${cost_vel:.2f}/hr consumption rate")
 
         if not factors:
-            factors.append("Multivariate anomaly: joint feature distribution deviated significantly from baseline")
+            factors.append(
+                "Multivariate anomaly: joint feature distribution deviated significantly from baseline"
+            )
 
         return factors
 
@@ -176,9 +187,7 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
         """Score a single feature vector and return calibrated AnomalyScore."""
         return self.batch_detect([vector])[0]
 
-    def batch_detect(
-        self, vectors: list[AnomalyFeatureVector]
-    ) -> list[AnomalyScore]:
+    def batch_detect(self, vectors: list[AnomalyFeatureVector]) -> list[AnomalyScore]:
         """Detect anomalies across a collection of feature vectors."""
         if not vectors:
             return []
@@ -189,7 +198,11 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
         scores: list[float] = []
         algo_name = "isolation_forest"
 
-        if self._sklearn_available and self._model is not None and self._scaler is not None:
+        if (
+            self._sklearn_available
+            and self._model is not None
+            and self._scaler is not None
+        ):
             try:
                 # Ensure model is fitted
                 if not hasattr(self._model, "estimators_"):
@@ -205,7 +218,9 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
                     prob = 1.0 / (1.0 + math.exp(6.0 * ds))
                     scores.append(float(np.clip(prob, 0.0, 1.0)))
             except Exception as e:
-                logger.warning(f"IsolationForest scoring failed: {e}; fallback to NumPy.")
+                logger.warning(
+                    f"IsolationForest scoring failed: {e}; fallback to NumPy."
+                )
                 algo_name = "numpy_multivariate_baseline"
                 scores = []
         else:
@@ -214,8 +229,16 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
         # Fallback to authentic robust mathematical distance if sklearn unavailable or failed
         if len(scores) != n_samples:
             algo_name = "numpy_multivariate_baseline"
-            meds = self._feature_medians if self._feature_medians is not None else np.median(feat_matrix, axis=0)
-            mads = self._feature_mads if self._feature_mads is not None else np.median(np.abs(feat_matrix - meds), axis=0)
+            meds = (
+                self._feature_medians
+                if self._feature_medians is not None
+                else np.median(feat_matrix, axis=0)
+            )
+            mads = (
+                self._feature_mads
+                if self._feature_mads is not None
+                else np.median(np.abs(feat_matrix - meds), axis=0)
+            )
             mads = np.where(mads == 0.0, 1e-4, mads)
 
             for i in range(n_samples):
@@ -248,7 +271,6 @@ class AnomalyDetectorAdapter(BaseAnomalyDetector):
 
             raw_row = feat_matrix[i]
             feat_dict = {
-
                 FEATURE_NAMES[j]: float(raw_row[j]) for j in range(len(FEATURE_NAMES))
             }
 

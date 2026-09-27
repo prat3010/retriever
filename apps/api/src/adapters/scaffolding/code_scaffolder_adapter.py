@@ -33,16 +33,22 @@ class CodeScaffolderAdapter:
     def _validate_plugin_id(self, plugin_id: str) -> None:
         """Ensure plugin_id is a safe alphanumeric snake_case identifier."""
         if not re.match(r"^[a-zA-Z0-9_]+$", plugin_id):
-            raise ValueError(f"Invalid plugin_id '{plugin_id}'. Must be alphanumeric snake_case.")
+            raise ValueError(
+                f"Invalid plugin_id '{plugin_id}'. Must be alphanumeric snake_case."
+            )
 
-    def apply_plan(self, plan: ScaffoldingPlan, dry_run: bool = False) -> dict[str, Any]:
+    def apply_plan(
+        self, plan: ScaffoldingPlan, dry_run: bool = False
+    ) -> dict[str, Any]:
         """Write all scaffolded files to disk in the isolated plugin directory."""
         self._validate_plugin_id(plan.plugin_id)
 
         target_dir = (self.plugins_root / plan.plugin_id).resolve()
         # Security sanity check: target_dir must be strictly a child of plugins_root
         if not str(target_dir).startswith(str(self.plugins_root)):
-            raise PermissionError("Path traversal detected: Cannot write outside plugins root.")
+            raise PermissionError(
+                "Path traversal detected: Cannot write outside plugins root."
+            )
 
         written_paths: list[str] = []
 
@@ -51,7 +57,9 @@ class CodeScaffolderAdapter:
             # Create package __init__.py if missing
             init_file = target_dir / "__init__.py"
             if not init_file.exists():
-                init_file.write_text(f'"""Custom Plugin: {plan.display_name}"""\n', encoding="utf-8")
+                init_file.write_text(
+                    f'"""Custom Plugin: {plan.display_name}"""\n', encoding="utf-8"
+                )
                 written_paths.append("__init__.py")
 
         for f in plan.scaffolded_files:

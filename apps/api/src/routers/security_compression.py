@@ -22,7 +22,6 @@ router = APIRouter(prefix="/v1", tags=["Security & Context Compression"])
     dependencies=[Depends(verify_tenant_or_admin)],
     response_model=CompressionResult,
 )
-
 async def compress_context_window(
     tenantId: str,
     request: CompressionRequest,

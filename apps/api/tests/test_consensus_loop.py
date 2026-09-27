@@ -16,19 +16,24 @@ from src.main import app
 
 # ── 1. Consensus Reflection Loop Tests ─────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_consensus_reflection_loop_success():
     """Verify Generator vs Critic reflection loop revises draft and approves."""
     mock_llm = MagicMock(spec=LlmProvider)
 
     # Round 1: Gen draft 1, Critic rejects with feedback
-    gen_resp_1 = InferenceResponse(content="Draft 1: The policy covers all water leaks.")
+    gen_resp_1 = InferenceResponse(
+        content="Draft 1: The policy covers all water leaks."
+    )
     critic_resp_1 = InferenceResponse(
         content='{"is_approved": false, "critique_score": 0.5, "critique_feedback": "Missing 48h reporting requirement.", "unsupported_claims": ["all water leaks"]}'
     )
 
     # Round 2: Gen draft 2, Critic approves
-    gen_resp_2 = InferenceResponse(content="Draft 2: Policy covers leaks reported within 48h.")
+    gen_resp_2 = InferenceResponse(
+        content="Draft 2: Policy covers leaks reported within 48h."
+    )
     critic_resp_2 = InferenceResponse(
         content='{"is_approved": true, "critique_score": 1.0, "critique_feedback": "Approved", "unsupported_claims": []}'
     )
@@ -131,6 +136,7 @@ async def test_consensus_dual_provider_switching():
 
 
 # ── 2. Router Endpoint Tests ─────────────────────────────────────────────────
+
 
 @patch("src.container.container.consensus_engine.execute_consensus")
 def test_consensus_endpoint(mock_execute):

@@ -34,6 +34,7 @@ def _make_result(chunk_id: str, score: float, content: str = "text") -> SearchRe
 
 # --- 1. RRF Fusion Logic ---
 
+
 def test_rrf_fusion_logic() -> None:
     """Verify RRF score computation and merged sort order."""
     service = HybridSearchService(
@@ -103,6 +104,7 @@ def test_rrf_handles_empty_results() -> None:
 
 # --- 2. Reranker Integration ---
 
+
 @pytest.mark.asyncio
 async def test_reranker_integration() -> None:
     """Verify reranker filters by threshold and remaps scores."""
@@ -165,6 +167,7 @@ async def test_reranker_graceful_degradation() -> None:
 
 # --- 3. Vector-Only When Hybrid Disabled ---
 
+
 @pytest.mark.asyncio
 async def test_search_vector_only_when_hybrid_disabled() -> None:
     """Verify only vector search is invoked when hybrid is disabled."""
@@ -206,12 +209,13 @@ async def test_search_vector_only_when_hybrid_disabled() -> None:
 
 # --- 4. Search API Endpoint ---
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.search_service.search", new_callable=AsyncMock)
 @patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
-def test_search_endpoint_success(
-    mock_get_config, mock_search, mock_validate
-) -> None:
+def test_search_endpoint_success(mock_get_config, mock_search, mock_validate) -> None:
     """Verify POST /v1/tenants/{tenantId}/search returns correct response."""
     from src.domain.abstractions.config import TenantConfiguration
     from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
@@ -263,6 +267,7 @@ def test_search_endpoint_success(
 
 # --- 5. Auth & Tenant Isolation ---
 
+
 def test_search_requires_auth() -> None:
     """Verify search endpoint rejects requests without authorization."""
     tenant_id = str(uuid.uuid4())
@@ -273,8 +278,13 @@ def test_search_requires_auth() -> None:
     assert response.status_code == 401
 
 
-@patch("src.adapters.api.security.identity_provider.revoke_api_key_by_hash", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.revoke_api_key_by_hash",
+    new_callable=AsyncMock,
+)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 def test_search_requires_tenant_isolation(mock_validate, mock_revoke) -> None:
     """Verify search endpoint rejects cross-tenant access attempts."""
     authenticated_tenant = str(uuid.uuid4())
@@ -297,6 +307,7 @@ def test_search_requires_tenant_isolation(mock_validate, mock_revoke) -> None:
 
 
 # --- 6. Adapter RLS Verification ---
+
 
 @pytest.mark.asyncio
 @patch("src.adapters.vector.vector_repository.tenant_session", autospec=True)
@@ -352,8 +363,12 @@ async def test_keyword_repository_sets_rls(mock_session_ctx) -> None:
 def test_bm25_reranker_immutability_and_scoring() -> None:
     from src.domain.retrieval.bm25_reranker import bm25_rerank
 
-    doc1 = _make_result("c1", 0.9, content="Postgres vector database with HNSW indexing")
-    doc2 = _make_result("c2", 0.8, content="Unrelated recipe for baking chocolate cookies")
+    doc1 = _make_result(
+        "c1", 0.9, content="Postgres vector database with HNSW indexing"
+    )
+    doc2 = _make_result(
+        "c2", 0.8, content="Unrelated recipe for baking chocolate cookies"
+    )
     candidates = [doc1, doc2]
 
     # Run bm25 rerank
@@ -383,7 +398,9 @@ def test_fusion_strategy_selection() -> None:
 
     # 1. Default is hybrid_convex
     q_default = SearchQuery(query="test", tenant_id="t1")
-    assert service._determine_strategy(q_default, v_results, k_results) == "hybrid_convex"
+    assert (
+        service._determine_strategy(q_default, v_results, k_results) == "hybrid_convex"
+    )
 
     # 2. Explicit rrf strategy
     q_rrf = SearchQuery(query="test", tenant_id="t1", fusion_strategy="rrf")
@@ -391,6 +408,6 @@ def test_fusion_strategy_selection() -> None:
 
     # 3. Explicit normalized strategy
     q_norm = SearchQuery(query="test", tenant_id="t1", fusion_strategy="normalized")
-    assert service._determine_strategy(q_norm, v_results, k_results) == "normalized_hybrid"
-
-
+    assert (
+        service._determine_strategy(q_norm, v_results, k_results) == "normalized_hybrid"
+    )

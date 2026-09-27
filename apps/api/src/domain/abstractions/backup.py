@@ -19,13 +19,17 @@ class RestoreStatus(StrEnum):
 
 
 class BackupSnapshotMetadata(BaseModel):
-    snapshot_id: str = Field(..., description="Unique snapshot identifier, e.g. 'snap_20260904_030000'")
+    snapshot_id: str = Field(
+        ..., description="Unique snapshot identifier, e.g. 'snap_20260904_030000'"
+    )
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     tables: list[str] = Field(default_factory=list)
     row_counts: dict[str, int] = Field(default_factory=dict)
     uncompressed_bytes: int = 0
     compressed_bytes: int = 0
-    sha256_checksum: str = Field(..., description="Cryptographic SHA-256 digest of encrypted archive")
+    sha256_checksum: str = Field(
+        ..., description="Cryptographic SHA-256 digest of encrypted archive"
+    )
     encryption_algorithm: str = "AES-256-GCM"
     storage_uri: str = Field(..., description="Destination S3/R2 or local archive URI")
     status: BackupStatus = BackupStatus.COMPLETED
@@ -62,7 +66,9 @@ class RestoreResponse(BaseModel):
 
 class BackupAdapterInterface(ABC):
     @abstractmethod
-    async def create_snapshot(self, request: BackupTriggerRequest) -> BackupSnapshotMetadata:
+    async def create_snapshot(
+        self, request: BackupTriggerRequest
+    ) -> BackupSnapshotMetadata:
         pass
 
     @abstractmethod

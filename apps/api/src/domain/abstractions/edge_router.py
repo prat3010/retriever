@@ -16,7 +16,9 @@ class ReplicaHealthStatus(StrEnum):
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNREACHABLE = "unreachable"
-    FALLBACK_PRIMARY = "fallback_primary"  # Active when replica is unconfigured, using Master
+    FALLBACK_PRIMARY = (
+        "fallback_primary"  # Active when replica is unconfigured, using Master
+    )
 
 
 class RegionNodeConfig(BaseModel):

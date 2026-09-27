@@ -65,6 +65,7 @@ class QuotaExceededError(DomainError):
 
 class ProviderUnavailableError(ConnectionError):
     """Exception raised when an LLM provider returns a retryable error (timeout, 5xx, rate limit)."""
+
     pass
 
 
@@ -126,4 +127,3 @@ class ShardRebalanceConflictError(VectorShardingError):
     """Exception raised when a concurrent shard rebalance or migration conflict occurs."""
 
     pass
-

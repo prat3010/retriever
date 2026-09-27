@@ -26,9 +26,14 @@ class WebCrawlerConnector(BaseConnector):
 
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
         start_url = config.configuration.get("start_url")
-        return bool(start_url and (start_url.startswith("http://") or start_url.startswith("https://")))
+        return bool(
+            start_url
+            and (start_url.startswith("http://") or start_url.startswith("https://"))
+        )
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         start_url = config.configuration.get("start_url")
         max_depth = config.configuration.get("max_depth", 1)
 

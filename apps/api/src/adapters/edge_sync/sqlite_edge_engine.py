@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
     """Production-grade embedded SQLite engine for offline vector and hybrid search."""
 
-    def __init__(self, db_path: str = ":memory:", ranker: EdgeFusionRanker | None = None) -> None:
+    def __init__(
+        self, db_path: str = ":memory:", ranker: EdgeFusionRanker | None = None
+    ) -> None:
         self.db_path = db_path
         self.ranker = ranker or EdgeFusionRanker(rrf_k=60)
         self._memory_conn: sqlite3.Connection | None = None
@@ -137,7 +139,7 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
 
     def apply_delta(self, *args: Any, **kwargs: Any) -> int:
         """Apply differential delta package to the SQLite edge database.
-        
+
         Supports both apply_delta(delta) and apply_delta(db_path, delta).
         """
         db_path: str | None = None
@@ -174,7 +176,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
             cursor.execute("DELETE FROM fts_chunks WHERE chunk_id = ?", (c_id,))
 
         # Handle chunk insertions / updates
-        vector_dict: dict[str, list[float]] = {v.chunk_id: v.embedding for v in delta.added_vectors}
+        vector_dict: dict[str, list[float]] = {
+            v.chunk_id: v.embedding for v in delta.added_vectors
+        }
 
         for chunk in delta.added_chunks:
             meta_json = json.dumps(chunk.meta_data)
@@ -196,7 +200,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
             )
 
             # Upsert into FTS5
-            cursor.execute("DELETE FROM fts_chunks WHERE chunk_id = ?", (chunk.chunk_id,))
+            cursor.execute(
+                "DELETE FROM fts_chunks WHERE chunk_id = ?", (chunk.chunk_id,)
+            )
             cursor.execute(
                 "INSERT INTO fts_chunks (chunk_id, content) VALUES (?, ?)",
                 (chunk.chunk_id, chunk.content),
@@ -248,7 +254,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
                 (tenant_id,),
             )
         else:
-            cursor.execute("SELECT last_sync_seq FROM edge_config ORDER BY updated_at DESC LIMIT 1")
+            cursor.execute(
+                "SELECT last_sync_seq FROM edge_config ORDER BY updated_at DESC LIMIT 1"
+            )
         row = cursor.fetchone()
         seq = row[0] if row else 0
         if db_path and db_path != ":memory:" and conn != self._memory_conn:
@@ -257,7 +265,7 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
 
     def search_hybrid(self, *args: Any, **kwargs: Any) -> EdgeSearchResponse:
         """Execute local hybrid search (vector cosine + FTS5 BM25) over edge SQLite database.
-        
+
         Supports search_hybrid(request), search_hybrid(db_path, request), and search_hybrid(request, db_path).
         """
         db_path: str | None = None
@@ -289,7 +297,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
         cursor = conn.cursor()
 
         # 1. Fetch chunks metadata map
-        cursor.execute("SELECT chunk_id, document_id, content, meta_data_json FROM document_chunks")
+        cursor.execute(
+            "SELECT chunk_id, document_id, content, meta_data_json FROM document_chunks"
+        )
         chunk_rows = cursor.fetchall()
         chunk_map: dict[str, dict[str, Any]] = {}
         for r in chunk_rows:
@@ -313,7 +323,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
             if norm_q > 0:
                 query_vec = query_vec / norm_q
 
-            cursor.execute("SELECT chunk_id, dimension, embedding_blob FROM vector_records")
+            cursor.execute(
+                "SELECT chunk_id, dimension, embedding_blob FROM vector_records"
+            )
             vec_rows = cursor.fetchall()
 
             if vec_rows:
@@ -333,7 +345,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
                     mat_norm = mat / norms
 
                     sims = np.dot(mat_norm, query_vec)
-                    ranked_indices = np.argsort(sims)[::-1][: max(request.top_k * 2, 20)]
+                    ranked_indices = np.argsort(sims)[::-1][
+                        : max(request.top_k * 2, 20)
+                    ]
 
                     for idx in ranked_indices:
                         c_id = chunk_ids[idx]
@@ -345,7 +359,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
 
         # 3. FTS5 Full-Text Keyword Search
         keyword_candidates: list[dict[str, Any]] = []
-        clean_query = "".join([c if c.isalnum() or c.isspace() else " " for c in request.query]).strip()
+        clean_query = "".join(
+            [c if c.isalnum() or c.isspace() else " " for c in request.query]
+        ).strip()
         if clean_query:
             tokens = clean_query.split()
             fts_query = " OR ".join(tokens)
@@ -374,7 +390,9 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
                 logger.warning(f"FTS5 query syntax error for '{fts_query}': {e}")
 
         # 4. Fusion Ranking
-        use_hybrid_mode = request.use_hybrid and bool(vector_candidates and keyword_candidates)
+        use_hybrid_mode = request.use_hybrid and bool(
+            vector_candidates and keyword_candidates
+        )
         if use_hybrid_mode:
             fused = self.ranker.fuse_results(
                 vector_results=vector_candidates,
@@ -439,7 +457,7 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
 
     def record_mutation(self, *args: Any, **kwargs: Any) -> None:
         """Record an offline mutation into the local SQLite pending queue.
-        
+
         Supports record_mutation(mutation) and record_mutation(db_path, mutation).
         """
         db_path: str | None = None
@@ -526,13 +544,17 @@ class SqliteEdgeEngine(EdgeDatabaseEngineProtocol):
             conn.close()
         return mutations
 
-    def purge_synced_mutations(self, mutation_ids: list[str], db_path: str | None = None) -> None:
+    def purge_synced_mutations(
+        self, mutation_ids: list[str], db_path: str | None = None
+    ) -> None:
         """Purge or mark mutations as synced."""
         self.initialize_schema(db_path)
         conn = self._get_connection(db_path)
         cursor = conn.cursor()
         for m_id in mutation_ids:
-            cursor.execute("DELETE FROM offline_mutations WHERE mutation_id = ?", (m_id,))
+            cursor.execute(
+                "DELETE FROM offline_mutations WHERE mutation_id = ?", (m_id,)
+            )
         conn.commit()
         if db_path and db_path != ":memory:" and conn != self._memory_conn:
             conn.close()

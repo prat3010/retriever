@@ -230,7 +230,9 @@ def test_mpc_shares_ingestion_and_computation(mpc_adapter: MpcEnclaveAdapter) ->
     assert results.epsilon_remaining < 5.0
 
 
-def test_mpc_privacy_budget_depletion_protection(mpc_adapter: MpcEnclaveAdapter) -> None:
+def test_mpc_privacy_budget_depletion_protection(
+    mpc_adapter: MpcEnclaveAdapter,
+) -> None:
     """Verify that depleted privacy budget halts further computations."""
     session = mpc_adapter.create_session(
         tenant_id="tn_budget_test",
@@ -316,9 +318,14 @@ def test_battery_36_registration() -> None:
     """Ensure confidential_mpc_enclave is properly registered in BatteryService."""
     service = BatteryService()
     resp = service.get_platform_batteries()
-    battery = next((b for b in resp.batteries if b.id == "confidential_mpc_enclave"), None)
+    battery = next(
+        (b for b in resp.batteries if b.id == "confidential_mpc_enclave"), None
+    )
     assert battery is not None
-    assert battery.name == "Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves"
+    assert (
+        battery.name
+        == "Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves"
+    )
     assert battery.category == BatteryCategory.SAFETY_DEFENSE
     assert "M121" in battery.milestone
     assert battery.health_check_endpoint == "/v1/mpc/health"
@@ -326,16 +333,30 @@ def test_battery_36_registration() -> None:
 
 def test_hexagonal_architecture_domain_isolation() -> None:
     """Verify that mpc_enclave domain abstraction imports zero infrastructure frameworks."""
-    domain_file = Path(__file__).resolve().parent.parent / "src/domain/abstractions/mpc_enclave.py"
+    domain_file = (
+        Path(__file__).resolve().parent.parent
+        / "src/domain/abstractions/mpc_enclave.py"
+    )
     assert domain_file.exists(), f"Domain file not found: {domain_file}"
     tree = ast.parse(domain_file.read_text(encoding="utf-8"))
 
-    forbidden_modules = {"fastapi", "sqlalchemy", "redis", "pydantic_settings", "httpx", "requests"}
+    forbidden_modules = {
+        "fastapi",
+        "sqlalchemy",
+        "redis",
+        "pydantic_settings",
+        "httpx",
+        "requests",
+    }
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root_pkg = alias.name.split(".")[0]
-                assert root_pkg not in forbidden_modules, f"Forbidden import '{root_pkg}' in pure domain"
+                assert root_pkg not in forbidden_modules, (
+                    f"Forbidden import '{root_pkg}' in pure domain"
+                )
         elif isinstance(node, ast.ImportFrom) and node.module:
             root_pkg = node.module.split(".")[0]
-            assert root_pkg not in forbidden_modules, f"Forbidden import '{root_pkg}' in pure domain"
+            assert root_pkg not in forbidden_modules, (
+                f"Forbidden import '{root_pkg}' in pure domain"
+            )

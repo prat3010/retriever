@@ -41,7 +41,16 @@ async def test_swarm_debate_dynamic_llm() -> None:
     mock_resp_2 = MagicMock()
     mock_resp_2.content = json.dumps(critique_json)
 
-    mock_llm.generate = AsyncMock(side_effect=[mock_resp_1, mock_resp_1, mock_resp_2, mock_resp_2, mock_resp_2, mock_resp_2])
+    mock_llm.generate = AsyncMock(
+        side_effect=[
+            mock_resp_1,
+            mock_resp_1,
+            mock_resp_2,
+            mock_resp_2,
+            mock_resp_2,
+            mock_resp_2,
+        ]
+    )
 
     engine = MultiAgentSwarmQuorumEngine(llm_provider=mock_llm)
     tenant_id = "tenant-swarm-1"

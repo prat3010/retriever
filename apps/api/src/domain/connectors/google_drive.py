@@ -1,4 +1,5 @@
 """Authentic Google Drive v3 REST API Data Connector."""
+
 import logging
 from typing import Any
 
@@ -37,11 +38,18 @@ class GoogleDriveConnector(BaseConnector):
             icon="drive",
             supports_incremental=True,
             required_parameters=["folder_id"],
-            optional_parameters={"access_token": "", "api_key": "", "recursive": True, "max_depth": 5},
+            optional_parameters={
+                "access_token": "",
+                "api_key": "",
+                "recursive": True,
+                "max_depth": 5,
+            },
         )
 
     def _get_headers(self, config: ConnectorConfig) -> dict[str, str]:
-        auth_token = config.configuration.get("access_token") or config.configuration.get("api_key", "")
+        auth_token = config.configuration.get(
+            "access_token"
+        ) or config.configuration.get("api_key", "")
         headers = {"Accept": "application/json"}
         if auth_token:
             headers["Authorization"] = f"Bearer {auth_token}"
@@ -50,7 +58,9 @@ class GoogleDriveConnector(BaseConnector):
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
         """Validate connection by probing the Google Drive API or target folder."""
         folder_id = config.configuration.get("folder_id")
-        auth_token = config.configuration.get("access_token") or config.configuration.get("api_key")
+        auth_token = config.configuration.get(
+            "access_token"
+        ) or config.configuration.get("api_key")
 
         if not folder_id:
             return False
@@ -71,7 +81,9 @@ class GoogleDriveConnector(BaseConnector):
             return False
 
     @staticmethod
-    def _parse_permissions(permissions: list[dict[str, Any]] | None) -> tuple[list[str], list[str], bool]:
+    def _parse_permissions(
+        permissions: list[dict[str, Any]] | None,
+    ) -> tuple[list[str], list[str], bool]:
         """Extract allowed_users, allowed_groups, and is_public from Google Drive permissions."""
         if not permissions:
             return [], [], True
@@ -83,7 +95,14 @@ class GoogleDriveConnector(BaseConnector):
         for perm in permissions:
             perm_type = perm.get("type", "")
             role = perm.get("role", "")
-            if role not in ("reader", "commenter", "writer", "owner", "organizer", "fileOrganizer"):
+            if role not in (
+                "reader",
+                "commenter",
+                "writer",
+                "owner",
+                "organizer",
+                "fileOrganizer",
+            ):
                 continue
 
             if perm_type == "anyone":
@@ -93,7 +112,9 @@ class GoogleDriveConnector(BaseConnector):
                 if email and email not in allowed_users:
                     allowed_users.append(email)
             elif perm_type in ("group", "domain"):
-                group_id = perm.get("emailAddress") or perm.get("domain") or perm.get("id")
+                group_id = (
+                    perm.get("emailAddress") or perm.get("domain") or perm.get("id")
+                )
                 if group_id and group_id not in allowed_groups:
                     allowed_groups.append(group_id)
 
@@ -132,7 +153,12 @@ class GoogleDriveConnector(BaseConnector):
 
         res = await client.get(url, headers=headers)
         if res.status_code != 200:
-            logger.error("Google Drive API returned HTTP %d for folder %s: %s", res.status_code, folder_id, res.text[:200])
+            logger.error(
+                "Google Drive API returned HTTP %d for folder %s: %s",
+                res.status_code,
+                folder_id,
+                res.text[:200],
+            )
             return []
 
         data: dict[str, Any] = res.json()
@@ -164,18 +190,25 @@ class GoogleDriveConnector(BaseConnector):
 
             content_text = ""
             if mime_type == "application/vnd.google-apps.document":
-                export_url = f"{self.DRIVE_API_BASE}/files/{file_id}/export?mimeType=text/plain"
+                export_url = (
+                    f"{self.DRIVE_API_BASE}/files/{file_id}/export?mimeType=text/plain"
+                )
                 export_res = await client.get(export_url, headers=headers)
                 if export_res.status_code == 200:
                     content_text = export_res.text
-            elif mime_type.startswith("text/") or mime_type in ("application/json", "application/pdf"):
+            elif mime_type.startswith("text/") or mime_type in (
+                "application/json",
+                "application/pdf",
+            ):
                 download_url = f"{self.DRIVE_API_BASE}/files/{file_id}?alt=media"
                 dl_res = await client.get(download_url, headers=headers)
                 if dl_res.status_code == 200:
                     content_text = dl_res.text
 
             if content_text:
-                allowed_users, allowed_groups, is_public = self._parse_permissions(permissions)
+                allowed_users, allowed_groups, is_public = self._parse_permissions(
+                    permissions
+                )
                 documents.append(
                     DiscoveredDocument(
                         filename=file_name,
@@ -198,7 +231,9 @@ class GoogleDriveConnector(BaseConnector):
 
         return documents
 
-    def _get_sandbox_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    def _get_sandbox_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         folder_id = config.configuration.get("folder_id", "folder_sandbox_root")
         return [
             DiscoveredDocument(
@@ -233,20 +268,26 @@ class GoogleDriveConnector(BaseConnector):
             ),
         ]
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Discover and download files from the configured Google Drive folder."""
         folder_id = config.configuration.get("folder_id")
         if not folder_id:
             logger.warning("Google Drive connector '%s' missing folder_id", config.id)
             return []
 
-        auth_token = config.configuration.get("access_token") or config.configuration.get("api_key")
+        auth_token = config.configuration.get(
+            "access_token"
+        ) or config.configuration.get("api_key")
 
         if not auth_token and config.configuration.get("offline_sandbox", False):
             return self._get_sandbox_documents(config)
 
         if not auth_token:
-            logger.error("Google Drive connector '%s' missing authentication token", config.id)
+            logger.error(
+                "Google Drive connector '%s' missing authentication token", config.id
+            )
             return []
 
         max_depth = int(config.configuration.get("max_depth", 5))
@@ -275,7 +316,9 @@ class GoogleDriveConnector(BaseConnector):
         if not folder_id:
             return [], state
 
-        auth_token = config.configuration.get("access_token") or config.configuration.get("api_key")
+        auth_token = config.configuration.get(
+            "access_token"
+        ) or config.configuration.get("api_key")
         if not auth_token and config.configuration.get("offline_sandbox", False):
             docs = self._get_sandbox_documents(config)
             state.cursor = "2026-09-23T00:00:00Z"

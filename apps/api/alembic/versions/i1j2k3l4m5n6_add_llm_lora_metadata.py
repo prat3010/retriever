@@ -21,7 +21,9 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "tenant_lora_adapters",
-        sa.Column("adapter_type", sa.String(50), nullable=False, server_default="embedding"),
+        sa.Column(
+            "adapter_type", sa.String(50), nullable=False, server_default="embedding"
+        ),
     )
     op.add_column(
         "tenant_lora_adapters",
@@ -37,11 +39,18 @@ def upgrade() -> None:
     )
     op.add_column(
         "tenant_lora_adapters",
-        sa.Column("target_modules", JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column(
+            "target_modules",
+            JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
     )
     op.add_column(
         "tenant_lora_adapters",
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
     )
 
 

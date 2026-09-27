@@ -23,7 +23,6 @@ RETRYABLE_ERRORS = (
 
 
 class AnthropicLLMAdapter(LlmProvider):
-
     def __init__(
         self, api_key: str, default_model: str = "claude-3-5-sonnet-20240620"
     ) -> None:
@@ -34,7 +33,9 @@ class AnthropicLLMAdapter(LlmProvider):
     @property
     def client(self) -> anthropic.AsyncAnthropic:
         if self._client is None:
-            self._client = anthropic.AsyncAnthropic(api_key=self._api_key or "placeholder-key")
+            self._client = anthropic.AsyncAnthropic(
+                api_key=self._api_key or "placeholder-key"
+            )
         return self._client
 
     def _client_for_key(self, api_key: str | None) -> anthropic.AsyncAnthropic:
@@ -42,7 +43,9 @@ class AnthropicLLMAdapter(LlmProvider):
             return anthropic.AsyncAnthropic(api_key=api_key)
         return self.client
 
-    def _compile_messages(self, messages: list[ChatMessage]) -> tuple[str, list[dict[str, Any]]]:
+    def _compile_messages(
+        self, messages: list[ChatMessage]
+    ) -> tuple[str, list[dict[str, Any]]]:
         system_parts = []
         compiled_history = []
 
@@ -58,16 +61,19 @@ class AnthropicLLMAdapter(LlmProvider):
                         if url.startswith("data:image"):
                             media_type = url.split(";")[0].split(":")[1]
                             data = url.split(",")[1]
-                            content_block.append({
-                                "type": "image",
-                                "source": {"type": "base64", "media_type": media_type, "data": data},
-                            })
+                            content_block.append(
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": data,
+                                    },
+                                }
+                            )
                     compiled_history.append({"role": role, "content": content_block})
                 else:
-                    compiled_history.append({
-                        "role": role,
-                        "content": msg.content
-                    })
+                    compiled_history.append({"role": role, "content": msg.content})
 
         system_prompt = "\n\n".join(system_parts)
         return system_prompt, compiled_history
@@ -143,7 +149,8 @@ class AnthropicLLMAdapter(LlmProvider):
                         "usage": {
                             "input_tokens": getattr(usage, "input_tokens", 0) or 0,
                             "output_tokens": getattr(usage, "output_tokens", 0) or 0,
-                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0) + (getattr(usage, "output_tokens", 0) or 0),
+                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0)
+                            + (getattr(usage, "output_tokens", 0) or 0),
                         }
                     }
             elif event.type == "content_block_delta":
@@ -155,7 +162,8 @@ class AnthropicLLMAdapter(LlmProvider):
                         "usage": {
                             "input_tokens": getattr(usage, "input_tokens", 0) or 0,
                             "output_tokens": usage.output_tokens or 0,
-                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0) + usage.output_tokens,
+                            "total_tokens": (getattr(usage, "input_tokens", 0) or 0)
+                            + usage.output_tokens,
                         }
                     }
                 yield {"delta": "", "finish_reason": event.delta.stop_reason}

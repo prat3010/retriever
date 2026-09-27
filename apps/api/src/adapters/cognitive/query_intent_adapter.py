@@ -22,8 +22,9 @@ CLASSIFY_SYSTEM_PROMPT = (
 
 
 class LLMQueryIntentAdapter(QueryIntentClassifier):
-
-    def __init__(self, llm: LlmProvider, model: str = "meta-llama/llama-3.3-70b-instruct") -> None:
+    def __init__(
+        self, llm: LlmProvider, model: str = "meta-llama/llama-3.3-70b-instruct"
+    ) -> None:
         self.llm = llm
         self.model = model
 

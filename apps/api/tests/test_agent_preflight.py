@@ -70,7 +70,9 @@ def test_init_env(tmp_path: Path):
     assert res["success"] is True
     assert res["created"] is True
     assert (tmp_path / ".env").is_file()
-    assert "POSTGRES_PASSWORD=testpass" in (tmp_path / ".env").read_text(encoding="utf-8")
+    assert "POSTGRES_PASSWORD=testpass" in (tmp_path / ".env").read_text(
+        encoding="utf-8"
+    )
 
     # Second call should not overwrite
     res2 = init_env(tmp_path)

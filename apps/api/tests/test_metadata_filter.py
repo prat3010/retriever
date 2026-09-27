@@ -1,6 +1,5 @@
 """Tests for M18: Metadata & Tag Filtering."""
 
-
 import pytest
 
 from src.adapters.vector.filter_builder import build_filter_clause
@@ -78,7 +77,9 @@ def test_exists_filter() -> None:
 
 
 def test_contains_filter() -> None:
-    flt = [MetadataFilter(field="metadata", operator="contains", value='{"key": "val"}')]
+    flt = [
+        MetadataFilter(field="metadata", operator="contains", value='{"key": "val"}')
+    ]
     sql, params, _ = build_filter_clause(flt, [])
     assert "dc.meta_data @> :f_0::jsonb" in sql
     assert params["f_0"] == '{"key": "val"}'
@@ -125,7 +126,7 @@ def test_rejects_sql_injection_field_name() -> None:
 
 
 def test_rejects_field_name_with_quotes_and_spaces() -> None:
-    flt = [MetadataFilter(field="dept\" OR 1=1 --", operator="eq", value="x")]
+    flt = [MetadataFilter(field='dept" OR 1=1 --', operator="eq", value="x")]
     with pytest.raises(InvalidFilterError):
         build_filter_clause(flt, [])
 
@@ -139,7 +140,11 @@ def test_rejects_field_name_without_quotes() -> None:
 def test_rejects_unknown_operator() -> None:
     # model_construct bypasses the pydantic Literal validation to exercise the
     # builder's own defense-in-depth guard for unsupported operators.
-    flt = [MetadataFilter.model_construct(field="status", operator="regex_replace", value="x")]
+    flt = [
+        MetadataFilter.model_construct(
+            field="status", operator="regex_replace", value="x"
+        )
+    ]
     with pytest.raises(InvalidFilterError):
         build_filter_clause(flt, [])
 

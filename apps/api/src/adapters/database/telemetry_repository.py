@@ -41,32 +41,30 @@ class SqlTelemetryRepository:
             storage_bytes = int(doc_res[1]) if doc_res and doc_res[1] else 0
 
             # 2. Token Usage & Latencies
-            inf_stmt = (
-                select(
-                    func.coalesce(func.sum(InferenceLogDb.prompt_tokens + InferenceLogDb.completion_tokens), 0),
-                    func.coalesce(func.avg(InferenceLogDb.latency_ms), 0.0),
-                )
-                .where(InferenceLogDb.tenant_id == tenant_uuid)
-            )
+            inf_stmt = select(
+                func.coalesce(
+                    func.sum(
+                        InferenceLogDb.prompt_tokens + InferenceLogDb.completion_tokens
+                    ),
+                    0,
+                ),
+                func.coalesce(func.avg(InferenceLogDb.latency_ms), 0.0),
+            ).where(InferenceLogDb.tenant_id == tenant_uuid)
             inf_res = (await session.execute(inf_stmt)).first()
             tokens_used = int(inf_res[0]) if inf_res and inf_res[0] else 0
             avg_latency = float(inf_res[1]) if inf_res and inf_res[1] else 0.0
 
             # 3. Semantic Cache Hits
-            cache_stmt = (
-                select(func.count(SemanticCacheDb.cache_id))
-                .where(SemanticCacheDb.tenant_id == tenant_uuid)
+            cache_stmt = select(func.count(SemanticCacheDb.cache_id)).where(
+                SemanticCacheDb.tenant_id == tenant_uuid
             )
             cache_hits = (await session.execute(cache_stmt)).scalar() or 0
 
             # 4. User Feedback & Satisfaction
-            fb_stmt = (
-                select(
-                    func.count().filter(ChatMessageFeedbackDb.rating == 1),
-                    func.count().filter(ChatMessageFeedbackDb.rating == -1),
-                )
-                .where(ChatMessageFeedbackDb.tenant_id == tenant_uuid)
-            )
+            fb_stmt = select(
+                func.count().filter(ChatMessageFeedbackDb.rating == 1),
+                func.count().filter(ChatMessageFeedbackDb.rating == -1),
+            ).where(ChatMessageFeedbackDb.tenant_id == tenant_uuid)
             fb_res = (await session.execute(fb_stmt)).first()
             thumbs_up = int(fb_res[0]) if fb_res and fb_res[0] else 0
             thumbs_down = int(fb_res[1]) if fb_res and fb_res[1] else 0
@@ -76,18 +74,21 @@ class SqlTelemetryRepository:
             )
 
             # 5. Online Quality Evaluations
-            eval_stmt = (
-                select(
-                    func.coalesce(func.avg(OnlineEvaluationDb.faithfulness_score), 0.95),
-                    func.coalesce(func.avg(OnlineEvaluationDb.context_precision), 0.90),
-                    func.coalesce(func.avg(OnlineEvaluationDb.hallucination_index), 0.05),
-                )
-                .where(OnlineEvaluationDb.tenant_id == tenant_uuid)
-            )
+            eval_stmt = select(
+                func.coalesce(func.avg(OnlineEvaluationDb.faithfulness_score), 0.95),
+                func.coalesce(func.avg(OnlineEvaluationDb.context_precision), 0.90),
+                func.coalesce(func.avg(OnlineEvaluationDb.hallucination_index), 0.05),
+            ).where(OnlineEvaluationDb.tenant_id == tenant_uuid)
             eval_res = (await session.execute(eval_stmt)).first()
-            avg_faithfulness = round(float(eval_res[0]), 4) if eval_res and eval_res[0] else 0.95
-            avg_precision = round(float(eval_res[1]), 4) if eval_res and eval_res[1] else 0.90
-            hallucination_idx = round(float(eval_res[2]), 4) if eval_res and eval_res[2] else 0.05
+            avg_faithfulness = (
+                round(float(eval_res[0]), 4) if eval_res and eval_res[0] else 0.95
+            )
+            avg_precision = (
+                round(float(eval_res[1]), 4) if eval_res and eval_res[1] else 0.90
+            )
+            hallucination_idx = (
+                round(float(eval_res[2]), 4) if eval_res and eval_res[2] else 0.05
+            )
 
             cost_saved = round(cache_hits * 0.003, 2)
             latency_saved = cache_hits * 850

@@ -39,7 +39,9 @@ async def test_search_similar_routes_to_1024_table() -> None:
     mock_result.fetchall.return_value = []
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.vector.vector_repository.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.vector.vector_repository.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         results = await adapter.search_similar(
@@ -66,7 +68,9 @@ async def test_search_similar_routes_to_1536_table() -> None:
     mock_result.fetchall.return_value = []
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.vector.vector_repository.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.vector.vector_repository.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         results = await adapter.search_similar(
@@ -93,7 +97,9 @@ async def test_search_similar_routes_to_3072_table() -> None:
     mock_result.fetchall.return_value = []
     mock_session.execute.return_value = mock_result
 
-    with patch("src.adapters.vector.vector_repository.tenant_session") as mock_tenant_session:
+    with patch(
+        "src.adapters.vector.vector_repository.tenant_session"
+    ) as mock_tenant_session:
         mock_tenant_session.return_value.__aenter__.return_value = mock_session
 
         results = await adapter.search_similar(

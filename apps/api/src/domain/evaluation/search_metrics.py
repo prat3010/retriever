@@ -10,7 +10,7 @@ def _dcg_at_k(relevance: list[float], k: int) -> float:
     dcg = 0.0
     for i, rel in enumerate(relevance[:k]):
         rank = i + 1
-        gain = (2.0 ** rel) - 1.0
+        gain = (2.0**rel) - 1.0
         discount = math.log2(rank + 1)
         dcg += gain / discount
     return dcg

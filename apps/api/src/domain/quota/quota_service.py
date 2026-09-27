@@ -54,7 +54,10 @@ class QuotaService:
                 status_code=402,
             )
 
-        if quotas.max_storage_bytes is not None and total_bytes + new_file_size > quotas.max_storage_bytes:
+        if (
+            quotas.max_storage_bytes is not None
+            and total_bytes + new_file_size > quotas.max_storage_bytes
+        ):
             raise QuotaExceededError(
                 resource_type="storage_bytes",
                 usage=total_bytes + new_file_size,

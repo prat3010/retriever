@@ -54,8 +54,12 @@ class ShardPartition(BaseModel):
     """A horizontal vector index partition mapped across consistent hash boundaries."""
 
     shard_id: str
-    tenant_id: str | None = None  # None for shared tenant shards; specific ID for dedicated tenant shards
-    hash_range_start: int = Field(ge=0, le=4294967295)  # 32-bit FNV-1a / Murmur ring range
+    tenant_id: str | None = (
+        None  # None for shared tenant shards; specific ID for dedicated tenant shards
+    )
+    hash_range_start: int = Field(
+        ge=0, le=4294967295
+    )  # 32-bit FNV-1a / Murmur ring range
     hash_range_end: int = Field(ge=0, le=4294967295)
     leader_node_id: str
     replica_node_ids: list[str] = Field(default_factory=list)
@@ -167,7 +171,9 @@ class ShardMutationRequest(BaseModel):
 
     tenant_id: str
     document_id: str
-    vectors: list[dict[str, Any]]  # List of chunk vectors: [{"chunk_id": str, "vector": list[float], "text": str, "metadata": dict}]
+    vectors: list[
+        dict[str, Any]
+    ]  # List of chunk vectors: [{"chunk_id": str, "vector": list[float], "text": str, "metadata": dict}]
     write_quorum: WriteQuorum = WriteQuorum.QUORUM
 
 
@@ -185,8 +191,9 @@ class ShardMutationResponse(BaseModel):
 class VectorStoragePort(Protocol):
     """Abstract port for low-level vector persistence and local nearest-neighbor search."""
 
-    async def insert_vectors(self, shard_id: str, vectors: list[dict[str, Any]]) -> int:
-        ...
+    async def insert_vectors(
+        self, shard_id: str, vectors: list[dict[str, Any]]
+    ) -> int: ...
 
     async def search_vectors(
         self,
@@ -194,11 +201,10 @@ class VectorStoragePort(Protocol):
         query_vector: list[float],
         top_k: int,
         filter_metadata: dict[str, Any] | None = None,
-    ) -> list[ShardCandidate]:
-        ...
+    ) -> list[ShardCandidate]: ...
 
-    async def snapshot_shard(self, shard_id: str) -> dict[str, Any]:
-        ...
+    async def snapshot_shard(self, shard_id: str) -> dict[str, Any]: ...
 
-    async def restore_snapshot(self, shard_id: str, snapshot_data: dict[str, Any]) -> bool:
-        ...
+    async def restore_snapshot(
+        self, shard_id: str, snapshot_data: dict[str, Any]
+    ) -> bool: ...

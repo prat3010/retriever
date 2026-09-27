@@ -52,7 +52,11 @@ async def _resolve_mcp_user(
             pass
 
     # 2. Try query parameter token
-    token = token_param or request.query_params.get("token") or request.query_params.get("api_key")
+    token = (
+        token_param
+        or request.query_params.get("token")
+        or request.query_params.get("api_key")
+    )
     if token:
         clean_token = token[7:] if token.lower().startswith("bearer ") else token
         try:
@@ -61,7 +65,9 @@ async def _resolve_mcp_user(
             pass
 
     # 3. Fallback for test / dev environment if configured
-    tenant_override = request.query_params.get("tenant_id") or request.headers.get("X-Tenant-ID")
+    tenant_override = request.query_params.get("tenant_id") or request.headers.get(
+        "X-Tenant-ID"
+    )
     if tenant_override:
         return UserContext(
             user_id="mcp-client",
@@ -79,8 +85,12 @@ async def _resolve_mcp_user(
 @router.get("/sse")
 async def mcp_sse_endpoint(
     request: Request,
-    sessionId: str | None = Query(None, description="Optional persistent session identifier"),
-    token: str | None = Query(None, description="Optional bearer token passed via query parameter"),
+    sessionId: str | None = Query(
+        None, description="Optional persistent session identifier"
+    ),
+    token: str | None = Query(
+        None, description="Optional bearer token passed via query parameter"
+    ),
 ) -> StreamingResponse:
     """Establish a persistent Server-Sent Events (SSE) stream for MCP clients."""
     user = await _resolve_mcp_user(request, token_param=token)
@@ -90,7 +100,9 @@ async def mcp_sse_endpoint(
     _mcp_sessions[session_id] = session_queue
     _session_tenants[session_id] = user.tenant_id
 
-    logger.info(f"Opened MCP SSE stream for session '{session_id}' (tenant: '{user.tenant_id}')")
+    logger.info(
+        f"Opened MCP SSE stream for session '{session_id}' (tenant: '{user.tenant_id}')"
+    )
 
     async def event_generator() -> AsyncGenerator[str, None]:
         # MCP 2024-11-05 standard: initial event advertises the message POST endpoint
@@ -167,7 +179,11 @@ async def mcp_messages_endpoint(
         )
     elif payload.method in ("notifications/initialized", "initialized"):
         # Client acknowledgment notification
-        return Response(status_code=status.HTTP_202_ACCEPTED, content="Accepted", media_type="text/plain")
+        return Response(
+            status_code=status.HTTP_202_ACCEPTED,
+            content="Accepted",
+            media_type="text/plain",
+        )
     elif payload.method == "ping":
         rpc_response = McpJsonRpcResponse(
             jsonrpc="2.0",
@@ -175,7 +191,9 @@ async def mcp_messages_endpoint(
             result={},
         )
     elif payload.method == "tools/list":
-        tools = battery_mcp_adapter.get_tool_definitions(tenant_id=tenant_id or "default")
+        tools = battery_mcp_adapter.get_tool_definitions(
+            tenant_id=tenant_id or "default"
+        )
         tools_dict = [t.model_dump(exclude_none=True) for t in tools]
         rpc_response = McpJsonRpcResponse(
             jsonrpc="2.0",
@@ -215,7 +233,11 @@ async def mcp_messages_endpoint(
     # Deliver response to SSE session queue if session is active
     if sessionId and sessionId in _mcp_sessions:
         await _mcp_sessions[sessionId].put(rpc_response.model_dump())
-        return Response(status_code=status.HTTP_202_ACCEPTED, content="Accepted", media_type="text/plain")
+        return Response(
+            status_code=status.HTTP_202_ACCEPTED,
+            content="Accepted",
+            media_type="text/plain",
+        )
 
     # Otherwise return standard JSON response
     return JSONResponse(content=rpc_response.model_dump())
@@ -236,7 +258,11 @@ async def get_mcp_configuration(
 
     # Extract clean api key from request header if present, else provide placeholder
     auth_header = request.headers.get("Authorization", "")
-    api_key = auth_header[7:] if auth_header.lower().startswith("bearer ") else "YOUR_RETRIEVER_API_KEY"
+    api_key = (
+        auth_header[7:]
+        if auth_header.lower().startswith("bearer ")
+        else "YOUR_RETRIEVER_API_KEY"
+    )
 
     base_url = str(request.base_url).rstrip("/")
 

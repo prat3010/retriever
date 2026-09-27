@@ -8,6 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def reset_engine():
     import workers.src.tasks
+
     workers.src.tasks._engine = None
 
 
@@ -50,19 +51,23 @@ async def test_generate_embeddings_happy_path(
         await _run_generate_embeddings(doc_id, tenant_id)
 
     bypass_rls_count = sum(
-        1 for call in mock_conn.execute.call_args_list
+        1
+        for call in mock_conn.execute.call_args_list
         if hasattr(call[0][0], "text") and "SET LOCAL app.bypass_rls" in call[0][0].text
     )
     assert bypass_rls_count >= 2
 
     upsert_calls = [
-        call for call in mock_conn.execute.call_args_list
-        if hasattr(call[0][0], "text") and "INSERT INTO vector_records" in call[0][0].text
+        call
+        for call in mock_conn.execute.call_args_list
+        if hasattr(call[0][0], "text")
+        and "INSERT INTO vector_records" in call[0][0].text
     ]
     assert len(upsert_calls) == 2
 
     status_update = any(
-        hasattr(call[0][0], "text") and "UPDATE documents SET status = 'INDEXED'" in call[0][0].text
+        hasattr(call[0][0], "text")
+        and "UPDATE documents SET status = 'INDEXED'" in call[0][0].text
         for call in mock_conn.execute.call_args_list
     )
     assert status_update
@@ -178,7 +183,9 @@ async def test_generate_embeddings_config_overrides_model(
     mock_result.fetchall.return_value = [("chunk-1", "content")]
     mock_conn.execute = AsyncMock(return_value=mock_result)
 
-    with patch("workers.src.tasks.embed_with_retry", new_callable=AsyncMock) as mock_embed:
+    with patch(
+        "workers.src.tasks.embed_with_retry", new_callable=AsyncMock
+    ) as mock_embed:
         mock_embed.return_value = [[0.5]]
         await _run_generate_embeddings(doc_id, tenant_id)
 
@@ -222,13 +229,15 @@ async def test_generate_embeddings_failure_sets_failed(
             await _run_generate_embeddings(doc_id, tenant_id)
 
     failed_update = any(
-        hasattr(call[0][0], "text") and "UPDATE documents SET status = 'FAILED'" in call[0][0].text
+        hasattr(call[0][0], "text")
+        and "UPDATE documents SET status = 'FAILED'" in call[0][0].text
         for call in mock_conn.execute.call_args_list
     )
     assert failed_update
 
     failed_events = [
-        call for call in mock_publish_event.call_args_list
+        call
+        for call in mock_publish_event.call_args_list
         if call[0][0]["eventType"] == "DOCUMENT_FAILED"
     ]
     assert len(failed_events) == 1
@@ -271,7 +280,9 @@ async def test_generate_embeddings_multi_dimension_routing(
         await _run_generate_embeddings(doc_id, tenant_id)
 
     upsert_calls_1536 = [
-        call for call in mock_conn.execute.call_args_list
-        if hasattr(call[0][0], "text") and "INSERT INTO vector_records_1536" in call[0][0].text
+        call
+        for call in mock_conn.execute.call_args_list
+        if hasattr(call[0][0], "text")
+        and "INSERT INTO vector_records_1536" in call[0][0].text
     ]
     assert len(upsert_calls_1536) == 1

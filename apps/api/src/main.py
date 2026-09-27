@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     try:
         from src.container import plugin_manager
+
         plugin_manager.discover_and_mount_all(app)
     except Exception as e:
         logger.warning(f"PluginManager startup discovery warning: {e}")
@@ -100,7 +101,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 rate_limit_max = int(os.getenv("TENANT_RATE_LIMIT", "1000"))
-app.add_middleware(TenantRateLimiterMiddleware, default_limit=rate_limit_max, window_seconds=60)
+app.add_middleware(
+    TenantRateLimiterMiddleware, default_limit=rate_limit_max, window_seconds=60
+)
 
 # Initialize components (singletons wired in container)
 
@@ -110,7 +113,9 @@ logger = logging.getLogger(__name__)
 
 @app.exception_handler(Exception)
 async def handle_unhandled(request, exc):
-    logger.error(f"Unhandled exception on {request.method} {request.url.path}", exc_info=exc)
+    logger.error(
+        f"Unhandled exception on {request.method} {request.url.path}", exc_info=exc
+    )
     # Never leak stack traces or internals to API clients.
     return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
@@ -122,7 +127,9 @@ async def handle_invalid_filter(request, exc):
 
 @app.exception_handler(TenantIsolationViolationError)
 async def handle_isolation_violation(request, exc):
-    logger.warning(f"Tenant isolation violation on {request.method} {request.url.path}: {exc}")
+    logger.warning(
+        f"Tenant isolation violation on {request.method} {request.url.path}: {exc}"
+    )
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
         content={"detail": str(exc), "error_code": "TENANT_ISOLATION_VIOLATION"},
@@ -135,6 +142,7 @@ async def handle_auth_error(request, exc):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": str(exc), "error_code": "AUTHENTICATION_REQUIRED"},
     )
+
 
 @app.exception_handler(QuotaExceededError)
 async def handle_quota_error(request, exc: QuotaExceededError):
@@ -173,12 +181,12 @@ async def handle_budget_exceeded_error(request, exc: BudgetExceededError):
     )
 
 
-
 # --- Router Includes ---
 
 from src.routers.admin import router as admin_router
 from src.routers.agent_swarm import router as agent_swarm_router
 from src.routers.agentic import router as agentic_router
+from src.routers.appliance import router as appliance_router
 from src.routers.auth import router as auth_router
 from src.routers.benchmark import router as benchmark_router
 from src.routers.chat import router as chat_router
@@ -230,6 +238,7 @@ from src.routers.zkp import router as zkp_router
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(appliance_router)
 app.include_router(mcp_router)
 app.include_router(mcp_mesh_router)
 app.include_router(vector_sharding_router)

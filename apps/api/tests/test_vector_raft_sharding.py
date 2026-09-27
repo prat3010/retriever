@@ -65,7 +65,10 @@ def test_battery_32_registration():
 
     assert "vector_raft_sharding" in battery_map
     b32 = battery_map["vector_raft_sharding"]
-    assert b32.name == "Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus"
+    assert (
+        b32.name
+        == "Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus"
+    )
     assert b32.category == BatteryCategory.EDGE_DISTRIBUTION
     assert b32.status == BatteryStatus.ACTIVE
     assert b32.milestone == "M117 (v1.7.0-alpha1)"
@@ -121,11 +124,23 @@ def test_raft_leader_election(sharding_service: VectorRaftShardingService):
 
 
 @pytest.mark.asyncio
-async def test_vector_mutation_and_replication(sharding_service: VectorRaftShardingService):
+async def test_vector_mutation_and_replication(
+    sharding_service: VectorRaftShardingService,
+):
     """Verify vector index mutations are committed through the Raft consensus log."""
     vectors = [
-        {"chunk_id": "chunk_1", "vector": [0.1, 0.2, 0.3], "text": "Doc 1 text", "metadata": {"tag": "alpha"}},
-        {"chunk_id": "chunk_2", "vector": [0.4, 0.5, 0.6], "text": "Doc 2 text", "metadata": {"tag": "beta"}},
+        {
+            "chunk_id": "chunk_1",
+            "vector": [0.1, 0.2, 0.3],
+            "text": "Doc 1 text",
+            "metadata": {"tag": "alpha"},
+        },
+        {
+            "chunk_id": "chunk_2",
+            "vector": [0.4, 0.5, 0.6],
+            "text": "Doc 2 text",
+            "metadata": {"tag": "beta"},
+        },
     ]
     req = ShardMutationRequest(
         tenant_id="tenant_acme",
@@ -155,7 +170,9 @@ async def test_vector_mutation_and_replication(sharding_service: VectorRaftShard
 
 
 @pytest.mark.asyncio
-async def test_scatter_gather_search_and_fusion(sharding_service: VectorRaftShardingService):
+async def test_scatter_gather_search_and_fusion(
+    sharding_service: VectorRaftShardingService,
+):
     """Verify parallel scatter-gather vector query executes and ranks results across shards."""
     # Insert vectors across 2 distinct documents
     await sharding_service.commit_vector_mutation(
@@ -163,8 +180,16 @@ async def test_scatter_gather_search_and_fusion(sharding_service: VectorRaftShar
             tenant_id="tenant_globex",
             document_id="doc_a",
             vectors=[
-                {"chunk_id": "c_a1", "vector": [1.0, 0.0, 0.0], "text": "Exact query vector match"},
-                {"chunk_id": "c_a2", "vector": [0.0, 1.0, 0.0], "text": "Orthogonal vector"},
+                {
+                    "chunk_id": "c_a1",
+                    "vector": [1.0, 0.0, 0.0],
+                    "text": "Exact query vector match",
+                },
+                {
+                    "chunk_id": "c_a2",
+                    "vector": [0.0, 1.0, 0.0],
+                    "text": "Orthogonal vector",
+                },
             ],
         )
     )
@@ -173,7 +198,11 @@ async def test_scatter_gather_search_and_fusion(sharding_service: VectorRaftShar
             tenant_id="tenant_globex",
             document_id="doc_b",
             vectors=[
-                {"chunk_id": "c_b1", "vector": [0.95, 0.05, 0.0], "text": "Very close match"},
+                {
+                    "chunk_id": "c_b1",
+                    "vector": [0.95, 0.05, 0.0],
+                    "text": "Very close match",
+                },
             ],
         )
     )
@@ -235,7 +264,13 @@ async def test_online_shard_rebalancing(sharding_service: VectorRaftShardingServ
         ShardMutationRequest(
             tenant_id="tenant_acme",
             document_id="doc_x",
-            vectors=[{"chunk_id": "cx_1", "vector": [0.5, 0.5, 0.0], "text": "Shard rebalancing test"}],
+            vectors=[
+                {
+                    "chunk_id": "cx_1",
+                    "vector": [0.5, 0.5, 0.0],
+                    "text": "Shard rebalancing test",
+                }
+            ],
         )
     )
 
@@ -259,7 +294,9 @@ async def test_online_shard_rebalancing(sharding_service: VectorRaftShardingServ
 
     # Same source and target should conflict
     with pytest.raises(ShardRebalanceConflictError):
-        await sharding_service.trigger_shard_rebalance(target_node, target_node, "shard_000")
+        await sharding_service.trigger_shard_rebalance(
+            target_node, target_node, "shard_000"
+        )
 
 
 def test_shard_snapshot(sharding_service: VectorRaftShardingService):
@@ -296,7 +333,13 @@ def test_fastapi_endpoints(client: TestClient):
         json={
             "tenant_id": "tenant_api_test",
             "document_id": "doc_rest_1",
-            "vectors": [{"chunk_id": "api_c1", "vector": [0.2, 0.4, 0.6], "text": "API test chunk"}],
+            "vectors": [
+                {
+                    "chunk_id": "api_c1",
+                    "vector": [0.2, 0.4, 0.6],
+                    "text": "API test chunk",
+                }
+            ],
             "write_quorum": "quorum",
         },
     )
@@ -324,7 +367,11 @@ def test_fastapi_endpoints(client: TestClient):
     # 5. POST /v1/shards/rebalance
     r_reb = client.post(
         "/v1/shards/rebalance",
-        json={"source_node_id": "node_core_01", "target_node_id": "node_core_02", "shard_id": "shard_002"},
+        json={
+            "source_node_id": "node_core_01",
+            "target_node_id": "node_core_02",
+            "shard_id": "shard_002",
+        },
     )
     assert r_reb.status_code == 200
     data_reb = r_reb.json()

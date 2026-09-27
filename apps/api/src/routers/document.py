@@ -1,4 +1,5 @@
 """Document management routes."""
+
 import hashlib
 import hmac
 import json
@@ -69,7 +70,11 @@ async def _cache_idempotency(tenantId: str, key: str, payload: dict) -> None:
 @router.post(
     "/v1/tenants/{tenantId}/documents",
     status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"]), Depends(rate_limit(scope="ingest", max_requests=20))],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:write"]),
+        Depends(rate_limit(scope="ingest", max_requests=20)),
+    ],
 )
 async def upload_document(
     tenantId: str,
@@ -146,7 +151,12 @@ async def upload_document(
         try:
             celery_app.send_task(
                 "process_document",
-                args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+                args=[
+                    str(doc_id),
+                    tenantId,
+                    storage_path,
+                    str(file.content_type or ""),
+                ],
                 queue="ingestion.parse",
             )
         except Exception:
@@ -169,7 +179,10 @@ async def upload_document(
 @router.get(
     "/v1/tenants/{tenantId}/documents",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def list_documents(
     tenantId: str,
@@ -200,11 +213,13 @@ async def list_documents(
             "pagination": {
                 "nextCursor": next_cursor,
                 "limit": limit_val,
-                "hasMore": has_more
-            }
+                "hasMore": has_more,
+            },
         }
     else:
-        documents = await document_repository.list_documents(tenantId, collection_id=collection_id)
+        documents = await document_repository.list_documents(
+            tenantId, collection_id=collection_id
+        )
         return [
             DocumentResponse(
                 documentId=doc.document_id,
@@ -214,7 +229,7 @@ async def list_documents(
                 mimeType=doc.mime_type,
                 status=doc.status,
                 createdAt=doc.created_at,
-                updatedAt=doc.updated_at
+                updatedAt=doc.updated_at,
             )
             for doc in documents
         ]
@@ -224,20 +239,34 @@ async def list_documents(
     "/v1/tenants/{tenantId}/documents/{documentId}",
     status_code=status.HTTP_200_OK,
     response_model=DocumentResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def get_document(tenantId: str, documentId: str) -> DocumentResponse:
     """Retrieve document metadata processing pipeline status."""
     d = await document_repository.get_document(tenantId, documentId)
     if not d:
         raise HTTPException(status_code=404, detail="Document not found.")
-    return DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at)
+    return DocumentResponse(
+        documentId=d.document_id,
+        filename=d.filename,
+        fileSize=d.file_size,
+        mimeType=d.mime_type,
+        status=d.status,
+        createdAt=d.created_at,
+        updatedAt=d.updated_at,
+    )
 
 
 @router.delete(
     "/v1/tenants/{tenantId}/documents/{documentId}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:delete"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:delete"]),
+    ],
 )
 async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     """Delete document source file, cascade chunks, and mark records deleted."""
@@ -246,7 +275,10 @@ async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
         raise HTTPException(status_code=404, detail="Document not found.")
 
     # Guard: immutable system contract documents cannot be deleted by clients
-    if any(tag in (d.tags or []) for tag in ["is_system", "system", "locked", "contract_baseline"]):
+    if any(
+        tag in (d.tags or [])
+        for tag in ["is_system", "system", "locked", "contract_baseline"]
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="System baseline contract documents cannot be deleted.",
@@ -263,7 +295,10 @@ async def delete_document(tenantId: str, documentId: str) -> dict[str, str]:
     "/v1/tenants/{tenantId}/documents/{documentId}/extract",
     status_code=status.HTTP_200_OK,
     response_model=ExtractResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def extract_document(
     tenantId: str,
@@ -287,7 +322,9 @@ async def extract_document(
 
     config: dict[str, Any] = {"model": payload.model} if payload.model else {}
     response = await inference_orchestrator.llm.generate(
-        InferenceRequest(messages=messages, temperature=0.1, json_schema=payload.json_schema),
+        InferenceRequest(
+            messages=messages, temperature=0.1, json_schema=payload.json_schema
+        ),
         config,
     )
     try:
@@ -307,7 +344,10 @@ async def extract_document(
 @router.get(
     "/v1/tenants/{tenantId}/documents/{documentId}/download-url",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def get_document_download_url(
     tenantId: str,
@@ -320,9 +360,13 @@ async def get_document_download_url(
         raise HTTPException(status_code=404, detail="Document not found.")
 
     try:
-        download_url = await local_storage.generate_presigned_url(doc.storage_path, expiry_seconds=expiry)
+        download_url = await local_storage.generate_presigned_url(
+            doc.storage_path, expiry_seconds=expiry
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {e!s}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate download URL: {e!s}"
+        ) from e
 
     return {
         "documentId": documentId,
@@ -352,7 +396,9 @@ async def serve_local_download(
         or "\x00" in tenantId
         or tenantId in (".", "..")
     ):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid tenantId.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid tenantId."
+        )
     if (
         not filename
         or "\x00" in filename
@@ -360,11 +406,15 @@ async def serve_local_download(
         or filename != os.path.basename(filename)
         or filename in (".", "..")
     ):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename."
+        )
 
     # 1. Check expiration
     if int(time.time()) > expires:
-        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This download link has expired.")
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE, detail="This download link has expired."
+        )
 
     # 2. Verify signature
     relative_path = f"{tenantId}/{filename}"
@@ -373,17 +423,24 @@ async def serve_local_download(
     expected_sig = hmac.new(secret_key, msg=msg, digestmod=hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(signature, expected_sig):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid signature.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid signature."
+        )
 
     # 3. Serve file from local storage directory
     if not hasattr(local_storage, "storage_dir"):
-        raise HTTPException(status_code=500, detail="Local downloads are only supported in local storage mode.")
+        raise HTTPException(
+            status_code=500,
+            detail="Local downloads are only supported in local storage mode.",
+        )
 
     file_path = os.path.join(local_storage.storage_dir, tenantId, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on disk.")
 
-    return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+    return FileResponse(
+        file_path, media_type="application/octet-stream", filename=filename
+    )
 
 
 @router.post(

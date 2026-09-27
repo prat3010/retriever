@@ -16,7 +16,13 @@ from datetime import datetime, timezone
 
 from celery import Task
 import pika
-from processing_core import chunk_recursive, chunk_semantic, chunk_text, embed_with_retry, extract_text_from_file
+from processing_core import (
+    chunk_recursive,
+    chunk_semantic,
+    chunk_text,
+    embed_with_retry,
+    extract_text_from_file,
+)
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
@@ -77,6 +83,7 @@ def _ocr_with_tesseract(path: str, mime_type: str) -> str:
     try:
         if mime_type == "application/pdf":
             import pdfplumber
+
             texts = []
             with pdfplumber.open(path) as pdf:
                 for i, page in enumerate(pdf.pages):
@@ -86,7 +93,7 @@ def _ocr_with_tesseract(path: str, mime_type: str) -> str:
                     buf.seek(0)
                     text = pytesseract.image_to_string(Image.open(buf))
                     if text.strip():
-                        texts.append(f"--- Page {i+1} ---\n{text}")
+                        texts.append(f"--- Page {i + 1} ---\n{text}")
             return "\n\n".join(texts)
         else:
             return pytesseract.image_to_string(Image.open(path))
@@ -98,6 +105,7 @@ def _ocr_with_tesseract(path: str, mime_type: str) -> str:
 def _ocr_with_rapidocr(path: str, mime_type: str) -> str:
     try:
         from rapidocr_onnxruntime import RapidOCR
+
         engine = RapidOCR()
     except Exception:
         return ""
@@ -122,53 +130,69 @@ def _ocr_with_rapidocr(path: str, mime_type: str) -> str:
                         arr = path
                     result, _ = engine(arr)
                     if result:
-                        page_text = "\n".join([line[1] for line in result if len(line) > 1 and line[1]])
+                        page_text = "\n".join(
+                            [line[1] for line in result if len(line) > 1 and line[1]]
+                        )
                         if page_text.strip():
-                            texts.append(f"--- Page {i+1} ---\n{page_text}")
+                            texts.append(f"--- Page {i + 1} ---\n{page_text}")
             return "\n\n".join(texts)
         else:
             result, _ = engine(path)
             if result:
-                return "\n".join([line[1] for line in result if len(line) > 1 and line[1]])
+                return "\n".join(
+                    [line[1] for line in result if len(line) > 1 and line[1]]
+                )
             return ""
     except Exception:
         return ""
 
 
-def _get_decrypted_key(config: dict, provider_key: str, env_key: str, tenant_id: str) -> str:
+def _get_decrypted_key(
+    config: dict, provider_key: str, env_key: str, tenant_id: str
+) -> str:
     """Safely retrieve and decrypt the provider API key, checking platform key permission constraints."""
     provider_config = config.get(provider_key, {})
     api_key = provider_config.get("api_key", "")
-    
+
     if api_key and api_key != "********":
         try:
             from processing_core import ConfigEncrypter
+
             enc = ConfigEncrypter()
             api_key = enc.decrypt(api_key)
         except Exception:
             pass
-            
+
     if not api_key or api_key == "********":
         # Check feature flags to allow platform key fallback, or allow if system tenant
-        allow_platform = config.get("feature_flags", {}).get("allow_platform_key", False)
+        allow_platform = config.get("feature_flags", {}).get(
+            "allow_platform_key", False
+        )
         is_system = tenant_id == "00000000-0000-0000-0000-000000000000"
         if allow_platform or is_system:
             api_key = os.environ.get(env_key, os.environ.get("OPENAI_API_KEY", ""))
         else:
             api_key = ""
-            
+
     return api_key
 
 
 # ponytail: vision extraction for images and zero-text PDFs
-def _describe_with_vision(path: str, mime_type: str, config: dict, tenant_id: str = "00000000-0000-0000-0000-000000000000") -> str:
+def _describe_with_vision(
+    path: str,
+    mime_type: str,
+    config: dict,
+    tenant_id: str = "00000000-0000-0000-0000-000000000000",
+) -> str:
     import base64
     import openai
 
     api_key = _get_decrypted_key(config, "ai_provider", "OPENAI_API_KEY", tenant_id)
     if not api_key:
         return ""
-    base_url = config.get("ai_provider", {}).get("base_url") or os.environ.get("OPENAI_BASE_URL")
+    base_url = config.get("ai_provider", {}).get("base_url") or os.environ.get(
+        "OPENAI_BASE_URL"
+    )
     client_opts = {"api_key": api_key}
     if base_url:
         client_opts["base_url"] = base_url
@@ -182,44 +206,70 @@ def _describe_with_vision(path: str, mime_type: str, config: dict, tenant_id: st
         descriptions = []
         try:
             import pdfplumber
+
             with pdfplumber.open(path) as pdf:
                 for page in pdf.pages:
                     img = page.to_image(resolution=150)
                     import io
+
                     buf = io.BytesIO()
                     img.save(buf, format="PNG")
                     buf.seek(0)
                     image_data = buf.read()
                     b64 = base64.b64encode(image_data).decode("utf-8")
                     resp = client.chat.completions.create(
-                        model=config.get("ai_provider", {}).get("vision_model", "gpt-4o"),
-                        messages=[{
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": "Describe this document page in detail, including all visible text and visual elements."},
-                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
-                            ],
-                        }],
+                        model=config.get("ai_provider", {}).get(
+                            "vision_model", "gpt-4o"
+                        ),
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Describe this document page in detail, including all visible text and visual elements.",
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/png;base64,{b64}"
+                                        },
+                                    },
+                                ],
+                            }
+                        ],
                         max_tokens=4096,
                     )
                     descriptions.append(resp.choices[0].message.content or "")
         except Exception:
             return ""
-        parts = [f"--- Page {i+1} ---\n{desc}" for i, desc in enumerate(descriptions)]
+        parts = [f"--- Page {i + 1} ---\n{desc}" for i, desc in enumerate(descriptions)]
         return "\n\n".join(parts)
 
     b64 = base64.b64encode(image_data).decode("utf-8")
-    media_type = f"image/{mime_type.split('/')[-1]}" if mime_type.startswith("image/") else "image/png"
+    media_type = (
+        f"image/{mime_type.split('/')[-1]}"
+        if mime_type.startswith("image/")
+        else "image/png"
+    )
 
     resp = client.chat.completions.create(
         model=config.get("ai_provider", {}).get("vision_model", "gpt-4o"),
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "Describe this document page in detail, including all visible text and visual elements."},
-                {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{b64}"}},
-            ],
-        }],
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Describe this document page in detail, including all visible text and visual elements.",
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{media_type};base64,{b64}"},
+                    },
+                ],
+            }
+        ],
         max_tokens=4096,
     )
     return resp.choices[0].message.content or ""
@@ -246,10 +296,13 @@ def set_engine(engine: AsyncEngine) -> None:
 
 class DatabaseTask(Task):
     """Base task that provides DB engine access and UTC now."""
+
     pass
 
 
-async def _run_process_document(document_id: str, tenant_id: str, storage_path: str, mime_type: str = "") -> None:
+async def _run_process_document(
+    document_id: str, tenant_id: str, storage_path: str, mime_type: str = ""
+) -> None:
     engine = get_engine()
 
     async with engine.begin() as conn:
@@ -299,7 +352,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             client_opts = {}
             if endpoint_url:
                 client_opts["endpoint_url"] = endpoint_url
-                client_opts["config"] = Config(signature_version="s3v4", s3={"addressing_style": "path"})
+                client_opts["config"] = Config(
+                    signature_version="s3v4", s3={"addressing_style": "path"}
+                )
 
             s3 = boto3.client("s3", **client_opts)
             _, ext = os.path.splitext(key)
@@ -315,7 +370,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             text_content = extract_text_from_file(parse_target_path)
             # ponytail: OCR fallback chain — rapidocr first, then tesseract, then vision
             ocr_cfg = config_val.get("ocr_settings", {})
-            ocr_provider = ocr_cfg.get("provider", os.environ.get("DEFAULT_OCR_PROVIDER", "rapidocr")).lower()
+            ocr_provider = ocr_cfg.get(
+                "provider", os.environ.get("DEFAULT_OCR_PROVIDER", "rapidocr")
+            ).lower()
 
             if not text_content.strip() and mime_type:
                 if ocr_provider == "rapidocr":
@@ -327,15 +384,23 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     if not text_content.strip():
                         text_content = _ocr_with_rapidocr(parse_target_path, mime_type)
                 else:
-                    text_content = _ocr_with_rapidocr(parse_target_path, mime_type) or _ocr_with_tesseract(parse_target_path, mime_type)
+                    text_content = _ocr_with_rapidocr(
+                        parse_target_path, mime_type
+                    ) or _ocr_with_tesseract(parse_target_path, mime_type)
 
             if not text_content.strip() and mime_type:
-                text_content = _describe_with_vision(parse_target_path, mime_type, config_val, tenant_id)
+                text_content = _describe_with_vision(
+                    parse_target_path, mime_type, config_val, tenant_id
+                )
             # ponytail: table extraction for PDFs — stored in metadata
             extracted_tables = []
-            if parse_target_path.lower().endswith(".pdf") and mime_type == "application/pdf":
+            if (
+                parse_target_path.lower().endswith(".pdf")
+                and mime_type == "application/pdf"
+            ):
                 try:
                     from processing_core.pdf_parser import extract_tables_from_pdf
+
                     extracted_tables = extract_tables_from_pdf(parse_target_path)
                 except Exception:
                     pass
@@ -363,24 +428,28 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
         elif chunk_strategy == "semantic":
             # Setup openai client for embedding sentences
             import openai
+
             embed_cfg = config_val.get("embedding_provider", {})
             embed_model = embed_cfg.get("model_name", "text-embedding-004")
             embed_api_key = embed_cfg.get("api_key", "")
-            
+
             if embed_api_key and embed_api_key != "********":
                 from processing_core import ConfigEncrypter
+
                 enc = ConfigEncrypter()
                 embed_api_key = enc.decrypt(embed_api_key)
             if not embed_api_key or embed_api_key == "********":
                 embed_api_key = os.environ.get("OPENAI_API_KEY", "")
-            embed_base_url = embed_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
-            
+            embed_base_url = embed_cfg.get("base_url") or os.environ.get(
+                "OPENAI_BASE_URL"
+            )
+
             client_opts = {"api_key": embed_api_key}
             if embed_base_url:
                 client_opts["base_url"] = embed_base_url
-            
+
             embed_client = openai.AsyncOpenAI(**client_opts)
-            
+
             chunks_to_insert = await chunk_semantic(
                 text=text_content,
                 embed_client=embed_client,
@@ -403,6 +472,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
         # ponytail: hierarchical chunking — group children into parent sections
         if chunk_cfg.get("enable_hierarchical", False) and chunks_to_insert:
             from processing_core.chunker import build_hierarchy
+
             chunks_to_insert = build_hierarchy(
                 chunks=chunks_to_insert,
                 group_size=chunk_cfg.get("hierarchical_group_size", 5),
@@ -417,64 +487,74 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             ai_api_key = config_val.get("ai_provider", {}).get("api_key", "")
             if ai_api_key and ai_api_key != "********":
                 from processing_core import ConfigEncrypter
+
                 enc = ConfigEncrypter()
                 ai_api_key = enc.decrypt(ai_api_key)
             if not ai_api_key or ai_api_key == "********":
                 ai_api_key = os.environ.get("OPENAI_API_KEY", "")
             if ai_api_key:
-                extractors_cfg = [{
-                    "name": "default",
-                    "extractor_type": "llm",
-                    "schema_definition": {
-                        "doc_type": "Document type (invoice, contract, report, email, memo, other)",
-                        "date_reference": "Year or date mentioned (e.g. 2025, Q3 2026)",
-                        "topics": ["List of 2-4 key topics"],
-                        "author_reference": "Author, sender, or department name if mentioned",
-                    },
-                }]
+                extractors_cfg = [
+                    {
+                        "name": "default",
+                        "extractor_type": "llm",
+                        "schema_definition": {
+                            "doc_type": "Document type (invoice, contract, report, email, memo, other)",
+                            "date_reference": "Year or date mentioned (e.g. 2025, Q3 2026)",
+                            "topics": ["List of 2-4 key topics"],
+                            "author_reference": "Author, sender, or department name if mentioned",
+                        },
+                    }
+                ]
         for ext_cfg in extractors_cfg:
             ext_name = ext_cfg.get("name")
             ext_type = ext_cfg.get("extractor_type")
-            
+
             if ext_type == "regex":
                 pattern = ext_cfg.get("pattern")
                 if pattern:
                     match = re.search(pattern, text_content)
                     if match:
-                        extracted_metadata[ext_name] = match.group(1) if match.groups() else match.group(0)
-            
+                        extracted_metadata[ext_name] = (
+                            match.group(1) if match.groups() else match.group(0)
+                        )
+
             elif ext_type == "llm":
                 schema_def = ext_cfg.get("schema_definition")
                 if schema_def:
                     ai_cfg = config_val.get("ai_provider", {})
                     ai_model = ai_cfg.get("default_model", "gemini-1.5-flash")
-                    ai_api_key = _get_decrypted_key(config_val, "ai_provider", "OPENAI_API_KEY", tenant_id)
+                    ai_api_key = _get_decrypted_key(
+                        config_val, "ai_provider", "OPENAI_API_KEY", tenant_id
+                    )
                     if not ai_api_key:
                         continue
-                    ai_base_url = ai_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
-                    
+                    ai_base_url = ai_cfg.get("base_url") or os.environ.get(
+                        "OPENAI_BASE_URL"
+                    )
+
                     import openai
+
                     client_opts = {"api_key": ai_api_key}
                     if ai_base_url:
                         client_opts["base_url"] = ai_base_url
-                    
+
                     ai_client = openai.AsyncOpenAI(**client_opts)
-                    
+
                     system_prompt = (
                         "You are an expert metadata extraction assistant. Extract the following metadata schema "
                         f"from the document content: {json.dumps(schema_def)}. Return ONLY a valid JSON object matching this schema."
                     )
-                    
+
                     try:
                         excerpt = text_content[:3000]
                         response = await ai_client.chat.completions.create(
                             model=ai_model,
                             messages=[
                                 {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": excerpt}
+                                {"role": "user", "content": excerpt},
                             ],
                             response_format={"type": "json_object"},
-                            temperature=0.0
+                            temperature=0.0,
                         )
                         raw_json = response.choices[0].message.content
                         extracted_json = json.loads(raw_json)
@@ -487,15 +567,30 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             extracted_metadata["extracted_tables"] = extracted_tables
 
         # Milestone 69: Pre-Chunk Contextual Retrieval Ingestion Engine (Anthropic Method)
-        enable_contextual = chunk_cfg.get("enable_contextual_retrieval", chunk_cfg.get("enable_contextual_prefix", True))
+        enable_contextual = chunk_cfg.get(
+            "enable_contextual_retrieval",
+            chunk_cfg.get("enable_contextual_prefix", True),
+        )
         if enable_contextual and text_content.strip() and chunks_to_insert:
-            doc_type = extracted_metadata.get("default_doc_type") or extracted_metadata.get("doc_type") or "Document"
-            topics = extracted_metadata.get("default_topics") or extracted_metadata.get("topics") or []
+            doc_type = (
+                extracted_metadata.get("default_doc_type")
+                or extracted_metadata.get("doc_type")
+                or "Document"
+            )
+            topics = (
+                extracted_metadata.get("default_topics")
+                or extracted_metadata.get("topics")
+                or []
+            )
             filename = os.path.basename(storage_path)
 
             ai_cfg = config_val.get("ai_provider", {})
-            ai_model = chunk_cfg.get("contextual_model") or ai_cfg.get("default_model", "gemini-1.5-flash")
-            ai_api_key = _get_decrypted_key(config_val, "ai_provider", "OPENAI_API_KEY", tenant_id)
+            ai_model = chunk_cfg.get("contextual_model") or ai_cfg.get(
+                "default_model", "gemini-1.5-flash"
+            )
+            ai_api_key = _get_decrypted_key(
+                config_val, "ai_provider", "OPENAI_API_KEY", tenant_id
+            )
             ai_base_url = ai_cfg.get("base_url") or os.environ.get("OPENAI_BASE_URL")
 
             doc_meta_payload = {
@@ -508,7 +603,10 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             }
 
             try:
-                from src.adapters.cognitive.contextual_header_adapter import ContextualHeaderGeneratorAdapter
+                from src.adapters.cognitive.contextual_header_adapter import (
+                    ContextualHeaderGeneratorAdapter,
+                )
+
                 contextual_adapter = ContextualHeaderGeneratorAdapter(
                     api_key=ai_api_key,
                     base_url=ai_base_url,
@@ -525,7 +623,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
 
                 for chunk, header in zip(chunks_to_insert, headers):
                     raw_content = chunk["content"]
-                    chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    chunk_meta = (
+                        json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    )
                     chunk_meta["raw_content"] = raw_content
                     chunk_meta["context_header"] = header
                     chunk_meta["is_contextualized"] = True
@@ -533,13 +633,23 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     if not raw_content.startswith("[Context:"):
                         chunk["content"] = f"{header}\n{raw_content}"
             except Exception as exc:
-                logger.warning("Contextual header generation error in worker for tenant %s: %s", tenant_id, exc)
+                logger.warning(
+                    "Contextual header generation error in worker for tenant %s: %s",
+                    tenant_id,
+                    exc,
+                )
                 # Fallback to metadata header
-                topic_str = f" regarding {', '.join(topics[:3])}" if isinstance(topics, list) and topics else ""
+                topic_str = (
+                    f" regarding {', '.join(topics[:3])}"
+                    if isinstance(topics, list) and topics
+                    else ""
+                )
                 fallback_header = f"[Context: {filename} ({doc_type}{topic_str})]\n"
                 for chunk in chunks_to_insert:
                     raw_content = chunk["content"]
-                    chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    chunk_meta = (
+                        json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                    )
                     chunk_meta["raw_content"] = raw_content
                     chunk_meta["context_header"] = fallback_header.strip()
                     chunk_meta["is_contextualized"] = True
@@ -553,7 +663,9 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
             insert_params = []
             for chunk in chunks_to_insert:
-                chunk_meta = json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                chunk_meta = (
+                    json.loads(chunk["meta_data"]) if chunk.get("meta_data") else {}
+                )
                 chunk_meta.update(extracted_metadata)
                 if chunk.get("parent_chunk_id"):
                     chunk_meta["parent_chunk_id"] = chunk["parent_chunk_id"]
@@ -568,7 +680,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                     "parent_chunk_id": chunk.get("parent_chunk_id"),
                 }
                 insert_params.append(params)
-                
+
             if insert_params:
                 await conn.execute(
                     sa.text(
@@ -587,23 +699,28 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
                 # Knowledge Graph Triples extraction pass
                 try:
                     from src.domain.graph.graph_extraction_service import GraphExtractor
+
                     extractor = GraphExtractor()
                     all_triples = []
                     for chunk in chunks_to_insert:
                         triples = extractor.extract_triples(
-                            chunk["content"], chunk_id=chunk["chunk_id"], document_id=document_id
+                            chunk["content"],
+                            chunk_id=chunk["chunk_id"],
+                            document_id=document_id,
                         )
                         for t in triples:
-                            all_triples.append({
-                                "tenant_id": tenant_id,
-                                "document_id": document_id,
-                                "chunk_id": chunk["chunk_id"],
-                                "subject": t.subject,
-                                "predicate": t.predicate,
-                                "object": t.object,
-                                "confidence": t.confidence,
-                                "meta_data": json.dumps(t.metadata),
-                            })
+                            all_triples.append(
+                                {
+                                    "tenant_id": tenant_id,
+                                    "document_id": document_id,
+                                    "chunk_id": chunk["chunk_id"],
+                                    "subject": t.subject,
+                                    "predicate": t.predicate,
+                                    "object": t.object,
+                                    "confidence": t.confidence,
+                                    "meta_data": json.dumps(t.metadata),
+                                }
+                            )
                     if all_triples:
                         await conn.execute(
                             sa.text(
@@ -654,6 +771,7 @@ async def _run_process_document(document_id: str, tenant_id: str, storage_path: 
         _publish_event(envelope, ROUTING_FAILED)
         raise
 
+
 # Keep async function importable for tests and legacy event_consumer
 process_document_async = _run_process_document
 
@@ -667,7 +785,9 @@ process_document_async = _run_process_document
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def process_document(self, document_id: str, tenant_id: str, storage_path: str, mime_type: str = "") -> None:
+def process_document(
+    self, document_id: str, tenant_id: str, storage_path: str, mime_type: str = ""
+) -> None:
     asyncio.run(_run_process_document(document_id, tenant_id, storage_path, mime_type))
 
 
@@ -695,7 +815,9 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
                 embed_cfg = config_val.get("embedding_provider", {})
                 embedding_model = embed_cfg.get("model_name", embedding_model)
                 provider = embed_cfg.get("provider_name", "openai").upper()
-                api_key = _get_decrypted_key(config_val, "embedding_provider", f"{provider}_API_KEY", tenant_id)
+                api_key = _get_decrypted_key(
+                    config_val, "embedding_provider", f"{provider}_API_KEY", tenant_id
+                )
 
         async with engine.connect() as conn:
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
@@ -730,7 +852,7 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
         batch_size = 20
         all_embeddings = []
         for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
+            batch = chunks[i : i + batch_size]
             texts = [row[1] for row in batch]
             embedding_data = await embed_with_retry(client, texts, embedding_model)
             for chunk_row, emb in zip(batch, embedding_data):
@@ -806,6 +928,7 @@ async def _run_generate_embeddings(document_id: str, tenant_id: str) -> None:
         _publish_event(envelope, ROUTING_FAILED)
         raise
 
+
 # Keep async function importable for legacy event_consumer
 _generate_embeddings_async = _run_generate_embeddings
 
@@ -865,22 +988,28 @@ def cleanup_expired_data() -> None:
         async with engine.begin() as conn:
             # Bypass RLS to perform system-wide maintenance
             await conn.execute(sa.text("SET LOCAL app.bypass_rls = 'true'"))
-            
+
             # Fetch all configurations
             res = await conn.execute(
-                sa.text("SELECT tenant_id, config_data FROM configurations WHERE tenant_id IS NOT NULL")
+                sa.text(
+                    "SELECT tenant_id, config_data FROM configurations WHERE tenant_id IS NOT NULL"
+                )
             )
             rows = res.fetchall()
-            
+
             for row in rows:
                 tenant_id, config_data_raw = row
                 if not config_data_raw:
                     continue
                 try:
-                    config = json.loads(config_data_raw) if isinstance(config_data_raw, str) else config_data_raw
+                    config = (
+                        json.loads(config_data_raw)
+                        if isinstance(config_data_raw, str)
+                        else config_data_raw
+                    )
                     security = config.get("security_settings", {})
                     ttl_days = security.get("data_retention_ttl_days")
-                    
+
                     if ttl_days is not None and int(ttl_days) > 0:
                         # 1. Delete documents older than TTL
                         await conn.execute(
@@ -891,9 +1020,12 @@ def cleanup_expired_data() -> None:
                                 AND created_at < NOW() - CAST(:ttl_interval AS interval)
                                 """
                             ),
-                            {"tenant_id": tenant_id, "ttl_interval": f"{ttl_days} days"}
+                            {
+                                "tenant_id": tenant_id,
+                                "ttl_interval": f"{ttl_days} days",
+                            },
                         )
-                        
+
                         # 2. Delete chat sessions older than TTL
                         await conn.execute(
                             sa.text(
@@ -903,9 +1035,14 @@ def cleanup_expired_data() -> None:
                                 AND updated_at < NOW() - CAST(:ttl_interval AS interval)
                                 """
                             ),
-                            {"tenant_id": tenant_id, "ttl_interval": f"{ttl_days} days"}
+                            {
+                                "tenant_id": tenant_id,
+                                "ttl_interval": f"{ttl_days} days",
+                            },
                         )
                 except Exception as e:
-                    print(f"Error purging expired data for tenant {tenant_id}: {str(e)}")
-                    
+                    print(
+                        f"Error purging expired data for tenant {tenant_id}: {str(e)}"
+                    )
+
     asyncio.run(_run())

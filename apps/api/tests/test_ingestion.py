@@ -16,11 +16,13 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def clean_temp_files() -> None:
     import workers.src.tasks
+
     workers.src.tasks._engine = None
     yield
     workers.src.tasks._engine = None
     import os
     import shutil
+
     for f in ("./storage", "./sample_test.txt"):
         if os.path.isfile(f):
             os.remove(f)
@@ -28,14 +30,25 @@ def clean_temp_files() -> None:
             shutil.rmtree(f)
 
 
-@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch(
+    "src.routers.document.quota_service.check_storage_quota",
+    new_callable=AsyncMock,
+    return_value=None,
+)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
 def test_document_upload_success(
-    mock_send_task, mock_find_by_hash, mock_create, mock_validate, mock_get_cfg, mock_check_quota
+    mock_send_task,
+    mock_find_by_hash,
+    mock_create,
+    mock_validate,
+    mock_get_cfg,
+    mock_check_quota,
 ) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -67,9 +80,15 @@ def test_document_upload_success(
     assert call_args[1]["args"][0] == doc_id
 
 
-@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch(
+    "src.routers.document.quota_service.check_storage_quota",
+    new_callable=AsyncMock,
+    return_value=None,
+)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 def test_document_upload_deduplication(
     mock_find_by_hash, mock_validate, mock_get_cfg, mock_check_quota
@@ -107,9 +126,15 @@ def test_document_upload_deduplication(
     assert response.json()["status"] == "pending"
 
 
-@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch(
+    "src.routers.document.quota_service.check_storage_quota",
+    new_callable=AsyncMock,
+    return_value=None,
+)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 def test_document_upload_rejects_oversized_file(
     mock_find_by_hash, mock_validate, mock_get_cfg, mock_check_quota
@@ -134,7 +159,9 @@ def test_document_upload_rejects_oversized_file(
     mock_find_by_hash.assert_not_awaited()
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.list_documents", new_callable=AsyncMock)
 @patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 def test_document_list_and_get(mock_get, mock_list, mock_validate) -> None:
@@ -169,12 +196,16 @@ def test_document_list_and_get(mock_get, mock_list, mock_validate) -> None:
     assert len(response.json()) == 1
     assert response.json()[0]["documentId"] == doc_id
 
-    response = client.get(f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers)
+    response = client.get(
+        f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers
+    )
     assert response.status_code == 200
     assert response.json()["status"] == "INDEXED"
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
 def test_document_delete(mock_soft_delete, mock_get, mock_validate) -> None:
@@ -202,60 +233,88 @@ def test_document_delete(mock_soft_delete, mock_get, mock_validate) -> None:
     mock_soft_delete.return_value = "/path"
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
-    response = client.delete(f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers)
+    response = client.delete(
+        f"/v1/tenants/{tenant_id}/documents/{doc_id}", headers=headers
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == "deleted"
     mock_soft_delete.assert_awaited_once_with(tenant_id, doc_id)
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 def test_document_get_not_found(mock_get, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:read"],
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["integrator"],
+        scopes=["document:read"],
     )
     mock_get.return_value = None
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
-    response = client.get(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    response = client.get(
+        f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers
+    )
     assert response.status_code == 404
     assert "Document not found" in response.json()["detail"]
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.get_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.soft_delete", new_callable=AsyncMock)
 def test_document_delete_not_found(mock_delete, mock_get, mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:delete"],
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["integrator"],
+        scopes=["document:delete"],
     )
     mock_get.return_value = None
     mock_delete.return_value = None
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
-    response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    response = client.delete(
+        f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers
+    )
     assert response.status_code == 404
     assert "Document not found" in response.json()["detail"]
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 def test_document_delete_forbidden_without_delete_scope(mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["client"], scopes=["document:read", "search:read", "chat:write"],
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["client"],
+        scopes=["document:read", "search:read", "chat:write"],
     )
     headers = {"Authorization": "Bearer ret_live_guesttoken.secret"}
-    response = client.delete(f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers)
+    response = client.delete(
+        f"/v1/tenants/{tenant_id}/documents/{uuid.uuid4()}", headers=headers
+    )
     assert response.status_code == 403
     assert "Missing required scope 'document:delete'" in response.json()["detail"]
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 def test_document_upload_missing_file(mock_validate) -> None:
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["integrator"], scopes=["document:write"],
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["integrator"],
+        scopes=["document:write"],
     )
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
     response = client.post(
@@ -297,7 +356,7 @@ async def test_worker_processing_task(mock_create_engine, mock_publish_event) ->
 
     # Confirm database status updates were run
     assert mock_conn.execute.call_count >= 4
-    
+
     # Verify that SET LOCAL app.bypass_rls was executed
     bypass_rls_called = False
     for call in mock_conn.execute.call_args_list:

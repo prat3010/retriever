@@ -44,8 +44,10 @@ async def tenant_session(
                     # Validate that tenant_id is a valid UUID to prevent SQL injection
                     valid_uuid = uuid.UUID(str(tenant_id))
                 except ValueError as e:
-                    raise TenantIsolationViolationError(f"Invalid tenant ID format: {e}") from e
-                
+                    raise TenantIsolationViolationError(
+                        f"Invalid tenant ID format: {e}"
+                    ) from e
+
                 # Set thread-local context variables for postgres row level security
                 await session.execute(
                     text(f"SET LOCAL app.current_tenant_id = '{valid_uuid}'"),

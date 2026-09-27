@@ -19,17 +19,27 @@ def test_create_tenant_success() -> None:
         created_at="2026-07-12T07:56:14Z",
     )
 
-    with patch("src.main.tenant_registry.create_tenant", new_callable=AsyncMock) as mock_create:
+    with patch(
+        "src.main.tenant_registry.create_tenant", new_callable=AsyncMock
+    ) as mock_create:
         mock_create.return_value = mock_tenant
         headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
         response = client.post(
             "/v1/tenants",
-            json={"name": "Test Corporate Workspace", "tier": "enterprise", "isolation_level": "logical"},
+            json={
+                "name": "Test Corporate Workspace",
+                "tier": "enterprise",
+                "isolation_level": "logical",
+            },
             headers=headers,
         )
         assert response.status_code == 201
         assert response.json()["tenantId"] == "tnt_abc123"
-        mock_create.assert_called_once_with(name="Test Corporate Workspace", tier="enterprise", isolation_level="logical")
+        mock_create.assert_called_once_with(
+            name="Test Corporate Workspace",
+            tier="enterprise",
+            isolation_level="logical",
+        )
 
 
 def test_create_tenant_unauthorized() -> None:
@@ -43,8 +53,13 @@ def test_create_tenant_unauthorized() -> None:
     assert "Invalid administrative master key" in response.json()["detail"]
 
 
-@patch("src.adapters.api.security.identity_provider.revoke_api_key_by_hash", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.revoke_api_key_by_hash",
+    new_callable=AsyncMock,
+)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 def test_verify_tenant_isolation_breach(mock_validate, mock_revoke) -> None:
     # Key belongs to Tenant A
     mock_validate.return_value = UserContext(

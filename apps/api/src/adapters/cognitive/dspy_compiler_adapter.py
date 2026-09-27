@@ -124,12 +124,17 @@ class DSPyCompilerAdapter(DSPyCompilerProtocol):
         # If few-shot demonstrations are provided, check for matched exemplar guidance
         if demonstrations:
             for demo in demonstrations:
-                if demo.question.strip().lower() == question.strip().lower() and demo.answer:
+                if (
+                    demo.question.strip().lower() == question.strip().lower()
+                    and demo.answer
+                ):
                     thought = f"Extracted answer from verified few-shot exemplar for '{question}'."
                     return thought, demo.answer
 
         # Extract the most relevant factual sentence from context matching question tokens
-        sentences = [s.strip() for s in re.split(r"[.\n]+", context) if len(s.strip()) > 5]
+        sentences = [
+            s.strip() for s in re.split(r"[.\n]+", context) if len(s.strip()) > 5
+        ]
         q_tokens = set(re.findall(r"\b\w{3,}\b", question.lower()))
 
         best_sentence = context[:120].strip()
@@ -142,7 +147,9 @@ class DSPyCompilerAdapter(DSPyCompilerProtocol):
                 best_sentence = s
 
         thought = f"Examining context for key entities matching '{question}' and compiling grounded response."
-        answer = f"{best_sentence}." if not best_sentence.endswith(".") else best_sentence
+        answer = (
+            f"{best_sentence}." if not best_sentence.endswith(".") else best_sentence
+        )
         return thought, answer
 
     async def compile_prompt(
@@ -179,7 +186,9 @@ class DSPyCompilerAdapter(DSPyCompilerProtocol):
             score = self._evaluate_metric(base_ans, gt, ctx, request.metric_target)
             baseline_scores.append(score)
 
-        raw_baseline = sum(baseline_scores) / len(baseline_scores) if baseline_scores else 0.50
+        raw_baseline = (
+            sum(baseline_scores) / len(baseline_scores) if baseline_scores else 0.50
+        )
         baseline_score = round(max(0.40, min(0.75, raw_baseline)), 4)
 
         # Step 2: Bootstrap Few-Shot Generation & Filtering
@@ -199,7 +208,8 @@ class DSPyCompilerAdapter(DSPyCompilerProtocol):
                     FewShotDemonstration(
                         question=q,
                         context=ctx,
-                        thought=thought or f"Verified factual consistency with context: {ctx[:60]}...",
+                        thought=thought
+                        or f"Verified factual consistency with context: {ctx[:60]}...",
                         answer=final_ans,
                         score=round(max(demo_score, 0.85), 4),
                     )
@@ -234,22 +244,37 @@ class DSPyCompilerAdapter(DSPyCompilerProtocol):
             gt = ex.get("ground_truth_answer", "")
 
             # Format question with compiled instruction and top few-shot demonstrations
-            demo_context_blocks = [f"Context: {d.context}\nQuestion: {d.question}\nAnswer: {d.answer}" for d in selected_demos]
+            demo_context_blocks = [
+                f"Context: {d.context}\nQuestion: {d.question}\nAnswer: {d.answer}"
+                for d in selected_demos
+            ]
             full_context = ctx
             if demo_context_blocks:
-                full_context = "\n---\n".join(demo_context_blocks) + "\n---\nCurrent Context:\n" + ctx
+                full_context = (
+                    "\n---\n".join(demo_context_blocks)
+                    + "\n---\nCurrent Context:\n"
+                    + ctx
+                )
 
             # Run genuine generation through teacher / LLM pipeline
             _, compiled_ans = await self._generate_teacher_response(
                 q, full_context, demonstrations=selected_demos
             )
-            actual_score = self._evaluate_metric(compiled_ans, gt, ctx, request.metric_target)
+            actual_score = self._evaluate_metric(
+                compiled_ans, gt, ctx, request.metric_target
+            )
             compiled_scores.append(actual_score)
 
-        compiled_score = round(sum(compiled_scores) / len(compiled_scores), 4) if compiled_scores else baseline_score
-        improvement_pct = round(
-            ((compiled_score - baseline_score) / baseline_score) * 100, 2
-        ) if baseline_score > 0 else 0.0
+        compiled_score = (
+            round(sum(compiled_scores) / len(compiled_scores), 4)
+            if compiled_scores
+            else baseline_score
+        )
+        improvement_pct = (
+            round(((compiled_score - baseline_score) / baseline_score) * 100, 2)
+            if baseline_score > 0
+            else 0.0
+        )
 
         return PromptCompilationResult(
             program_id=program_id,

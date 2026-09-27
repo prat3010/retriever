@@ -146,7 +146,9 @@ async def test_checkpointer_tenant_isolation():
     # Invalid UUID raises TenantIsolationViolationError
     with pytest.raises(TenantIsolationViolationError):
         await checkpointer.get_checkpoint(
-            tenant_id="invalid-uuid-format", thread_id=thread_id, checkpoint_id=chk.checkpoint_id
+            tenant_id="invalid-uuid-format",
+            thread_id=thread_id,
+            checkpoint_id=chk.checkpoint_id,
         )
 
 
@@ -366,6 +368,12 @@ def test_hexagonal_architecture_boundaries():
 
     for mod in (abs_mod, exec_mod, tool_mod):
         source = inspect.getsource(mod)
-        assert "from fastapi" not in source, f"{mod.__name__} violates Hexagonal boundary by importing FastAPI"
-        assert "from sqlalchemy" not in source, f"{mod.__name__} violates Hexagonal boundary by importing SQLAlchemy"
-        assert "from langgraph" not in source, f"{mod.__name__} violates Hexagonal boundary by importing LangGraph"
+        assert "from fastapi" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing FastAPI"
+        )
+        assert "from sqlalchemy" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing SQLAlchemy"
+        )
+        assert "from langgraph" not in source, (
+            f"{mod.__name__} violates Hexagonal boundary by importing LangGraph"
+        )

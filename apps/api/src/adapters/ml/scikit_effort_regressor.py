@@ -25,13 +25,24 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
     def __init__(self, random_state: int = 42):
         self.random_state = random_state
         self._model_p50 = GradientBoostingRegressor(
-            loss="quantile", alpha=0.50, n_estimators=100, max_depth=3, random_state=random_state
+            loss="quantile",
+            alpha=0.50,
+            n_estimators=100,
+            max_depth=3,
+            random_state=random_state,
         )
         self._model_p90 = GradientBoostingRegressor(
-            loss="quantile", alpha=0.90, n_estimators=100, max_depth=3, random_state=random_state
+            loss="quantile",
+            alpha=0.90,
+            n_estimators=100,
+            max_depth=3,
+            random_state=random_state,
         )
         self._model_complexity = GradientBoostingRegressor(
-            loss="squared_error", n_estimators=80, max_depth=3, random_state=random_state
+            loss="squared_error",
+            n_estimators=80,
+            max_depth=3,
+            random_state=random_state,
         )
         self._is_trained = False
         self._fit_baseline_calibration()
@@ -53,7 +64,9 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
             float(v.maintenance_tier_weight),
         ]
 
-    def _generate_calibration_dataset(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _generate_calibration_dataset(
+        self,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Generate an authentic empirical dataset calibrated against COCOMO II & Agile velocity distributions."""
         rng = np.random.RandomState(self.random_state)
         n_samples = 300
@@ -64,22 +77,40 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
         y_comp = []
 
         engines = ["landing", "multipage", "standalone_embed", "saas"]
-        engine_base_hours = {"landing": 12.0, "multipage": 24.0, "standalone_embed": 20.0, "saas": 42.0}
+        engine_base_hours = {
+            "landing": 12.0,
+            "multipage": 24.0,
+            "standalone_embed": 20.0,
+            "saas": 42.0,
+        }
 
         for _ in range(n_samples):
             engine = rng.choice(engines)
             engine_val = ENGINE_CODE_MAP[engine]
             base_h = engine_base_hours[engine]
 
-            auth = rng.choice([0, 1, 2], p=[0.4, 0.4, 0.2]) if engine in ["saas", "multipage"] else 0
-            db = rng.choice([0, 1, 2], p=[0.3, 0.5, 0.2]) if engine in ["saas", "multipage"] else 0
+            auth = (
+                rng.choice([0, 1, 2], p=[0.4, 0.4, 0.2])
+                if engine in ["saas", "multipage"]
+                else 0
+            )
+            db = (
+                rng.choice([0, 1, 2], p=[0.3, 0.5, 0.2])
+                if engine in ["saas", "multipage"]
+                else 0
+            )
             ai = rng.choice([0, 1, 2, 3], p=[0.4, 0.3, 0.2, 0.1])
             voice = rng.choice([0, 1], p=[0.85, 0.15])
             pay = rng.choice([0, 1], p=[0.6, 0.4])
             admin = rng.choice([0, 1, 2], p=[0.4, 0.4, 0.2]) if engine == "saas" else 0
 
             total_feats = auth + db + ai + voice + pay + admin
-            depth = 1 + (1 if auth > 0 else 0) + (1 if (db + pay + admin) > 0 else 0) + (1 if (ai + voice) > 0 else 0)
+            depth = (
+                1
+                + (1 if auth > 0 else 0)
+                + (1 if (db + pay + admin) > 0 else 0)
+                + (1 if (ai + voice) > 0 else 0)
+            )
             brand_w = rng.choice([1.0, 1.5, 2.0], p=[0.5, 0.3, 0.2])
             maint_w = rng.choice([0.0, 0.5, 1.0, 2.0], p=[0.4, 0.2, 0.2, 0.2])
 
@@ -98,7 +129,14 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
             ]
 
             # COCOMO II inspired effort calculation: base + feature modules * depth coupling + variance
-            module_hours = (auth * 8.0) + (db * 6.5) + (ai * 16.0) + (voice * 22.0) + (pay * 10.0) + (admin * 7.5)
+            module_hours = (
+                (auth * 8.0)
+                + (db * 6.5)
+                + (ai * 16.0)
+                + (voice * 22.0)
+                + (pay * 10.0)
+                + (admin * 7.5)
+            )
             depth_multiplier = 1.0 + (depth - 1) * 0.10
             brand_multiplier = 1.0 + (brand_w - 1.0) * 0.12
 
@@ -110,7 +148,14 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
             p90_val = max(p50_val * 1.15, ideal_hours + noise_p90)
 
             # Complexity index (1.0 to 5.0)
-            comp_score = 1.0 + (engine_val * 0.4) + (total_feats * 0.18) + (depth * 0.25) + (ai * 0.35) + (voice * 0.5)
+            comp_score = (
+                1.0
+                + (engine_val * 0.4)
+                + (total_feats * 0.18)
+                + (depth * 0.25)
+                + (ai * 0.35)
+                + (voice * 0.5)
+            )
             comp_score = min(5.0, max(1.0, comp_score + rng.normal(0, 0.1)))
 
             x_matrix.append(features)
@@ -172,6 +217,8 @@ class ScikitEffortRegressor(EffortEstimatorInterface):
             risk_factors=[],
         )
 
-    def batch_predict(self, vectors: list[ScopeFeatureVector]) -> list[EffortPrediction]:
+    def batch_predict(
+        self, vectors: list[ScopeFeatureVector]
+    ) -> list[EffortPrediction]:
         """Perform batch inference across multiple scope vectors."""
         return [self.predict_effort(v) for v in vectors]

@@ -33,10 +33,12 @@ class OTelTracer(Tracer):
         environment: str = "development",
         otlp_endpoint: str = "",
     ) -> None:
-        resource = Resource.create({
-            SERVICE_NAME: service_name,
-            DEPLOYMENT_ENVIRONMENT: environment,
-        })
+        resource = Resource.create(
+            {
+                SERVICE_NAME: service_name,
+                DEPLOYMENT_ENVIRONMENT: environment,
+            }
+        )
         provider = TracerProvider(resource=resource)
 
         # Always log spans to console in development (skip under pytest to prevent unclosed background workers)
@@ -69,7 +71,6 @@ class OTelTracer(Tracer):
                 for k, v in attributes.items():
                     span.set_attribute(k, v)
             yield span
-
 
     def get_tracer(self) -> Any:
         """Return the underlying OTel tracer for advanced usage."""
@@ -121,5 +122,3 @@ class OTelTracer(Tracer):
         """Shut down the tracer provider to flush and stop all span processors."""
         if hasattr(self, "_provider") and self._provider is not None:
             self._provider.shutdown()
-
-

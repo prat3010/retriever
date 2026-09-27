@@ -17,12 +17,16 @@ class HealthResponse(BaseModel):
     environment: str
 
 
-@router.get("/health/liveness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
+@router.get(
+    "/health/liveness", status_code=status.HTTP_200_OK, response_model=HealthResponse
+)
 async def liveness_probe() -> HealthResponse:
     return HealthResponse(status="alive", environment=settings.ENVIRONMENT)
 
 
-@router.get("/health/readiness", status_code=status.HTTP_200_OK, response_model=HealthResponse)
+@router.get(
+    "/health/readiness", status_code=status.HTTP_200_OK, response_model=HealthResponse
+)
 async def readiness_probe() -> HealthResponse:
     try:
         async with engine.connect() as conn:
@@ -36,8 +40,10 @@ async def readiness_probe() -> HealthResponse:
 
         if settings.STORAGE_PROVIDER == "s3":
             if hasattr(local_storage, "client"):
+
                 def _probe_s3() -> None:
                     local_storage.client.head_bucket(Bucket=local_storage.bucket_name)
+
                 await asyncio.to_thread(_probe_s3)
 
         return HealthResponse(status="ready", environment=settings.ENVIRONMENT)

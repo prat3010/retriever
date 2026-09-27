@@ -43,23 +43,51 @@ class AutonomousMetaprogrammer(MetaprogrammerProtocol):
         """Derive a clean snake_case plugin identifier from the requirement prompt."""
         # Find key integration keywords
         known_keywords = [
-            "hubspot", "salesforce", "jira", "zendesk", "stripe", "github",
-            "linear", "notion", "slack", "postgres", "mongodb", "bigquery",
-            "clinical", "patient", "redline", "diff", "catalog", "invoice",
-            "compliance", "audit", "crawler", "sync", "extractor", "classifier"
+            "hubspot",
+            "salesforce",
+            "jira",
+            "zendesk",
+            "stripe",
+            "github",
+            "linear",
+            "notion",
+            "slack",
+            "postgres",
+            "mongodb",
+            "bigquery",
+            "clinical",
+            "patient",
+            "redline",
+            "diff",
+            "catalog",
+            "invoice",
+            "compliance",
+            "audit",
+            "crawler",
+            "sync",
+            "extractor",
+            "classifier",
         ]
         prompt_lower = prompt.lower()
         matched = [k for k in known_keywords if k in prompt_lower]
 
         if matched:
             base_slug = "_".join(matched[:2])
-            if "sync" not in base_slug and "connector" not in base_slug and "differ" not in base_slug:
+            if (
+                "sync" not in base_slug
+                and "connector" not in base_slug
+                and "differ" not in base_slug
+            ):
                 base_slug += "_adapter"
             return base_slug.replace("-", "_")
 
         # Fallback to domain and prompt words
         words = re.findall(r"[a-zA-Z0-9]+", prompt_lower)
-        significant = [w for w in words if len(w) > 3 and w not in {"need", "with", "from", "that", "this", "have"}][:2]
+        significant = [
+            w
+            for w in words
+            if len(w) > 3 and w not in {"need", "with", "from", "that", "this", "have"}
+        ][:2]
         if significant:
             return "_".join(significant) + "_service"
         return f"{domain.lower()}_custom_service"
@@ -72,7 +100,10 @@ class AutonomousMetaprogrammer(MetaprogrammerProtocol):
     def _determine_category(self, prompt: str) -> PluginCategory:
         """Determine primary taxonomy category for requirement."""
         p = prompt.lower()
-        if any(w in p for w in ["sync", "connect", "fetch", "pull", "export", "webhook", "api"]):
+        if any(
+            w in p
+            for w in ["sync", "connect", "fetch", "pull", "export", "webhook", "api"]
+        ):
             return PluginCategory.CONNECTORS
         if any(w in p for w in ["search", "rank", "retrieval", "embed", "vector"]):
             return PluginCategory.RETRIEVAL
@@ -456,7 +487,8 @@ def test_router_execution_endpoint() -> None:
             persona=req.persona,
             manifest=manifest,
             recommended_batteries=recommendations,
-            needs_custom_scaffold=needs_custom or (req.persona == SolutionPersona.FDE_ENGINEER),
+            needs_custom_scaffold=needs_custom
+            or (req.persona == SolutionPersona.FDE_ENGINEER),
             scaffolded_files=scaffolded_files,
             ast_audit_passed=ast_result.is_valid,
             ast_validation=ast_result,

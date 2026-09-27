@@ -11,6 +11,7 @@ from src.domain.abstractions.retrieval import SearchResult
 
 # ── 1. Unit Test: TeiRerankerAdapter HTTP Endpoint Calling & Filtering ──────
 
+
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.post")
 async def test_tei_reranker_adapter_success(mock_post):
@@ -60,6 +61,7 @@ async def test_tei_reranker_adapter_fallback_on_error(mock_post):
 
 
 # ── 2. Unit Test: SpladeSparseSearchAdapter Weight Expansion ─────────────────
+
 
 def test_splade_sparse_adapter_weight_expansion():
     """Verify SpladeSparseSearchAdapter expands queries with domain token weights."""

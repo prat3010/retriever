@@ -25,7 +25,9 @@ class HFEmbeddingAdapter(EmbeddingProvider):
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
+            headers = (
+                {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
+            )
             self._client = httpx.AsyncClient(headers=headers, timeout=60.0)
         return self._client
 
@@ -36,16 +38,26 @@ class HFEmbeddingAdapter(EmbeddingProvider):
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         return await self._embed_with_retry(texts)
 
-    async def _embed_with_retry(self, texts: list[str], max_retries: int = 3) -> list[list[float]]:
+    async def _embed_with_retry(
+        self, texts: list[str], max_retries: int = 3
+    ) -> list[list[float]]:
         url = f"{HF_INFERENCE_URL}/{self._model}"
         for attempt in range(max_retries + 1):
             try:
-                response = await self.client.post(url, json={"inputs": texts, "options": {"wait_for_model": True}})
+                response = await self.client.post(
+                    url, json={"inputs": texts, "options": {"wait_for_model": True}}
+                )
                 if response.status_code == 503:
-                    raise httpx.HTTPStatusError("Model loading", request=response.request, response=response)
+                    raise httpx.HTTPStatusError(
+                        "Model loading", request=response.request, response=response
+                    )
                 response.raise_for_status()
                 data = response.json()
-                if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
+                if (
+                    isinstance(data, list)
+                    and len(data) > 0
+                    and isinstance(data[0], list)
+                ):
                     return data
                 if isinstance(data, dict) and "error" in data:
                     raise ValueError(data["error"])
@@ -53,6 +65,6 @@ class HFEmbeddingAdapter(EmbeddingProvider):
             except (httpx.HTTPStatusError, httpx.TimeoutException, ValueError):
                 if attempt == max_retries:
                     raise
-                sleep_seconds = (2 ** attempt) + random.uniform(0, 1)
+                sleep_seconds = (2**attempt) + random.uniform(0, 1)
                 await asyncio.sleep(sleep_seconds)
         return []

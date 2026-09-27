@@ -49,7 +49,9 @@ class StreamSessionState:
     active_turn_id: str | None = None
     sensitivity: float = 0.65
     silence_threshold_frames: int = 20  # 20 * 20ms = 400ms silence endpoint
-    consecutive_speech_for_barge_in: int = 3  # 3 * 20ms = 60ms speech triggers interruption
+    consecutive_speech_for_barge_in: int = (
+        3  # 3 * 20ms = 60ms speech triggers interruption
+    )
     selected_voice: SpeechTimbre = SpeechTimbre.NEURAL_NATURAL
     speed: float = 1.0
     last_frame_at: float = field(default_factory=time.time)
@@ -118,7 +120,9 @@ class VoiceStreamService(VoiceStreamServiceProtocol):
         messages: list[VoiceStreamControlMessage] = []
         completed_utterance_audio: bytes | None = None
 
-        vad_state = self._transcription.detect_voice_activity(frame_bytes, state.sensitivity)
+        vad_state = self._transcription.detect_voice_activity(
+            frame_bytes, state.sensitivity
+        )
 
         if vad_state == VoiceActivityState.SPEECH_DETECTED:
             if not state.is_user_speaking:
@@ -285,13 +289,19 @@ class VoiceStreamService(VoiceStreamServiceProtocol):
                 speed=state.speed,
             ):
                 if not first_chunk_emitted:
-                    time_to_first_audio_byte_ms = (time.perf_counter() - synthesis_start) * 1000.0
+                    time_to_first_audio_byte_ms = (
+                        time.perf_counter() - synthesis_start
+                    ) * 1000.0
                     first_chunk_emitted = True
 
                 chunks_count += 1
                 yield chunk
         except asyncio.CancelledError:
-            logger.info("Voice synthesis cancelled for session %s (turn %s)", session_id, turn_id)
+            logger.info(
+                "Voice synthesis cancelled for session %s (turn %s)",
+                session_id,
+                turn_id,
+            )
             raise
 
         total_turn_duration_ms = (time.perf_counter() - turn_start) * 1000.0

@@ -12,7 +12,9 @@ def generate_openapi():
     openapi_schema = app.openapi()
 
     # Ensure docs directory exists
-    docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", "docs"))
+    docs_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "../../..", "docs")
+    )
     os.makedirs(docs_dir, exist_ok=True)
 
     openapi_path = os.path.join(docs_dir, "openapi.json")

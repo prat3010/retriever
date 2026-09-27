@@ -11,7 +11,9 @@ from src.main import app
 
 # 1. Test Encryption / Decryption Primitives
 def test_config_encrypter_basic():
-    enc = ConfigEncrypter(key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes")
+    enc = ConfigEncrypter(
+        key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes"
+    )
     plaintext = "sk-proj-someopenaiapikeytest"
 
     # Encrypt
@@ -25,7 +27,9 @@ def test_config_encrypter_basic():
 
 
 def test_config_encrypter_graceful_migration_plaintext():
-    enc = ConfigEncrypter(key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes")
+    enc = ConfigEncrypter(
+        key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes"
+    )
     plaintext = "unencrypted_legacy_key"
 
     # Decrypting plaintext shouldn't throw, should return original plaintext
@@ -34,7 +38,9 @@ def test_config_encrypter_graceful_migration_plaintext():
 
 
 def test_config_encrypter_redacted_preserved():
-    enc = ConfigEncrypter(key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes")
+    enc = ConfigEncrypter(
+        key_encryption_key="super-secret-test-key-encryption-key-must-be-32-bytes"
+    )
     redacted = "********"
 
     assert enc.encrypt(redacted) == redacted
@@ -81,7 +87,9 @@ async def test_s3_storage_operations(mock_session_cls):
     )
 
     # Test Presigned URL
-    mock_client.generate_presigned_url.return_value = "http://presigned-link.com/download"
+    mock_client.generate_presigned_url.return_value = (
+        "http://presigned-link.com/download"
+    )
     url = await storage.generate_presigned_url(path, expiry_seconds=300)
     assert url == "http://presigned-link.com/download"
     mock_client.generate_presigned_url.assert_called_once_with(
@@ -108,7 +116,10 @@ async def test_sql_config_registry_encryption(mock_session_ctx):
         key="config_payload",
         value={
             "ai_provider": {"provider_name": "openai", "api_key": "raw-key-to-encrypt"},
-            "embedding_provider": {"provider_name": "openai", "api_key": "raw-embed-key"},
+            "embedding_provider": {
+                "provider_name": "openai",
+                "api_key": "raw-embed-key",
+            },
         },
         version=1,
     )
@@ -117,7 +128,9 @@ async def test_sql_config_registry_encryption(mock_session_ctx):
     mock_result.scalar_one_or_none.return_value = db_config_row
     mock_session.execute.return_value = mock_result
 
-    registry = SqlConfigRegistry(key_encryption_key="test-kek-must-be-32-bytes-long-for-fernet=")
+    registry = SqlConfigRegistry(
+        key_encryption_key="test-kek-must-be-32-bytes-long-for-fernet="
+    )
 
     # Test retrieve decrypts automatically
     loaded_config = await registry.get_raw_config(tenant_id=None)
@@ -131,7 +144,10 @@ async def test_sql_config_registry_encryption(mock_session_ctx):
 
     save_payload = {
         "ai_provider": {"provider_name": "openai", "api_key": "super-secret-raw-key"},
-        "embedding_provider": {"provider_name": "openai", "api_key": "embed-secret-raw"},
+        "embedding_provider": {
+            "provider_name": "openai",
+            "api_key": "embed-secret-raw",
+        },
     }
 
     await registry.save_raw_config(tenant_id=None, config_data=save_payload)
@@ -144,7 +160,9 @@ async def test_sql_config_registry_encryption(mock_session_ctx):
     assert added_obj.value["embedding_provider"]["api_key"] != "embed-secret-raw"
 
     # Decrypting it back should reveal the plaintext
-    decrypted_key = registry.encrypter.decrypt(added_obj.value["ai_provider"]["api_key"])
+    decrypted_key = registry.encrypter.decrypt(
+        added_obj.value["ai_provider"]["api_key"]
+    )
     assert decrypted_key == "super-secret-raw-key"
 
 
@@ -175,4 +193,6 @@ def test_readiness_probe_with_s3(mock_engine, mock_redis_ping):
             response = client.get("/health/readiness")
             assert response.status_code == status.HTTP_200_OK
             assert response.json()["status"] == "ready"
-            mock_s3_storage.client.head_bucket.assert_called_once_with(Bucket="test-bucket")
+            mock_s3_storage.client.head_bucket.assert_called_once_with(
+                Bucket="test-bucket"
+            )

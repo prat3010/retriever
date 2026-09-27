@@ -8,7 +8,9 @@ class ConfigEncrypter:
     """Helper to encrypt and decrypt sensitive configuration properties (e.g., API keys) at rest."""
 
     def __init__(self, key_encryption_key: str | None = None) -> None:
-        kek = key_encryption_key or os.environ.get("KEY_ENCRYPTION_KEY", "dev-key-encryption-key-must-be-32-bytes-long=")
+        kek = key_encryption_key or os.environ.get(
+            "KEY_ENCRYPTION_KEY", "dev-key-encryption-key-must-be-32-bytes-long="
+        )
         # Securely hash KEK to derive a valid 32-byte URL-safe base64-encoded key for Fernet
         key_bytes = hashlib.sha256(kek.encode("utf-8")).digest()
         fernet_key = base64.urlsafe_b64encode(key_bytes)

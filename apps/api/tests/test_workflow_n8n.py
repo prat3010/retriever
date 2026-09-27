@@ -15,6 +15,7 @@ client = TestClient(app)
 
 # ── 1. Unit Test: N8nWebhookDispatcher Event Dispatch ────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_n8n_webhook_dispatcher_success():
     """Verify N8nWebhookDispatcher posts events to external webhook URLs."""
@@ -64,10 +65,12 @@ async def test_n8n_webhook_dispatcher_ssrf_blocked():
 
 # ── 2. Integration Test: Inbound n8n Auto-Ingest Webhook (Text) ───────────────
 
+
 @patch("src.routers.workflow.ingest_file_sync", new_callable=AsyncMock)
 def test_inbound_n8n_text_ingest(mock_ingest_sync):
     """Verify inbound text ingestion from n8n passes through PII anonymization and saves chunks."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
@@ -96,15 +99,19 @@ def test_inbound_n8n_text_ingest(mock_ingest_sync):
 
 # ── 3. Integration Test: Inbound n8n Base64 File Ingest Webhook ───────────────
 
+
 @patch("src.routers.workflow.ingest_file_sync", new_callable=AsyncMock)
 def test_inbound_n8n_base64_file_ingest(mock_ingest_sync):
     """Verify inbound base64 binary file ingestion from n8n/Google Drive."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:
         tenant_id = str(uuid.uuid4())
-        dummy_pdf_base64 = base64.b64encode(b"%PDF-1.4 Dummy File Content").decode("utf-8")
+        dummy_pdf_base64 = base64.b64encode(b"%PDF-1.4 Dummy File Content").decode(
+            "utf-8"
+        )
         mock_ingest_sync.return_value = 5
 
         res = client.post(
@@ -128,12 +135,16 @@ def test_inbound_n8n_base64_file_ingest(mock_ingest_sync):
 
 # ── 4. Integration Test: n8n Webhook Config & OpenAPI Spec Endpoints ─────────
 
+
 @patch("src.routers.workflow.config_service.get_tenant_config", new_callable=AsyncMock)
-@patch("src.routers.workflow.config_service.update_tenant_config", new_callable=AsyncMock)
+@patch(
+    "src.routers.workflow.config_service.update_tenant_config", new_callable=AsyncMock
+)
 @patch("src.routers.workflow.n8n_dispatcher.dispatch_event", new_callable=AsyncMock)
 def test_workflow_admin_and_spec_endpoints(mock_dispatch, mock_save_cfg, mock_get_cfg):
     """Verify admin config of n8n webhook URL and retrieval of n8n OpenAPI spec."""
     from src.adapters.api.security import verify_admin_key
+
     app.dependency_overrides[verify_admin_key] = lambda: True
 
     try:

@@ -36,8 +36,12 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_cognitive_memories_tenant_type ON cognitive_memories(tenant_id, memory_type);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_cognitive_memories_tenant_id ON cognitive_memories(tenant_id);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_cognitive_memories_tenant_type ON cognitive_memories(tenant_id, memory_type);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_cognitive_memories_tenant_id ON cognitive_memories(tenant_id);"
+    )
     op.execute("""
         CREATE INDEX IF NOT EXISTS idx_cognitive_memories_embedding 
         ON cognitive_memories USING hnsw (embedding vector_cosine_ops) 
@@ -60,8 +64,12 @@ def upgrade() -> None:
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_got_graphs_tenant_converged ON got_graphs(tenant_id, is_converged);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_got_graphs_tenant_id ON got_graphs(tenant_id);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_got_graphs_tenant_converged ON got_graphs(tenant_id, is_converged);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_got_graphs_tenant_id ON got_graphs(tenant_id);"
+    )
 
     # 3. Create got_thoughts table
     op.execute("""
@@ -87,8 +95,12 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_got_thoughts_graph_depth ON got_thoughts(graph_id, iteration_depth);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_got_thoughts_tenant_id ON got_thoughts(tenant_id);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_got_thoughts_graph_depth ON got_thoughts(graph_id, iteration_depth);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_got_thoughts_tenant_id ON got_thoughts(tenant_id);"
+    )
 
     # 4. Enforce Row Level Security (RLS) on new tables
     op.execute("""

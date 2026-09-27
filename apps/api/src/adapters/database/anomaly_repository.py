@@ -33,7 +33,9 @@ class SqlAnomalyRepository(BaseAnomalyRepository):
 
         features_data = raw_features or score.features
 
-        async with tenant_session(tenant_id=score.tenant_id, bypass_rls=True) as session:
+        async with tenant_session(
+            tenant_id=score.tenant_id, bypass_rls=True
+        ) as session:
             anomaly_db = TelemetryAnomalyDb(
                 anomaly_id=anomaly_uuid,
                 tenant_id=tenant_uuid,
@@ -58,13 +60,19 @@ class SqlAnomalyRepository(BaseAnomalyRepository):
         self, filters: AnomalyFilterParams
     ) -> tuple[list[dict[str, Any]], int]:
         """Retrieve paginated anomaly events matching filter criteria."""
-        async with tenant_session(tenant_id=filters.tenant_id, bypass_rls=True) as session:
+        async with tenant_session(
+            tenant_id=filters.tenant_id, bypass_rls=True
+        ) as session:
             query = select(TelemetryAnomalyDb)
 
             if filters.tenant_id:
-                query = query.where(TelemetryAnomalyDb.tenant_id == uuid.UUID(filters.tenant_id))
+                query = query.where(
+                    TelemetryAnomalyDb.tenant_id == uuid.UUID(filters.tenant_id)
+                )
             if filters.risk_level:
-                query = query.where(TelemetryAnomalyDb.risk_level == filters.risk_level.upper())
+                query = query.where(
+                    TelemetryAnomalyDb.risk_level == filters.risk_level.upper()
+                )
             if filters.status:
                 query = query.where(TelemetryAnomalyDb.status == filters.status.lower())
 
@@ -73,7 +81,11 @@ class SqlAnomalyRepository(BaseAnomalyRepository):
             total = (await session.execute(count_stmt)).scalar() or 0
 
             # Execute paginated fetch
-            query = query.order_by(desc(TelemetryAnomalyDb.created_at)).offset(filters.offset).limit(filters.limit)
+            query = (
+                query.order_by(desc(TelemetryAnomalyDb.created_at))
+                .offset(filters.offset)
+                .limit(filters.limit)
+            )
             result = await session.execute(query)
             rows = result.scalars().all()
 

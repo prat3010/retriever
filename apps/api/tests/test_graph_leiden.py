@@ -1,6 +1,5 @@
 """Unit tests for Milestone 73: GraphRAG Leiden Community Detection."""
 
-
 from src.domain.abstractions.graph import EntityTriple
 from src.domain.graph.leiden_detector import LeidenCommunityDetector
 
@@ -60,11 +59,10 @@ def test_leiden_two_distinct_clusters():
     assert hierarchy.modularity_score > 0.0
 
 
-
 def test_leiden_hierarchical_levels():
     """Verify detector creates multi-level hierarchy (Level 0 -> Level 1)."""
     detector = LeidenCommunityDetector(resolution=1.0)
-    
+
     # Dense interconnected network of multiple sub-domains
     triples = [
         # Core Platform
@@ -72,11 +70,15 @@ def test_leiden_hierarchical_levels():
         EntityTriple(subject="AuthService", predicate="ISSUES", object="JWT"),
         EntityTriple(subject="User", predicate="HAS_ROLE", object="Admin"),
         # Storage Subsystem
-        EntityTriple(subject="DocumentStore", predicate="PERSISTS", object="PDFDocument"),
+        EntityTriple(
+            subject="DocumentStore", predicate="PERSISTS", object="PDFDocument"
+        ),
         EntityTriple(subject="DocumentStore", predicate="USES", object="MinIO"),
         EntityTriple(subject="PDFDocument", predicate="HAS", object="VectorEmbedding"),
         # Bridge
-        EntityTriple(subject="AuthService", predicate="PROTECTS", object="DocumentStore"),
+        EntityTriple(
+            subject="AuthService", predicate="PROTECTS", object="DocumentStore"
+        ),
     ]
 
     hierarchy = detector.detect_communities("test-tenant", triples, max_levels=3)

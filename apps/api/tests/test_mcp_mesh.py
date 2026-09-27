@@ -79,7 +79,10 @@ def test_platform_battery_30_registration():
     """Verify Platform Battery #30 (distributed_mcp_mesh) is active in BatteryService."""
     battery = battery_service.get_battery("distributed_mcp_mesh")
     assert battery is not None, "Battery #30 'distributed_mcp_mesh' must be cataloged"
-    assert battery.name == "Distributed Model Context Protocol (MCP) Mesh & Agent Federation"
+    assert (
+        battery.name
+        == "Distributed Model Context Protocol (MCP) Mesh & Agent Federation"
+    )
     assert battery.category == "system_extensibility"
     assert battery.status == "active"
     assert battery.milestone.startswith("M115")
@@ -110,7 +113,9 @@ def test_mesh_service_node_lifecycle():
         status=MeshNodeStatus.ONLINE,
         latency_ms=25.0,
         advertised_tools=[
-            McpToolDefinition(name="gdpr_compliance_check", description="Audit GDPR residency"),
+            McpToolDefinition(
+                name="gdpr_compliance_check", description="Audit GDPR residency"
+            ),
         ],
     )
     svc.register_node(remote_node)
@@ -135,9 +140,11 @@ def test_latency_weighted_tool_routing():
     svc = McpMeshService(local_node_id="node_local", local_cluster_id="cluster_local")
 
     # Local node advertises 'calculator'
-    svc.update_local_tools([
-        McpToolDefinition(name="calculator", description="Math eval"),
-    ])
+    svc.update_local_tools(
+        [
+            McpToolDefinition(name="calculator", description="Math eval"),
+        ]
+    )
 
     # Remote nodes advertise 'specialist_analysis' with different latencies
     peer_fast = MeshPeerNode(
@@ -145,24 +152,32 @@ def test_latency_weighted_tool_routing():
         cluster_id="cluster_fast",
         endpoint_url="https://fast.internal",
         latency_ms=15.0,
-        advertised_tools=[McpToolDefinition(name="specialist_analysis", description="Analysis")],
+        advertised_tools=[
+            McpToolDefinition(name="specialist_analysis", description="Analysis")
+        ],
     )
     peer_slow = MeshPeerNode(
         node_id="node_slow",
         cluster_id="cluster_slow",
         endpoint_url="https://slow.internal",
         latency_ms=85.0,
-        advertised_tools=[McpToolDefinition(name="specialist_analysis", description="Analysis")],
+        advertised_tools=[
+            McpToolDefinition(name="specialist_analysis", description="Analysis")
+        ],
     )
     svc.register_node(peer_fast)
     svc.register_node(peer_slow)
 
     # Policy 1: LOCAL_FIRST -> calculator should resolve to local node
-    route_calc = svc.resolve_tool_route("calculator", policy=MeshRoutingPolicy.LOCAL_FIRST)
+    route_calc = svc.resolve_tool_route(
+        "calculator", policy=MeshRoutingPolicy.LOCAL_FIRST
+    )
     assert route_calc.node_id == "node_local"
 
     # Policy 2: LOWEST_LATENCY -> specialist_analysis should route to peer_fast
-    route_spec = svc.resolve_tool_route("specialist_analysis", policy=MeshRoutingPolicy.LOWEST_LATENCY)
+    route_spec = svc.resolve_tool_route(
+        "specialist_analysis", policy=MeshRoutingPolicy.LOWEST_LATENCY
+    )
     assert route_spec.node_id == "node_fast"
 
     # Unadvertised tool raises MeshNodeUnreachableError
@@ -199,7 +214,10 @@ def test_cryptographic_trust_envelope_and_nonce_replay():
         tenant_id="tn_test_01",
         payload_data=payload,
     )
-    tampered_payload = {"query": "SELECT * FROM audit; DROP TABLE users;", "tenant_id": "tn_test_01"}
+    tampered_payload = {
+        "query": "SELECT * FROM audit; DROP TABLE users;",
+        "tenant_id": "tn_test_01",
+    }
     with pytest.raises(TrustVerificationError, match="Payload integrity hash mismatch"):
         svc.verify_trust_envelope(tampered_envelope, tampered_payload)
 
@@ -251,7 +269,9 @@ async def test_agent_federation_lifecycle_and_loop_breaker():
         max_depth=2,
         visited_clusters=["cluster_us", "cluster_eu"],
     )
-    with pytest.raises(FederationLoopError, match="Maximum cross-cluster delegation depth"):
+    with pytest.raises(
+        FederationLoopError, match="Maximum cross-cluster delegation depth"
+    ):
         await fed_svc.handle_delegation(deep_req, verify_trust=False)
 
     # 4. Multi-tenancy isolation invariant: missing tenant_id

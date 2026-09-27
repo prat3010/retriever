@@ -36,7 +36,11 @@ class SqlFeedbackRepository(FeedbackRepository):
                 if feedback.user_id:
                     row.user_id = uuid.UUID(feedback.user_id)
             else:
-                feedback_id = uuid.UUID(feedback.feedback_id) if feedback.feedback_id else uuid.uuid4()
+                feedback_id = (
+                    uuid.UUID(feedback.feedback_id)
+                    if feedback.feedback_id
+                    else uuid.uuid4()
+                )
                 user_id = uuid.UUID(feedback.user_id) if feedback.user_id else None
                 row = ChatMessageFeedbackDb(
                     feedback_id=feedback_id,
@@ -95,12 +99,9 @@ class SqlFeedbackRepository(FeedbackRepository):
             ]
 
             # Per-dimension score averages
-            stmt_scores = (
-                select(ChatMessageFeedbackDb.scores)
-                .where(
-                    ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
-                    ChatMessageFeedbackDb.scores.isnot(None),
-                )
+            stmt_scores = select(ChatMessageFeedbackDb.scores).where(
+                ChatMessageFeedbackDb.tenant_id == uuid.UUID(tenant_id),
+                ChatMessageFeedbackDb.scores.isnot(None),
             )
             res_scores = await session.execute(stmt_scores)
             score_rows = res_scores.scalars().all()
@@ -115,10 +116,11 @@ class SqlFeedbackRepository(FeedbackRepository):
                         dim_sums[k] = dim_sums.get(k, 0) + v
                         dim_counts[k] = dim_counts.get(k, 0) + 1
 
-            dimension_averages = {
-                k: round(dim_sums[k] / dim_counts[k], 2)
-                for k in dim_sums
-            } if dim_sums else {}
+            dimension_averages = (
+                {k: round(dim_sums[k] / dim_counts[k], 2) for k in dim_sums}
+                if dim_sums
+                else {}
+            )
 
             total = up_count + down_count
             percentage_positive = (up_count / total * 100) if total > 0 else 100.0

@@ -60,7 +60,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1", tags=["Tenants"])
 
 
-
 @router.post(
     "/tenants",
     status_code=status.HTTP_201_CREATED,
@@ -77,6 +76,7 @@ async def create_tenant(
     )
     try:
         from src.domain.abstractions.inference import PromptTemplate
+
         await template_registry.save_template(
             tenant.tenant_id,
             PromptTemplate(
@@ -89,7 +89,9 @@ async def create_tenant(
         )
     except Exception as e:
         logger.warning(f"Could not seed default prompt template: {e}")
-    await audit_logger.write(tenant.tenant_id, "tenant.created", f"Tenant '{payload.name}' created")
+    await audit_logger.write(
+        tenant.tenant_id, "tenant.created", f"Tenant '{payload.name}' created"
+    )
     return TenantListItem(
         tenantId=tenant.tenant_id,
         name=tenant.name,
@@ -111,7 +113,9 @@ async def validate_api_key(
     try:
         api_key = payload.api_key or settings.OPENAI_API_KEY
         if not api_key:
-            return ValidateKeyResponse(valid=False, error="No API key provided and no server-wide key found.")
+            return ValidateKeyResponse(
+                valid=False, error="No API key provided and no server-wide key found."
+            )
         kwargs = {"api_key": api_key}
         base_url = payload.base_url
         if not base_url and payload.provider == "gemini":
@@ -125,11 +129,13 @@ async def validate_api_key(
             model=payload.model,
             messages=[{"role": "user", "content": "ping"}],
             max_tokens=1,
-            timeout=10
+            timeout=10,
         )
         return ValidateKeyResponse(valid=True)
     except openai.AuthenticationError as ae:
-        return ValidateKeyResponse(valid=False, error=f"Authentication Error: {ae.message}")
+        return ValidateKeyResponse(
+            valid=False, error=f"Authentication Error: {ae.message}"
+        )
     except Exception as e:
         return ValidateKeyResponse(valid=False, error=str(e))
 
@@ -161,7 +167,10 @@ async def get_global_config() -> TenantConfiguration:
 @router.put(
     "/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:write"]),
+    ],
 )
 async def update_tenant_config(
     tenantId: str,
@@ -175,7 +184,10 @@ async def update_tenant_config(
     "/tenants/{tenantId}/config",
     status_code=status.HTTP_200_OK,
     response_model=TenantConfiguration,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def get_tenant_config(tenantId: str) -> TenantConfiguration:
     config = await config_service.get_tenant_config(tenantId)
@@ -186,7 +198,10 @@ async def get_tenant_config(tenantId: str) -> TenantConfiguration:
     "/tenants/{tenantId}/api-keys",
     status_code=status.HTTP_201_CREATED,
     response_model=ApiKeyCreatedResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:write"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:write"]),
+    ],
 )
 async def generate_api_key(
     tenantId: str,
@@ -213,7 +228,10 @@ async def generate_api_key(
     "/tenants/{tenantId}/clusters/topics",
     status_code=status.HTTP_200_OK,
     response_model=TopicClusteringResponse,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def get_tenant_topic_clusters(
     tenantId: str,
@@ -223,7 +241,9 @@ async def get_tenant_topic_clusters(
     from src.container import document_repository, topic_clusterer
 
     req = payload or TopicClusteringRequest()
-    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    chunks_with_embeddings = (
+        await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    )
 
     chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
     chunk_texts = [c.content for c, _ in chunks_with_embeddings]
@@ -242,7 +262,10 @@ async def get_tenant_topic_clusters(
     "/tenants/{tenantId}/clusters/knowledge-gaps",
     status_code=status.HTTP_200_OK,
     response_model=KnowledgeGapReport,
-    dependencies=[Depends(verify_tenant_isolation), Security(verify_scopes, scopes=["document:read"])],
+    dependencies=[
+        Depends(verify_tenant_isolation),
+        Security(verify_scopes, scopes=["document:read"]),
+    ],
 )
 async def get_tenant_knowledge_gaps(
     tenantId: str,
@@ -250,7 +273,9 @@ async def get_tenant_knowledge_gaps(
     """Detect orphaned chunks, sparse clusters, and synthesize vault coverage diagnostics."""
     from src.container import document_repository, topic_clusterer
 
-    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    chunks_with_embeddings = (
+        await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    )
 
     chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
     chunk_texts = [c.content for c, _ in chunks_with_embeddings]
@@ -277,7 +302,6 @@ async def get_tenant_knowledge_gaps(
     status_code=status.HTTP_200_OK,
     response_model=EmbeddingProjectionResponse,
     dependencies=[Depends(verify_tenant_or_admin)],
-
 )
 async def project_tenant_embeddings(
     tenantId: str,
@@ -287,7 +311,9 @@ async def project_tenant_embeddings(
     from src.container import document_repository, embedding_projector, topic_clusterer
 
     req = payload or EmbeddingProjectionRequest()
-    chunks_with_embeddings = await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    chunks_with_embeddings = (
+        await document_repository.get_tenant_chunks_with_embeddings(tenantId)
+    )
 
     chunk_ids = [c.chunk_id for c, _ in chunks_with_embeddings]
     chunk_texts = [c.content for c, _ in chunks_with_embeddings]
@@ -348,7 +374,9 @@ async def get_tenant_knowledge_graph_summary(
     from src.adapters.api.security import _UUID_RE
     from src.container import container
 
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
 
     summary = await container.graph_repository.get_graph_summary(resolved_tenant_id)
     return GraphSummaryResponse(
@@ -375,7 +403,9 @@ async def query_tenant_knowledge_graph(
     from src.adapters.api.security import _UUID_RE
     from src.container import container
 
-    resolved_tenant_id = user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
     target_entity = payload.target_entity or payload.entity or payload.query or ""
 
     res = await container.graph_repository.search_triples(
@@ -396,7 +426,9 @@ async def query_tenant_knowledge_graph(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_tenant_or_admin)],
 )
-async def delete_tenant_knowledge_graph_triple(tenantId: str, tripleId: str) -> dict[str, str]:
+async def delete_tenant_knowledge_graph_triple(
+    tenantId: str, tripleId: str
+) -> dict[str, str]:
     """Delete an individual triple from tenant's knowledge graph."""
     from src.container import container
 
@@ -508,20 +540,33 @@ async def classify_scoping_intent(
 
     try:
         response = await inference_orchestrator.llm.generate(
-            InferenceRequest(messages=messages, temperature=0.1, json_schema=json_schema),
+            InferenceRequest(
+                messages=messages, temperature=0.1, json_schema=json_schema
+            ),
             config,
         )
         raw = response.content.strip()
-        raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        raw = (
+            raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        )
         parsed_dict = json.loads(raw)
         intent_result = ScopingIntentResult(**parsed_dict)
     except Exception as exc:
         logger.warning(f"Structured intent classification fallback due to error: {exc}")
         p_lower = payload.prompt.lower()
-        is_rag = any(k in p_lower for k in ["rag", "knowledge base", "vector", "citation", "semantic search"])
-        is_voice = any(k in p_lower for k in ["voice", "speech", "calling bot", "elevenlabs"])
-        is_ecom = any(k in p_lower for k in ["store", "ecommerce", "e-commerce", "shop", "cart"])
-        is_landing = any(k in p_lower for k in ["landing page", "waitlist", "teaser", "single page"])
+        is_rag = any(
+            k in p_lower
+            for k in ["rag", "knowledge base", "vector", "citation", "semantic search"]
+        )
+        is_voice = any(
+            k in p_lower for k in ["voice", "speech", "calling bot", "elevenlabs"]
+        )
+        is_ecom = any(
+            k in p_lower for k in ["store", "ecommerce", "e-commerce", "shop", "cart"]
+        )
+        is_landing = any(
+            k in p_lower for k in ["landing page", "waitlist", "teaser", "single page"]
+        )
 
         if is_voice:
             intent_result = ScopingIntentResult(
@@ -616,7 +661,9 @@ async def classify_scoping_intent(
 )
 async def get_tenant_telemetry_anomalies(
     tenantId: str,
-    risk_level: str | None = Query(None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"),
+    risk_level: str | None = Query(
+        None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"
+    ),
     status: str | None = Query(None, description="Filter by status (active, resolved)"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -652,8 +699,3 @@ async def get_tenant_telemetry_anomalies(
 async def get_tenant_batteries(tenantId: str) -> PlatformBatteriesResponse:
     """Retrieve platform batteries and active engine capabilities available for this tenant."""
     return battery_service.get_tenant_batteries(tenantId)
-
-
-
-
-

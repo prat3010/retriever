@@ -37,8 +37,16 @@ class EdgeFusionRanker:
             fts_results: Alias for keyword_candidates.
             use_rrf: Use Reciprocal Rank Fusion if True, else linear blend.
         """
-        vecs = vector_candidates if vector_candidates is not None else (vector_results or [])
-        kws = keyword_candidates if keyword_candidates is not None else (fts_results or [])
+        vecs = (
+            vector_candidates
+            if vector_candidates is not None
+            else (vector_results or [])
+        )
+        kws = (
+            keyword_candidates
+            if keyword_candidates is not None
+            else (fts_results or [])
+        )
 
         all_chunk_ids: set[str] = set()
         chunk_map: dict[str, dict[str, Any]] = {}
@@ -49,7 +57,9 @@ class EdgeFusionRanker:
         for rank, item in enumerate(vecs):
             c_id = item["chunk_id"]
             vector_ranks[c_id] = rank + 1
-            vector_scores[c_id] = float(item.get("vector_score", item.get("score", 0.0)))
+            vector_scores[c_id] = float(
+                item.get("vector_score", item.get("score", 0.0))
+            )
             all_chunk_ids.add(c_id)
             if c_id not in chunk_map:
                 chunk_map[c_id] = item
@@ -59,7 +69,9 @@ class EdgeFusionRanker:
         for rank, item in enumerate(kws):
             c_id = item["chunk_id"]
             keyword_ranks[c_id] = rank + 1
-            keyword_scores[c_id] = float(item.get("fts_score", item.get("bm25_score", item.get("score", 0.0))))
+            keyword_scores[c_id] = float(
+                item.get("fts_score", item.get("bm25_score", item.get("score", 0.0)))
+            )
             all_chunk_ids.add(c_id)
             if c_id not in chunk_map:
                 chunk_map[c_id] = item
@@ -84,7 +96,9 @@ class EdgeFusionRanker:
                 match_type = "bm25"
 
             if use_rrf:
-                rrf_score = (alpha * (1.0 / (self.rrf_k + v_rank))) + ((1.0 - alpha) * (1.0 / (self.rrf_k + k_rank)))
+                rrf_score = (alpha * (1.0 / (self.rrf_k + v_rank))) + (
+                    (1.0 - alpha) * (1.0 / (self.rrf_k + k_rank))
+                )
                 final_score = rrf_score
             else:
                 final_score = (alpha * v_score) + ((1.0 - alpha) * k_score)

@@ -22,9 +22,15 @@ GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"]
 
 
 class GoogleAuthRequest(BaseModel):
-    id_token: str = Field(..., description="Google OIDC ID Token or verified payload JWT")
-    email: str | None = Field(None, description="Optional fallback email for dev/testing mode")
-    name: str | None = Field(None, description="Optional fallback name for dev/testing mode")
+    id_token: str = Field(
+        ..., description="Google OIDC ID Token or verified payload JWT"
+    )
+    email: str | None = Field(
+        None, description="Optional fallback email for dev/testing mode"
+    )
+    name: str | None = Field(
+        None, description="Optional fallback name for dev/testing mode"
+    )
 
 
 class AuthSessionResponse(BaseModel):
@@ -47,7 +53,9 @@ class AuthSessionResponse(BaseModel):
 )
 async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
     """Verify Google OIDC token (Deprecated in favor of Supabase Auth OIDC tokens)."""
-    logger.warning("Call to deprecated endpoint /v1/auth/google. Migrate to Supabase Auth OIDC tokens.")
+    logger.warning(
+        "Call to deprecated endpoint /v1/auth/google. Migrate to Supabase Auth OIDC tokens."
+    )
 
     email = payload.email
     name = payload.name
@@ -73,7 +81,10 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid Google ID Token issuer.",
                     )
-                if settings.OIDC_AUDIENCE and claims.get("aud") != settings.OIDC_AUDIENCE:
+                if (
+                    settings.OIDC_AUDIENCE
+                    and claims.get("aud") != settings.OIDC_AUDIENCE
+                ):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid Google ID Token audience.",
@@ -117,6 +128,7 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
     async with tenant_session(bypass_rls=True) as session:
         # 2. Check if user already exists
         from sqlalchemy import select
+
         stmt = select(UserDb).where(UserDb.external_id == external_id)
         res = await session.execute(stmt)
         existing_user = res.scalar_one_or_none()
@@ -142,7 +154,9 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
                 )
             )
             await session.commit()
-            await audit_logger.write(tenant_id, "auth.google_login", f"User '{email}' logged in via Google")
+            await audit_logger.write(
+                tenant_id, "auth.google_login", f"User '{email}' logged in via Google"
+            )
         else:
             # 3. Auto-provision New Tenant & User
             is_new_tenant = True
@@ -182,7 +196,11 @@ async def google_auth(payload: GoogleAuthRequest) -> AuthSessionResponse:
 
             tenant_id = str(tenant_uuid)
             user_id = str(user_uuid)
-            await audit_logger.write(tenant_id, "auth.google_signup", f"New user '{email}' auto-provisioned tenant")
+            await audit_logger.write(
+                tenant_id,
+                "auth.google_signup",
+                f"New user '{email}' auto-provisioned tenant",
+            )
 
     # 4. Generate Session Token
     if not settings.SECRET_KEY:
@@ -237,4 +255,3 @@ async def get_auth_session(
         roles=user_context.roles,
         scopes=user_context.scopes,
     )
-

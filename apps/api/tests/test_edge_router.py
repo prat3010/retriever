@@ -19,7 +19,11 @@ from src.main import app
 def test_edge_router_service_geo_mapping() -> None:
     """Verify Geo-IP routing maps countries to the optimal regional node."""
     service = EdgeRouterService(
-        configured_regions={RegionCode.AP_SOUTH, RegionCode.US_EAST, RegionCode.EU_CENTRAL},
+        configured_regions={
+            RegionCode.AP_SOUTH,
+            RegionCode.US_EAST,
+            RegionCode.EU_CENTRAL,
+        },
         primary_region=RegionCode.AP_SOUTH,
     )
 
@@ -94,7 +98,9 @@ def test_cluster_status_topology() -> None:
     assert status.primary_region == RegionCode.AP_SOUTH
     assert len(status.regions) == 3
 
-    primary_node = next(r for r in status.regions if r.region_code == RegionCode.AP_SOUTH)
+    primary_node = next(
+        r for r in status.regions if r.region_code == RegionCode.AP_SOUTH
+    )
     assert primary_node.is_primary is True
     assert primary_node.is_configured is True
 
@@ -153,7 +159,18 @@ async def test_admin_edge_routing_endpoints() -> None:
 def test_hexagonal_architecture_edge_router() -> None:
     """Ensure edge router domain layer has ZERO dependencies on SQLAlchemy or external frameworks."""
     source_code = inspect.getsource(edge_router_service)
-    forbidden_terms = ["sqlalchemy", "asyncpg", "fastapi", "httpx", "starlette", "requests"]
+    forbidden_terms = [
+        "sqlalchemy",
+        "asyncpg",
+        "fastapi",
+        "httpx",
+        "starlette",
+        "requests",
+    ]
     for term in forbidden_terms:
-        assert f"import {term}" not in source_code, f"Forbidden import '{term}' in edge_router_service.py"
-        assert f"from {term}" not in source_code, f"Forbidden from-import '{term}' in edge_router_service.py"
+        assert f"import {term}" not in source_code, (
+            f"Forbidden import '{term}' in edge_router_service.py"
+        )
+        assert f"from {term}" not in source_code, (
+            f"Forbidden from-import '{term}' in edge_router_service.py"
+        )

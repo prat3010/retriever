@@ -18,6 +18,7 @@ from src.main import app
 
 # ── 1. ToolRegistry Tests ───────────────────────────────────────────────────
 
+
 def test_tool_registry_management():
     """Verify registering, retrieving, and unregistering tools."""
     registry = ToolRegistry()
@@ -61,6 +62,7 @@ async def test_tool_execution_calculator():
 
 # ── 2. AgenticExecutionEngine ReAct Loop Test ────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_agentic_execution_loop():
     """Verify AgenticExecutionEngine executes multi-step ReAct tool calling loop."""
@@ -96,6 +98,7 @@ async def test_agentic_execution_loop():
 
 
 # ── 3. Router Endpoint Tests ─────────────────────────────────────────────────
+
 
 def test_agentic_tools_endpoint():
     """Verify GET /v1/tenants/{tenantId}/agentic/tools endpoint."""

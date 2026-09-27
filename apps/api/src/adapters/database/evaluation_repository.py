@@ -69,13 +69,14 @@ def _row_to_result(row) -> EvalRunResult:
         question_id=str(row.question_id),
         generated_answer=row.generated_answer or "",
         retrieved_chunk_ids=list(row.retrieved_chunk_ids or []),
-        scores=EvalRunResultScores(**scores_data) if scores_data else EvalRunResultScores(),
+        scores=EvalRunResultScores(**scores_data)
+        if scores_data
+        else EvalRunResultScores(),
         latency_ms=row.latency_ms or 0,
     )
 
 
 class SqlEvalDatasetRepository(EvalDatasetRepository):
-
     async def create_dataset(self, dataset: EvalDataset) -> EvalDataset:
         async with tenant_session(tenant_id=dataset.tenant_id) as session:
             db = EvalDatasetDb(
@@ -135,7 +136,9 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
         async with tenant_session(tenant_id=None) as session:
             await session.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             result = await session.execute(
-                text("SELECT * FROM eval_questions WHERE dataset_id = :ds ORDER BY created_at"),
+                text(
+                    "SELECT * FROM eval_questions WHERE dataset_id = :ds ORDER BY created_at"
+                ),
                 {"ds": dataset_id},
             )
             return [_row_to_question(row) for row in result.fetchall()]
@@ -151,7 +154,6 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
 
 
 class SqlEvalRunRepository(EvalRunRepository):
-
     async def create_run(self, run: EvalRun) -> EvalRun:
         async with tenant_session(tenant_id=run.tenant_id) as session:
             db = EvalRunDb(
@@ -182,7 +184,9 @@ class SqlEvalRunRepository(EvalRunRepository):
             )
             return [_row_to_run(row) for row in result.fetchall()]
 
-    async def update_run_status(self, run_id: str, status: str, aggregate_scores: dict | None = None) -> None:
+    async def update_run_status(
+        self, run_id: str, status: str, aggregate_scores: dict | None = None
+    ) -> None:
         async with tenant_session(tenant_id=None) as session:
             await session.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             if aggregate_scores:
@@ -193,7 +197,11 @@ class SqlEvalRunRepository(EvalRunRepository):
                             completed_at = CASE WHEN :status = 'completed' THEN NOW() ELSE completed_at END
                         WHERE run_id = :run_id
                     """),
-                    {"run_id": run_id, "status": status, "scores": json.dumps(aggregate_scores)},
+                    {
+                        "run_id": run_id,
+                        "status": status,
+                        "scores": json.dumps(aggregate_scores),
+                    },
                 )
             else:
                 await session.execute(
@@ -225,7 +233,9 @@ class SqlEvalRunRepository(EvalRunRepository):
         async with tenant_session(tenant_id=None) as session:
             await session.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             result = await session.execute(
-                text("SELECT * FROM eval_run_results WHERE run_id = :run_id ORDER BY created_at"),
+                text(
+                    "SELECT * FROM eval_run_results WHERE run_id = :run_id ORDER BY created_at"
+                ),
                 {"run_id": run_id},
             )
             return [_row_to_result(row) for row in result.fetchall()]
@@ -234,7 +244,9 @@ class SqlEvalRunRepository(EvalRunRepository):
         async with tenant_session(tenant_id=None) as session:
             await session.execute(text("SET LOCAL app.bypass_rls = 'true'"))
             await session.execute(
-                text("UPDATE eval_runs SET completed_count = completed_count + 1 WHERE run_id = :run_id"),
+                text(
+                    "UPDATE eval_runs SET completed_count = completed_count + 1 WHERE run_id = :run_id"
+                ),
                 {"run_id": run_id},
             )
 
@@ -324,7 +336,9 @@ class SqlOnlineEvaluationRepository:
     ) -> tuple[list[dict], int]:
         async with tenant_session(tenant_id=tenant_id) as session:
             count_res = await session.execute(
-                text("SELECT COUNT(*) FROM online_evaluations WHERE tenant_id = :tenant_id"),
+                text(
+                    "SELECT COUNT(*) FROM online_evaluations WHERE tenant_id = :tenant_id"
+                ),
                 {"tenant_id": UUID(tenant_id)},
             )
             total = count_res.scalar() or 0
@@ -383,4 +397,3 @@ class SqlOnlineEvaluationRepository:
                 "claims": getattr(r, "claims", []) or [],
                 "created_at": str(r.created_at),
             }
-

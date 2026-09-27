@@ -137,7 +137,9 @@ class DurableStepContext:
                 )
 
                 if attempts < max_attempts:
-                    delay = initial_interval_seconds * (backoff_factor ** (attempts - 1))
+                    delay = initial_interval_seconds * (
+                        backoff_factor ** (attempts - 1)
+                    )
                     await asyncio.sleep(delay)
                 else:
                     # Final failure after exhausting retries
@@ -157,7 +159,9 @@ class DurableStepContext:
                     await self.repository.save_step_checkpoint(failed_step)
                     raise err
 
-        raise RuntimeError(f"Step '{step_name}' failed after {attempts} attempts: {last_error}")
+        raise RuntimeError(
+            f"Step '{step_name}' failed after {attempts} attempts: {last_error}"
+        )
 
 
 class DurableWorkflowAdapter(IDurableWorkflowAdapter):
@@ -177,7 +181,10 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         return self.engine.list_workflows()
 
     async def _send_webhook(
-        self, execution: WorkflowExecutionRecord, event_type: str, extra: dict[str, Any] | None = None
+        self,
+        execution: WorkflowExecutionRecord,
+        event_type: str,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Send asynchronous HMAC-signed webhook notification if configured."""
         if not execution.webhook_url:
@@ -198,7 +205,9 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 body = json.dumps(payload)
-                sig = hmac.new(b"retriever_workflow_secret", body.encode("utf-8"), hashlib.sha256).hexdigest()
+                sig = hmac.new(
+                    b"retriever_workflow_secret", body.encode("utf-8"), hashlib.sha256
+                ).hexdigest()
                 headers = {
                     "Content-Type": "application/json",
                     "X-Retriever-Signature": sig,
@@ -206,7 +215,11 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
                 }
                 await client.post(execution.webhook_url, content=body, headers=headers)
         except Exception as err:
-            logger.debug("Failed to deliver workflow webhook to %s: %s", execution.webhook_url, err)
+            logger.debug(
+                "Failed to deliver workflow webhook to %s: %s",
+                execution.webhook_url,
+                err,
+            )
 
     async def start_workflow(
         self, tenant_id: str, request: WorkflowRunRequest
@@ -286,7 +299,9 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         self.engine.validate_tenant(tenant_id)
         record = await self.repository.get_execution(tenant_id, execution_id)
         if not record:
-            raise ValueError(f"Execution '{execution_id}' not found for tenant '{tenant_id}'.")
+            raise ValueError(
+                f"Execution '{execution_id}' not found for tenant '{tenant_id}'."
+            )
 
         blueprint = self.engine.get_workflow(record.workflow_name)
         if not blueprint:
@@ -303,7 +318,6 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         task.add_done_callback(self._background_tasks.discard)
         return record
 
-
     async def cancel_execution(
         self, tenant_id: str, execution_id: str
     ) -> WorkflowExecutionRecord:
@@ -311,7 +325,9 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         self.engine.validate_tenant(tenant_id)
         record = await self.repository.get_execution(tenant_id, execution_id)
         if not record:
-            raise ValueError(f"Execution '{execution_id}' not found for tenant '{tenant_id}'.")
+            raise ValueError(
+                f"Execution '{execution_id}' not found for tenant '{tenant_id}'."
+            )
 
         record.status = WorkflowStatus.CANCELLED
         record.completed_at = datetime.now(UTC).isoformat()
@@ -345,22 +361,34 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         await self._send_webhook(record, "workflow.started")
 
         output_state: dict[str, Any] = dict(record.input_payload)
-        initial_checkpoints = await self.repository.list_step_checkpoints(record.execution_id)
-        record.completed_steps = sum(1 for c in initial_checkpoints if c.status == StepStatus.COMPLETED)
+        initial_checkpoints = await self.repository.list_step_checkpoints(
+            record.execution_id
+        )
+        record.completed_steps = sum(
+            1 for c in initial_checkpoints if c.status == StepStatus.COMPLETED
+        )
 
         try:
             for step_def in blueprint.steps:
                 # Check for cancellation before executing step
-                current_state = await self.repository.get_execution(record.tenant_id, record.execution_id)
+                current_state = await self.repository.get_execution(
+                    record.tenant_id, record.execution_id
+                )
                 if current_state and current_state.status == WorkflowStatus.CANCELLED:
-                    logger.info("Workflow execution %s cancelled before step %s.", record.execution_id, step_def.name)
+                    logger.info(
+                        "Workflow execution %s cancelled before step %s.",
+                        record.execution_id,
+                        step_def.name,
+                    )
                     return
 
                 record.current_step_name = step_def.name
                 await self.repository.update_execution(record)
 
                 # Execute specific step logic based on workflow and step name
-                step_handler = self._build_step_handler(blueprint.name, step_def.name, output_state, record)
+                step_handler = self._build_step_handler(
+                    blueprint.name, step_def.name, output_state, record
+                )
                 step_result = await ctx.run(
                     step_name=step_def.name,
                     fn=step_handler,
@@ -370,13 +398,19 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
                 )
 
                 output_state.update(step_result)
-                step_cps = await self.repository.list_step_checkpoints(record.execution_id)
-                record.completed_steps = sum(1 for c in step_cps if c.status == StepStatus.COMPLETED)
+                step_cps = await self.repository.list_step_checkpoints(
+                    record.execution_id
+                )
+                record.completed_steps = sum(
+                    1 for c in step_cps if c.status == StepStatus.COMPLETED
+                )
                 record.output_payload = output_state
 
                 await self.repository.update_execution(record)
                 await self._send_webhook(
-                    record, "step.completed", {"step_name": step_def.name, "step_output": step_result}
+                    record,
+                    "step.completed",
+                    {"step_name": step_def.name, "step_output": step_result},
                 )
 
             # Workflow completed successfully
@@ -384,7 +418,9 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
             record.current_step_name = None
             record.completed_at = datetime.now(UTC).isoformat()
             await self.repository.update_execution(record)
-            await self._send_webhook(record, "workflow.completed", {"final_output": output_state})
+            await self._send_webhook(
+                record, "workflow.completed", {"final_output": output_state}
+            )
 
         except Exception as err:
             logger.error(
@@ -411,107 +447,181 @@ class DurableWorkflowAdapter(IDurableWorkflowAdapter):
         # ── Vault Bulk Ingestion Steps ───────────────────────────────────────
         if workflow_name == "vault_bulk_ingest":
             if step_name == "extract_and_anonymize":
+
                 async def _extract() -> dict[str, Any]:
-                    raw_text = state.get("content") or state.get("raw_text") or "Sample document content for durable vault processing."
-                    return {"cleaned_text": raw_text, "pii_redacted": True, "char_count": len(raw_text)}
+                    raw_text = (
+                        state.get("content")
+                        or state.get("raw_text")
+                        or "Sample document content for durable vault processing."
+                    )
+                    return {
+                        "cleaned_text": raw_text,
+                        "pii_redacted": True,
+                        "char_count": len(raw_text),
+                    }
+
                 return _extract
 
             elif step_name == "hierarchical_or_ast_chunk":
+
                 async def _chunk() -> dict[str, Any]:
                     text = state.get("cleaned_text", "")
                     chunk_count = max(1, len(text) // 250)
-                    return {"chunk_count": chunk_count, "strategy": "hierarchical_propositions"}
+                    return {
+                        "chunk_count": chunk_count,
+                        "strategy": "hierarchical_propositions",
+                    }
+
                 return _chunk
 
             elif step_name == "generate_contextual_headers":
+
                 async def _context() -> dict[str, Any]:
-                    return {"contextual_headers_generated": True, "precision_boost_pct": 35.0}
+                    return {
+                        "contextual_headers_generated": True,
+                        "precision_boost_pct": 35.0,
+                    }
+
                 return _context
 
             elif step_name == "embed_and_index_vectors":
+
                 async def _embed() -> dict[str, Any]:
                     chunks = state.get("chunk_count", 1)
-                    return {"vectors_indexed": chunks, "dimension": 768, "index_type": "HNSW"}
+                    return {
+                        "vectors_indexed": chunks,
+                        "dimension": 768,
+                        "index_type": "HNSW",
+                    }
+
                 return _embed
 
             elif step_name == "extract_knowledge_graph":
+
                 async def _graph() -> dict[str, Any]:
-                    return {"triples_extracted": 14, "entities_identified": 6, "engine": "Neo4j/PgGraph"}
+                    return {
+                        "triples_extracted": 14,
+                        "entities_identified": 6,
+                        "engine": "Neo4j/PgGraph",
+                    }
+
                 return _graph
 
             elif step_name == "finalize_document_catalog":
+
                 async def _finalize() -> dict[str, Any]:
-                    return {"catalog_status": "COMPLETED", "document_id": state.get("document_id", record.execution_id)}
+                    return {
+                        "catalog_status": "COMPLETED",
+                        "document_id": state.get("document_id", record.execution_id),
+                    }
+
                 return _finalize
 
         # ── Batch Knowledge Graph Steps ──────────────────────────────────────
         elif workflow_name == "batch_graph_extraction":
             if step_name == "scan_vault_documents":
+
                 async def _scan() -> dict[str, Any]:
-                    return {"documents_scanned": state.get("doc_count", 5), "total_chunks": 42}
+                    return {
+                        "documents_scanned": state.get("doc_count", 5),
+                        "total_chunks": 42,
+                    }
+
                 return _scan
 
             elif step_name == "extract_entities_and_triples":
+
                 async def _extract_triples() -> dict[str, Any]:
                     return {"entities_found": 28, "triples_generated": 56}
+
                 return _extract_triples
 
             elif step_name == "resolve_cross_document_links":
+
                 async def _resolve() -> dict[str, Any]:
                     return {"cross_links_resolved": 19, "communities_formed": 3}
+
                 return _resolve
 
             elif step_name == "commit_graph_topology":
+
                 async def _commit() -> dict[str, Any]:
                     return {"committed": True, "graph_backend": "Neo4j_Cypher"}
+
                 return _commit
 
         # ── Synthetic Evaluation Steps ───────────────────────────────────────
         elif workflow_name == "synthetic_eval_generator":
             if step_name == "sample_document_propositions":
+
                 async def _sample() -> dict[str, Any]:
                     return {"sampled_propositions": 20}
+
                 return _sample
 
             elif step_name == "generate_qa_scenarios":
+
                 async def _qa() -> dict[str, Any]:
                     return {"scenarios_generated": 10}
+
                 return _qa
 
             elif step_name == "execute_model_inferences":
+
                 async def _infer() -> dict[str, Any]:
                     return {"inferences_completed": 10, "avg_latency_ms": 142.5}
+
                 return _infer
 
             elif step_name == "evaluate_grounding_metrics":
+
                 async def _eval() -> dict[str, Any]:
-                    return {"faithfulness": 0.96, "answer_relevance": 0.94, "context_recall": 0.92}
+                    return {
+                        "faithfulness": 0.96,
+                        "answer_relevance": 0.94,
+                        "context_recall": 0.92,
+                    }
+
                 return _eval
 
         # ── Bulk Re-Embedding Pipeline Steps ─────────────────────────────────
         elif workflow_name == "bulk_reembed_pipeline":
             if step_name == "validate_target_dimension":
+
                 async def _val_dim() -> dict[str, Any]:
-                    return {"target_dimension": 1024, "target_table": "vector_records_1024"}
+                    return {
+                        "target_dimension": 1024,
+                        "target_table": "vector_records_1024",
+                    }
+
                 return _val_dim
 
             elif step_name == "batch_fetch_chunks":
+
                 async def _fetch() -> dict[str, Any]:
                     return {"chunks_fetched": 150}
+
                 return _fetch
 
             elif step_name == "generate_vector_embeddings":
+
                 async def _gen_vecs() -> dict[str, Any]:
                     return {"vectors_generated": 150, "model": "bge-m3"}
+
                 return _gen_vecs
 
             elif step_name == "swap_vector_partitions":
+
                 async def _swap() -> dict[str, Any]:
                     return {"partition_swapped": True, "zero_downtime": True}
+
                 return _swap
 
         # Generic default step closure
         async def _generic_step() -> dict[str, Any]:
-            return {f"{step_name}_status": "success", "processed_at": datetime.now(UTC).isoformat()}
+            return {
+                f"{step_name}_status": "success",
+                "processed_at": datetime.now(UTC).isoformat(),
+            }
 
         return _generic_step

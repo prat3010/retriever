@@ -63,7 +63,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
         self._platform = enclave_platform or self._detect_platform()
 
         # Ephemeral memory sanitizer for scrubbing derived keys
-        self._sanitizer = memory_sanitizer or EphemeralMemorySanitizer(register_signals=False)
+        self._sanitizer = memory_sanitizer or EphemeralMemorySanitizer(
+            register_signals=False
+        )
 
         # Generate hardware enclave asymmetric signing identity (Ed25519)
         self._private_key = ed25519.Ed25519PrivateKey.generate()
@@ -74,7 +76,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
         ).decode("utf-8")
 
         # Fixed enclave measurement (PCR0 / MRENCLAVE) representing code and platform integrity
-        raw_measurement = f"{self._platform}:{platform.system()}:{platform.machine()}:v0.86.0"
+        raw_measurement = (
+            f"{self._platform}:{platform.system()}:{platform.machine()}:v0.86.0"
+        )
         self._pcr0_measurement = hashlib.sha256(raw_measurement.encode()).hexdigest()
 
         self._security_version = 1
@@ -166,7 +170,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
                 pcr_measurement=evidence.pcr_measurement,
                 signer_identity="unknown",
                 verified_at=now,
-                details={"error": "Nonce mismatch: does not match expected challenge nonce"},
+                details={
+                    "error": "Nonce mismatch: does not match expected challenge nonce"
+                },
             )
 
         recorded_nonce = self._nonces.get(nonce_str)
@@ -179,7 +185,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
                     pcr_measurement=evidence.pcr_measurement,
                     signer_identity="replayed",
                     verified_at=now,
-                    details={"error": "Replay attack detected: nonce was already consumed"},
+                    details={
+                        "error": "Replay attack detected: nonce was already consumed"
+                    },
                 )
             if recorded_nonce.expires_at < now:
                 return EnclaveVerificationReport(
@@ -196,7 +204,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
 
         # 2. Cryptographic Signature Verification
         try:
-            pub_key = serialization.load_pem_public_key(evidence.public_key_pem.encode("utf-8"))
+            pub_key = serialization.load_pem_public_key(
+                evidence.public_key_pem.encode("utf-8")
+            )
             if not isinstance(pub_key, ed25519.Ed25519PublicKey):
                 return EnclaveVerificationReport(
                     is_valid=False,
@@ -224,7 +234,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
             )
 
         # 3. PCR Measurement Verification
-        signer_fingerprint = hashlib.sha256(evidence.public_key_pem.encode()).hexdigest()[:16]
+        signer_fingerprint = hashlib.sha256(
+            evidence.public_key_pem.encode()
+        ).hexdigest()[:16]
         if evidence.pcr_measurement != self._pcr0_measurement:
             return EnclaveVerificationReport(
                 is_valid=False,
@@ -233,7 +245,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
                 pcr_measurement=evidence.pcr_measurement,
                 signer_identity=signer_fingerprint,
                 verified_at=now,
-                details={"error": "Platform measurement PCR0 mismatch: untrusted enclave image"},
+                details={
+                    "error": "Platform measurement PCR0 mismatch: untrusted enclave image"
+                },
             )
 
         # 4. Assess Trust Level
@@ -285,7 +299,9 @@ class HardwareEnclaveAdapter(HardwareAttestationProtocol, EnclaveKeySealerProtoc
         aad: str | None = None,
     ) -> EnclaveSealedPayload:
         """Encrypt and seal data under tenant-derived key with AES-256-GCM."""
-        raw_bytes = plaintext.encode("utf-8") if isinstance(plaintext, str) else plaintext
+        raw_bytes = (
+            plaintext.encode("utf-8") if isinstance(plaintext, str) else plaintext
+        )
         derived_key = self._derive_tenant_key(tenant_id)
         key_id = f"k_enc_{tenant_id}_{hashlib.sha256(derived_key).hexdigest()[:10]}"
 

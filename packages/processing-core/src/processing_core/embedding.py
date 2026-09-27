@@ -17,7 +17,9 @@ async def embed_with_retry(
 
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
-        batch_embeddings = await _embed_batch_with_retry(client, batch_texts, model, max_retries)
+        batch_embeddings = await _embed_batch_with_retry(
+            client, batch_texts, model, max_retries
+        )
         all_embeddings.extend(batch_embeddings)
 
     return all_embeddings

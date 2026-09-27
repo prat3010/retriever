@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Probe 2.1: Financial Tabular Accuracy & REPL Math (fin_audit)"""
+
 import urllib.request
 import json
 import time
@@ -14,19 +15,19 @@ api_key = fin_tenant["api_key"]
 url = "http://localhost:8000/v1/tenants/fin_audit/chat/completions"
 payload = {
     "messages": [
-        {"role": "user", "content": "What was the total net sales in the most recent fiscal year, and calculate the exact percentage difference compared to the previous year?"}
+        {
+            "role": "user",
+            "content": "What was the total net sales in the most recent fiscal year, and calculate the exact percentage difference compared to the previous year?",
+        }
     ],
     "stream": False,
-    "use_repl": True
+    "use_repl": True,
 }
 
 req = urllib.request.Request(
     url,
     data=json.dumps(payload).encode(),
-    headers={
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
 )
 
 start = time.perf_counter()
@@ -44,7 +45,9 @@ try:
             code_snippet = ce.get("code", "")
             ret_val = ce.get("result")
             stdout_val = ce.get("stdout")
-            print(f"    [{idx}] Code:\n{code_snippet}\n    -> Result: {ret_val}\n    -> Stdout: {stdout_val}")
+            print(
+                f"    [{idx}] Code:\n{code_snippet}\n    -> Result: {ret_val}\n    -> Stdout: {stdout_val}"
+            )
         print(f"  • Subcalls: {subcalls}")
 except Exception as e:
     duration = (time.perf_counter() - start) * 1000

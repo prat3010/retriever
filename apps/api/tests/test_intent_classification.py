@@ -48,9 +48,14 @@ async def test_classify_intent_success_mock_llm(auth_headers: dict[str, str]) ->
         finish_reason="stop",
     )
 
-    with patch("src.container.inference_orchestrator.llm.generate", new_callable=AsyncMock) as mock_gen, \
-         patch("src.container.config_service.get_tenant_config", new_callable=AsyncMock) as mock_config:
-
+    with (
+        patch(
+            "src.container.inference_orchestrator.llm.generate", new_callable=AsyncMock
+        ) as mock_gen,
+        patch(
+            "src.container.config_service.get_tenant_config", new_callable=AsyncMock
+        ) as mock_config,
+    ):
         mock_gen.return_value = mock_resp
         mock_cfg = AsyncMock()
         mock_cfg.ai_provider.model = "meta-llama/llama-3.3-70b-instruct"
@@ -62,7 +67,9 @@ async def test_classify_intent_success_mock_llm(auth_headers: dict[str, str]) ->
             resp = await client.post(
                 "/v1/tenants/test-tenant/intent/classify",
                 headers=auth_headers,
-                json={"prompt": "Build a conversational Voice AI calling bot with ElevenLabs and knowledge base"},
+                json={
+                    "prompt": "Build a conversational Voice AI calling bot with ElevenLabs and knowledge base"
+                },
             )
 
         assert resp.status_code == 200
@@ -79,10 +86,18 @@ async def test_classify_intent_success_mock_llm(auth_headers: dict[str, str]) ->
 
 
 @pytest.mark.asyncio
-async def test_classify_intent_fallback_on_llm_error(auth_headers: dict[str, str]) -> None:
-    with patch("src.container.inference_orchestrator.llm.generate", side_effect=RuntimeError("LLM offline")), \
-         patch("src.container.config_service.get_tenant_config", new_callable=AsyncMock) as mock_config:
-
+async def test_classify_intent_fallback_on_llm_error(
+    auth_headers: dict[str, str],
+) -> None:
+    with (
+        patch(
+            "src.container.inference_orchestrator.llm.generate",
+            side_effect=RuntimeError("LLM offline"),
+        ),
+        patch(
+            "src.container.config_service.get_tenant_config", new_callable=AsyncMock
+        ) as mock_config,
+    ):
         mock_cfg = AsyncMock()
         mock_cfg.ai_provider.model = "meta-llama/llama-3.3-70b-instruct"
         mock_cfg.ai_provider.provider_name = "groq"
@@ -93,7 +108,9 @@ async def test_classify_intent_fallback_on_llm_error(auth_headers: dict[str, str
             resp = await client.post(
                 "/v1/tenants/test-tenant/intent/classify",
                 headers=auth_headers,
-                json={"prompt": "Build a private RAG knowledge base for internal document search"},
+                json={
+                    "prompt": "Build a private RAG knowledge base for internal document search"
+                },
             )
 
         assert resp.status_code == 200
@@ -106,7 +123,9 @@ async def test_classify_intent_fallback_on_llm_error(auth_headers: dict[str, str
 
 
 @pytest.mark.asyncio
-async def test_classify_intent_rejects_empty_prompt(auth_headers: dict[str, str]) -> None:
+async def test_classify_intent_rejects_empty_prompt(
+    auth_headers: dict[str, str],
+) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.post(
@@ -119,7 +138,9 @@ async def test_classify_intent_rejects_empty_prompt(auth_headers: dict[str, str]
 
 
 @pytest.mark.asyncio
-async def test_classify_intent_rate_limit_exceeded(auth_headers: dict[str, str]) -> None:
+async def test_classify_intent_rate_limit_exceeded(
+    auth_headers: dict[str, str],
+) -> None:
     mock_limiter = AsyncMock()
     mock_result = AsyncMock()
     mock_result.allowed = False
@@ -128,7 +149,10 @@ async def test_classify_intent_rate_limit_exceeded(auth_headers: dict[str, str])
     mock_result.reset_after = 45
     mock_limiter.acquire.return_value = mock_result
 
-    with patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter", return_value=mock_limiter):
+    with patch(
+        "src.adapters.telemetry.rate_limiter_dep.get_rate_limiter",
+        return_value=mock_limiter,
+    ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.post(
@@ -142,4 +166,3 @@ async def test_classify_intent_rate_limit_exceeded(auth_headers: dict[str, str])
         assert body["detail"]["error"] == "rate_limit_exceeded"
         assert body["detail"]["scope"] == "intent"
         assert body["detail"]["retry_after_seconds"] == 45
-

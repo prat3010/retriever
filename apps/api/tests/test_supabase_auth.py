@@ -12,6 +12,7 @@ client = TestClient(app)
 def test_get_auth_session_with_api_key() -> None:
     """GET /v1/auth/session succeeds with a valid API key token."""
     from src.adapters.api.security import get_current_user
+
     mock_user_context = MagicMock()
     mock_user_context.tenant_id = "00000000-0000-0000-0000-000000000001"
     mock_user_context.user_id = "00000000-0000-0000-0000-00000002"
@@ -67,7 +68,10 @@ def test_supabase_auth_auto_provisions_unseen_user(
 
     with (
         patch.object(settings, "SUPABASE_URL", "https://test.supabase.co"),
-        patch("src.adapters.api.security.identity_provider.validate_token", side_effect=AuthenticationError("Not API Key")),
+        patch(
+            "src.adapters.api.security.identity_provider.validate_token",
+            side_effect=AuthenticationError("Not API Key"),
+        ),
     ):
         response = client.get(
             "/v1/auth/session",
@@ -80,4 +84,3 @@ def test_supabase_auth_auto_provisions_unseen_user(
     # Check that session.add was called for TenantDb, UserDb, and ApiKeyDb
     assert mock_session.add.call_count == 3
     assert mock_session.commit.called
-

@@ -147,7 +147,11 @@ def serve_vllm() -> Any:
             _, lora_name = target_model.split(":", 1)
             lora_path = f"/root/loras/{lora_name}"
             if os.path.exists(lora_path):
-                lora_req = LoRARequest(lora_name=lora_name, lora_int_id=abs(hash(lora_name)) % 10000, lora_path=lora_path)
+                lora_req = LoRARequest(
+                    lora_name=lora_name,
+                    lora_int_id=abs(hash(lora_name)) % 10000,
+                    lora_path=lora_path,
+                )
         elif custom_lora_path and custom_lora_id:
             lora_req = LoRARequest(
                 lora_name=custom_lora_id,
@@ -179,11 +183,12 @@ def serve_vllm() -> Any:
         )
 
         if stream:
+
             async def event_generator():
                 prev_text = ""
                 async for output in results_generator:
                     current_text = output.outputs[0].text
-                    delta = current_text[len(prev_text):]
+                    delta = current_text[len(prev_text) :]
                     prev_text = current_text
                     chunk = {
                         "id": request_id,
@@ -212,26 +217,35 @@ def serve_vllm() -> Any:
             raise HTTPException(status_code=500, detail="Inference produced no output")
 
         generated_text = final_output.outputs[0].text
-        prompt_tokens = len(final_output.prompt_token_ids) if final_output.prompt_token_ids else 0
-        completion_tokens = len(final_output.outputs[0].token_ids) if final_output.outputs[0].token_ids else 0
+        prompt_tokens = (
+            len(final_output.prompt_token_ids) if final_output.prompt_token_ids else 0
+        )
+        completion_tokens = (
+            len(final_output.outputs[0].token_ids)
+            if final_output.outputs[0].token_ids
+            else 0
+        )
 
-        return JSONResponse({
-            "id": request_id,
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": target_model,
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {"role": "assistant", "content": generated_text},
-                    "finish_reason": final_output.outputs[0].finish_reason or "stop",
-                }
-            ],
-            "usage": {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            },
-        })
+        return JSONResponse(
+            {
+                "id": request_id,
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": target_model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": generated_text},
+                        "finish_reason": final_output.outputs[0].finish_reason
+                        or "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+            }
+        )
 
     return web_app

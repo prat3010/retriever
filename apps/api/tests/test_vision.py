@@ -21,7 +21,9 @@ def test_chat_message_images_custom() -> None:
     m = ChatMessage(
         role="user",
         content="what's in this?",
-        images=[{"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}],
+        images=[
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}
+        ],
     )
     assert len(m.images) == 1
     assert m.images[0]["type"] == "image_url"
@@ -42,17 +44,26 @@ async def test_openai_adapter_converts_images_to_content_blocks() -> None:
     from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 
     adapter = OpenAILLMAdapter(api_key="sk-test")
-    req = InferenceRequest(messages=[
-        ChatMessage(
-            role="user",
-            content="describe this",
-            images=[{"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}],
-        ),
-    ])
+    req = InferenceRequest(
+        messages=[
+            ChatMessage(
+                role="user",
+                content="describe this",
+                images=[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,abc"},
+                    }
+                ],
+            ),
+        ]
+    )
 
     mock_client = AsyncMock()
     mock_client.chat.completions.create.return_value = MagicMock(
-        choices=[MagicMock(message=MagicMock(content="it's a cat"), finish_reason="stop")],
+        choices=[
+            MagicMock(message=MagicMock(content="it's a cat"), finish_reason="stop")
+        ],
         usage=MagicMock(prompt_tokens=100, completion_tokens=10, total_tokens=110),
     )
 
@@ -63,7 +74,10 @@ async def test_openai_adapter_converts_images_to_content_blocks() -> None:
     msg = call_kwargs["messages"][0]
     assert isinstance(msg["content"], list)
     assert msg["content"][0] == {"type": "text", "text": "describe this"}
-    assert msg["content"][1] == {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}
+    assert msg["content"][1] == {
+        "type": "image_url",
+        "image_url": {"url": "data:image/png;base64,abc"},
+    }
 
 
 @pytest.mark.asyncio
@@ -91,19 +105,36 @@ async def test_openai_stream_converts_images() -> None:
     from src.adapters.cognitive.openai_adapter import OpenAILLMAdapter
 
     adapter = OpenAILLMAdapter(api_key="sk-test")
-    req = InferenceRequest(messages=[
-        ChatMessage(
-            role="user", content="desc",
-            images=[{"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}],
-        ),
-    ])
+    req = InferenceRequest(
+        messages=[
+            ChatMessage(
+                role="user",
+                content="desc",
+                images=[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,abc"},
+                    }
+                ],
+            ),
+        ]
+    )
 
     mock_client = AsyncMock()
 
     async def _stream():
-        yield MagicMock(choices=[MagicMock(delta=MagicMock(content="a"), finish_reason=None)], usage=None)
-        yield MagicMock(choices=[MagicMock(delta=MagicMock(content="b"), finish_reason=None)], usage=None)
-        yield MagicMock(choices=[MagicMock(delta=MagicMock(content=""), finish_reason="stop")], usage=MagicMock(prompt_tokens=5, completion_tokens=3, total_tokens=8))
+        yield MagicMock(
+            choices=[MagicMock(delta=MagicMock(content="a"), finish_reason=None)],
+            usage=None,
+        )
+        yield MagicMock(
+            choices=[MagicMock(delta=MagicMock(content="b"), finish_reason=None)],
+            usage=None,
+        )
+        yield MagicMock(
+            choices=[MagicMock(delta=MagicMock(content=""), finish_reason="stop")],
+            usage=MagicMock(prompt_tokens=5, completion_tokens=3, total_tokens=8),
+        )
 
     mock_client.chat.completions.create.return_value = _stream()
 
@@ -125,14 +156,21 @@ async def test_anthropic_adapter_converts_images_to_content_blocks() -> None:
     from src.adapters.cognitive.anthropic_adapter import AnthropicLLMAdapter
 
     adapter = AnthropicLLMAdapter(api_key="sk-ant-test")
-    req = InferenceRequest(messages=[
-        ChatMessage(
-            role="user",
-            content="describe this",
-            images=[{"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}}],
-        ),
-        ChatMessage(role="assistant", content="ok"),
-    ])
+    req = InferenceRequest(
+        messages=[
+            ChatMessage(
+                role="user",
+                content="describe this",
+                images=[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,abc"},
+                    }
+                ],
+            ),
+            ChatMessage(role="assistant", content="ok"),
+        ]
+    )
 
     mock_client = AsyncMock()
     mock_client.messages.create.return_value = MagicMock(
@@ -201,4 +239,5 @@ def test_settings_has_vision_model() -> None:
 def test_describe_with_vision_structure() -> None:
     # Just test that the function exists and has the expected signature
     from workers.src.tasks import _describe_with_vision
+
     assert callable(_describe_with_vision)

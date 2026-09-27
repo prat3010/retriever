@@ -1,4 +1,5 @@
 """Admin API routes."""
+
 import hashlib
 import os
 import uuid
@@ -148,7 +149,6 @@ from src.schemas.tenant import TenantListItem
 router = APIRouter(prefix="/v1/admin", tags=["Admin"])
 
 
-
 class VerifyAdminKeyResponse(BaseModel):
     valid: bool
 
@@ -193,11 +193,13 @@ async def admin_list_tenants(
             "pagination": {
                 "nextCursor": next_cursor,
                 "limit": limit,
-                "hasMore": has_more
-            }
+                "hasMore": has_more,
+            },
         }
     else:
-        tenants, total = await tenant_registry.list_tenants(search=search, limit=limit, offset=offset)
+        tenants, total = await tenant_registry.list_tenants(
+            search=search, limit=limit, offset=offset
+        )
         return {
             "items": [
                 TenantListItem(
@@ -278,9 +280,13 @@ async def admin_create_user(tenantId: str, payload: CreateUserRequest) -> UserRe
             external_id=payload.external_id,
             display_name=payload.display_name,
         )
-        await audit_logger.write(tenantId, "user.created", f"User '{payload.external_id}' created")
+        await audit_logger.write(
+            tenantId, "user.created", f"User '{payload.external_id}' created"
+        )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from None
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(e)
+        ) from None
     return UserResponse(
         userId=user.user_id,
         tenantId=user.tenant_id,
@@ -298,7 +304,9 @@ async def admin_create_user(tenantId: str, payload: CreateUserRequest) -> UserRe
 )
 async def admin_delete_user(tenantId: str, userId: str) -> dict:
     await user_repository.deactivate_user(tenant_id=tenantId, user_id=userId)
-    await audit_logger.write(tenantId, "user.deactivated", f"User '{userId}' deactivated")
+    await audit_logger.write(
+        tenantId, "user.deactivated", f"User '{userId}' deactivated"
+    )
     return {"status": "deactivated", "userId": userId}
 
 
@@ -335,7 +343,11 @@ async def admin_create_api_key(tenantId: str, payload: CreateApiKeyRequest) -> d
         expires_in_days=payload.expires_in_days,
         role=payload.role,
     )
-    await audit_logger.write(tenantId, "api_key.created", f"API key '{payload.name}' ({payload.role}) created")
+    await audit_logger.write(
+        tenantId,
+        "api_key.created",
+        f"API key '{payload.name}' ({payload.role}) created",
+    )
     return {
         "apiKey": raw_key,
         "keyId": metadata.key_id,
@@ -368,7 +380,18 @@ async def admin_revoke_api_key(tenantId: str, keyId: str) -> dict[str, str]:
 )
 async def admin_list_documents(tenantId: str) -> list[DocumentResponse]:
     docs = await document_repository.list_documents(tenantId, bypass_rls=True)
-    return [DocumentResponse(documentId=d.document_id, filename=d.filename, fileSize=d.file_size, mimeType=d.mime_type, status=d.status, createdAt=d.created_at, updatedAt=d.updated_at) for d in docs]
+    return [
+        DocumentResponse(
+            documentId=d.document_id,
+            filename=d.filename,
+            fileSize=d.file_size,
+            mimeType=d.mime_type,
+            status=d.status,
+            createdAt=d.created_at,
+            updatedAt=d.updated_at,
+        )
+        for d in docs
+    ]
 
 
 @router.post(
@@ -414,7 +437,12 @@ async def admin_upload_document(
         try:
             celery_app.send_task(
                 "process_document",
-                args=[str(doc_id), tenantId, storage_path, str(file.content_type or "")],
+                args=[
+                    str(doc_id),
+                    tenantId,
+                    storage_path,
+                    str(file.content_type or ""),
+                ],
                 queue="ingestion.parse",
             )
         except Exception:
@@ -472,7 +500,9 @@ async def admin_ingest_document_sync(
 async def admin_process_document(
     tenantId: str,
     documentId: str,
-    target_engine: Literal["laptop", "oracle", "auto"] = Query("auto", alias="targetEngine"),
+    target_engine: Literal["laptop", "oracle", "auto"] = Query(
+        "auto", alias="targetEngine"
+    ),
 ) -> dict:
     doc = await document_repository.get_document(tenantId, documentId)
     if doc is None:
@@ -498,7 +528,10 @@ async def admin_process_document(
     if file_content is None:
         doc.status = "FAILED"
         await document_repository.create_document(tenantId, doc)
-        raise HTTPException(status_code=404, detail="Document file not found on local disk or remote storage.")
+        raise HTTPException(
+            status_code=404,
+            detail="Document file not found on local disk or remote storage.",
+        )
 
     try:
         chunk_count = await ingest_file_sync(
@@ -542,19 +575,27 @@ async def admin_delete_document(tenantId: str, documentId: str) -> dict[str, str
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_get_document_download_url(tenantId: str, documentId: str) -> dict[str, str]:
+async def admin_get_document_download_url(
+    tenantId: str, documentId: str
+) -> dict[str, str]:
     doc = await document_repository.get_document(tenantId, documentId, bypass_rls=True)
     if not doc or str(doc.tenant_id) != tenantId:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    if settings.STORAGE_PROVIDER == "s3" and hasattr(local_storage, "generate_presigned_url"):
+    if settings.STORAGE_PROVIDER == "s3" and hasattr(
+        local_storage, "generate_presigned_url"
+    ):
         try:
             url = await local_storage.generate_presigned_url(doc.storage_path)
             return {"downloadUrl": url}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}") from e
+            raise HTTPException(
+                status_code=500, detail=f"Failed to generate pre-signed URL: {e!s}"
+            ) from e
     else:
-        return {"downloadUrl": f"/v1/admin/tenants/{tenantId}/documents/{documentId}/file"}
+        return {
+            "downloadUrl": f"/v1/admin/tenants/{tenantId}/documents/{documentId}/file"
+        }
 
 
 @router.get(
@@ -567,7 +608,9 @@ async def admin_download_document_file(tenantId: str, documentId: str) -> FileRe
         raise HTTPException(status_code=404, detail="Document not found.")
 
     if not os.path.exists(doc.storage_path):
-        raise HTTPException(status_code=404, detail="Physical file not found on local storage.")
+        raise HTTPException(
+            status_code=404, detail="Physical file not found on local storage."
+        )
 
     return FileResponse(
         path=doc.storage_path,
@@ -662,7 +705,9 @@ async def admin_get_tenant_config(tenantId: str) -> TenantConfiguration:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_update_tenant_config(tenantId: str, payload: TenantConfiguration) -> dict[str, str]:
+async def admin_update_tenant_config(
+    tenantId: str, payload: TenantConfiguration
+) -> dict[str, str]:
     await config_service.update_tenant_config(tenantId, payload)
     await audit_logger.write(tenantId, "config.updated", "Tenant configuration updated")
     return {"tenantId": tenantId, "status": "updated"}
@@ -678,11 +723,12 @@ async def apply_industry_preset(
     payload: ApplyPresetRequest,
 ) -> dict[str, str]:
     from src.domain.config.presets import get_preset_config
+
     preset_data = get_preset_config(payload.preset)
     if not preset_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Preset '{payload.preset}' not found. Available: legal, hr, medical, finance"
+            detail=f"Preset '{payload.preset}' not found. Available: legal, hr, medical, finance",
         )
 
     current_config = await config_service.get_tenant_config(tenantId)
@@ -702,11 +748,15 @@ async def apply_industry_preset(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Failed to merge preset: {e!s}"
+            detail=f"Failed to merge preset: {e!s}",
         ) from e
 
     await config_service.update_tenant_config(tenantId, updated_config)
-    await audit_logger.write(tenantId, "config.preset_applied", f"Preset {payload.preset} applied to configuration")
+    await audit_logger.write(
+        tenantId,
+        "config.preset_applied",
+        f"Preset {payload.preset} applied to configuration",
+    )
     return {"tenantId": tenantId, "preset": payload.preset, "status": "applied"}
 
 
@@ -722,7 +772,10 @@ async def admin_list_audit_logs(
     offset: int = 0,
 ) -> dict:
     items, total = await audit_logger.list(
-        tenant_id=tenantId, action=action, limit=limit, offset=offset,
+        tenant_id=tenantId,
+        action=action,
+        limit=limit,
+        offset=offset,
     )
     return {"items": items, "total": total}
 
@@ -750,7 +803,9 @@ async def admin_list_prompts(tenantId: str) -> list[dict]:
     dependencies=[Depends(verify_admin_key)],
 )
 async def admin_create_prompt(tenantId: str, payload: CreatePromptRequest) -> dict:
-    existing = await template_registry.get_template(tenantId, payload.name, bypass_rls=True)
+    existing = await template_registry.get_template(
+        tenantId, payload.name, bypass_rls=True
+    )
     if existing:
         raise HTTPException(status_code=409, detail="Prompt template already exists.")
     template = PromptTemplate(
@@ -784,7 +839,9 @@ async def admin_get_prompt(tenantId: str, name: str) -> dict:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_update_prompt(tenantId: str, name: str, payload: CreatePromptRequest) -> dict:
+async def admin_update_prompt(
+    tenantId: str, name: str, payload: CreatePromptRequest
+) -> dict:
     existing = await template_registry.get_template(tenantId, name, bypass_rls=True)
     if not existing:
         raise HTTPException(status_code=404, detail="Prompt template not found.")
@@ -821,11 +878,18 @@ async def admin_preview_prompt(tenantId: str, payload: PreviewPromptRequest) -> 
             tenant_id=tenantId,
             query=payload.query,
             history=[],
-            context_chunks=[{"chunk_id": "demo", "content": payload.context or "Sample context for preview."}],
+            context_chunks=[
+                {
+                    "chunk_id": "demo",
+                    "content": payload.context or "Sample context for preview.",
+                }
+            ],
             system_prompt_name=payload.name,
         )
     except PromptTemplateNotFoundError:
-        raise HTTPException(status_code=404, detail="Prompt template not found.") from None
+        raise HTTPException(
+            status_code=404, detail="Prompt template not found."
+        ) from None
     return {
         "messages": [{"role": m.role, "content": m.content} for m in messages],
     }
@@ -836,7 +900,9 @@ async def admin_preview_prompt(tenantId: str, payload: PreviewPromptRequest) -> 
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_reindex_codebase(tenantId: str, background_tasks: BackgroundTasks) -> dict[str, str]:
+async def admin_reindex_codebase(
+    tenantId: str, background_tasks: BackgroundTasks
+) -> dict[str, str]:
     if tenantId != "00000000-0000-0000-0000-000000000000":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -847,7 +913,10 @@ async def admin_reindex_codebase(tenantId: str, background_tasks: BackgroundTask
 
     background_tasks.add_task(ingest_main)
 
-    return {"status": "accepted", "message": "Codebase reindexing started in the background."}
+    return {
+        "status": "accepted",
+        "message": "Codebase reindexing started in the background.",
+    }
 
 
 @router.get(
@@ -877,11 +946,14 @@ async def list_eval_datasets(tenantId: str) -> Any:
 )
 async def create_eval_dataset(tenantId: str, body: CreateEvalDatasetRequest) -> Any:
     from src.domain.abstractions.evaluation import EvalDataset
-    dataset = await eval_dataset_repo.create_dataset(EvalDataset(
-        tenant_id=tenantId,
-        name=body.name,
-        description=body.description,
-    ))
+
+    dataset = await eval_dataset_repo.create_dataset(
+        EvalDataset(
+            tenant_id=tenantId,
+            name=body.name,
+            description=body.description,
+        )
+    )
     return dataset.model_dump()
 
 
@@ -912,14 +984,19 @@ async def list_eval_questions(tenantId: str, datasetId: str) -> Any:
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(verify_admin_key)],
 )
-async def add_eval_question(tenantId: str, datasetId: str, body: AddEvalQuestionRequest) -> Any:
+async def add_eval_question(
+    tenantId: str, datasetId: str, body: AddEvalQuestionRequest
+) -> Any:
     from src.domain.abstractions.evaluation import EvalQuestion
-    question = await eval_dataset_repo.add_question(EvalQuestion(
-        dataset_id=datasetId,
-        question=body.question,
-        ground_truth_answer=body.ground_truth_answer,
-        relevant_chunk_ids=body.relevant_chunk_ids,
-    ))
+
+    question = await eval_dataset_repo.add_question(
+        EvalQuestion(
+            dataset_id=datasetId,
+            question=body.question,
+            ground_truth_answer=body.ground_truth_answer,
+            relevant_chunk_ids=body.relevant_chunk_ids,
+        )
+    )
     return question.model_dump()
 
 
@@ -928,16 +1005,21 @@ async def add_eval_question(tenantId: str, datasetId: str, body: AddEvalQuestion
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(verify_admin_key)],
 )
-async def bulk_import_questions(tenantId: str, datasetId: str, body: BulkImportQuestionsRequest) -> Any:
+async def bulk_import_questions(
+    tenantId: str, datasetId: str, body: BulkImportQuestionsRequest
+) -> Any:
     from src.domain.abstractions.evaluation import EvalQuestion
+
     imported = []
     for q in body.questions:
-        question = await eval_dataset_repo.add_question(EvalQuestion(
-            dataset_id=datasetId,
-            question=q.question,
-            ground_truth_answer=q.ground_truth_answer,
-            relevant_chunk_ids=q.relevant_chunk_ids,
-        ))
+        question = await eval_dataset_repo.add_question(
+            EvalQuestion(
+                dataset_id=datasetId,
+                question=q.question,
+                ground_truth_answer=q.ground_truth_answer,
+                relevant_chunk_ids=q.relevant_chunk_ids,
+            )
+        )
         imported.append(question)
     return {"imported": len(imported)}
 
@@ -947,8 +1029,12 @@ async def bulk_import_questions(tenantId: str, datasetId: str, body: BulkImportQ
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(verify_admin_key)],
 )
-async def trigger_eval_run(tenantId: str, datasetId: str, background_tasks: BackgroundTasks) -> Any:
-    background_tasks.add_task(eval_service.run_evaluation, tenantId, datasetId, "manual")
+async def trigger_eval_run(
+    tenantId: str, datasetId: str, background_tasks: BackgroundTasks
+) -> Any:
+    background_tasks.add_task(
+        eval_service.run_evaluation, tenantId, datasetId, "manual"
+    )
     return {"status": "accepted"}
 
 
@@ -1003,7 +1089,9 @@ async def list_online_evaluation_logs(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> Any:
-    logs, total = await online_eval_repo.list_online_logs(tenantId, limit=limit, offset=offset)
+    logs, total = await online_eval_repo.list_online_logs(
+        tenantId, limit=limit, offset=offset
+    )
     return {"items": logs, "total": total, "limit": limit, "offset": offset}
 
 
@@ -1043,7 +1131,9 @@ async def compute_admin_grounding_diff(
         try:
             async with tenant_session(tenant_id=tenantId) as session:
                 res = await session.execute(
-                    text("SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 15"),
+                    text(
+                        "SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 15"
+                    ),
                     {"tenant_id": tenantId},
                 )
                 contexts = [row[0] for row in res.fetchall() if row[0]]
@@ -1127,7 +1217,9 @@ async def admin_forget_tenant(tenantId: str) -> Any:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def admin_get_compliance_certificates(tenantId: str) -> list[ComplianceCertificateDTO]:
+async def admin_get_compliance_certificates(
+    tenantId: str,
+) -> list[ComplianceCertificateDTO]:
     return await hard_purge_service.get_certificates(tenantId)
 
 
@@ -1135,7 +1227,9 @@ async def admin_get_compliance_certificates(tenantId: str) -> list[ComplianceCer
     "/compliance/verify/{certificateId}",
     status_code=status.HTTP_200_OK,
 )
-async def verify_compliance_certificate(certificateId: str) -> ComplianceVerificationResponse:
+async def verify_compliance_certificate(
+    certificateId: str,
+) -> ComplianceVerificationResponse:
     cert = await hard_purge_service.get_certificate_by_id(certificateId)
     if not cert:
         return ComplianceVerificationResponse(
@@ -1151,7 +1245,9 @@ async def verify_compliance_certificate(certificateId: str) -> ComplianceVerific
         is_valid=is_valid,
         audit_signature=cert.sha256_audit_signature,
         certificate=cert,
-        message="Cryptographic HMAC-SHA256 signature is authentic and untampered." if is_valid else "Cryptographic signature mismatch: certificate payload has been tampered.",
+        message="Cryptographic HMAC-SHA256 signature is authentic and untampered."
+        if is_valid
+        else "Cryptographic signature mismatch: certificate payload has been tampered.",
     )
 
 
@@ -1186,10 +1282,10 @@ async def admin_run_retention_purge(
     tenantId: str,
     retention_days: int = Query(default=90, ge=1),
 ) -> Any:
-    res = await retention_worker.scan_and_purge_expired_documents(tenantId, retention_days)
+    res = await retention_worker.scan_and_purge_expired_documents(
+        tenantId, retention_days
+    )
     return {"status": "completed", "tenantId": tenantId, "result": res}
-
-
 
 
 @router.get("/storage/internal/{path:path}")
@@ -1198,10 +1294,14 @@ async def serve_internal_storage(
     x_internal_key: str = Header(""),
 ) -> Response:
     if not x_internal_key or x_internal_key != settings.INTERNAL_API_KEY:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal key.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal key."
+        )
     content = await local_storage.read_file(path)
     if content is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found."
+        )
     return Response(content=content, media_type="application/octet-stream")
 
 
@@ -1292,7 +1392,11 @@ async def admin_create_experiment(
     config.experiments.append(new_exp)
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "experiment.created", f"Created experiment '{payload.name}' ({exp_id})")
+    await audit_logger.write(
+        tenantId,
+        "experiment.created",
+        f"Created experiment '{payload.name}' ({exp_id})",
+    )
     return new_exp
 
 
@@ -1307,7 +1411,10 @@ async def admin_get_experiment(tenantId: str, experimentId: str) -> ExperimentCo
     for exp in config.experiments or []:
         if exp.id == experimentId:
             return exp
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Experiment '{experimentId}' not found.",
+    )
 
 
 @router.put(
@@ -1329,7 +1436,10 @@ async def admin_update_experiment(
             break
 
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{experimentId}' not found.",
+        )
 
     if payload.name is not None:
         target.name = payload.name
@@ -1340,7 +1450,9 @@ async def admin_update_experiment(
     target.updated_at = datetime.now(UTC).isoformat()
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "experiment.updated", f"Updated experiment '{experimentId}'")
+    await audit_logger.write(
+        tenantId, "experiment.updated", f"Updated experiment '{experimentId}'"
+    )
     return target
 
 
@@ -1363,14 +1475,19 @@ async def admin_update_experiment_status(
             break
 
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{experimentId}' not found.",
+        )
 
     target.status = payload.status
     target.updated_at = datetime.now(UTC).isoformat()
 
     await config_service.update_tenant_config(tenantId, config)
     await audit_logger.write(
-        tenantId, "experiment.status_changed", f"Changed experiment '{experimentId}' status to '{payload.status}'"
+        tenantId,
+        "experiment.status_changed",
+        f"Changed experiment '{experimentId}' status to '{payload.status}'",
     )
     return target
 
@@ -1386,10 +1503,15 @@ async def admin_delete_experiment(tenantId: str, experimentId: str) -> dict[str,
     config.experiments = [e for e in (config.experiments or []) if e.id != experimentId]
 
     if len(config.experiments) == original_count:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{experimentId}' not found.",
+        )
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "experiment.deleted", f"Deleted experiment '{experimentId}'")
+    await audit_logger.write(
+        tenantId, "experiment.deleted", f"Deleted experiment '{experimentId}'"
+    )
     return {"status": "deleted", "experimentId": experimentId}
 
 
@@ -1411,7 +1533,10 @@ async def admin_get_experiment_metrics(
             break
 
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Experiment '{experimentId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{experimentId}' not found.",
+        )
 
     # Fetch inference logs for metric calculation
     from sqlalchemy import select
@@ -1431,10 +1556,17 @@ async def admin_get_experiment_metrics(
         total_exp_requests = len(logs)
 
         for v in target.variants:
-            v_logs = [log for log in logs if log.notes and f"variant={v.id}" in log.notes]
+            v_logs = [
+                log for log in logs if log.notes and f"variant={v.id}" in log.notes
+            ]
             v_count = len(v_logs)
-            v_tokens = sum((log.prompt_tokens or 0) + (log.completion_tokens or 0) for log in v_logs)
-            latencies = [float(log.latency_ms) for log in v_logs if log.latency_ms is not None]
+            v_tokens = sum(
+                (log.prompt_tokens or 0) + (log.completion_tokens or 0)
+                for log in v_logs
+            )
+            latencies = [
+                float(log.latency_ms) for log in v_logs if log.latency_ms is not None
+            ]
 
             avg_latency = (sum(latencies) / v_count) if v_count and latencies else 0.0
             if latencies:
@@ -1523,7 +1655,11 @@ async def admin_create_connector(
     config.connectors.append(new_conn)
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "connector.created", f"Created data connector '{payload.name}' ({conn_id})")
+    await audit_logger.write(
+        tenantId,
+        "connector.created",
+        f"Created data connector '{payload.name}' ({conn_id})",
+    )
     return new_conn
 
 
@@ -1538,7 +1674,10 @@ async def admin_get_connector(tenantId: str, connectorId: str) -> ConnectorConfi
     for conn in config.connectors or []:
         if conn.id == connectorId:
             return conn
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Connector '{connectorId}' not found.",
+    )
 
 
 @router.put(
@@ -1560,7 +1699,10 @@ async def admin_update_connector(
             break
 
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Connector '{connectorId}' not found.",
+        )
 
     if payload.name is not None:
         target.name = payload.name
@@ -1573,7 +1715,9 @@ async def admin_update_connector(
     target.updated_at = datetime.now(UTC).isoformat()
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "connector.updated", f"Updated connector '{connectorId}'")
+    await audit_logger.write(
+        tenantId, "connector.updated", f"Updated connector '{connectorId}'"
+    )
     return target
 
 
@@ -1588,10 +1732,15 @@ async def admin_delete_connector(tenantId: str, connectorId: str) -> dict[str, s
     config.connectors = [c for c in (config.connectors or []) if c.id != connectorId]
 
     if len(config.connectors) == orig_len:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Connector '{connectorId}' not found.",
+        )
 
     await config_service.update_tenant_config(tenantId, config)
-    await audit_logger.write(tenantId, "connector.deleted", f"Deleted connector '{connectorId}'")
+    await audit_logger.write(
+        tenantId, "connector.deleted", f"Deleted connector '{connectorId}'"
+    )
     return {"status": "deleted", "connectorId": connectorId}
 
 
@@ -1614,7 +1763,10 @@ async def admin_trigger_connector_sync(
             break
 
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Connector '{connectorId}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Connector '{connectorId}' not found.",
+        )
 
     target.status = "syncing"
     await config_service.update_tenant_config(tenantId, config)
@@ -1627,7 +1779,9 @@ async def admin_trigger_connector_sync(
             if isinstance(existing_sync_state, dict)
             else ConnectorSyncState()
         )
-        discovered, new_sync_state = await connector.fetch_incremental(target, sync_state)
+        discovered, new_sync_state = await connector.fetch_incremental(
+            target, sync_state
+        )
         target.configuration["_sync_state"] = new_sync_state.model_dump()
 
         ingested_count = 0
@@ -1682,6 +1836,7 @@ async def admin_trigger_connector_sync(
 
 # ── GraphRAG & Knowledge Graph Management ───────────────────────────────────────
 
+
 @router.get(
     "/tenants/{tenantId}/graph/capabilities",
     status_code=status.HTTP_200_OK,
@@ -1735,7 +1890,9 @@ async def get_graph_capabilities(tenantId: str) -> GraphCapabilitiesResponse:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def switch_graph_engine(tenantId: str, payload: GraphEngineSwitchRequest) -> dict[str, Any]:
+async def switch_graph_engine(
+    tenantId: str, payload: GraphEngineSwitchRequest
+) -> dict[str, Any]:
     """1-Click switch active graph engine ('postgres' | 'neo4j')."""
     from src.config import InfraCapabilities
 
@@ -1756,7 +1913,9 @@ async def switch_graph_engine(tenantId: str, payload: GraphEngineSwitchRequest) 
     config.graph_settings.graph_engine = payload.engine
     await config_service.update_tenant_config(tenantId, config)
 
-    await audit_logger.write(tenantId, "graph.engine_switched", f"Switched graph engine to {payload.engine}")
+    await audit_logger.write(
+        tenantId, "graph.engine_switched", f"Switched graph engine to {payload.engine}"
+    )
     return {"tenantId": tenantId, "activeEngine": payload.engine, "status": "updated"}
 
 
@@ -1786,7 +1945,9 @@ async def get_graph_summary(tenantId: str) -> GraphSummaryResponse:
     dependencies=[Depends(verify_admin_key)],
     response_model=GraphQueryResponse,
 )
-async def query_knowledge_graph(tenantId: str, payload: GraphQueryRequest) -> GraphQueryResponse:
+async def query_knowledge_graph(
+    tenantId: str, payload: GraphQueryRequest
+) -> GraphQueryResponse:
     """Execute multi-hop entity graph query."""
     from src.container import container
 
@@ -1935,7 +2096,6 @@ async def trigger_self_tune(
         }
         report = tuner.calculate_tuning(tenantId, [metric_sample], current_settings)
 
-
     return SelfTuningReportDTO(
         tenant_id=report.tenant_id,
         status=report.status,
@@ -2077,7 +2237,9 @@ async def get_live_tenant_telemetry(tenantId: str) -> TenantLiveTelemetryDTO:
     dependencies=[Depends(verify_admin_key)],
     response_model=TestAlertResponse,
 )
-async def dispatch_test_tenant_alert(tenantId: str, payload: TestAlertRequest) -> TestAlertResponse:
+async def dispatch_test_tenant_alert(
+    tenantId: str, payload: TestAlertRequest
+) -> TestAlertResponse:
     """Send a test incident alert to verify webhook integration (Slack, Discord, Custom Webhook)."""
     from src.domain.telemetry.alert_service import AlertService
 
@@ -2153,7 +2315,6 @@ async def synthesize_golden_dataset(
     except Exception:
         pass
 
-
     return SynthesizeDatasetResponse(
         dataset_id=dataset.dataset_id,
         tenant_id=dataset.tenant_id,
@@ -2224,6 +2385,7 @@ async def run_regression_gate(
 
 # ── M79 LoRA Domain Adapter & Embedding Calibration Endpoints ────────────────
 
+
 class LoraTrainPair(BaseModel):
     query: str
     positive_chunk: str
@@ -2286,10 +2448,14 @@ async def train_lora_domain_adapter(
         try:
             async with tenant_session(tenant_id=tenantId) as session:
                 res = await session.execute(
-                    text("SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 10"),
+                    text(
+                        "SELECT content FROM document_chunks WHERE tenant_id = CAST(:tenant_id AS uuid) ORDER BY created_at DESC LIMIT 10"
+                    ),
                     {"tenant_id": tenantId},
                 )
-                chunks = [row[0] for row in res.fetchall() if row[0] and len(row[0]) > 20]
+                chunks = [
+                    row[0] for row in res.fetchall() if row[0] and len(row[0]) > 20
+                ]
                 pairs = [
                     LoraTrainPair(
                         query=c[:80],
@@ -2303,8 +2469,14 @@ async def train_lora_domain_adapter(
     if len(pairs) < 2:
         # Create minimal synthetic pairs for domain calibration
         pairs = [
-            LoraTrainPair(query="software architecture system design", positive_chunk="Modular scalable system architecture and microservices domain."),
-            LoraTrainPair(query="commercial legal SOW escrow contracts", positive_chunk="Commercial milestone deliverables, payment escrow and legal agreement terms."),
+            LoraTrainPair(
+                query="software architecture system design",
+                positive_chunk="Modular scalable system architecture and microservices domain.",
+            ),
+            LoraTrainPair(
+                query="commercial legal SOW escrow contracts",
+                positive_chunk="Commercial milestone deliverables, payment escrow and legal agreement terms.",
+            ),
         ]
 
     # Generate embeddings
@@ -2327,13 +2499,16 @@ async def train_lora_domain_adapter(
             epochs=payload.epochs,
         )
     )
-    loss = trainer.train(q_embeds, p_embeds, adapter, epochs=payload.epochs, lr=payload.learning_rate)
+    loss = trainer.train(
+        q_embeds, p_embeds, adapter, epochs=payload.epochs, lr=payload.learning_rate
+    )
 
     adapter_id = str(uuid.uuid4())
     weights_data = adapter.state_dict()
 
     async with tenant_session(tenant_id=tenantId) as session:
         import json
+
         await session.execute(
             text(
                 """
@@ -2427,7 +2602,10 @@ async def activate_lora_adapter(tenantId: str, adapterId: str) -> dict[str, str]
         )
         await session.commit()
 
-    return {"status": "success", "message": f"Adapter {adapterId} activated for tenant {tenantId}."}
+    return {
+        "status": "success",
+        "message": f"Adapter {adapterId} activated for tenant {tenantId}.",
+    }
 
 
 # ── Milestone 83: Telemetry Anomaly Sentinel & Abuse Guard ──────────────────
@@ -2440,7 +2618,9 @@ async def activate_lora_adapter(tenantId: str, adapterId: str) -> dict[str, str]
 )
 async def list_telemetry_anomalies(
     tenant_id: str | None = Query(None, description="Filter by tenant UUID"),
-    risk_level: str | None = Query(None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"),
+    risk_level: str | None = Query(
+        None, description="Filter by risk level (LOW, MEDIUM, HIGH, CRITICAL)"
+    ),
     status: str | None = Query(None, description="Filter by status (active, resolved)"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -2486,7 +2666,11 @@ async def trigger_anomaly_scan(
     )
 
     anomalies = [s for s in scores if s.is_anomaly]
-    quarantined = [s for s in anomalies if s.risk_level == "CRITICAL" and s.entity_type == "api_key"]
+    quarantined = [
+        s
+        for s in anomalies
+        if s.risk_level == "CRITICAL" and s.entity_type == "api_key"
+    ]
 
     return {
         "status": "completed",
@@ -2575,6 +2759,7 @@ async def unquarantine_api_key(
 # Milestone 89: Geo-Distributed Multi-Region Edge Vector Read-Replicas
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/platform/regions",
     status_code=status.HTTP_200_OK,
@@ -2583,6 +2768,7 @@ async def unquarantine_api_key(
 async def get_cluster_regions() -> MultiRegionClusterStatus:
     """Retrieve global edge routing cluster topology, active regions, and health."""
     from src.container import edge_router_service
+
     return edge_router_service.get_cluster_status()
 
 
@@ -2594,6 +2780,7 @@ async def get_cluster_regions() -> MultiRegionClusterStatus:
 async def probe_cluster_regions() -> RegionProbeResponse:
     """Trigger an active RTT latency probe across all configured regional endpoints."""
     from src.container import read_replica_adapter
+
     return await read_replica_adapter.probe_regional_health()
 
 
@@ -2607,12 +2794,14 @@ async def preview_edge_routing(
 ) -> EdgeRoutingDecision:
     """Preview the Geo-IP dynamic routing decision and estimated latency reduction."""
     from src.container import edge_router_service
+
     return edge_router_service.resolve_region(country)
 
 
 # ---------------------------------------------------------------------------
 # Milestone 112: Kubernetes Native Operator & Production Helm Orchestration
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/operator/status",
@@ -2622,6 +2811,7 @@ async def preview_edge_routing(
 async def get_operator_status() -> dict[str, Any]:
     """Retrieve Kubernetes operator controller status and CRD capabilities."""
     from src.container import operator_client
+
     clusters = await operator_client.list_clusters()
     return {
         "status": "healthy",
@@ -2644,6 +2834,7 @@ async def list_operator_clusters(
 ) -> list[dict[str, Any]]:
     """List all managed RetrieverCluster custom resources."""
     from src.container import operator_client
+
     return await operator_client.list_clusters(namespace=namespace)
 
 
@@ -2657,6 +2848,7 @@ async def reconcile_operator_cluster(
 ) -> RetrieverClusterStatus:
     """Trigger a level-triggered reconciliation cycle for a RetrieverCluster."""
     from src.container import operator_client, operator_reconciler
+
     existing = await operator_client.get_cluster(spec.name, spec.namespace)
     current_status = None
     if existing and "status" in existing:
@@ -2675,6 +2867,7 @@ async def trigger_operator_cluster_backup(
 ) -> dict[str, Any]:
     """Trigger an on-demand database & vector WAL backup job."""
     from src.container import operator_client, operator_reconciler
+
     cluster_manifest = await operator_client.get_cluster(cluster_name, namespace)
     if not cluster_manifest:
         raise HTTPException(
@@ -2686,4 +2879,9 @@ async def trigger_operator_cluster_backup(
     spec_dict["namespace"] = namespace
     spec = RetrieverClusterSpec(**spec_dict)
     job_id = await operator_reconciler.trigger_manual_backup(spec)
-    return {"status": "Accepted", "job_id": job_id, "cluster": cluster_name, "namespace": namespace}
+    return {
+        "status": "Accepted",
+        "job_id": job_id,
+        "cluster": cluster_name,
+        "namespace": namespace,
+    }

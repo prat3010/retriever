@@ -48,8 +48,16 @@ async def test_tavily_adapter_success() -> None:
     mock_response.status_code = 200
     mock_response.json.return_value = {
         "results": [
-            {"title": "Result 1", "url": "https://example.com/1", "content": "Content 1"},
-            {"title": "Result 2", "url": "https://example.com/2", "content": "Content 2"},
+            {
+                "title": "Result 1",
+                "url": "https://example.com/1",
+                "content": "Content 1",
+            },
+            {
+                "title": "Result 2",
+                "url": "https://example.com/2",
+                "content": "Content 2",
+            },
         ]
     }
 
@@ -104,7 +112,9 @@ def test_search_query_has_web_search_fields() -> None:
 
 
 def _make_result(chunk_id: str, score: float, content: str = "text") -> SearchResult:
-    return SearchResult(chunk_id=chunk_id, document_id="d1", content=content, score=score, metadata={})
+    return SearchResult(
+        chunk_id=chunk_id, document_id="d1", content=content, score=score, metadata={}
+    )
 
 
 @pytest.mark.asyncio
@@ -303,8 +313,16 @@ async def test_brave_adapter_success() -> None:
     mock_response.json.return_value = {
         "web": {
             "results": [
-                {"title": "Result 1", "url": "https://example.com/1", "description": "Content 1"},
-                {"title": "Result 2", "url": "https://example.com/2", "description": "Content 2"},
+                {
+                    "title": "Result 1",
+                    "url": "https://example.com/1",
+                    "description": "Content 1",
+                },
+                {
+                    "title": "Result 2",
+                    "url": "https://example.com/2",
+                    "description": "Content 2",
+                },
             ]
         }
     }
@@ -397,9 +415,15 @@ async def test_web_search_per_tenant_api_key() -> None:
         web_search_threshold=0.65,
     )
 
-    with patch("src.adapters.cognitive.tavily_adapter.TavilySearchAdapter.search") as mock_tavily_search:
+    with patch(
+        "src.adapters.cognitive.tavily_adapter.TavilySearchAdapter.search"
+    ) as mock_tavily_search:
         mock_tavily_search.return_value = [
-            WebSearchResult(title="TenantWeb", url="https://tw.com/1", content="Tenant-specific result"),
+            WebSearchResult(
+                title="TenantWeb",
+                url="https://tw.com/1",
+                content="Tenant-specific result",
+            ),
         ]
         response = await service.search(query)
 

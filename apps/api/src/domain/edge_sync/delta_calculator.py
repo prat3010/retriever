@@ -34,7 +34,9 @@ class EdgeDeltaCalculator(EdgeDeltaCalculatorProtocol):
 
         # Compute deterministic checksum over delta elements
         hasher = hashlib.sha256()
-        hasher.update(f"tenant:{tenant_id}|since:{since_seq}|cur:{current_seq}|".encode())
+        hasher.update(
+            f"tenant:{tenant_id}|since:{since_seq}|cur:{current_seq}|".encode()
+        )
 
         for c in sorted(chunks, key=lambda x: x.chunk_id):
             hasher.update(f"c:{c.chunk_id}:{c.document_id}:{c.chunk_index}:".encode())
@@ -43,7 +45,9 @@ class EdgeDeltaCalculator(EdgeDeltaCalculatorProtocol):
         for v in sorted(vectors, key=lambda x: x.chunk_id):
             hasher.update(f"v:{v.chunk_id}:{v.dimension}:".encode())
             # Hash vector coordinates
-            vec_repr = json.dumps(v.embedding[:10])  # Sample first 10 dims for speed & stability
+            vec_repr = json.dumps(
+                v.embedding[:10]
+            )  # Sample first 10 dims for speed & stability
             hasher.update(vec_repr.encode())
 
         for d_id in sorted(deleted_ids):

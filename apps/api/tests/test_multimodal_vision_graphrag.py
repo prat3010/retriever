@@ -48,6 +48,7 @@ SAMPLE_FLOW_TEXT = """
 
 # ── 1. BoundingBox Math & Invariants ──────────────────────────────────────────
 
+
 def test_bounding_box_valid_and_normalization():
     """Verify BoundingBox enforces normalized coordinates and calculates IoU."""
     box1 = BoundingBox(ymin=0.1, xmin=0.1, ymax=0.5, xmax=0.5, confidence=0.98)
@@ -77,6 +78,7 @@ def test_bounding_box_invalid_invariants():
 
 
 # ── 2. DomainSchematicExtractor Parsing ────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_schematic_extractor_svg_parsing():
@@ -127,13 +129,18 @@ async def test_schematic_extractor_text_flow_parsing():
     assert "HTTPS" in protocols or "SQL" in protocols or "gRPC" in protocols
 
     # Check triple generation
-    triples = extractor.extract_triples_from_diagram(diagram, tenant_id="t1", document_id="doc1")
+    triples = extractor.extract_triples_from_diagram(
+        diagram, tenant_id="t1", document_id="doc1"
+    )
     assert len(triples) >= 4
     preds = {t.predicate for t in triples}
-    assert "IS_TYPE" in preds or any("ROUTES" in p or "SQL" in p or "CONNECTS" in p for p in preds)
+    assert "IS_TYPE" in preds or any(
+        "ROUTES" in p or "SQL" in p or "CONNECTS" in p for p in preds
+    )
 
 
 # ── 3. Cross-Modal Linking & MultimodalGraphService ───────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_cross_modal_linking_and_traversal():
@@ -181,14 +188,22 @@ async def test_cross_modal_linking_and_traversal():
 
     assert len(xm_triples) >= 2
     xm_subjects = {t.subject for t in xm_triples}
-    assert any("API Gateway" in s or "Order Service" in s or "PostgreSQL" in s for s in xm_subjects)
+    assert any(
+        "API Gateway" in s or "Order Service" in s or "PostgreSQL" in s
+        for s in xm_subjects
+    )
     for xm in xm_triples:
         assert xm.metadata["source"] == "cross_modal_linking"
         assert "bounding_box" in xm.metadata
 
     # Test format_visual_citation
-    citation = service.format_visual_citation("architecture.png", "Order Service", [0.1, 0.2, 0.4, 0.5])
-    assert '[Schematic: architecture.png | Box: 0.100,0.200,0.400,0.500 | "Order Service"]' == citation
+    citation = service.format_visual_citation(
+        "architecture.png", "Order Service", [0.1, 0.2, 0.4, 0.5]
+    )
+    assert (
+        '[Schematic: architecture.png | Box: 0.100,0.200,0.400,0.500 | "Order Service"]'
+        == citation
+    )
 
 
 @pytest.mark.asyncio
@@ -204,7 +219,11 @@ async def test_multimodal_graph_query_traversal():
             predicate="ROUTES_TO",
             object="Order Service",
             confidence=0.95,
-            metadata={"source": "visual_schematic", "bounding_box": [0.1, 0.1, 0.3, 0.4], "protocol": "HTTPS"},
+            metadata={
+                "source": "visual_schematic",
+                "bounding_box": [0.1, 0.1, 0.3, 0.4],
+                "protocol": "HTTPS",
+            },
         ),
         EntityTriple(
             triple_id="t2",
@@ -212,7 +231,11 @@ async def test_multimodal_graph_query_traversal():
             predicate="PERSISTS_IN",
             object="PostgreSQL",
             confidence=0.90,
-            metadata={"source": "visual_schematic", "bounding_box": [0.5, 0.5, 0.8, 0.8], "protocol": "SQL"},
+            metadata={
+                "source": "visual_schematic",
+                "bounding_box": [0.5, 0.5, 0.8, 0.8],
+                "protocol": "SQL",
+            },
         ),
         EntityTriple(
             triple_id="t3",
@@ -225,8 +248,11 @@ async def test_multimodal_graph_query_traversal():
     ]
 
     from src.domain.abstractions.graph import GraphSearchResult
+
     mock_graph_repo.search_triples = AsyncMock(
-        return_value=GraphSearchResult(root_entity="API Gateway", max_hops=2, triples=mock_triples)
+        return_value=GraphSearchResult(
+            root_entity="API Gateway", max_hops=2, triples=mock_triples
+        )
     )
 
     service = MultimodalGraphService(graph_repository=mock_graph_repo)
@@ -249,6 +275,7 @@ async def test_multimodal_graph_query_traversal():
 
 
 # ── 4. VisionParserAdapter Binary Header Inspection ───────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_vision_parser_adapter_dimensions():
@@ -274,6 +301,7 @@ async def test_vision_parser_adapter_dimensions():
 
 # ── 5. FastAPI Vision Endpoints Integration ───────────────────────────────────
 
+
 def test_multimodal_status_endpoint():
     """Verify GET /v1/graph/multimodal/status returns 200 OK and Battery #29 details."""
     response = client.get("/v1/graph/multimodal/status")
@@ -290,8 +318,14 @@ from src.adapters.api.security import verify_scopes, verify_tenant_isolation
 
 @pytest.fixture(autouse=True)
 def override_auth():
-    app.dependency_overrides[verify_tenant_isolation] = lambda: "00000000-0000-0000-0000-000000000001"
-    app.dependency_overrides[verify_scopes] = lambda: ["document:write", "document:read", "search:read"]
+    app.dependency_overrides[verify_tenant_isolation] = lambda: (
+        "00000000-0000-0000-0000-000000000001"
+    )
+    app.dependency_overrides[verify_scopes] = lambda: [
+        "document:write",
+        "document:read",
+        "search:read",
+    ]
     yield
     app.dependency_overrides.pop(verify_tenant_isolation, None)
     app.dependency_overrides.pop(verify_scopes, None)
@@ -320,7 +354,11 @@ def test_extract_schematic_text_api():
 def test_extract_schematic_multipart_upload_api():
     """Verify POST /v1/tenants/{tenantId}/vision/schematic/extract multipart upload endpoint."""
     files = {
-        "file": ("blueprint.svg", io.BytesIO(SAMPLE_SVG.encode("utf-8")), "image/svg+xml"),
+        "file": (
+            "blueprint.svg",
+            io.BytesIO(SAMPLE_SVG.encode("utf-8")),
+            "image/svg+xml",
+        ),
     }
 
     response = client.post(
@@ -344,8 +382,16 @@ def test_query_multimodal_graph_api(mock_query):
 
     mock_query.return_value = MultimodalGraphResponse(
         root_entity="Order Service",
-        nodes=[MultimodalGraphNode(id="order_service", label="Order Service", node_type="visual_component")],
-        edges=[MultimodalGraphEdge(source="api_gateway", target="order_service", relation="ROUTES_TO")],
+        nodes=[
+            MultimodalGraphNode(
+                id="order_service", label="Order Service", node_type="visual_component"
+            )
+        ],
+        edges=[
+            MultimodalGraphEdge(
+                source="api_gateway", target="order_service", relation="ROUTES_TO"
+            )
+        ],
     )
 
     payload = {
@@ -364,5 +410,3 @@ def test_query_multimodal_graph_api(mock_query):
     assert data["root_entity"] == "Order Service"
     assert "nodes" in data
     assert "edges" in data
-
-

@@ -35,7 +35,9 @@ async def test_voice_stream_service_vad_and_barge_in():
     service = VoiceStreamService(transcription, synthesis, signaling)
 
     session_id = "vcs_test_barge_in_01"
-    await service.register_stream(session_id=session_id, sensitivity=0.65, silence_threshold_ms=400)
+    await service.register_stream(
+        session_id=session_id, sensitivity=0.65, silence_threshold_ms=400
+    )
 
     # 1. Ingest speech frames
     speech_frame = generate_pcm16_frame(amplitude=16000)
@@ -83,7 +85,9 @@ async def test_voice_stream_service_silence_endpointing():
     service = VoiceStreamService(transcription, synthesis, signaling)
 
     session_id = "vcs_test_endpoint_02"
-    await service.register_stream(session_id=session_id, sensitivity=0.65, silence_threshold_ms=200)
+    await service.register_stream(
+        session_id=session_id, sensitivity=0.65, silence_threshold_ms=200
+    )
 
     speech_frame = generate_pcm16_frame(amplitude=14000)
     silence_frame = bytes(640)
@@ -100,7 +104,10 @@ async def test_voice_stream_service_silence_endpointing():
         if audio is not None:
             completed_audio = audio
         for m in msgs:
-            if m.event_type == VoiceStreamEventType.VAD_STATE and m.payload.get("state") == "endpoint_detected":
+            if (
+                m.event_type == VoiceStreamEventType.VAD_STATE
+                and m.payload.get("state") == "endpoint_detected"
+            ):
                 endpoint_message = m
 
     assert completed_audio is not None
@@ -148,10 +155,15 @@ async def test_voice_stream_process_utterance():
         assert len(chunk.audio_bytes) > 0
 
     # Turn complete contains telemetry
-    turn_complete_event = next(e for e in events if e.event_type == VoiceStreamEventType.TURN_COMPLETE)
+    turn_complete_event = next(
+        e for e in events if e.event_type == VoiceStreamEventType.TURN_COMPLETE
+    )
     turn_data = turn_complete_event.payload["turn"]
     assert turn_data["user_transcript"] is not None
-    assert turn_data["agent_response_text"] == "Real-time full duplex voice stream test response."
+    assert (
+        turn_data["agent_response_text"]
+        == "Real-time full duplex voice stream test response."
+    )
     assert turn_data["time_to_first_audio_byte_ms"] >= 0.0
     assert turn_data["total_turn_duration_ms"] > 0.0
 
@@ -172,7 +184,9 @@ def test_voice_websocket_handshake_and_ping():
     client = TestClient(app)
     headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
 
-    with client.websocket_connect("/v1/tenants/tn_stream_test/voice/stream/vcs_ws_01", headers=headers) as ws:
+    with client.websocket_connect(
+        "/v1/tenants/tn_stream_test/voice/stream/vcs_ws_01", headers=headers
+    ) as ws:
         # 1. First message must be session_ready
         initial_msg = ws.receive_json()
         assert initial_msg["event_type"] == "session_ready"
@@ -194,7 +208,9 @@ def test_voice_websocket_text_input_and_interrupt():
     client = TestClient(app)
     headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
 
-    with client.websocket_connect("/v1/tenants/tn_stream_test/voice/stream/vcs_ws_02", headers=headers) as ws:
+    with client.websocket_connect(
+        "/v1/tenants/tn_stream_test/voice/stream/vcs_ws_02", headers=headers
+    ) as ws:
         # Handshake
         initial_msg = ws.receive_json()
         assert initial_msg["event_type"] == "session_ready"

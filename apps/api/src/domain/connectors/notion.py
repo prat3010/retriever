@@ -1,4 +1,5 @@
 """Authentic Notion REST API v1 Data Connector."""
+
 import logging
 from typing import Any
 
@@ -39,11 +40,17 @@ class NotionConnector(BaseConnector):
             icon="notion",
             supports_incremental=True,
             required_parameters=["api_key", "database_id"],
-            optional_parameters={"page_size": 100, "crawl_child_pages": True, "default_groups": []},
+            optional_parameters={
+                "page_size": 100,
+                "crawl_child_pages": True,
+                "default_groups": [],
+            },
         )
 
     def _get_headers(self, config: ConnectorConfig) -> dict[str, str]:
-        token = config.configuration.get("api_key") or config.configuration.get("access_token", "")
+        token = config.configuration.get("api_key") or config.configuration.get(
+            "access_token", ""
+        )
         return {
             "Authorization": f"Bearer {token}",
             "Notion-Version": self.NOTION_VERSION,
@@ -52,11 +59,15 @@ class NotionConnector(BaseConnector):
 
     async def validate_credentials(self, config: ConnectorConfig) -> bool:
         """Validate credentials by querying current bot identity or database."""
-        token = config.configuration.get("api_key") or config.configuration.get("access_token")
+        token = config.configuration.get("api_key") or config.configuration.get(
+            "access_token"
+        )
         database_id = config.configuration.get("database_id")
 
         if not token:
-            return bool(config.configuration.get("offline_sandbox", False) and database_id)
+            return bool(
+                config.configuration.get("offline_sandbox", False) and database_id
+            )
 
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
@@ -72,7 +83,9 @@ class NotionConnector(BaseConnector):
     @staticmethod
     def _extract_rich_text(rich_text_list: list[dict[str, Any]]) -> str:
         """Extract plain text string from Notion rich_text object array."""
-        return "".join([t.get("plain_text", "") for t in rich_text_list if isinstance(t, dict)])
+        return "".join(
+            [t.get("plain_text", "") for t in rich_text_list if isinstance(t, dict)]
+        )
 
     def _parse_block_to_markdown(self, block: dict[str, Any]) -> str:
         """Convert a single Notion block object into standard Markdown."""
@@ -109,7 +122,11 @@ class NotionConnector(BaseConnector):
         return f"{text}\n" if text else ""
 
     async def _fetch_table_markdown(
-        self, client: httpx.AsyncClient, table_block_id: str, headers: dict[str, str], table_data: dict[str, Any]
+        self,
+        client: httpx.AsyncClient,
+        table_block_id: str,
+        headers: dict[str, str],
+        table_data: dict[str, Any],
     ) -> str:
         """Fetch child rows for a table block and format into a standard Markdown table."""
         url = f"{self.NOTION_API_BASE}/blocks/{table_block_id}/children?page_size=100"
@@ -129,7 +146,10 @@ class NotionConnector(BaseConnector):
             if row_block.get("type") != "table_row":
                 continue
             cells = row_block.get("table_row", {}).get("cells", [])
-            row_text_cells = [self._extract_rich_text(cell_rich_text).replace("|", "\\|").strip() for cell_rich_text in cells]
+            row_text_cells = [
+                self._extract_rich_text(cell_rich_text).replace("|", "\\|").strip()
+                for cell_rich_text in cells
+            ]
             if table_width and len(row_text_cells) < table_width:
                 row_text_cells.extend([""] * (table_width - len(row_text_cells)))
             rows_cells.append(row_text_cells)
@@ -146,7 +166,7 @@ class NotionConnector(BaseConnector):
             lines.append("| " + " | ".join(["---"] * col_count) + " |")
             body_rows = rows_cells[1:]
         else:
-            default_header = [f"Col {i+1}" for i in range(col_count)]
+            default_header = [f"Col {i + 1}" for i in range(col_count)]
             lines.append("| " + " | ".join(default_header) + " |")
             lines.append("| " + " | ".join(["---"] * col_count) + " |")
             body_rows = rows_cells
@@ -181,7 +201,9 @@ class NotionConnector(BaseConnector):
         for b in blocks:
             b_type = b.get("type", "")
             if b_type == "table":
-                table_md = await self._fetch_table_markdown(client, b.get("id", ""), headers, b.get("table", {}))
+                table_md = await self._fetch_table_markdown(
+                    client, b.get("id", ""), headers, b.get("table", {})
+                )
                 markdown_chunks.append(table_md)
             elif b_type == "child_page" and crawl_child_pages:
                 sub_id = b.get("id", "")
@@ -201,7 +223,9 @@ class NotionConnector(BaseConnector):
 
         return "".join(markdown_chunks).strip()
 
-    def _get_sandbox_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    def _get_sandbox_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         database_id = config.configuration.get("database_id", "notion_sandbox_db")
         return [
             DiscoveredDocument(
@@ -249,14 +273,18 @@ class NotionConnector(BaseConnector):
             ),
         ]
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Discover and download pages from the configured Notion database or page."""
         database_id = config.configuration.get("database_id")
         if not database_id:
             logger.warning("Notion connector '%s' missing database_id", config.id)
             return []
 
-        token = config.configuration.get("api_key") or config.configuration.get("access_token")
+        token = config.configuration.get("api_key") or config.configuration.get(
+            "access_token"
+        )
 
         if not token and config.configuration.get("offline_sandbox", False):
             return self._get_sandbox_documents(config)
@@ -273,7 +301,9 @@ class NotionConnector(BaseConnector):
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 query_url = f"{self.NOTION_API_BASE}/databases/{database_id}/query"
-                res = await client.post(query_url, headers=headers, json={"page_size": 100})
+                res = await client.post(
+                    query_url, headers=headers, json={"page_size": 100}
+                )
 
                 if res.status_code != 200:
                     logger.error(
@@ -288,14 +318,18 @@ class NotionConnector(BaseConnector):
                 for page in pages:
                     page_id = page.get("id", "")
                     last_edited = page.get("last_edited_time", "")
-                    page_url = page.get("url", f"https://notion.so/{page_id.replace('-', '')}")
+                    page_url = page.get(
+                        "url", f"https://notion.so/{page_id.replace('-', '')}"
+                    )
                     created_by = page.get("created_by", {}).get("id", "")
 
                     title = f"notion_page_{page_id[:8]}"
                     properties = page.get("properties", {})
                     for _, prop_val in properties.items():
                         if prop_val.get("type") == "title":
-                            extracted = self._extract_rich_text(prop_val.get("title", []))
+                            extracted = self._extract_rich_text(
+                                prop_val.get("title", [])
+                            )
                             if extracted:
                                 title = extracted
                                 break
@@ -348,7 +382,9 @@ class NotionConnector(BaseConnector):
         if not database_id:
             return [], state
 
-        token = config.configuration.get("api_key") or config.configuration.get("access_token")
+        token = config.configuration.get("api_key") or config.configuration.get(
+            "access_token"
+        )
         if not token and config.configuration.get("offline_sandbox", False):
             docs = self._get_sandbox_documents(config)
             state.cursor = "2026-09-23T00:00:00Z"
@@ -373,7 +409,11 @@ class NotionConnector(BaseConnector):
                 query_url = f"{self.NOTION_API_BASE}/databases/{database_id}/query"
                 res = await client.post(query_url, headers=headers, json=query_payload)
                 if res.status_code != 200:
-                    logger.error("Incremental Notion API query returned HTTP %d: %s", res.status_code, res.text[:200])
+                    logger.error(
+                        "Incremental Notion API query returned HTTP %d: %s",
+                        res.status_code,
+                        res.text[:200],
+                    )
                     return [], state
 
                 pages = res.json().get("results", [])
@@ -386,13 +426,17 @@ class NotionConnector(BaseConnector):
                     if last_edited and last_edited > latest_edited:
                         latest_edited = last_edited
 
-                    page_url = page.get("url", f"https://notion.so/{page_id.replace('-', '')}")
+                    page_url = page.get(
+                        "url", f"https://notion.so/{page_id.replace('-', '')}"
+                    )
                     created_by = page.get("created_by", {}).get("id", "")
 
                     title = f"notion_page_{page_id[:8]}"
                     for _, prop_val in page.get("properties", {}).items():
                         if prop_val.get("type") == "title":
-                            extracted = self._extract_rich_text(prop_val.get("title", []))
+                            extracted = self._extract_rich_text(
+                                prop_val.get("title", [])
+                            )
                             if extracted:
                                 title = extracted
                                 break
@@ -412,7 +456,8 @@ class NotionConnector(BaseConnector):
                     discovered.append(
                         DiscoveredDocument(
                             filename=filename,
-                            content=content_md or f"# {title}\n\n*Page synced from Notion database.*",
+                            content=content_md
+                            or f"# {title}\n\n*Page synced from Notion database.*",
                             mime_type="text/markdown",
                             source_url=page_url,
                             allowed_users=allowed_users,

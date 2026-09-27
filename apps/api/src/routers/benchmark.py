@@ -103,7 +103,9 @@ def create_benchmark_suite(
 )
 def list_benchmark_runs(
     tenant_id: str = Path(..., description="Tenant identifier"),
-    suite_id: str | None = Query(default=None, description="Optional filter by suite ID"),
+    suite_id: str | None = Query(
+        default=None, description="Optional filter by suite ID"
+    ),
 ) -> list[BenchmarkRun]:
     """Retrieve historical benchmark runs and aggregate summaries."""
     adapter = container.benchmark_gatekeeper_adapter
@@ -131,7 +133,9 @@ def trigger_benchmark_run(
             samples=payload.samples,
         )
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
+        ) from err
 
 
 @router.get(
@@ -147,7 +151,10 @@ def get_benchmark_run(
     adapter = container.benchmark_gatekeeper_adapter
     run = adapter.get_run(tenant_id, run_id)
     if not run:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Benchmark run '{run_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Benchmark run '{run_id}' not found.",
+        )
     return run
 
 
@@ -170,9 +177,13 @@ def evaluate_regression_gate(
             baseline_run_id=payload.baseline_run_id,
         )
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
+        ) from err
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.post(

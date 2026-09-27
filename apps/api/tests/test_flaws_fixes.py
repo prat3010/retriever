@@ -59,17 +59,17 @@ async def test_list_session_messages_ownership_checks() -> None:
         session_id="session-123",
         tenant_id="tenant-123",
         user_id="user-B",
-        created_at="2026-07-15T00:00:00Z"
+        created_at="2026-07-15T00:00:00Z",
     )
 
-    with patch("src.routers.chat.inference_orchestrator.get_session", new_callable=AsyncMock) as mock_get_session:
+    with patch(
+        "src.routers.chat.inference_orchestrator.get_session", new_callable=AsyncMock
+    ) as mock_get_session:
         mock_get_session.return_value = mock_session
 
         with pytest.raises(HTTPException) as exc_info:
             await list_session_messages(
-                tenantId="tenant-123",
-                sessionId="session-123",
-                user_id="user-A"
+                tenantId="tenant-123", sessionId="session-123", user_id="user-A"
             )
 
         assert exc_info.value.status_code == 403
@@ -79,7 +79,9 @@ async def test_list_session_messages_ownership_checks() -> None:
 @pytest.mark.asyncio
 async def test_rate_limit_dep_resolves_tenant_from_auth() -> None:
     mock_limiter = AsyncMock()
-    mock_limiter.acquire.return_value = MagicMock(allowed=True, limit=100, remaining=99, reset_after=10)
+    mock_limiter.acquire.return_value = MagicMock(
+        allowed=True, limit=100, remaining=99, reset_after=10
+    )
 
     # Mock request and response
     mock_request = MagicMock(spec=Request)
@@ -87,28 +89,37 @@ async def test_rate_limit_dep_resolves_tenant_from_auth() -> None:
     mock_response = MagicMock(spec=Response)
     mock_response.headers = {}
 
-    with patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter") as mock_get_limiter, \
-         patch("src.adapters.api.security.get_current_user", new_callable=AsyncMock) as mock_get_user:
-
+    with (
+        patch(
+            "src.adapters.telemetry.rate_limiter_dep.get_rate_limiter"
+        ) as mock_get_limiter,
+        patch(
+            "src.adapters.api.security.get_current_user", new_callable=AsyncMock
+        ) as mock_get_user,
+    ):
         mock_get_limiter.return_value = mock_limiter
         mock_get_user.return_value = UserContext(
             user_id="user-123",
             tenant_id="tenant-resolved",
             roles=["client"],
-            scopes=["document:read"]
+            scopes=["document:read"],
         )
 
         dep = rate_limit(scope="search")
         await dep(request=mock_request, response=mock_response, tenantId=None)
 
         # Limiter should use tenant resolved from Authorization token instead of default anonymous
-        mock_limiter.acquire.assert_called_once_with("rate_limit:tenant-resolved:search")
+        mock_limiter.acquire.assert_called_once_with(
+            "rate_limit:tenant-resolved:search"
+        )
 
 
 @pytest.mark.asyncio
 async def test_rate_limiter_lua_deterministic() -> None:
     mock_redis = AsyncMock()
-    limiter = RedisSlidingWindowRateLimiter(redis_client=mock_redis, window_seconds=60, max_requests=100)
+    limiter = RedisSlidingWindowRateLimiter(
+        redis_client=mock_redis, window_seconds=60, max_requests=100
+    )
 
     await limiter.acquire("rate_limit:tenant-1:search")
 
@@ -137,7 +148,7 @@ async def test_chunk_semantic_recursive_fallback(mock_embed) -> None:
         embed_client=mock_client,
         embed_model="nomic-embed-text",
         chunk_size=500,
-        chunk_overlap=100
+        chunk_overlap=100,
     )
 
     # The giant sentence should be recursively split under the 500 token limit

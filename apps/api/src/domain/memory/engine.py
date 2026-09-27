@@ -32,7 +32,6 @@ from src.domain.abstractions.memory import (
 logger = logging.getLogger(__name__)
 
 
-
 def _tokenize(text: str) -> list[str]:
     """Tokenize text into lowercase alphanumeric tokens."""
     return re.findall(r"\b[a-zA-Z0-9_-]+\b", text.lower())
@@ -77,7 +76,9 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         # Tenant-isolated storage: {tenant_id: {node_id: EpisodicMemoryNode}}
         self._stores: dict[str, dict[str, EpisodicMemoryNode]] = {}
 
-    async def _ensure_tenant_store(self, tenant_id: str) -> dict[str, EpisodicMemoryNode]:
+    async def _ensure_tenant_store(
+        self, tenant_id: str
+    ) -> dict[str, EpisodicMemoryNode]:
         if tenant_id not in self._stores:
             self._stores[tenant_id] = {}
             if self._repo:
@@ -85,8 +86,12 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
                     persisted = await self._repo.get_nodes(tenant_id)
                     for node in persisted:
                         if not node.embedding:
-                            tokens = _tokenize(f"{node.query} {node.distilled_insight} {' '.join(node.tool_chain)}")
-                            node.embedding = _build_term_vector(tokens, self._vector_dim)
+                            tokens = _tokenize(
+                                f"{node.query} {node.distilled_insight} {' '.join(node.tool_chain)}"
+                            )
+                            node.embedding = _build_term_vector(
+                                tokens, self._vector_dim
+                            )
                         self._stores[tenant_id][node.id] = node
                 except Exception as ex:
                     logger.warning("Failed to hydrate tenant memory store: %s", ex)
@@ -128,10 +133,18 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
                 had_error = True
                 if tools_called and not error_tool:
                     first_tool = tools_called[0]
-                    error_tool = first_tool if isinstance(first_tool, str) else first_tool.get("tool_name", "")
+                    error_tool = (
+                        first_tool
+                        if isinstance(first_tool, str)
+                        else first_tool.get("tool_name", "")
+                    )
             elif had_error and tools_called and not recovering_tool:
                 rec_tool = tools_called[0]
-                recovering_tool = rec_tool if isinstance(rec_tool, str) else rec_tool.get("tool_name", "")
+                recovering_tool = (
+                    rec_tool
+                    if isinstance(rec_tool, str)
+                    else rec_tool.get("tool_name", "")
+                )
 
         # Classify memory type
         if had_error and request.success and recovering_tool:
@@ -144,20 +157,20 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         elif any("graph" in t or "triple" in t for t in tool_chain):
             memory_type = MemoryType.SEMANTIC
             tools_str = ", ".join(tool_chain) or "direct synthesis"
-            distilled_insight = (
-                f"Knowledge exploration for '{request.query[:80]}': resolved relationships via [{tools_str}]."
-            )
+            distilled_insight = f"Knowledge exploration for '{request.query[:80]}': resolved relationships via [{tools_str}]."
             importance = 0.70
         else:
             memory_type = MemoryType.EPISODIC
             tools_str = ", ".join(tool_chain) if tool_chain else "reasoning"
-            distilled_insight = (
-                f"Successfully resolved '{request.query[:80]}' via [{tools_str}] across {len(request.turns)} turn(s)."
+            distilled_insight = f"Successfully resolved '{request.query[:80]}' via [{tools_str}] across {len(request.turns)} turn(s)."
+            importance = (
+                0.75 if (len(request.turns) >= 2 or len(tool_chain) >= 2) else 0.60
             )
-            importance = 0.75 if (len(request.turns) >= 2 or len(tool_chain) >= 2) else 0.60
 
         # Build term vector embedding for query + distilled insight
-        tokens = _tokenize(f"{request.query} {distilled_insight} {' '.join(tool_chain)}")
+        tokens = _tokenize(
+            f"{request.query} {distilled_insight} {' '.join(tool_chain)}"
+        )
         embedding = _build_term_vector(tokens, self._vector_dim)
 
         node_id = f"mem_{uuid4().hex[:12]}"
@@ -201,7 +214,9 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         """Retrieve relevant past experiences and format distilled guidance."""
         store = await self._ensure_tenant_store(tenant_id)
         if not store:
-            return DistilledGuidance(relevant_nodes=[], guidance_prompt="", matched_tool_chains=[])
+            return DistilledGuidance(
+                relevant_nodes=[], guidance_prompt="", matched_tool_chains=[]
+            )
 
         now = time.time()
         query_tokens = _tokenize(query)
@@ -231,7 +246,9 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         top_matches = [item[1] for item in scored_results[:limit]]
 
         if not top_matches:
-            return DistilledGuidance(relevant_nodes=[], guidance_prompt="", matched_tool_chains=[])
+            return DistilledGuidance(
+                relevant_nodes=[], guidance_prompt="", matched_tool_chains=[]
+            )
 
         # Reinforce stability for retrieved memories
         matched_tool_chains: list[list[str]] = []
@@ -256,13 +273,19 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
                     logger.debug("Cognitive memory update_access failed: %s", ex)
 
             matched_tool_chains.append(node.tool_chain)
-            tools_repr = " -> ".join(node.tool_chain) if node.tool_chain else "analytical synthesis"
+            tools_repr = (
+                " -> ".join(node.tool_chain)
+                if node.tool_chain
+                else "analytical synthesis"
+            )
             guidance_lines.append(
                 f"- [Strategy ({node.memory_type.value.upper()}, sim={match.similarity_score:.2f})]: "
                 f"{node.distilled_insight} (Recommended Tool Path: {tools_repr})"
             )
 
-        guidance_lines.append("Use these proven historical patterns to prevent redundant tool errors.")
+        guidance_lines.append(
+            "Use these proven historical patterns to prevent redundant tool errors."
+        )
         guidance_prompt = "\n".join(guidance_lines)
 
         return DistilledGuidance(
@@ -288,7 +311,8 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         if query:
             q_lower = query.lower()
             nodes = [
-                n for n in nodes
+                n
+                for n in nodes
                 if q_lower in n.query.lower() or q_lower in n.distilled_insight.lower()
             ]
 
@@ -336,9 +360,15 @@ class CognitiveMemoryEngine(CognitiveMemoryProtocol):
         if total == 0:
             return MemoryStats()
 
-        ep_count = sum(1 for n in store.values() if n.memory_type == MemoryType.EPISODIC)
-        sem_count = sum(1 for n in store.values() if n.memory_type == MemoryType.SEMANTIC)
-        proc_count = sum(1 for n in store.values() if n.memory_type == MemoryType.PROCEDURAL)
+        ep_count = sum(
+            1 for n in store.values() if n.memory_type == MemoryType.EPISODIC
+        )
+        sem_count = sum(
+            1 for n in store.values() if n.memory_type == MemoryType.SEMANTIC
+        )
+        proc_count = sum(
+            1 for n in store.values() if n.memory_type == MemoryType.PROCEDURAL
+        )
         avg_stab = sum(n.stability_score for n in store.values()) / total
         total_access = sum(n.access_count for n in store.values())
 

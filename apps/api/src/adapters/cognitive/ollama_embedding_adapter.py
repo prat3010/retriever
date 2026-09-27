@@ -21,7 +21,9 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(timeout=httpx.Timeout(self._timeout, connect=5.0))
+            self._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(self._timeout, connect=5.0)
+            )
         return self._client
 
     async def embed_text(self, text: str) -> list[float]:

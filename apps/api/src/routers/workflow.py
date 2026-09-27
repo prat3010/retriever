@@ -24,13 +24,22 @@ router = APIRouter(prefix="/v1", tags=["Workflow"])
 class IngestWebhookRequest(BaseModel):
     title: str = Field(..., description="Document or email title")
     content: str | None = Field(None, description="Raw text or markdown content")
-    file_base64: str | None = Field(None, description="Base64 encoded binary file data (e.g. PDF/Docx)")
-    filename: str | None = Field(None, description="Filename with extension if file_base64 provided")
-    source: str = Field(default="n8n_webhook", description="Ingestion source (gmail, gdrive, notion, n8n)")
+    file_base64: str | None = Field(
+        None, description="Base64 encoded binary file data (e.g. PDF/Docx)"
+    )
+    filename: str | None = Field(
+        None, description="Filename with extension if file_base64 provided"
+    )
+    source: str = Field(
+        default="n8n_webhook",
+        description="Ingestion source (gmail, gdrive, notion, n8n)",
+    )
 
 
 class ConfigureWebhookRequest(BaseModel):
-    n8n_webhook_url: str = Field(..., description="Target n8n HTTP webhook endpoint URL")
+    n8n_webhook_url: str = Field(
+        ..., description="Target n8n HTTP webhook endpoint URL"
+    )
 
 
 @router.post(
@@ -38,7 +47,9 @@ class ConfigureWebhookRequest(BaseModel):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(verify_admin_key)],
 )
-async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookRequest) -> Any:
+async def inbound_n8n_ingest_webhook(
+    tenantId: str, payload: IngestWebhookRequest
+) -> Any:
     """Inbound n8n auto-ingest webhook for Gmail, Google Drive, and Notion documents."""
     doc_id = str(uuid.uuid4())
     chunk_count = 0
@@ -53,8 +64,12 @@ async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookReques
                 tenant_id=tenantId,
             )
         except Exception as err:
-            logger.error(f"Failed to process base64 file webhook for tenant '{tenantId}': {err}")
-            raise HTTPException(status_code=400, detail=f"Invalid base64 payload: {err}") from err
+            logger.error(
+                f"Failed to process base64 file webhook for tenant '{tenantId}': {err}"
+            )
+            raise HTTPException(
+                status_code=400, detail=f"Invalid base64 payload: {err}"
+            ) from err
 
     elif payload.content:
         # Inline PII anonymization pass-through
@@ -69,11 +84,18 @@ async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookReques
                 tenant_id=tenantId,
             )
         except Exception as err:
-            logger.error(f"Failed to process text content webhook for tenant '{tenantId}': {err}")
-            raise HTTPException(status_code=400, detail=f"Failed to ingest content: {err}") from err
+            logger.error(
+                f"Failed to process text content webhook for tenant '{tenantId}': {err}"
+            )
+            raise HTTPException(
+                status_code=400, detail=f"Failed to ingest content: {err}"
+            ) from err
 
     else:
-        raise HTTPException(status_code=400, detail="Must supply either 'content' or 'file_base64' and 'filename'.")
+        raise HTTPException(
+            status_code=400,
+            detail="Must supply either 'content' or 'file_base64' and 'filename'.",
+        )
 
     return {
         "status": "ingested",
@@ -89,7 +111,9 @@ async def inbound_n8n_ingest_webhook(tenantId: str, payload: IngestWebhookReques
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(verify_admin_key)],
 )
-async def configure_n8n_webhook_url(tenantId: str, payload: ConfigureWebhookRequest) -> Any:
+async def configure_n8n_webhook_url(
+    tenantId: str, payload: ConfigureWebhookRequest
+) -> Any:
     """Configure active n8n outbound event webhook URL for a tenant (Admin only)."""
     config = await config_service.get_tenant_config(tenantId)
     if not config:
@@ -136,7 +160,14 @@ async def get_n8n_openapi_spec() -> Any:
                 "post": {
                     "summary": "Inbound Document Auto-Ingest Webhook",
                     "operationId": "n8nIngestDocument",
-                    "parameters": [{"name": "tenantId", "in": "path", "required": True, "schema": {"type": "string"}}],
+                    "parameters": [
+                        {
+                            "name": "tenantId",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
                     "requestBody": {
                         "content": {
                             "application/json": {
@@ -147,14 +178,19 @@ async def get_n8n_openapi_spec() -> Any:
                                         "content": {"type": "string"},
                                         "file_base64": {"type": "string"},
                                         "filename": {"type": "string"},
-                                        "source": {"type": "string", "default": "n8n_webhook"},
+                                        "source": {
+                                            "type": "string",
+                                            "default": "n8n_webhook",
+                                        },
                                     },
                                     "required": ["title"],
                                 }
                             }
                         }
                     },
-                    "responses": {"201": {"description": "Document ingested successfully"}},
+                    "responses": {
+                        "201": {"description": "Document ingested successfully"}
+                    },
                 }
             }
         },

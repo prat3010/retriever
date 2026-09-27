@@ -34,6 +34,7 @@ router = APIRouter(tags=["Confidential MPC Privacy Enclaves"])
 
 # --- Request/Response Models ---
 
+
 class MpcHealthResponse(BaseModel):
     """Operational status and parameters for Platform Battery #36."""
 
@@ -42,49 +43,87 @@ class MpcHealthResponse(BaseModel):
     category: str = "SAFETY_DEFENSE"
     milestone: str = "M121 (v2.0.0-alpha3)"
     supported_protocols: list[str] = Field(
-        default_factory=lambda: ["additive_sharing", "beaver_triples", "shamir_threshold"]
+        default_factory=lambda: [
+            "additive_sharing",
+            "beaver_triples",
+            "shamir_threshold",
+        ]
     )
     fixed_point_scale: int = 65536
     default_privacy_threshold: float = 0.70
-    latency_profile: str = "<12ms 2-party share protocol / <25ms 3-party Beaver inner product"
+    latency_profile: str = (
+        "<12ms 2-party share protocol / <25ms 3-party Beaver inner product"
+    )
     zero_toy_verified: bool = True
 
 
 class CreateMpcSessionRequest(BaseModel):
     """Payload to create an MPC Privacy Enclave session."""
 
-    title: str = Field(..., min_length=3, description="Descriptive title of the collaborative query session")
-    protocol: MpcProtocolType = Field(default=MpcProtocolType.BEAVER_TRIPLES, description="MPC protocol to execute")
-    required_parties_count: int = Field(default=2, ge=2, le=10, description="Minimum participating parties required")
+    title: str = Field(
+        ...,
+        min_length=3,
+        description="Descriptive title of the collaborative query session",
+    )
+    protocol: MpcProtocolType = Field(
+        default=MpcProtocolType.BEAVER_TRIPLES, description="MPC protocol to execute"
+    )
+    required_parties_count: int = Field(
+        default=2, ge=2, le=10, description="Minimum participating parties required"
+    )
     dimension: int = Field(default=768, description="Vector dimension (e.g. 768, 1536)")
-    privacy_threshold: float = Field(default=0.70, ge=0.0, le=1.0, description="Minimum cosine similarity cutoff")
-    top_k: int = Field(default=5, ge=1, le=50, description="Maximum number of threshold matches to return")
-    epsilon_budget: float = Field(default=10.0, ge=0.1, description="Total differential privacy budget for session")
+    privacy_threshold: float = Field(
+        default=0.70, ge=0.0, le=1.0, description="Minimum cosine similarity cutoff"
+    )
+    top_k: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Maximum number of threshold matches to return",
+    )
+    epsilon_budget: float = Field(
+        default=10.0,
+        ge=0.1,
+        description="Total differential privacy budget for session",
+    )
 
 
 class JoinMpcSessionRequest(BaseModel):
     """Payload for a sovereign party to join an MPC Enclave session."""
 
-    party_id: str = Field(..., min_length=2, description="Unique party identifier (e.g. hospital_alpha)")
-    display_name: str = Field(..., min_length=2, description="Human-readable organization or department name")
-    public_key: str = Field(..., min_length=8, description="Party public key for share exchange")
-    role: EnclavePartyRole = Field(default=EnclavePartyRole.EVALUATOR, description="Party role in session")
+    party_id: str = Field(
+        ..., min_length=2, description="Unique party identifier (e.g. hospital_alpha)"
+    )
+    display_name: str = Field(
+        ..., min_length=2, description="Human-readable organization or department name"
+    )
+    public_key: str = Field(
+        ..., min_length=8, description="Party public key for share exchange"
+    )
+    role: EnclavePartyRole = Field(
+        default=EnclavePartyRole.EVALUATOR, description="Party role in session"
+    )
 
 
 class SubmitVectorSharesRequest(BaseModel):
     """Payload for submitting quantized additive vector shares."""
 
     party_id: str = Field(..., description="Party submitting the shares")
-    shares: list[EncryptedVectorShare] = Field(..., min_length=1, description="List of additive vector shares")
+    shares: list[EncryptedVectorShare] = Field(
+        ..., min_length=1, description="List of additive vector shares"
+    )
 
 
 class AbortMpcSessionRequest(BaseModel):
     """Payload for aborting an active MPC session."""
 
-    reason: str = Field(default="User initiated cancellation", description="Reason for abortion")
+    reason: str = Field(
+        default="User initiated cancellation", description="Reason for abortion"
+    )
 
 
 # --- Route Handlers ---
+
 
 @router.get(
     "/v1/mpc/health",
@@ -175,9 +214,14 @@ def join_mpc_session(
             role=payload.role,
         )
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"MPC session '{session_id}' not found.") from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"MPC session '{session_id}' not found.",
+        ) from err
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.post(
@@ -200,7 +244,10 @@ def submit_vector_shares(
             shares=payload.shares,
         )
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"MPC session '{session_id}' not found.") from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"MPC session '{session_id}' not found.",
+        ) from err
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
 
@@ -219,9 +266,14 @@ def execute_mpc_compute(
     try:
         return adapter.execute_compute(tenant_id, session_id)
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"MPC session '{session_id}' not found.") from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"MPC session '{session_id}' not found.",
+        ) from err
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @router.get(
@@ -259,7 +311,10 @@ def abort_mpc_session(
     try:
         return adapter.abort_session(tenant_id, session_id, payload.reason)
     except KeyError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"MPC session '{session_id}' not found.") from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"MPC session '{session_id}' not found.",
+        ) from err
 
 
 @router.post(

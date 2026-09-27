@@ -11,7 +11,9 @@ class ConnectorManifestResponse(BaseModel):
 
 
 class CreateConnectorRequest(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="Name of the data connector.")
+    name: str = Field(
+        ..., min_length=1, max_length=255, description="Name of the data connector."
+    )
     connector_type: Literal[
         "web_crawler",
         "cloud_drive",
@@ -26,8 +28,12 @@ class CreateConnectorRequest(BaseModel):
         "database_cdc",
         "github",
     ] = Field(..., description="Data connector source type.")
-    sync_interval_minutes: int = Field(default=1440, ge=15, le=43200, description="Sync frequency in minutes.")
-    configuration: dict[str, Any] = Field(default_factory=dict, description="Connector credentials/parameters.")
+    sync_interval_minutes: int = Field(
+        default=1440, ge=15, le=43200, description="Sync frequency in minutes."
+    )
+    configuration: dict[str, Any] = Field(
+        default_factory=dict, description="Connector credentials/parameters."
+    )
 
 
 class UpdateConnectorRequest(BaseModel):

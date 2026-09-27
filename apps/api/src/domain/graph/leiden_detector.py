@@ -74,7 +74,9 @@ class LeidenCommunityDetector(BaseCommunityDetector):
         current_nodes = list(nodes)
         current_edges = dict(edges)
         node_to_entities: dict[str, set[str]] = {n: {n} for n in current_nodes}
-        node_to_triples: dict[str, list[EntityTriple]] = {n: node_triples.get(n, []) for n in current_nodes}
+        node_to_triples: dict[str, list[EntityTriple]] = {
+            n: node_triples.get(n, []) for n in current_nodes
+        }
 
         prev_partition_count = len(current_nodes)
 
@@ -106,9 +108,13 @@ class LeidenCommunityDetector(BaseCommunityDetector):
                             all_triples.append(t)
 
                 sorted_entities = sorted(all_entities)
-                primary_label = sorted_entities[0] if sorted_entities else f"Cluster {comm_idx}"
+                primary_label = (
+                    sorted_entities[0] if sorted_entities else f"Cluster {comm_idx}"
+                )
                 if len(sorted_entities) > 1:
-                    comm_title = f"{primary_label} & Related ({len(sorted_entities)} entities)"
+                    comm_title = (
+                        f"{primary_label} & Related ({len(sorted_entities)} entities)"
+                    )
                 else:
                     comm_title = f"{primary_label} Cluster"
 
@@ -131,14 +137,21 @@ class LeidenCommunityDetector(BaseCommunityDetector):
             total_comm_count += len(level_communities)
 
             # Check if partition has converged or cannot be aggregated further
-            if len(level_communities) <= 1 or len(level_communities) == prev_partition_count:
+            if (
+                len(level_communities) <= 1
+                or len(level_communities) == prev_partition_count
+            ):
                 break
 
             prev_partition_count = len(level_communities)
 
             # Phase 3: Graph Aggregation for next hierarchy level
             next_nodes, next_edges, next_entities, next_triples = self._aggregate_graph(
-                current_nodes, current_edges, partition, node_to_entities, node_to_triples
+                current_nodes,
+                current_edges,
+                partition,
+                node_to_entities,
+                node_to_triples,
             )
             current_nodes = next_nodes
             current_edges = next_edges
@@ -146,7 +159,9 @@ class LeidenCommunityDetector(BaseCommunityDetector):
             node_to_triples = next_triples
 
         # Calculate final overall modularity
-        modularity = self._calculate_modularity(nodes, edges, hierarchy_levels.get(0, []))
+        modularity = self._calculate_modularity(
+            nodes, edges, hierarchy_levels.get(0, [])
+        )
 
         return CommunityHierarchy(
             tenant_id=tenant_id,
@@ -203,7 +218,9 @@ class LeidenCommunityDetector(BaseCommunityDetector):
 
         # Step 1: Initial singleton partition
         partition: dict[str, int] = {node: i for i, node in enumerate(sorted_nodes)}
-        comm_weights: dict[int, float] = {i: degrees[node] for i, node in enumerate(sorted_nodes)}
+        comm_weights: dict[int, float] = {
+            i: degrees[node] for i, node in enumerate(sorted_nodes)
+        }
 
         # Step 2: Local moving loop
         improved = True
@@ -233,7 +250,9 @@ class LeidenCommunityDetector(BaseCommunityDetector):
                     tot_cand = comm_weights[cand_comm]
                     # Leiden / Newman-Girvan delta Q formula:
                     # delta_Q = (k_i_in / 2m) - resolution * (k_i * tot_cand / (2m)^2)
-                    gain = (k_i_in / m2) - self.resolution * ((k_i * tot_cand) / (m2 * m2))
+                    gain = (k_i_in / m2) - self.resolution * (
+                        (k_i * tot_cand) / (m2 * m2)
+                    )
                     if gain > best_gain:
                         best_gain = gain
                         best_comm = cand_comm

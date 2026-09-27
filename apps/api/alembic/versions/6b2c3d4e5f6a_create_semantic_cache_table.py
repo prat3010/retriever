@@ -25,10 +25,19 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.UUID(), nullable=False),
         sa.Column("query_text", sa.Text(), nullable=False),
         sa.Column("embedding", postgresql.ARRAY(sa.Float()), nullable=False),
-        sa.Column("search_results", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "search_results", postgresql.JSONB(astext_type=sa.Text()), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("cache_id"),
     )
     op.create_index("ix_semantic_cache_tenant_id", "semantic_cache", ["tenant_id"])

@@ -37,7 +37,9 @@ class OnlineEvaluator:
     ) -> QualityMetrics:
         """Compute real-time RAG quality metrics."""
         if not retrieved_chunks:
-            return QualityMetrics(context_precision=0.0, answer_relevance=0.0, faithfulness=0.0)
+            return QualityMetrics(
+                context_precision=0.0, answer_relevance=0.0, faithfulness=0.0
+            )
 
         # Context Precision: Ratio of cited retrieved chunks to total retrieved
         cited_set = set(cited_chunks)
@@ -72,8 +74,12 @@ class OnlineEvaluator:
                 rerank_threshold=current_settings.get("rerank_threshold", 0.3),
             )
 
-        avg_precision = sum(m.context_precision for m in recent_metrics) / len(recent_metrics)
-        avg_faithfulness = sum(m.faithfulness for m in recent_metrics) / len(recent_metrics)
+        avg_precision = sum(m.context_precision for m in recent_metrics) / len(
+            recent_metrics
+        )
+        avg_faithfulness = sum(m.faithfulness for m in recent_metrics) / len(
+            recent_metrics
+        )
 
         # Adjust top_k: if precision is low, reduce top_k to eliminate noisy chunks
         curr_top_k = current_settings.get("top_k", 5)
@@ -86,7 +92,12 @@ class OnlineEvaluator:
 
         # Adjust rerank threshold: if faithfulness is low, raise threshold to filter low-confidence context
         curr_threshold = current_settings.get("rerank_threshold", 0.3)
-        new_threshold = round(min(0.7, curr_threshold + 0.1) if avg_faithfulness < 0.5 else curr_threshold, 2)
+        new_threshold = round(
+            min(0.7, curr_threshold + 0.1)
+            if avg_faithfulness < 0.5
+            else curr_threshold,
+            2,
+        )
 
         return AutoTunedSettings(
             top_k=new_top_k,
@@ -105,6 +116,7 @@ class OnlineHallucinationEvaluator:
         self.config_service = config_service
         self.evaluator = OnlineEvaluator()
         from src.domain.evaluation.self_tuner import SelfTuningEngine
+
         self.self_tuner = SelfTuningEngine()
 
     def evaluate_response(
@@ -149,12 +161,17 @@ class OnlineHallucinationEvaluator:
 
         claims = extract_claims(answer)
         from src.domain.evaluation.nli_evaluator import NliEvaluator
+
         nli = NliEvaluator()
         nli_res = nli.evaluate_claims(claims, contexts)
         faithfulness = nli_res.faithfulness_score
         precision = calculate_context_precision(contexts, claims)
         hallucination_index = nli_res.hallucination_index
-        threshold = getattr(eval_settings, "hallucination_threshold", 0.3) if eval_settings else 0.3
+        threshold = (
+            getattr(eval_settings, "hallucination_threshold", 0.3)
+            if eval_settings
+            else 0.3
+        )
         is_alert = hallucination_index > threshold
 
         claim_items = [
@@ -219,6 +236,7 @@ class OnlineHallucinationEvaluator:
 def extract_claims(text: str) -> list[str]:
     """Extract individual sentence claims from response text using NliEvaluator."""
     from src.domain.evaluation.nli_evaluator import NliEvaluator
+
     evaluator = NliEvaluator()
     return evaluator.extract_claims(text)
 
@@ -229,7 +247,11 @@ def calculate_context_precision(query_or_retrieved: Any, contexts: list[str]) ->
         return 0.0
     if isinstance(query_or_retrieved, str):
         query_terms = set(query_or_retrieved.lower().split())
-        matched = sum(1 for c in contexts if any(term in c.lower() for term in query_terms if len(term) > 2))
+        matched = sum(
+            1
+            for c in contexts
+            if any(term in c.lower() for term in query_terms if len(term) > 2)
+        )
         return round(matched / len(contexts), 4)
     elif isinstance(query_or_retrieved, list):
         cited_set = set(contexts)
@@ -246,9 +268,7 @@ def calculate_faithfulness(claims: list[str], context_chunks: list[str]) -> floa
         return 0.0
 
     from src.domain.evaluation.nli_evaluator import NliEvaluator
+
     nli = NliEvaluator()
     res = nli.evaluate_claims(claims, context_chunks)
     return res.faithfulness_score
-
-
-

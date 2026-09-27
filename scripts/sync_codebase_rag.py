@@ -43,7 +43,9 @@ def process_ingestion(target: str) -> None:
     chunker = AstCodeChunker()
 
     if target == "public_docs":
-        print("🔍 Syncing Public Documentation Catalog for tenant 'demo_public_docs'...")
+        print(
+            "🔍 Syncing Public Documentation Catalog for tenant 'demo_public_docs'..."
+        )
         valid_files = []
         for rel_file in PUBLIC_DOC_FILES:
             full_p = website_dir / rel_file
@@ -56,22 +58,32 @@ def process_ingestion(target: str) -> None:
             chunks = chunker.chunk_markdown(content, filename=f.name)
             total_chunks += len(chunks)
 
-        print(f"✅ Ingested {len(valid_files)} public docs ({total_chunks} structural chunks) for tenant 'demo_public_docs'.")
+        print(
+            f"✅ Ingested {len(valid_files)} public docs ({total_chunks} structural chunks) for tenant 'demo_public_docs'."
+        )
 
     elif target == "internal_codebase":
         print("🔍 Syncing Internal Codebase AST for tenant 'system_master'...")
-        py_files = [p for p in (workspace_dir / "apps" / "api" / "src").rglob("*.py") if not ignore_filter.is_ignored(p)]
+        py_files = [
+            p
+            for p in (workspace_dir / "apps" / "api" / "src").rglob("*.py")
+            if not ignore_filter.is_ignored(p)
+        ]
         total_chunks = 0
         for f in py_files:
             content = f.read_text(encoding="utf-8")
             chunks = chunker.chunk_python_ast(content, filename=f.name)
             total_chunks += len(chunks)
 
-        print(f"✅ Ingested {len(py_files)} Python source files ({total_chunks} AST nodes) for tenant 'system_master'.")
+        print(
+            f"✅ Ingested {len(py_files)} Python source files ({total_chunks} AST nodes) for tenant 'system_master'."
+        )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Retriever Codebase & Docs RAG Sync Tool")
+    parser = argparse.ArgumentParser(
+        description="Retriever Codebase & Docs RAG Sync Tool"
+    )
     parser.add_argument(
         "--target",
         choices=["public_docs", "internal_codebase"],

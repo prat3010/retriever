@@ -375,11 +375,11 @@ async def test_orchestrator_json_schema_defaults_to_none() -> None:
 # ── 5. Chat API Endpoints ──────────────────────────────────────────────────
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.create_session", new_callable=AsyncMock)
-def test_create_chat_session_endpoint(
-    mock_create_session, mock_validate
-) -> None:
+def test_create_chat_session_endpoint(mock_create_session, mock_validate) -> None:
     """Verify POST /v1/tenants/{tenantId}/chat/sessions returns 201."""
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -393,7 +393,10 @@ def test_create_chat_session_endpoint(
     )
 
     user_id = str(uuid.uuid4())
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_id,
+    }
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions",
         headers=headers,
@@ -405,14 +408,19 @@ def test_create_chat_session_endpoint(
     assert body["sessionId"] == "ses_001"
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 @patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.main.search_service.search", new_callable=AsyncMock)
 @patch("src.main.inference_orchestrator.generate", new_callable=AsyncMock)
 def test_chat_message_endpoint_non_streaming(
-    mock_generate, mock_search, mock_get_config,
-    mock_get_session, mock_validate,
+    mock_generate,
+    mock_search,
+    mock_get_config,
+    mock_get_session,
+    mock_validate,
 ) -> None:
     """Verify POST chat/messages returns non-streaming response."""
     from src.domain.abstractions.config import TenantConfiguration
@@ -425,14 +433,14 @@ def test_chat_message_endpoint_non_streaming(
         roles=["client"],
         scopes=["document:write"],
     )
-    mock_get_session.return_value = MagicMock(
-        session_id="ses_001", tenant_id=tenant_id
-    )
+    mock_get_session.return_value = MagicMock(session_id="ses_001", tenant_id=tenant_id)
     mock_get_config.return_value = TenantConfiguration(tenant_id=tenant_id)
     mock_search.return_value = SearchResponse(
         query="test",
         results=[],
-        search_meta=SearchMeta(strategy="none", total_candidates=0, returned_results=0, duration_ms=0),
+        search_meta=SearchMeta(
+            strategy="none", total_candidates=0, returned_results=0, duration_ms=0
+        ),
     )
     mock_generate.return_value = InferenceResponse(
         content="Test response",
@@ -441,7 +449,10 @@ def test_chat_message_endpoint_non_streaming(
     )
 
     user_id = str(uuid.uuid4())
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_id,
+    }
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/ses_001/messages",
         json={"query": "test", "stream": False},
@@ -454,7 +465,9 @@ def test_chat_message_endpoint_non_streaming(
     assert body["finish_reason"] == "stop"
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 def test_chat_message_requires_auth(mock_get_session, mock_validate) -> None:
     """Verify chat message endpoint rejects requests without authorization."""
@@ -468,7 +481,9 @@ def test_chat_message_requires_auth(mock_get_session, mock_validate) -> None:
     assert response.status_code == 401
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None:
     """Verify chat message returns 404 for non-existent session."""
@@ -483,7 +498,10 @@ def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None
     mock_get_session.return_value = None
 
     user_id = str(uuid.uuid4())
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_id,
+    }
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/nonexistent/messages",
         json={"query": "test"},
@@ -492,38 +510,55 @@ def test_chat_message_session_not_found(mock_get_session, mock_validate) -> None
     assert response.status_code == 404
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 @patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.main.search_service.search", new_callable=AsyncMock)
 @patch("src.main.inference_orchestrator.generate_stream")
 def test_chat_message_endpoint_streaming(
-    mock_generate_stream, mock_search, mock_get_config,
-    mock_get_session, mock_validate,
+    mock_generate_stream,
+    mock_search,
+    mock_get_config,
+    mock_get_session,
+    mock_validate,
 ) -> None:
     from src.domain.abstractions.config import TenantConfiguration
     from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
 
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
-        user_id="user_123", tenant_id=tenant_id, roles=["client"], scopes=["document:write"],
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["client"],
+        scopes=["document:write"],
     )
     mock_get_session.return_value = MagicMock(session_id="ses_001", tenant_id=tenant_id)
     mock_get_config.return_value = TenantConfiguration(tenant_id=tenant_id)
     mock_search.return_value = SearchResponse(
-        query="test", results=[],
-        search_meta=SearchMeta(strategy="none", total_candidates=0, returned_results=0, duration_ms=0),
+        query="test",
+        results=[],
+        search_meta=SearchMeta(
+            strategy="none", total_candidates=0, returned_results=0, duration_ms=0
+        ),
     )
 
     async def _mock_stream(*args, **kwargs):
         yield {"event": "token", "delta": "Hello "}
         yield {"event": "token", "delta": "world!"}
-        yield {"event": "done", "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}}
+        yield {
+            "event": "done",
+            "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15},
+        }
 
     mock_generate_stream.return_value = _mock_stream()
 
     user_id = str(uuid.uuid4())
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_id,
+    }
     response = client.post(
         f"/v1/tenants/{tenant_id}/chat/sessions/ses_001/messages",
         json={"query": "test", "stream": True},
@@ -588,7 +623,8 @@ async def test_prepare_inference_parent_child_expansion() -> None:
     )
 
     mock_doc_repo.get_chunks_by_ids.assert_called_once_with("tenant_1", ["parent_99"])
-    passed_chunks = mock_prompt_builder.build_messages.call_args.kwargs["context_chunks"]
+    passed_chunks = mock_prompt_builder.build_messages.call_args.kwargs[
+        "context_chunks"
+    ]
     assert passed_chunks[0]["content"] == "full expanded parent section text"
     assert passed_chunks[0]["chunk_id"] == "child_1"
-

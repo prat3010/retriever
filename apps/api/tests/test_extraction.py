@@ -78,7 +78,9 @@ async def test_openai_adapter_sends_response_format_when_json_schema() -> None:
 
     mock_client = AsyncMock()
     mock_client.chat.completions.create.return_value = MagicMock(
-        choices=[MagicMock(message=MagicMock(content='{"ok": true}'), finish_reason="stop")],
+        choices=[
+            MagicMock(message=MagicMock(content='{"ok": true}'), finish_reason="stop")
+        ],
         usage=MagicMock(prompt_tokens=10, completion_tokens=5, total_tokens=15),
     )
 
@@ -184,8 +186,11 @@ def test_extract_endpoint_local() -> None:
     from src.schemas.document import ExtractResponse
 
     resp = ExtractResponse(
-        data={"key": "val"}, provider="openai", model="gpt-4o",
-        inputTokens=10, outputTokens=5,
+        data={"key": "val"},
+        provider="openai",
+        model="gpt-4o",
+        inputTokens=10,
+        outputTokens=5,
     )
     assert resp.data["key"] == "val"
 
@@ -197,9 +202,15 @@ def test_extract_endpoint_local() -> None:
 async def test_get_document_chunks_returns_list() -> None:
     mock_repo = AsyncMock()
     mock_repo.get_document_chunks.return_value = [
-        DocumentChunk(chunk_id="c1", document_id="d1", tenant_id="t1",
-                      content="hello", token_count=1, chunk_index=0,
-                      created_at="2026-07-15T00:00:00+00:00"),
+        DocumentChunk(
+            chunk_id="c1",
+            document_id="d1",
+            tenant_id="t1",
+            content="hello",
+            token_count=1,
+            chunk_index=0,
+            created_at="2026-07-15T00:00:00+00:00",
+        ),
     ]
     result = await mock_repo.get_document_chunks("t1", "d1")
     assert len(result) == 1

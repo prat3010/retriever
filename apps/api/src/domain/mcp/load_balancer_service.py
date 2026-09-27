@@ -69,7 +69,9 @@ class SovereignEnclaveProvisionerAdapter(EnclaveProvisionerPort):
             metadata={"ephemeral": True, "created_at": time.time()},
         )
         self.mesh_service.register_node(enclave_node)
-        logger.info(f"Provisioned ephemeral enclave '{node_id}' in cluster '{cluster_id}'")
+        logger.info(
+            f"Provisioned ephemeral enclave '{node_id}' in cluster '{cluster_id}'"
+        )
         return enclave_node
 
     async def terminate_ephemeral_enclave(self, node_id: str) -> bool:
@@ -90,7 +92,9 @@ class MeshLoadBalancerService:
         ewma_alpha: float = 0.2,
     ) -> None:
         self.mesh_service = mesh_service
-        self.provisioner = provisioner or SovereignEnclaveProvisionerAdapter(mesh_service)
+        self.provisioner = provisioner or SovereignEnclaveProvisionerAdapter(
+            mesh_service
+        )
         self.policy = policy or AutoscalingPolicy()
         self.ewma_alpha = max(0.01, min(0.99, ewma_alpha))
 
@@ -132,12 +136,16 @@ class MeshLoadBalancerService:
         # Penalize degraded or non-online nodes
         status_penalty = 1.0 if node.status == MeshNodeStatus.ONLINE else 10.0
 
-        return round(base_latency * queue_multiplier * slot_multiplier * status_penalty, 3)
+        return round(
+            base_latency * queue_multiplier * slot_multiplier * status_penalty, 3
+        )
 
     def select_node_p2c(self, candidates: list[MeshPeerNode]) -> MeshPeerNode:
         """Select optimal execution node via Power-of-Two-Choices (P2C) algorithm."""
         if not candidates:
-            raise MeshNodeUnreachableError("No candidate nodes available for load balancing.")
+            raise MeshNodeUnreachableError(
+                "No candidate nodes available for load balancing."
+            )
 
         if len(candidates) == 1:
             return candidates[0]
@@ -184,7 +192,10 @@ class MeshLoadBalancerService:
         # Check for global saturation across all matching candidate nodes
         all_saturated = True
         for n in matching_nodes:
-            utilization = (n.capacity.active_execution_slots / max(1, n.capacity.max_execution_slots)) * 100.0
+            utilization = (
+                n.capacity.active_execution_slots
+                / max(1, n.capacity.max_execution_slots)
+            ) * 100.0
             if utilization < self.policy.load_shedding_threshold_pct:
                 all_saturated = False
                 break
@@ -228,14 +239,18 @@ class MeshLoadBalancerService:
             return
 
         # Decrement active slots safely
-        node.capacity.active_execution_slots = max(0, node.capacity.active_execution_slots - 1)
+        node.capacity.active_execution_slots = max(
+            0, node.capacity.active_execution_slots - 1
+        )
         if node.capacity.queue_depth > 0:
             node.capacity.queue_depth -= 1
 
         # Update EWMA latency
         # EWMA_t = alpha * Sample + (1 - alpha) * EWMA_{t-1}
         prev_ewma = node.capacity.ewma_latency_ms
-        new_ewma = (self.ewma_alpha * sample_latency_ms) + ((1.0 - self.ewma_alpha) * prev_ewma)
+        new_ewma = (self.ewma_alpha * sample_latency_ms) + (
+            (1.0 - self.ewma_alpha) * prev_ewma
+        )
         node.capacity.ewma_latency_ms = round(new_ewma, 2)
 
     def update_node_telemetry(
@@ -246,7 +261,9 @@ class MeshLoadBalancerService:
         """Update live telemetry reported by an edge node heartbeat."""
         node = self.mesh_service.get_node(node_id)
         if not node:
-            raise MeshNodeUnreachableError(f"Node '{node_id}' not found in mesh registry.")
+            raise MeshNodeUnreachableError(
+                f"Node '{node_id}' not found in mesh registry."
+            )
 
         node.capacity = metrics
         node.last_heartbeat = time.time()
@@ -254,7 +271,11 @@ class MeshLoadBalancerService:
 
     async def evaluate_autoscaling(self, cluster_id: str) -> list[AutoscalingEvent]:
         """Inspect cluster load metrics and trigger autonomous scale-up or scale-to-zero reaping."""
-        nodes = [n for n in self.mesh_service.list_nodes(online_only=True) if n.cluster_id == cluster_id]
+        nodes = [
+            n
+            for n in self.mesh_service.list_nodes(online_only=True)
+            if n.cluster_id == cluster_id
+        ]
         if not nodes:
             return []
 
@@ -281,15 +302,25 @@ class MeshLoadBalancerService:
                 trigger_metric = (
                     "utilization_pct"
                     if cluster_utilization_pct >= self.policy.scale_up_utilization_pct
-                    else ("queue_depth" if max_queue >= self.policy.scale_up_queue_depth else "ewma_latency_ms")
+                    else (
+                        "queue_depth"
+                        if max_queue >= self.policy.scale_up_queue_depth
+                        else "ewma_latency_ms"
+                    )
                 )
                 trigger_val = (
                     cluster_utilization_pct
                     if trigger_metric == "utilization_pct"
-                    else (float(max_queue) if trigger_metric == "queue_depth" else avg_ewma_ms)
+                    else (
+                        float(max_queue)
+                        if trigger_metric == "queue_depth"
+                        else avg_ewma_ms
+                    )
                 )
 
-                new_node = await self.provisioner.provision_ephemeral_enclave(cluster_id)
+                new_node = await self.provisioner.provision_ephemeral_enclave(
+                    cluster_id
+                )
                 event = AutoscalingEvent(
                     event_id=f"evt_scaleup_{uuid.uuid4().hex[:8]}",
                     timestamp=time.time(),
@@ -312,7 +343,10 @@ class MeshLoadBalancerService:
         # 2. Scale-Down (Scale-to-Zero) Reaping Check:
         for encl in ephemeral_nodes:
             if encl.capacity.active_execution_slots == 0:
-                if encl.capacity.ephemeral_idle_seconds >= self.policy.scale_down_idle_seconds:
+                if (
+                    encl.capacity.ephemeral_idle_seconds
+                    >= self.policy.scale_down_idle_seconds
+                ):
                     await self.provisioner.terminate_ephemeral_enclave(encl.node_id)
                     event = AutoscalingEvent(
                         event_id=f"evt_scaledown_{uuid.uuid4().hex[:8]}",
@@ -338,18 +372,25 @@ class MeshLoadBalancerService:
 
         summary: dict[str, Any] = {
             "total_nodes": len(all_nodes),
-            "online_nodes": sum(1 for n in all_nodes if n.status == MeshNodeStatus.ONLINE),
+            "online_nodes": sum(
+                1 for n in all_nodes if n.status == MeshNodeStatus.ONLINE
+            ),
             "ephemeral_nodes": sum(1 for n in all_nodes if n.capacity.is_ephemeral),
             "clusters": {},
         }
 
         for cid, nodes in clusters.items():
             online_c_nodes = [n for n in nodes if n.status == MeshNodeStatus.ONLINE]
-            active_slots = sum(n.capacity.active_execution_slots for n in online_c_nodes)
-            max_slots = sum(max(1, n.capacity.max_execution_slots) for n in online_c_nodes)
+            active_slots = sum(
+                n.capacity.active_execution_slots for n in online_c_nodes
+            )
+            max_slots = sum(
+                max(1, n.capacity.max_execution_slots) for n in online_c_nodes
+            )
             utilization = (active_slots / max(1, max_slots)) * 100.0
             avg_ewma = (
-                sum(n.capacity.ewma_latency_ms for n in online_c_nodes) / len(online_c_nodes)
+                sum(n.capacity.ewma_latency_ms for n in online_c_nodes)
+                / len(online_c_nodes)
                 if online_c_nodes
                 else 0.0
             )

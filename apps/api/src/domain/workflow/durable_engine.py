@@ -45,7 +45,9 @@ class DurableWorkflowEngine:
     def match_event(self, event: WorkflowEventDispatch) -> list[WorkflowDefinition]:
         """Find all registered workflows that subscribe to an event."""
         workflow_names = self._event_routing.get(event.event_name, [])
-        return [self._workflows[name] for name in workflow_names if name in self._workflows]
+        return [
+            self._workflows[name] for name in workflow_names if name in self._workflows
+        ]
 
     def validate_tenant(self, tenant_id: str) -> None:
         """Validate tenant identifier integrity."""

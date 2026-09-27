@@ -44,8 +44,9 @@ from src.domain.abstractions.got_planner import (
 logger = logging.getLogger(__name__)
 
 
-
-def compute_ebbinghaus_retention(created_at: float, stability_days: float, current_time: float | None = None) -> float:
+def compute_ebbinghaus_retention(
+    created_at: float, stability_days: float, current_time: float | None = None
+) -> float:
     """Compute retention score R(t) = exp(-dt / S) where dt is in days."""
     now = current_time if current_time is not None else time.time()
     dt_days = max(0.0, (now - created_at) / 86400.0)
@@ -54,7 +55,9 @@ def compute_ebbinghaus_retention(created_at: float, stability_days: float, curre
     return round(max(0.0, min(1.0, retention)), 4)
 
 
-def score_thought_heuristics(query: str, content: str, parent_scores: list[float] | None = None) -> tuple[float, float, float, float]:
+def score_thought_heuristics(
+    query: str, content: str, parent_scores: list[float] | None = None
+) -> tuple[float, float, float, float]:
     """Compute authentic composite score S(v) = w_g*G + w_c*C + w_s*S.
 
     Returns:
@@ -75,14 +78,39 @@ def score_thought_heuristics(query: str, content: str, parent_scores: list[float
     grounding = min(1.0, grounding * 1.3)  # Scale boost for strong token alignment
 
     # 2. Coherence score: sentence structural depth and logical transition markers
-    connectors = ["therefore", "because", "furthermore", "consequently", "specifically", "however", "aggregating", "optimizing", "architecturally"]
+    connectors = [
+        "therefore",
+        "because",
+        "furthermore",
+        "consequently",
+        "specifically",
+        "however",
+        "aggregating",
+        "optimizing",
+        "architecturally",
+    ]
     conn_count = sum(1 for c in connectors if c in clean_content)
     word_count = len(content.split())
     length_quality = min(1.0, max(0.2, word_count / 30.0))
     coherence = min(1.0, 0.4 * length_quality + 0.6 * min(1.0, conn_count / 2.0))
 
     # 3. Constraint score: domain specificity (metrics, scalability, architecture terms)
-    domain_terms = ["latency", "throughput", "vector", "cache", "partition", "sharding", "consistency", "dag", "parallel", "concurrency", "distributed", "index", "memory", "retrieval"]
+    domain_terms = [
+        "latency",
+        "throughput",
+        "vector",
+        "cache",
+        "partition",
+        "sharding",
+        "consistency",
+        "dag",
+        "parallel",
+        "concurrency",
+        "distributed",
+        "index",
+        "memory",
+        "retrieval",
+    ]
     domain_count = sum(1 for d in domain_terms if d in clean_content)
     constraint = min(1.0, domain_count / 3.0)
 
@@ -90,10 +118,7 @@ def score_thought_heuristics(query: str, content: str, parent_scores: list[float
     parent_bias = sum(parent_scores) / len(parent_scores) if parent_scores else 0.5
 
     composite = (
-        0.40 * grounding +
-        0.30 * coherence +
-        0.20 * constraint +
-        0.10 * parent_bias
+        0.40 * grounding + 0.30 * coherence + 0.20 * constraint + 0.10 * parent_bias
     )
     composite = round(max(0.1, min(0.99, composite)), 4)
     return composite, round(grounding, 4), round(coherence, 4), round(constraint, 4)
@@ -110,16 +135,24 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         self._repo = repository
         self._llm = llm_provider
         self._graphs: dict[str, GoTGraph] = {}
-        self._memory_l1: dict[str, list[HierarchicalMemoryNode]] = collections.defaultdict(list)
-        self._memory_l2: dict[str, list[HierarchicalMemoryNode]] = collections.defaultdict(list)
-        self._memory_l3: dict[str, list[HierarchicalMemoryNode]] = collections.defaultdict(list)
+        self._memory_l1: dict[str, list[HierarchicalMemoryNode]] = (
+            collections.defaultdict(list)
+        )
+        self._memory_l2: dict[str, list[HierarchicalMemoryNode]] = (
+            collections.defaultdict(list)
+        )
+        self._memory_l3: dict[str, list[HierarchicalMemoryNode]] = (
+            collections.defaultdict(list)
+        )
 
     async def create_plan(self, tenant_id: str, request: GoTPlanRequest) -> GoTGraph:
         """Initialize a new GoT planning graph with root query node."""
         graph_id = f"got_plan_{uuid.uuid4().hex[:12]}"
         root_id = f"node_{uuid.uuid4().hex[:8]}"
 
-        score, g_score, c_score, s_score = score_thought_heuristics(request.query, request.query)
+        score, g_score, c_score, s_score = score_thought_heuristics(
+            request.query, request.query
+        )
 
         root_node = GoTThoughtNode(
             id=root_id,
@@ -197,7 +230,9 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                 logger.warning("Failed to load GoT graph from repo: %s", ex)
         return None
 
-    async def _generate_successors(self, graph: GoTGraph, parent_id: str, k: int) -> list[GoTThoughtNode]:
+    async def _generate_successors(
+        self, graph: GoTGraph, parent_id: str, k: int
+    ) -> list[GoTThoughtNode]:
         """Branch k successor thoughts from parent using dynamic LLM reasoning or fallback heuristics."""
         parent = graph.nodes.get(parent_id)
         if not parent:
@@ -211,6 +246,7 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                     ChatMessage,
                     InferenceRequest,
                 )
+
                 prompt = (
                     f"Objective: {graph.query}\n"
                     f"Current Reasoning Step: {parent.content}\n\n"
@@ -220,7 +256,10 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                 resp = await self._llm.generate(
                     InferenceRequest(
                         messages=[
-                            ChatMessage(role="system", content="You are a Graph-of-Thoughts reasoning planner. Output strictly valid JSON array."),
+                            ChatMessage(
+                                role="system",
+                                content="You are a Graph-of-Thoughts reasoning planner. Output strictly valid JSON array.",
+                            ),
                             ChatMessage(role="user", content=prompt),
                         ],
                         temperature=0.3,
@@ -235,28 +274,61 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                 parsed = json.loads(raw)
                 if isinstance(parsed, list):
                     for item in parsed[:k]:
-                        if isinstance(item, dict) and "title" in item and "description" in item:
-                            generated_hypotheses.append((str(item["title"]), str(item["description"]), 0.90))
+                        if (
+                            isinstance(item, dict)
+                            and "title" in item
+                            and "description" in item
+                        ):
+                            generated_hypotheses.append(
+                                (str(item["title"]), str(item["description"]), 0.90)
+                            )
             except Exception as ex:
-                logger.debug("LLM dynamic thought generation fallback to domain heuristics: %s", ex)
+                logger.debug(
+                    "LLM dynamic thought generation fallback to domain heuristics: %s",
+                    ex,
+                )
 
         if len(generated_hypotheses) < k:
             domain_hypotheses = [
-                ("Partitioning Strategy", "Horizontally partition dense vectors across sovereign nodes using consistent virtual-node hashing, reducing shard query scatter.", 0.88),
-                ("Speculative Caching", "Pre-warm high-probability embedding subspaces into L1 memory via spreading activation, slashing retrieval P95 latency.", 0.92),
-                ("Token Pruning", "Apply statistical entropy filtering to prune low-information tokens before cross-encoder reranking, reducing inference compute.", 0.84),
-                ("Consensus Reranking", "Execute asynchronous scatter-gather with dynamic reciprocal rank fusion across candidate shards for optimal accuracy.", 0.89),
-                ("Adaptive Fan-in", "Throttle concurrent thread workers dynamically based on EWMA queue latency, preventing resource starvation.", 0.81),
+                (
+                    "Partitioning Strategy",
+                    "Horizontally partition dense vectors across sovereign nodes using consistent virtual-node hashing, reducing shard query scatter.",
+                    0.88,
+                ),
+                (
+                    "Speculative Caching",
+                    "Pre-warm high-probability embedding subspaces into L1 memory via spreading activation, slashing retrieval P95 latency.",
+                    0.92,
+                ),
+                (
+                    "Token Pruning",
+                    "Apply statistical entropy filtering to prune low-information tokens before cross-encoder reranking, reducing inference compute.",
+                    0.84,
+                ),
+                (
+                    "Consensus Reranking",
+                    "Execute asynchronous scatter-gather with dynamic reciprocal rank fusion across candidate shards for optimal accuracy.",
+                    0.89,
+                ),
+                (
+                    "Adaptive Fan-in",
+                    "Throttle concurrent thread workers dynamically based on EWMA queue latency, preventing resource starvation.",
+                    0.81,
+                ),
             ]
             for i in range(k - len(generated_hypotheses)):
-                idx = (parent.iteration_depth + i + len(generated_hypotheses)) % len(domain_hypotheses)
+                idx = (parent.iteration_depth + i + len(generated_hypotheses)) % len(
+                    domain_hypotheses
+                )
                 generated_hypotheses.append(domain_hypotheses[idx])
 
         successors: list[GoTThoughtNode] = []
         for i, (hyp_title, hyp_desc, bias) in enumerate(generated_hypotheses):
             node_id = f"node_{uuid.uuid4().hex[:8]}"
             content = f"{hyp_title}: {hyp_desc} Specifically addressing: {graph.query}."
-            score, g_score, c_score, s_score = score_thought_heuristics(graph.query, content, [parent.score])
+            score, g_score, c_score, s_score = score_thought_heuristics(
+                graph.query, content, [parent.score]
+            )
             score = round(min(0.98, max(0.3, (score + bias) / 2.0)), 4)
 
             tokens = len(content.split()) * 3
@@ -283,22 +355,28 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             successors.append(succ)
             graph.nodes[node_id] = succ
             parent.child_ids.append(node_id)
-            graph.edges.append(GoTEdge(
-                source_id=parent_id,
-                target_id=node_id,
-                edge_type=GoTEdgeType.DERIVATION,
-                weight=score,
-            ))
+            graph.edges.append(
+                GoTEdge(
+                    source_id=parent_id,
+                    target_id=node_id,
+                    edge_type=GoTEdgeType.DERIVATION,
+                    weight=score,
+                )
+            )
             graph.total_tokens += tokens
             graph.total_latency_ms += latency
 
         return successors
 
-    async def step_plan(self, tenant_id: str, graph_id: str, request: GoTStepRequest) -> GoTGraph:
+    async def step_plan(
+        self, tenant_id: str, graph_id: str, request: GoTStepRequest
+    ) -> GoTGraph:
         """Execute a single graph transformation step (generate/refine/score/prune)."""
         graph = await self.get_plan(tenant_id, graph_id)
         if not graph:
-            raise ValueError(f"GoT Plan '{graph_id}' not found for tenant '{tenant_id}'.")
+            raise ValueError(
+                f"GoT Plan '{graph_id}' not found for tenant '{tenant_id}'."
+            )
 
         action = request.action.lower()
         target_ids = request.target_node_ids or [graph.root_id]
@@ -306,7 +384,10 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         if action == "generate":
             k = int(request.parameters.get("branching_factor", 3))
             for target_id in target_ids:
-                if target_id in graph.nodes and graph.nodes[target_id].status != GoTThoughtStatus.PRUNED:
+                if (
+                    target_id in graph.nodes
+                    and graph.nodes[target_id].status != GoTThoughtStatus.PRUNED
+                ):
                     await self._generate_successors(graph, target_id, k)
 
         elif action == "prune":
@@ -321,7 +402,9 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                 if target and target.status != GoTThoughtStatus.PRUNED:
                     refined_id = f"node_{uuid.uuid4().hex[:8]}"
                     refined_content = f"Refined & Verified: {target.content} Consequently validated against multi-tenant memory constraints."
-                    score, g, c, s = score_thought_heuristics(graph.query, refined_content, [target.score])
+                    score, g, c, s = score_thought_heuristics(
+                        graph.query, refined_content, [target.score]
+                    )
                     score = min(0.99, max(target.score, score + 0.05))
 
                     refined_node = GoTThoughtNode(
@@ -343,12 +426,14 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                     )
                     graph.nodes[refined_id] = refined_node
                     target.child_ids.append(refined_id)
-                    graph.edges.append(GoTEdge(
-                        source_id=target_id,
-                        target_id=refined_id,
-                        edge_type=GoTEdgeType.REFINEMENT,
-                        weight=score,
-                    ))
+                    graph.edges.append(
+                        GoTEdge(
+                            source_id=target_id,
+                            target_id=refined_id,
+                            edge_type=GoTEdgeType.REFINEMENT,
+                            weight=score,
+                        )
+                    )
                     graph.total_tokens += refined_node.token_cost
                     graph.total_latency_ms += refined_node.latency_ms
 
@@ -363,19 +448,30 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                 logger.warning("Failed to persist GoT graph on step: %s", ex)
         return graph
 
-    async def aggregate_thoughts(self, tenant_id: str, graph_id: str, request: GoTAggregateRequest) -> GoTGraph:
+    async def aggregate_thoughts(
+        self, tenant_id: str, graph_id: str, request: GoTAggregateRequest
+    ) -> GoTGraph:
         """Combine multiple independent thought vertices into a single synthesis vertex."""
         graph = await self.get_plan(tenant_id, graph_id)
         if not graph:
-            raise ValueError(f"GoT Plan '{graph_id}' not found for tenant '{tenant_id}'.")
+            raise ValueError(
+                f"GoT Plan '{graph_id}' not found for tenant '{tenant_id}'."
+            )
 
-        sources = [graph.nodes[nid] for nid in request.source_node_ids if nid in graph.nodes]
+        sources = [
+            graph.nodes[nid] for nid in request.source_node_ids if nid in graph.nodes
+        ]
         if len(sources) < 2:
-            raise ValueError(f"Aggregation requires at least 2 existing vertices; found {len(sources)}.")
+            raise ValueError(
+                f"Aggregation requires at least 2 existing vertices; found {len(sources)}."
+            )
 
         agg_id = f"node_agg_{uuid.uuid4().hex[:8]}"
         combined_points = " ; ".join(s.content for s in sources)
-        synthesis_prompt = request.synthesis_prompt or f"Synthesize parallel insights across {len(sources)} branches."
+        synthesis_prompt = (
+            request.synthesis_prompt
+            or f"Synthesize parallel insights across {len(sources)} branches."
+        )
         synthesis_content = (
             f"Consolidated Synthesis: By aggregating parallel findings [{combined_points}], "
             f"the optimal architecture achieves balanced throughput and sublinear query latency. "
@@ -383,7 +479,9 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         )
 
         parent_scores = [s.score for s in sources]
-        score, g, c, s = score_thought_heuristics(graph.query, synthesis_content, parent_scores)
+        score, g, c, s = score_thought_heuristics(
+            graph.query, synthesis_content, parent_scores
+        )
         # Aggregation provides synergy boost
         score = min(0.99, max(max(parent_scores), score + 0.04))
 
@@ -413,12 +511,14 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         graph.nodes[agg_id] = agg_node
         for src in sources:
             src.child_ids.append(agg_id)
-            graph.edges.append(GoTEdge(
-                source_id=src.id,
-                target_id=agg_id,
-                edge_type=GoTEdgeType.AGGREGATION,
-                weight=score,
-            ))
+            graph.edges.append(
+                GoTEdge(
+                    source_id=src.id,
+                    target_id=agg_id,
+                    edge_type=GoTEdgeType.AGGREGATION,
+                    weight=score,
+                )
+            )
 
         graph.total_tokens += tokens
         graph.total_latency_ms += latency
@@ -452,7 +552,9 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
                         queue.append(child_id)
 
         # Dynamic programming for highest scoring path
-        dp_score: dict[str, float] = {nid: graph.nodes[nid].score for nid in graph.nodes}
+        dp_score: dict[str, float] = {
+            nid: graph.nodes[nid].score for nid in graph.nodes
+        }
         predecessor: dict[str, str | None] = dict.fromkeys(graph.nodes)
 
         for u in topo_order:
@@ -477,7 +579,7 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
 
         # Update optimal path flags
         for node in graph.nodes.values():
-            node.is_optimal_path = (node.id in path)
+            node.is_optimal_path = node.id in path
 
         graph.optimal_path = path
         best_score = max((graph.nodes[nid].score for nid in path), default=0.0)
@@ -505,7 +607,9 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             if succ.score < 0.45:
                 succ.status = GoTThoughtStatus.PRUNED
 
-        active_successors = [s for s in successors if s.status != GoTThoughtStatus.PRUNED]
+        active_successors = [
+            s for s in successors if s.status != GoTThoughtStatus.PRUNED
+        ]
 
         # Step 3: Aggregate top 2 active branches
         if len(active_successors) >= 2:
@@ -554,9 +658,15 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
 
         all_nodes = l1 + l2 + l3
         for node in all_nodes:
-            node.retention_score = compute_ebbinghaus_retention(node.created_at, node.stability_days, now)
+            node.retention_score = compute_ebbinghaus_retention(
+                node.created_at, node.stability_days, now
+            )
 
-        avg_ret = sum(n.retention_score for n in all_nodes) / len(all_nodes) if all_nodes else 1.0
+        avg_ret = (
+            sum(n.retention_score for n in all_nodes) / len(all_nodes)
+            if all_nodes
+            else 1.0
+        )
 
         return HierarchicalMemoryView(
             tenant_id=tenant_id,
@@ -567,13 +677,17 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             average_retention=round(avg_ret, 4),
         )
 
-    async def distill_graph(self, tenant_id: str, request: DistillationRequest) -> DistillationResult:
+    async def distill_graph(
+        self, tenant_id: str, request: DistillationRequest
+    ) -> DistillationResult:
         """Distill high-scoring GoT reasoning graph into long-term hierarchical memory."""
         graph = await self.get_plan(tenant_id, request.graph_id)
         if not graph:
             raise ValueError(f"Graph '{request.graph_id}' not found for distillation.")
 
-        optimal_thoughts = [graph.nodes[nid] for nid in graph.optimal_path if nid in graph.nodes]
+        optimal_thoughts = [
+            graph.nodes[nid] for nid in graph.optimal_path if nid in graph.nodes
+        ]
         summary = " -> ".join(t.content for t in optimal_thoughts)
         distilled_id = f"mem_l3_{uuid.uuid4().hex[:8]}"
         title = f"Distilled Rule: {graph.query[:45]}"
@@ -636,7 +750,7 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
         layer1_nodes: list[GoTThoughtNode] = []
         for i in range(request.branching_factor):
             nid = f"sim_node_l1_{i}"
-            content = f"Branch {i+1}: Evaluate memory tier partitioning and token compression heuristics for: {request.query}."
+            content = f"Branch {i + 1}: Evaluate memory tier partitioning and token compression heuristics for: {request.query}."
             sc, g, c, s = score_thought_heuristics(request.query, content, [root_score])
             # Induce slight variance across branches
             sc = round(min(0.95, max(0.35, sc + (0.05 * (i - 1)))), 4)
@@ -644,10 +758,12 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             node = GoTThoughtNode(
                 id=nid,
                 tenant_id="simulation_tenant",
-                prompt=f"Branch {i+1}",
+                prompt=f"Branch {i + 1}",
                 content=content,
                 thought_type=GoTThoughtType.GENERATION,
-                status=GoTThoughtStatus.SCORED if sc >= request.pruning_threshold else GoTThoughtStatus.PRUNED,
+                status=GoTThoughtStatus.SCORED
+                if sc >= request.pruning_threshold
+                else GoTThoughtStatus.PRUNED,
                 parent_ids=[root_id],
                 child_ids=[],
                 score=sc,
@@ -665,15 +781,24 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
 
             nodes[nid] = node
             root.child_ids.append(nid)
-            edges.append(GoTEdge(source_id=root_id, target_id=nid, edge_type=GoTEdgeType.DERIVATION, weight=sc))
+            edges.append(
+                GoTEdge(
+                    source_id=root_id,
+                    target_id=nid,
+                    edge_type=GoTEdgeType.DERIVATION,
+                    weight=sc,
+                )
+            )
 
         # Layer 2: Aggregation of qualifying branches (fanin)
-        qualifying = layer1_nodes[:request.aggregation_fanin]
+        qualifying = layer1_nodes[: request.aggregation_fanin]
         agg_id = "sim_node_agg"
         if len(qualifying) >= 2:
             aggregations_count += 1
             agg_content = f"Consolidated Synthesis: Merging parallel branches [{', '.join(q.id for q in qualifying)}] yields optimal low-latency memory partitioning."
-            sc, g, c, s = score_thought_heuristics(request.query, agg_content, [q.score for q in qualifying])
+            sc, g, c, s = score_thought_heuristics(
+                request.query, agg_content, [q.score for q in qualifying]
+            )
             sc = round(min(0.98, max(max(q.score for q in qualifying), sc + 0.06)), 4)
 
             agg_node = GoTThoughtNode(
@@ -696,7 +821,14 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             nodes[agg_id] = agg_node
             for q in qualifying:
                 q.child_ids.append(agg_id)
-                edges.append(GoTEdge(source_id=q.id, target_id=agg_id, edge_type=GoTEdgeType.AGGREGATION, weight=sc))
+                edges.append(
+                    GoTEdge(
+                        source_id=q.id,
+                        target_id=agg_id,
+                        edge_type=GoTEdgeType.AGGREGATION,
+                        weight=sc,
+                    )
+                )
 
             # Terminal refinement from aggregation
             term_id = "sim_node_terminal"
@@ -723,7 +855,14 @@ class GoTPlannerAdapter(GoTPlannerProtocol):
             )
             nodes[term_id] = term_node
             agg_node.child_ids.append(term_id)
-            edges.append(GoTEdge(source_id=agg_id, target_id=term_id, edge_type=GoTEdgeType.CONVERGENCE, weight=term_sc))
+            edges.append(
+                GoTEdge(
+                    source_id=agg_id,
+                    target_id=term_id,
+                    edge_type=GoTEdgeType.CONVERGENCE,
+                    weight=term_sc,
+                )
+            )
 
             optimal_path = [root_id, qualifying[0].id, agg_id, term_id]
         else:

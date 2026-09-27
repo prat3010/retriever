@@ -6,9 +6,15 @@ from src.domain.abstractions.experiment import VariantConfig
 
 
 class CreateExperimentRequest(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="Name of the experiment.")
-    description: str = Field(default="", max_length=1000, description="Optional experiment hypothesis/notes.")
-    variants: list[VariantConfig] = Field(..., min_length=1, description="List of experiment variants.")
+    name: str = Field(
+        ..., min_length=1, max_length=255, description="Name of the experiment."
+    )
+    description: str = Field(
+        default="", max_length=1000, description="Optional experiment hypothesis/notes."
+    )
+    variants: list[VariantConfig] = Field(
+        ..., min_length=1, description="List of experiment variants."
+    )
 
 
 class UpdateExperimentRequest(BaseModel):
@@ -18,7 +24,9 @@ class UpdateExperimentRequest(BaseModel):
 
 
 class UpdateExperimentStatusRequest(BaseModel):
-    status: Literal["draft", "active", "paused", "completed"] = Field(..., description="Target lifecycle status.")
+    status: Literal["draft", "active", "paused", "completed"] = Field(
+        ..., description="Target lifecycle status."
+    )
 
 
 class VariantMetricItem(BaseModel):

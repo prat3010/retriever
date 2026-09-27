@@ -19,20 +19,28 @@ class VisionParserAdapter(BaseSchematicExtractor):
     def __init__(self, extractor: DomainSchematicExtractor | None = None) -> None:
         self.extractor = extractor or DomainSchematicExtractor()
 
-    def _probe_image_dimensions(self, file_content: bytes, mime_type: str) -> tuple[float, float]:
+    def _probe_image_dimensions(
+        self, file_content: bytes, mime_type: str
+    ) -> tuple[float, float]:
         """Extract intrinsic pixel dimensions from raw image binary headers."""
         if len(file_content) < 24:
             return 1920.0, 1080.0
 
         try:
             # 1. PNG Header (IHDR chunk at offset 16)
-            if file_content.startswith(b"\x89PNG\r\n\x1a\n") and len(file_content) >= 24:
+            if (
+                file_content.startswith(b"\x89PNG\r\n\x1a\n")
+                and len(file_content) >= 24
+            ):
                 w, h = struct.unpack(">II", file_content[16:24])
                 if w > 0 and h > 0:
                     return float(w), float(h)
 
             # 2. GIF Header
-            if file_content.startswith((b"GIF87a", b"GIF89a")) and len(file_content) >= 10:
+            if (
+                file_content.startswith((b"GIF87a", b"GIF89a"))
+                and len(file_content) >= 10
+            ):
                 w, h = struct.unpack("<HH", file_content[6:10])
                 if w > 0 and h > 0:
                     return float(w), float(h)
@@ -42,20 +50,22 @@ class VisionParserAdapter(BaseSchematicExtractor):
                 idx = 2
                 length = len(file_content)
                 while idx < length - 8:
-                    marker, = struct.unpack(">H", file_content[idx:idx + 2])
+                    (marker,) = struct.unpack(">H", file_content[idx : idx + 2])
                     idx += 2
                     if marker in {0xFFC0, 0xFFC2}:  # Baseline / Progressive SOF
-                        seg_len, = struct.unpack(">H", file_content[idx:idx + 2])
-                        h, w = struct.unpack(">HH", file_content[idx + 3:idx + 7])
+                        (seg_len,) = struct.unpack(">H", file_content[idx : idx + 2])
+                        h, w = struct.unpack(">HH", file_content[idx + 3 : idx + 7])
                         if w > 0 and h > 0:
                             return float(w), float(h)
                     elif 0xFFD0 <= marker <= 0xFFD9 or marker == 0xFF01:
                         pass
                     else:
-                        seg_len, = struct.unpack(">H", file_content[idx:idx + 2])
+                        (seg_len,) = struct.unpack(">H", file_content[idx : idx + 2])
                         idx += seg_len
         except Exception as exc:
-            logger.debug(f"Binary image dimension probe fallback to default canvas: {exc}")
+            logger.debug(
+                f"Binary image dimension probe fallback to default canvas: {exc}"
+            )
 
         return 1920.0, 1080.0
 
@@ -66,10 +76,14 @@ class VisionParserAdapter(BaseSchematicExtractor):
         mime_type: str = "image/png",
     ) -> SchematicDiagram:
         """Extract structured schematic blueprint from image bytes or SVG vectors."""
-        diagram = await self.extractor.extract_schematic(file_content, filename, mime_type)
+        diagram = await self.extractor.extract_schematic(
+            file_content, filename, mime_type
+        )
 
         # Update dimensions from binary image headers if default
-        if not filename.lower().endswith(".svg") and not file_content.strip().startswith(b"<svg"):
+        if not filename.lower().endswith(
+            ".svg"
+        ) and not file_content.strip().startswith(b"<svg"):
             w, h = self._probe_image_dimensions(file_content, mime_type)
             diagram.width = w
             diagram.height = h
@@ -83,4 +97,6 @@ class VisionParserAdapter(BaseSchematicExtractor):
         document_id: str | None = None,
     ) -> list[EntityTriple]:
         """Delegate triple extraction to domain engine."""
-        return self.extractor.extract_triples_from_diagram(diagram, tenant_id, document_id)
+        return self.extractor.extract_triples_from_diagram(
+            diagram, tenant_id, document_id
+        )

@@ -84,11 +84,17 @@ class CommunitySummarizer(BaseCommunitySummarizer):
         hub_str = ", ".join(top_hubs) if top_hubs else "N/A"
 
         pred_lines = []
-        for pred, rels in sorted(predicate_groups.items(), key=lambda x: len(x[1]), reverse=True)[:4]:
+        for pred, rels in sorted(
+            predicate_groups.items(), key=lambda x: len(x[1]), reverse=True
+        )[:4]:
             sample_rels = ", ".join(rels[:3])
             pred_lines.append(f"- **{pred}** ({len(rels)} links): {sample_rels}")
 
-        pred_summary = "\n".join(pred_lines) if pred_lines else "- No specific predicate groupings."
+        pred_summary = (
+            "\n".join(pred_lines)
+            if pred_lines
+            else "- No specific predicate groupings."
+        )
 
         summary = (
             f"### {community.title} (Level {community.level})\n"

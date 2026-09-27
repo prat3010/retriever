@@ -57,15 +57,15 @@ def test_serverless_domain_hexagonal_boundary() -> None:
         if isinstance(node, ast.Import):
             for name in node.names:
                 root_module = name.name.split(".")[0]
-                assert (
-                    root_module not in forbidden
-                ), f"Hexagonal boundary violation: {root_module} imported in domain"
+                assert root_module not in forbidden, (
+                    f"Hexagonal boundary violation: {root_module} imported in domain"
+                )
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 root_module = node.module.split(".")[0]
-                assert (
-                    root_module not in forbidden
-                ), f"Hexagonal boundary violation: {root_module} imported in domain"
+                assert root_module not in forbidden, (
+                    f"Hexagonal boundary violation: {root_module} imported in domain"
+                )
 
 
 # ── 2. Serverless Client Adapter Tests ──────────────────────────────────────
@@ -275,9 +275,7 @@ async def test_gateway_router_serverless_dispatch_and_cascade() -> None:
     req = InferenceRequest(
         messages=[ChatMessage(role="user", content="Test gateway")],
     )
-    resp = await gw.generate(
-        req, configuration={"model": "modal/vllm-llama-3.1-8b"}
-    )
+    resp = await gw.generate(req, configuration={"model": "modal/vllm-llama-3.1-8b"})
     assert "Serverless GPU response" in resp.content
 
 

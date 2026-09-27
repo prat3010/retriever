@@ -58,9 +58,7 @@ def test_reconcile_stalled_dispatches_indexing(
     mock_engine.begin.return_value = mock_ctx
 
     mock_result = MagicMock()
-    mock_result.fetchall.return_value = [
-        (doc_id, tenant_id, "/path", "INDEXING")
-    ]
+    mock_result.fetchall.return_value = [(doc_id, tenant_id, "/path", "INDEXING")]
     mock_conn.execute.return_value = mock_result
 
     reconcile_stalled()
@@ -104,11 +102,7 @@ def test_cleanup_expired_data_no_ttl_skips(mock_get_engine) -> None:
     from workers.src.tasks import cleanup_expired_data
 
     tenant_id = str(uuid.uuid4())
-    config_dict = {
-        "security_settings": {
-            "data_retention_ttl_days": None
-        }
-    }
+    config_dict = {"security_settings": {"data_retention_ttl_days": None}}
 
     mock_conn = AsyncMock()
     mock_engine = MagicMock()
@@ -126,7 +120,8 @@ def test_cleanup_expired_data_no_ttl_skips(mock_get_engine) -> None:
     cleanup_expired_data()
 
     delete_calls = [
-        call for call in mock_conn.execute.call_args_list
+        call
+        for call in mock_conn.execute.call_args_list
         if hasattr(call[0][0], "text") and "DELETE FROM" in call[0][0].text
     ]
     assert len(delete_calls) == 0
@@ -155,7 +150,8 @@ def test_cleanup_expired_data_missing_security_settings(mock_get_engine) -> None
     cleanup_expired_data()
 
     delete_calls = [
-        call for call in mock_conn.execute.call_args_list
+        call
+        for call in mock_conn.execute.call_args_list
         if hasattr(call[0][0], "text") and "DELETE FROM" in call[0][0].text
     ]
     assert len(delete_calls) == 0
@@ -183,7 +179,8 @@ def test_cleanup_expired_data_malformed_config(mock_get_engine) -> None:
     cleanup_expired_data()
 
     delete_calls = [
-        call for call in mock_conn.execute.call_args_list
+        call
+        for call in mock_conn.execute.call_args_list
         if hasattr(call[0][0], "text") and "DELETE FROM" in call[0][0].text
     ]
     assert len(delete_calls) == 0
@@ -195,11 +192,7 @@ def test_cleanup_expired_data_continues_on_error(mock_get_engine) -> None:
 
     good_tenant = str(uuid.uuid4())
     bad_tenant = str(uuid.uuid4())
-    good_config = {
-        "security_settings": {
-            "data_retention_ttl_days": 10
-        }
-    }
+    good_config = {"security_settings": {"data_retention_ttl_days": 10}}
 
     mock_conn = AsyncMock()
     mock_engine = MagicMock()
@@ -220,7 +213,8 @@ def test_cleanup_expired_data_continues_on_error(mock_get_engine) -> None:
     cleanup_expired_data()
 
     delete_calls = [
-        call for call in mock_conn.execute.call_args_list
+        call
+        for call in mock_conn.execute.call_args_list
         if hasattr(call[0][0], "text") and "DELETE FROM" in call[0][0].text
     ]
     assert len(delete_calls) == 2

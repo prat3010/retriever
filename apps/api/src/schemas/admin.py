@@ -6,9 +6,14 @@ class VerifyAdminKeyResponse(BaseModel):
 
 
 class ValidateKeyRequest(BaseModel):
-    api_key: str = Field(default="", description="API key to validate (falls back to server key if empty)")
+    api_key: str = Field(
+        default="",
+        description="API key to validate (falls back to server key if empty)",
+    )
     base_url: str = Field(default="", description="Custom API base URL")
-    provider: str = Field(..., description="Provider name: 'openai', 'openrouter', or 'gemini'")
+    provider: str = Field(
+        ..., description="Provider name: 'openai', 'openrouter', or 'gemini'"
+    )
     model: str = Field(default="openai/gpt-4o", description="Model name to ping")
 
 

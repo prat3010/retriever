@@ -63,7 +63,9 @@ def test_kahn_topological_sort_diamond_graph(compiler: DAGWorkflowCompiler):
         DAGEdge(id="e3", source="B", target="D"),
         DAGEdge(id="e4", source="C", target="D"),
     ]
-    graph = WorkflowDAGGraph(id="diamond_dag", name="Diamond DAG", nodes=nodes, edges=edges)
+    graph = WorkflowDAGGraph(
+        id="diamond_dag", name="Diamond DAG", nodes=nodes, edges=edges
+    )
 
     result = compiler.compile(graph)
     assert result.is_valid is True
@@ -95,7 +97,9 @@ def test_kahn_cycle_detection(compiler: DAGWorkflowCompiler):
         DAGEdge(id="e2", source="n2", target="n3"),
         DAGEdge(id="e3", source="n3", target="n1"),
     ]
-    cyclic_graph = WorkflowDAGGraph(id="cycle_dag", name="Cyclic DAG", nodes=nodes, edges=edges)
+    cyclic_graph = WorkflowDAGGraph(
+        id="cycle_dag", name="Cyclic DAG", nodes=nodes, edges=edges
+    )
 
     with pytest.raises(CyclicWorkflowError, match="Cyclic dependency detected"):
         compiler.compile(cyclic_graph, raise_on_error=True)
@@ -110,20 +114,28 @@ def test_kahn_cycle_detection(compiler: DAGWorkflowCompiler):
 def test_invalid_node_references_and_empty_graphs(compiler: DAGWorkflowCompiler):
     """Verify invalid node references and empty graphs trigger errors."""
     empty_graph = WorkflowDAGGraph(id="empty", name="Empty")
-    with pytest.raises(InvalidWorkflowGraphError, match="must contain at least one node"):
+    with pytest.raises(
+        InvalidWorkflowGraphError, match="must contain at least one node"
+    ):
         compiler.compile(empty_graph, raise_on_error=True)
 
     # Invalid edge referencing ghost node
     nodes = [DAGNode(id="A", type=DAGNodeType.INPUT, title="Input A")]
     edges = [DAGEdge(id="e1", source="A", target="GHOST_NODE")]
-    bad_edge_graph = WorkflowDAGGraph(id="bad_edge", name="Bad Edge", nodes=nodes, edges=edges)
+    bad_edge_graph = WorkflowDAGGraph(
+        id="bad_edge", name="Bad Edge", nodes=nodes, edges=edges
+    )
 
-    with pytest.raises(InvalidWorkflowGraphError, match="references non-existent target node"):
+    with pytest.raises(
+        InvalidWorkflowGraphError, match="references non-existent target node"
+    ):
         compiler.compile(bad_edge_graph, raise_on_error=True)
 
 
 @pytest.mark.asyncio
-async def test_dag_executor_pipeline_with_cost_attribution(executor: DAGWorkflowExecutor):
+async def test_dag_executor_pipeline_with_cost_attribution(
+    executor: DAGWorkflowExecutor,
+):
     """Verify end-to-end execution of Legal Analyzer template with token cost attribution."""
     tpl = get_legal_document_analyzer_template()
     tenant_id = "tn_legal_corp_001"
@@ -199,10 +211,14 @@ def test_enterprise_templates_compilation_and_catalog(compiler: DAGWorkflowCompi
 async def test_tenant_isolation_enforcement(executor: DAGWorkflowExecutor):
     """Verify tenant isolation breach raises TenantIsolationViolationError."""
     tpl = get_legal_document_analyzer_template()
-    with pytest.raises(TenantIsolationViolationError, match="Tenant ID cannot be empty"):
+    with pytest.raises(
+        TenantIsolationViolationError, match="Tenant ID cannot be empty"
+    ):
         await executor.execute(tenant_id="", graph=tpl, initial_input={})
 
-    with pytest.raises(TenantIsolationViolationError, match="Tenant ID cannot be empty"):
+    with pytest.raises(
+        TenantIsolationViolationError, match="Tenant ID cannot be empty"
+    ):
         await executor.execute(tenant_id="   ", graph=tpl, initial_input={})
 
 
@@ -216,7 +232,14 @@ def test_hexagonal_architecture_dag_workflow():
         os.path.join(base_dir, "../src/domain/workflow/templates.py"),
     ]
 
-    forbidden_prefixes = ("src.adapters", "src.routers", "sqlalchemy", "fastapi", "httpx", "requests")
+    forbidden_prefixes = (
+        "src.adapters",
+        "src.routers",
+        "sqlalchemy",
+        "fastapi",
+        "httpx",
+        "requests",
+    )
 
     for filepath in files_to_check:
         with open(filepath) as f:
@@ -249,7 +272,9 @@ def test_dag_workflow_router_endpoints():
 
     with patch("src.config.settings.ADMIN_MASTER_KEY", "test_admin_key"):
         # 1. Get templates
-        resp = client.get("/v1/tenants/test_tenant/workflows/dag/templates", headers=headers)
+        resp = client.get(
+            "/v1/tenants/test_tenant/workflows/dag/templates", headers=headers
+        )
         assert resp.status_code == 200
         tpls = resp.json()
         assert len(tpls) == 4
@@ -279,7 +304,9 @@ def test_dag_workflow_router_endpoints():
             "/v1/tenants/test_tenant/workflows/dag/execute",
             json={
                 "graph": tpl_data,
-                "input_payload": {"query": "Analyze indemnity and compliance in agreement."},
+                "input_payload": {
+                    "query": "Analyze indemnity and compliance in agreement."
+                },
             },
             headers=headers,
         )
@@ -289,4 +316,3 @@ def test_dag_workflow_router_endpoints():
         assert exec_res["total_tokens"] > 0
         assert exec_res["total_cost_usd"] > 0.0
         assert len(exec_res["step_details"]) == len(tpl_data["nodes"])
-

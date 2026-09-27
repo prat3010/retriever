@@ -35,7 +35,9 @@ class PgGoTRepository(GoTRepositoryProtocol):
         try:
             tenant_uuid = UUID(graph.tenant_id)
         except (ValueError, TypeError):
-            logger.warning("Invalid tenant UUID '%s' for GoT graph save", graph.tenant_id)
+            logger.warning(
+                "Invalid tenant UUID '%s' for GoT graph save", graph.tenant_id
+            )
             return
 
         async with tenant_session(graph.tenant_id) as session:
@@ -62,13 +64,23 @@ class PgGoTRepository(GoTRepositoryProtocol):
                 existing_graph.optimal_path = graph.optimal_path
                 existing_graph.total_tokens = graph.total_tokens
                 existing_graph.total_latency_ms = graph.total_latency_ms
-                existing_graph.updated_at = datetime.fromtimestamp(graph.updated_at, tz=UTC)
+                existing_graph.updated_at = datetime.fromtimestamp(
+                    graph.updated_at, tz=UTC
+                )
 
             # 2. Upsert thought vertices
             for node in graph.nodes.values():
                 existing_thought = await session.get(GoTThoughtDb, node.id)
-                t_type = node.thought_type.value if hasattr(node.thought_type, "value") else str(node.thought_type)
-                t_status = node.status.value if hasattr(node.status, "value") else str(node.status)
+                t_type = (
+                    node.thought_type.value
+                    if hasattr(node.thought_type, "value")
+                    else str(node.thought_type)
+                )
+                t_status = (
+                    node.status.value
+                    if hasattr(node.status, "value")
+                    else str(node.status)
+                )
 
                 if not existing_thought:
                     db_thought = GoTThoughtDb(
@@ -171,7 +183,9 @@ class PgGoTRepository(GoTRepositoryProtocol):
                         GoTEdge(
                             source_id=pid,
                             target_id=node.id,
-                            edge_type=GoTEdgeType.AGGREGATION if len(node.parent_ids) > 1 else GoTEdgeType.DERIVATION,
+                            edge_type=GoTEdgeType.AGGREGATION
+                            if len(node.parent_ids) > 1
+                            else GoTEdgeType.DERIVATION,
                             weight=node.score,
                         )
                     )

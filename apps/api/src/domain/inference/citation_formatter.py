@@ -6,11 +6,17 @@ from typing import Any
 def format_citations(text: str, context_chunks: list[Any], template: str) -> str:
     chunk_map = {}
     for idx, c in enumerate(context_chunks):
-        chunk_id = getattr(c, "chunk_id", None) or (c.get("chunk_id") if isinstance(c, dict) else None)
+        chunk_id = getattr(c, "chunk_id", None) or (
+            c.get("chunk_id") if isinstance(c, dict) else None
+        )
         if not chunk_id:
             continue
 
-        meta = getattr(c, "metadata", None) or getattr(c, "meta_data", None) or (c.get("metadata") if isinstance(c, dict) else None)
+        meta = (
+            getattr(c, "metadata", None)
+            or getattr(c, "meta_data", None)
+            or (c.get("metadata") if isinstance(c, dict) else None)
+        )
         if isinstance(meta, str):
             try:
                 meta = json.loads(meta)

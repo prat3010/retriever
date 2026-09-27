@@ -48,7 +48,9 @@ def upgrade() -> None:
         "chat_sessions",
         ["session_id", "tenant_id"],
     )
-    op.drop_constraint("chat_messages_session_id_fkey", "chat_messages", type_="foreignkey")
+    op.drop_constraint(
+        "chat_messages_session_id_fkey", "chat_messages", type_="foreignkey"
+    )
     op.create_foreign_key(
         "fk_chat_messages_session_tenant",
         "chat_messages",
@@ -62,7 +64,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_chat_messages_tenant_id", table_name="chat_messages")
-    op.drop_constraint("fk_chat_messages_session_tenant", "chat_messages", type_="foreignkey")
+    op.drop_constraint(
+        "fk_chat_messages_session_tenant", "chat_messages", type_="foreignkey"
+    )
     op.create_foreign_key(
         "chat_messages_session_id_fkey",
         "chat_messages",
@@ -71,6 +75,10 @@ def downgrade() -> None:
         ["session_id"],
         ondelete="CASCADE",
     )
-    op.drop_constraint("uq_chat_sessions_session_tenant", "chat_sessions", type_="unique")
-    op.drop_constraint("fk_chat_messages_tenant_id_tenants", "chat_messages", type_="foreignkey")
+    op.drop_constraint(
+        "uq_chat_sessions_session_tenant", "chat_sessions", type_="unique"
+    )
+    op.drop_constraint(
+        "fk_chat_messages_tenant_id_tenants", "chat_messages", type_="foreignkey"
+    )
     op.drop_column("chat_messages", "tenant_id")

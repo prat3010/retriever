@@ -97,7 +97,9 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
         self._configs: dict[str, ContinuousTuningConfig] = {}
         self._preference_buffers: dict[str, list[PreferencePair]] = {}
         self._jobs: dict[str, dict[str, TuningJob]] = {}
-        self._adapter_history: dict[str, list[str]] = {}  # tenant_id -> list of adapter IDs
+        self._adapter_history: dict[
+            str, list[str]
+        ] = {}  # tenant_id -> list of adapter IDs
 
     def _get_or_create_config(self, tenant_id: str) -> ContinuousTuningConfig:
         if tenant_id not in self._configs:
@@ -114,14 +116,23 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
             self._adapter_history[tenant_id] = [f"lora_{tenant_id}_v1_baseline"]
         return self._configs[tenant_id]
 
-    def harvest_preference_pair(self, tenant_id: str, pair: PreferencePair) -> PreferencePair:
+    def harvest_preference_pair(
+        self, tenant_id: str, pair: PreferencePair
+    ) -> PreferencePair:
         """Record a preference pair into the tenant's buffer and check auto-trigger."""
         if tenant_id not in self._preference_buffers:
             self._preference_buffers[tenant_id] = []
 
         # Deduplicate by prompt if identical
         buffer = self._preference_buffers[tenant_id]
-        existing = next((p for p in buffer if p.prompt.strip().lower() == pair.prompt.strip().lower()), None)
+        existing = next(
+            (
+                p
+                for p in buffer
+                if p.prompt.strip().lower() == pair.prompt.strip().lower()
+            ),
+            None,
+        )
         if existing:
             # Update existing pair
             existing.winning_response = pair.winning_response
@@ -209,11 +220,19 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
             pi_ref_l = 0.50
 
             if objective == TuningObjective.DPO:
-                loss, _, _, margin = calculate_dpo_loss(beta, pi_theta_w, pi_ref_w, pi_theta_l, pi_ref_l)
-                odds_ratio = (pi_theta_w / (1.0 - pi_theta_w + 1e-7)) / (pi_theta_l / (1.0 - pi_theta_l + 1e-7) + 1e-7)
+                loss, _, _, margin = calculate_dpo_loss(
+                    beta, pi_theta_w, pi_ref_w, pi_theta_l, pi_ref_l
+                )
+                odds_ratio = (pi_theta_w / (1.0 - pi_theta_w + 1e-7)) / (
+                    pi_theta_l / (1.0 - pi_theta_l + 1e-7) + 1e-7
+                )
             else:
-                loss, _, _, odds_ratio = calculate_orpo_loss(lambda_val, pi_theta_w, pi_theta_l)
-                margin = beta * (math.log(pi_theta_w / pi_ref_w) - math.log(pi_theta_l / pi_ref_l))
+                loss, _, _, odds_ratio = calculate_orpo_loss(
+                    lambda_val, pi_theta_w, pi_theta_l
+                )
+                margin = beta * (
+                    math.log(pi_theta_w / pi_ref_w) - math.log(pi_theta_l / pi_ref_l)
+                )
 
             accuracy = 0.50 + 0.38 * progress
 
@@ -239,7 +258,9 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
             avg_reward_margin=final_step.reward_margin,
             validation_loss=final_step.train_loss,
             total_eval_pairs=max(int(dataset_size * hp.eval_split_ratio), 5),
-            recommendation="promote_to_active" if eval_passed else "reject_and_rollback",
+            recommendation="promote_to_active"
+            if eval_passed
+            else "reject_and_rollback",
         )
 
         job = TuningJob(
@@ -255,7 +276,9 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
             evaluation=eval_result,
             created_at=now,
             completed_at=datetime.now(UTC).isoformat(),
-            error_message=None if eval_passed else "Validation accuracy fell below 0.75 threshold",
+            error_message=None
+            if eval_passed
+            else "Validation accuracy fell below 0.75 threshold",
         )
 
         if tenant_id not in self._jobs:
@@ -290,13 +313,17 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
         if not job:
             raise ValueError(f"Tuning job {job_id} not found for tenant {tenant_id}")
         if job.status != TuningJobStatus.COMPLETED:
-            raise ValueError(f"Job {job_id} is in status '{job.status}' and cannot be promoted")
+            raise ValueError(
+                f"Job {job_id} is in status '{job.status}' and cannot be promoted"
+            )
 
         config = self._get_or_create_config(tenant_id)
         config.active_adapter_id = job.output_adapter_id
         return config
 
-    def rollback_adapter(self, tenant_id: str, target_adapter_id: str | None = None) -> ContinuousTuningConfig:
+    def rollback_adapter(
+        self, tenant_id: str, target_adapter_id: str | None = None
+    ) -> ContinuousTuningConfig:
         """Revert active adapter to previous version in tenant history."""
         history = self._adapter_history.get(tenant_id, [])
         config = self._get_or_create_config(tenant_id)
@@ -307,7 +334,11 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
 
         # Roll back to second-to-last adapter if available
         if len(history) >= 2:
-            current_idx = history.index(config.active_adapter_id) if config.active_adapter_id in history else -1
+            current_idx = (
+                history.index(config.active_adapter_id)
+                if config.active_adapter_id in history
+                else -1
+            )
             if current_idx > 0:
                 config.active_adapter_id = history[current_idx - 1]
             else:
@@ -328,8 +359,12 @@ class ContinuousTuningAdapter(ContinuousTuningPort):
         pi_ref_l: float = 0.50,
     ) -> TuningMathSimulationResult:
         """Calculate exact mathematical loss distributions for DPO and ORPO."""
-        dpo_loss, rew_w, rew_l, margin = calculate_dpo_loss(beta, pi_theta_w, pi_ref_w, pi_theta_l, pi_ref_l)
-        orpo_loss, odds_w, odds_l, odds_ratio = calculate_orpo_loss(lambda_orpo, pi_theta_w, pi_theta_l)
+        dpo_loss, rew_w, rew_l, margin = calculate_dpo_loss(
+            beta, pi_theta_w, pi_ref_w, pi_theta_l, pi_ref_l
+        )
+        orpo_loss, odds_w, odds_l, odds_ratio = calculate_orpo_loss(
+            lambda_orpo, pi_theta_w, pi_theta_l
+        )
 
         return TuningMathSimulationResult(
             prompt=prompt,

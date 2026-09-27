@@ -68,6 +68,7 @@ def test_gateway_abstractions_and_models():
 def test_cost_calculator_prefix_normalization():
     """Verify calculate_cost handles both prefixed and unprefixed models."""
     from src.domain.abstractions.config import DEFAULT_PRICING
+
     usage = Usage(input_tokens=1000, output_tokens=1000)
 
     # 1. Unprefixed model
@@ -88,7 +89,9 @@ async def test_gateway_router_catalog_and_probe():
     """Verify catalog listing and upstream provider probe."""
     mock_openai = MagicMock()
     mock_anthropic = MagicMock()
-    router = GatewayRouterAdapter(openai_adapter=mock_openai, anthropic_adapter=mock_anthropic)
+    router = GatewayRouterAdapter(
+        openai_adapter=mock_openai, anthropic_adapter=mock_anthropic
+    )
 
     models = router.list_available_models()
     assert len(models) >= len(CATALOG_MODELS)
@@ -108,7 +111,9 @@ async def test_gateway_router_cascade_fallback_on_failure():
     """Verify seamless cascade to fallback model when primary model fails."""
     mock_openai = MagicMock()
     mock_anthropic = MagicMock()
-    router = GatewayRouterAdapter(openai_adapter=mock_openai, anthropic_adapter=mock_anthropic)
+    router = GatewayRouterAdapter(
+        openai_adapter=mock_openai, anthropic_adapter=mock_anthropic
+    )
 
     # Simulate failing primary model and succeeding fallback model
     call_counts = {"attempts": 0}
@@ -171,9 +176,13 @@ async def test_gateway_router_cooldown_circuit_breaker():
 async def test_orchestrator_budget_block_action():
     """Verify InferenceOrchestrator raises BudgetExceededError when hard_limit_action is 'block'."""
     mock_llm = MagicMock()
-    mock_llm.generate = AsyncMock(return_value=InferenceResponse(content="ans", usage=Usage()))
+    mock_llm.generate = AsyncMock(
+        return_value=InferenceResponse(content="ans", usage=Usage())
+    )
     mock_prompt_builder = MagicMock()
-    mock_prompt_builder.build_messages = AsyncMock(return_value=[ChatMessage(role="user", content="hi")])
+    mock_prompt_builder.build_messages = AsyncMock(
+        return_value=[ChatMessage(role="user", content="hi")]
+    )
     mock_citation_validator = MagicMock()
     mock_citation_validator.get_invalid_citations = MagicMock(return_value=[])
     mock_session_repo = MagicMock()
@@ -184,7 +193,9 @@ async def test_orchestrator_budget_block_action():
 
     mock_budget_repo = MagicMock()
     # Monthly spend $120 exceeds budget $100
-    mock_budget_repo.get_tenant_spend = AsyncMock(return_value=(10.0, 120.0, {"gpt-4o": 120.0}))
+    mock_budget_repo.get_tenant_spend = AsyncMock(
+        return_value=(10.0, 120.0, {"gpt-4o": 120.0})
+    )
 
     orchestrator = InferenceOrchestrator(
         llm_provider=mock_llm,
@@ -220,9 +231,13 @@ async def test_orchestrator_budget_block_action():
 async def test_orchestrator_budget_downgrade_free_action():
     """Verify InferenceOrchestrator downgrades to local free model when budget is breached."""
     mock_llm = MagicMock()
-    mock_llm.generate = AsyncMock(return_value=InferenceResponse(content="ans", usage=Usage()))
+    mock_llm.generate = AsyncMock(
+        return_value=InferenceResponse(content="ans", usage=Usage())
+    )
     mock_prompt_builder = MagicMock()
-    mock_prompt_builder.build_messages = AsyncMock(return_value=[ChatMessage(role="user", content="hi")])
+    mock_prompt_builder.build_messages = AsyncMock(
+        return_value=[ChatMessage(role="user", content="hi")]
+    )
     mock_citation_validator = MagicMock()
     mock_citation_validator.get_invalid_citations = MagicMock(return_value=[])
     mock_session_repo = MagicMock()
@@ -299,8 +314,13 @@ async def test_gateway_api_endpoints():
         )
     )
 
-    with container.override("config_service", mock_config_service), container.override("budget_repo", mock_budget_repo):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    with (
+        container.override("config_service", mock_config_service),
+        container.override("budget_repo", mock_budget_repo),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
             # 1. List catalog models
             res_models = await client.get("/v1/gateway/models")
             assert res_models.status_code == 200
@@ -345,7 +365,9 @@ async def test_gateway_api_endpoints():
             )
             assert res_routes.status_code == 200
             routes_data = res_routes.json()
-            assert routes_data["gateway_settings"]["primary_model"] == "gemini-2.5-flash"
+            assert (
+                routes_data["gateway_settings"]["primary_model"] == "gemini-2.5-flash"
+            )
             assert routes_data["budget_settings"]["monthly_cost_budget"] == 50.0
 
             # 5. Get tenant virtual budget
@@ -369,4 +391,6 @@ def test_hexagonal_architecture_boundaries():
     source = inspect.getsource(gw_module)
     forbidden = ["fastapi", "sqlalchemy", "litellm", "openai", "anthropic", "asyncpg"]
     for word in forbidden:
-        assert f"import {word}" not in source, f"Hexagonal boundary violation: {word} found in domain abstractions!"
+        assert f"import {word}" not in source, (
+            f"Hexagonal boundary violation: {word} found in domain abstractions!"
+        )

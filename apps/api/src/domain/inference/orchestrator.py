@@ -42,7 +42,9 @@ SUMMARIZE_PROMPT = (
 )
 
 
-def _lookup_pricing(model: str, pricing: dict[str, ModelPricing]) -> ModelPricing | None:
+def _lookup_pricing(
+    model: str, pricing: dict[str, ModelPricing]
+) -> ModelPricing | None:
     return pricing.get(model)
 
 
@@ -70,8 +72,12 @@ class InferenceOrchestrator:
         self.notifier = notification_provider
         self.doc_repo = document_repository
         self.budget_repo = budget_repository
-        self._daily_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
-        self._monthly_costs: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        self._daily_costs: dict[str, dict[str, float]] = defaultdict(
+            lambda: defaultdict(float)
+        )
+        self._monthly_costs: dict[str, dict[str, float]] = defaultdict(
+            lambda: defaultdict(float)
+        )
         self._notified: set[str] = set()
 
     async def create_session(
@@ -87,14 +93,16 @@ class InferenceOrchestrator:
         return await self.session_repo.get_session(session_id, tenant_id)
 
     async def add_message(
-        self, tenant_id: str, session_id: str, message: ChatMessage, user_id: str | None = None
+        self,
+        tenant_id: str,
+        session_id: str,
+        message: ChatMessage,
+        user_id: str | None = None,
     ) -> None:
         """Persist a message to session history."""
         await self.session_repo.add_message(tenant_id, session_id, message, user_id)
 
-    async def get_history(
-        self, tenant_id: str, session_id: str
-    ) -> list[ChatMessage]:
+    async def get_history(self, tenant_id: str, session_id: str) -> list[ChatMessage]:
         """Retrieve session message history."""
         return await self.session_repo.get_messages(tenant_id, session_id)
 
@@ -116,15 +124,17 @@ class InferenceOrchestrator:
         conversation_text = "\n".join(f"{m.role}: {m.content}" for m in old)
         try:
             summary_resp = await self.llm.generate(
-                InferenceRequest(messages=[
-                    ChatMessage(role="system", content=SUMMARIZE_PROMPT),
-                    ChatMessage(role="user", content=conversation_text),
-                ]),
+                InferenceRequest(
+                    messages=[
+                        ChatMessage(role="system", content=SUMMARIZE_PROMPT),
+                        ChatMessage(role="user", content=conversation_text),
+                    ]
+                ),
                 config_dict,
             )
             summary_msg = ChatMessage(
                 role="system",
-                content=f"[Summary of previous conversation]: {summary_resp.content}"
+                content=f"[Summary of previous conversation]: {summary_resp.content}",
             )
             return [summary_msg] + rest
         except Exception:
@@ -146,7 +156,9 @@ class InferenceOrchestrator:
         if summarize_after > 0 and len(history) > summarize_after * 2:
             config_dict = model_config.model_dump()
             config_dict["model"] = model_config.default_model
-            history = await self._summarize_history(history, summarize_after, config_dict)
+            history = await self._summarize_history(
+                history, summarize_after, config_dict
+            )
 
         parent_map: dict[str, str] = {}
         if self.doc_repo:
@@ -157,7 +169,9 @@ class InferenceOrchestrator:
             ]
             if parent_ids:
                 try:
-                    parent_chunks = await self.doc_repo.get_chunks_by_ids(tenant_id, parent_ids)
+                    parent_chunks = await self.doc_repo.get_chunks_by_ids(
+                        tenant_id, parent_ids
+                    )
                     parent_map = {pc.chunk_id: pc.content for pc in parent_chunks}
                 except Exception:
                     pass
@@ -165,14 +179,20 @@ class InferenceOrchestrator:
         chunks_dict = []
         for c in context_chunks:
             p_id = c.metadata.get("parent_chunk_id") if c.metadata else None
-            content_to_use = parent_map.get(p_id, c.content) if (p_id and p_id in parent_map) else c.content
-            chunks_dict.append({
-                "chunk_id": c.chunk_id,
-                "document_id": c.document_id,
-                "content": content_to_use,
-                "score": c.score,
-                "metadata": c.metadata,
-            })
+            content_to_use = (
+                parent_map.get(p_id, c.content)
+                if (p_id and p_id in parent_map)
+                else c.content
+            )
+            chunks_dict.append(
+                {
+                    "chunk_id": c.chunk_id,
+                    "document_id": c.document_id,
+                    "content": content_to_use,
+                    "score": c.score,
+                    "metadata": c.metadata,
+                }
+            )
 
         self.citation_validator.set_valid_ids([c.chunk_id for c in context_chunks])
 
@@ -221,7 +241,9 @@ class InferenceOrchestrator:
 
         # Check current spend via budget_repo if available, or in-memory fallback
         if self.budget_repo:
-            daily_spend, monthly_spend, _ = await self.budget_repo.get_tenant_spend(tenant_id)
+            daily_spend, monthly_spend, _ = await self.budget_repo.get_tenant_spend(
+                tenant_id
+            )
         else:
             today = date.today().isoformat()
             this_month = date.today().strftime("%Y-%m")
@@ -246,9 +268,13 @@ class InferenceOrchestrator:
 
         if exceeded:
             if action == "block":
-                raise BudgetExceededError(tenant_id, current_val, budget_val, period=exceeded_period)
+                raise BudgetExceededError(
+                    tenant_id, current_val, budget_val, period=exceeded_period
+                )
             elif action == "downgrade_free_model":
-                fallback_model = getattr(budget_settings, "free_fallback_model", "ollama/qwen2.5:14b")
+                fallback_model = getattr(
+                    budget_settings, "free_fallback_model", "ollama/qwen2.5:14b"
+                )
                 config_dict["model"] = fallback_model
                 config_dict["_budget_downgraded"] = True
 
@@ -266,12 +292,14 @@ class InferenceOrchestrator:
         labels = {"tenant_id": tenant_id, "model": model_used}
         if role:
             labels["role"] = role
-        self.metrics.increment("TOKEN_CONSUMPTION", value=input_tokens, labels={
-            **labels, "type": "input"
-        })
-        self.metrics.increment("TOKEN_CONSUMPTION", value=output_tokens, labels={
-            **labels, "type": "output"
-        })
+        self.metrics.increment(
+            "TOKEN_CONSUMPTION", value=input_tokens, labels={**labels, "type": "input"}
+        )
+        self.metrics.increment(
+            "TOKEN_CONSUMPTION",
+            value=output_tokens,
+            labels={**labels, "type": "output"},
+        )
         self.metrics.increment("COST_SPEND", value=cost, labels=labels)
 
     async def _check_budget(
@@ -283,7 +311,9 @@ class InferenceOrchestrator:
         if not self.notifier:
             return
         daily_budget = getattr(budget, "daily_cost_budget", None) if budget else None
-        monthly_budget = getattr(budget, "monthly_cost_budget", None) if budget else None
+        monthly_budget = (
+            getattr(budget, "monthly_cost_budget", None) if budget else None
+        )
         if not daily_budget and not monthly_budget:
             return
 
@@ -357,7 +387,10 @@ class InferenceOrchestrator:
             tenant_id, session_id, ChatMessage(role="user", content=query), user_id
         )
         await self.session_repo.add_message(
-            tenant_id, session_id, ChatMessage(role="assistant", content=content), user_id
+            tenant_id,
+            session_id,
+            ChatMessage(role="assistant", content=content),
+            user_id,
         )
 
     async def generate(
@@ -377,7 +410,12 @@ class InferenceOrchestrator:
         start = time.monotonic()
 
         prompt_messages, model_config = await self._prepare_inference(
-            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
+            tenant_id,
+            session_id,
+            query,
+            context_chunks,
+            tenant_config,
+            system_prompt_name,
         )
 
         request = InferenceRequest(
@@ -390,12 +428,21 @@ class InferenceOrchestrator:
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
 
-        if hasattr(tenant_config, "gateway_settings") and tenant_config.gateway_settings:
+        if (
+            hasattr(tenant_config, "gateway_settings")
+            and tenant_config.gateway_settings
+        ):
             config_dict["primary_model"] = tenant_config.gateway_settings.primary_model
-            config_dict["fallback_models"] = tenant_config.gateway_settings.fallback_models
-            config_dict["cooldown_seconds"] = tenant_config.gateway_settings.cooldown_seconds
+            config_dict["fallback_models"] = (
+                tenant_config.gateway_settings.fallback_models
+            )
+            config_dict["cooldown_seconds"] = (
+                tenant_config.gateway_settings.cooldown_seconds
+            )
 
-        await self._preflight_budget_check(tenant_id, tenant_config.budget_settings, config_dict)
+        await self._preflight_budget_check(
+            tenant_id, tenant_config.budget_settings, config_dict
+        )
 
         response = await self.llm.generate(request, config_dict)
 
@@ -403,7 +450,9 @@ class InferenceOrchestrator:
         cost = calculate_cost(response.usage, model_used, model_config.pricing)
 
         if self.citation_validator.get_invalid_citations(response.content):
-            response.content = self.citation_validator.strip_invalid_citations(response.content)
+            response.content = self.citation_validator.strip_invalid_citations(
+                response.content
+            )
 
         self._emit_search_quality_metrics(tenant_id, context_chunks, response.content)
 
@@ -415,10 +464,31 @@ class InferenceOrchestrator:
             budget_downgraded=bool(config_dict.get("_budget_downgraded")),
         )
 
-        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost, role)
+        await self._record_metrics(
+            tenant_id,
+            model_used,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+            cost,
+            role,
+        )
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
-        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, notes, role, key_id)
-        await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
+        await self._log_inference(
+            tenant_id,
+            session_id,
+            user_id,
+            model_used,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+            elapsed,
+            cost,
+            notes,
+            role,
+            key_id,
+        )
+        await self._persist_messages(
+            tenant_id, session_id, query, response.content, user_id
+        )
         return response
 
     async def generate_speculative(
@@ -440,7 +510,12 @@ class InferenceOrchestrator:
         """
         start = time.monotonic()
         prompt_messages, model_config = await self._prepare_inference(
-            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
+            tenant_id,
+            session_id,
+            query,
+            context_chunks,
+            tenant_config,
+            system_prompt_name,
         )
 
         # Stage 1: Drafter pass (low token limit, fast output)
@@ -460,8 +535,13 @@ class InferenceOrchestrator:
 
         # Stage 2: Verifier pass (evaluates draft against original query & context)
         verifier_messages = prompt_messages + [
-            ChatMessage(role="assistant", content=f"[Candidate Draft]: {draft_content}"),
-            ChatMessage(role="user", content="Verify and finalize the candidate draft above against retrieved context. Fix any inaccuracies.")
+            ChatMessage(
+                role="assistant", content=f"[Candidate Draft]: {draft_content}"
+            ),
+            ChatMessage(
+                role="user",
+                content="Verify and finalize the candidate draft above against retrieved context. Fix any inaccuracies.",
+            ),
         ]
         verifier_request = InferenceRequest(
             messages=verifier_messages,
@@ -475,9 +555,30 @@ class InferenceOrchestrator:
         cost = calculate_cost(response.usage, model_used, model_config.pricing)
         elapsed = int((time.monotonic() - start) * 1000)
 
-        await self._record_metrics(tenant_id, model_used, response.usage.input_tokens, response.usage.output_tokens, cost, role)
-        await self._log_inference(tenant_id, session_id, user_id, model_used, response.usage.input_tokens, response.usage.output_tokens, elapsed, cost, "speculative_rag=true", role, key_id)
-        await self._persist_messages(tenant_id, session_id, query, response.content, user_id)
+        await self._record_metrics(
+            tenant_id,
+            model_used,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+            cost,
+            role,
+        )
+        await self._log_inference(
+            tenant_id,
+            session_id,
+            user_id,
+            model_used,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+            elapsed,
+            cost,
+            "speculative_rag=true",
+            role,
+            key_id,
+        )
+        await self._persist_messages(
+            tenant_id, session_id, query, response.content, user_id
+        )
 
         return response
 
@@ -493,13 +594,18 @@ class InferenceOrchestrator:
         if not cited:
             return
         from src.domain.evaluation.search_metrics import compute_search_metrics
+
         sq = compute_search_metrics(
             retrieved_chunk_ids=[c.chunk_id for c in context_chunks],
             relevant_chunk_ids=cited,
         )
-        self.metrics.observe("search_ndcg_at_10", sq.ndcg_at_10, {"tenant_id": tenant_id})
+        self.metrics.observe(
+            "search_ndcg_at_10", sq.ndcg_at_10, {"tenant_id": tenant_id}
+        )
         self.metrics.observe("search_mrr", sq.mrr, {"tenant_id": tenant_id})
-        self.metrics.observe("search_hit_rate_at_10", sq.hit_rate_at_10, {"tenant_id": tenant_id})
+        self.metrics.observe(
+            "search_hit_rate_at_10", sq.hit_rate_at_10, {"tenant_id": tenant_id}
+        )
 
     async def generate_stream(
         self,
@@ -518,7 +624,12 @@ class InferenceOrchestrator:
         start = time.monotonic()
 
         prompt_messages, model_config = await self._prepare_inference(
-            tenant_id, session_id, query, context_chunks, tenant_config, system_prompt_name
+            tenant_id,
+            session_id,
+            query,
+            context_chunks,
+            tenant_config,
+            system_prompt_name,
         )
 
         request = InferenceRequest(
@@ -535,12 +646,21 @@ class InferenceOrchestrator:
         config_dict = model_config.model_dump()
         config_dict["model"] = model_config.default_model
 
-        if hasattr(tenant_config, "gateway_settings") and tenant_config.gateway_settings:
+        if (
+            hasattr(tenant_config, "gateway_settings")
+            and tenant_config.gateway_settings
+        ):
             config_dict["primary_model"] = tenant_config.gateway_settings.primary_model
-            config_dict["fallback_models"] = tenant_config.gateway_settings.fallback_models
-            config_dict["cooldown_seconds"] = tenant_config.gateway_settings.cooldown_seconds
+            config_dict["fallback_models"] = (
+                tenant_config.gateway_settings.fallback_models
+            )
+            config_dict["cooldown_seconds"] = (
+                tenant_config.gateway_settings.cooldown_seconds
+            )
 
-        await self._preflight_budget_check(tenant_id, tenant_config.budget_settings, config_dict)
+        await self._preflight_budget_check(
+            tenant_id, tenant_config.budget_settings, config_dict
+        )
 
         async for chunk in self.llm.generate_stream(request, config_dict):
             if chunk.get("event") == "info":
@@ -571,7 +691,11 @@ class InferenceOrchestrator:
         await self._persist_messages(tenant_id, session_id, query, final_text, user_id)
 
         model_used = config_dict.get("model") or model_config.default_model
-        usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=input_tokens + output_tokens)
+        usage = Usage(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+        )
         cost = calculate_cost(usage, model_used, model_config.pricing)
         notes = self._build_notes(
             config_dict.get("_actual_provider"),
@@ -580,12 +704,30 @@ class InferenceOrchestrator:
             budget_downgraded=bool(config_dict.get("_budget_downgraded")),
         )
 
-        await self._record_metrics(tenant_id, model_used, input_tokens, output_tokens, cost, role)
+        await self._record_metrics(
+            tenant_id, model_used, input_tokens, output_tokens, cost, role
+        )
         await self._check_budget(tenant_id, cost, tenant_config.budget_settings)
-        await self._log_inference(tenant_id, session_id, user_id, model_used, input_tokens, output_tokens, elapsed, cost, notes, role, key_id)
+        await self._log_inference(
+            tenant_id,
+            session_id,
+            user_id,
+            model_used,
+            input_tokens,
+            output_tokens,
+            elapsed,
+            cost,
+            notes,
+            role,
+            key_id,
+        )
 
         yield {
             "event": "done",
-            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens},
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+            },
             "latency_ms": elapsed,
         }

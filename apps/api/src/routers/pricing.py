@@ -132,7 +132,9 @@ DEFAULT_PRICING = {
 
 
 class UpdatePricingRequest(BaseModel):
-    pricing: dict = Field(..., description="Complete pricing JSON structure for INR and USD plans")
+    pricing: dict = Field(
+        ..., description="Complete pricing JSON structure for INR and USD plans"
+    )
 
 
 @router.get(
@@ -144,7 +146,10 @@ async def get_pricing_config() -> dict:
     try:
         async with tenant_session(bypass_rls=True) as session:
             from sqlalchemy import select
-            stmt = select(ConfigurationDb).where(ConfigurationDb.key == "rag_pricing_packages")
+
+            stmt = select(ConfigurationDb).where(
+                ConfigurationDb.key == "rag_pricing_packages"
+            )
             res = await session.execute(stmt)
             config_entry = res.scalar_one_or_none()
             if config_entry and config_entry.value:
@@ -164,7 +169,10 @@ async def update_pricing_config(payload: UpdatePricingRequest) -> dict:
     """Update active SaaS pricing packages in database (Admin only)."""
     async with tenant_session(bypass_rls=True) as session:
         from sqlalchemy import select
-        stmt = select(ConfigurationDb).where(ConfigurationDb.key == "rag_pricing_packages")
+
+        stmt = select(ConfigurationDb).where(
+            ConfigurationDb.key == "rag_pricing_packages"
+        )
         res = await session.execute(stmt)
         config_entry = res.scalar_one_or_none()
 

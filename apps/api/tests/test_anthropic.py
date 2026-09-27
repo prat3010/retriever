@@ -39,12 +39,12 @@ async def test_anthropic_generate_response() -> None:
     """Verify generate handles synchronous response and token counts."""
     adapter = AnthropicLLMAdapter(api_key="test-key")
     adapter._client = MagicMock()
-    
+
     mock_msg_response = MagicMock()
     mock_msg_response.content = [MagicMock(text="Claude answer")]
     mock_msg_response.usage = MagicMock(input_tokens=10, output_tokens=20)
     mock_msg_response.stop_reason = "end_turn"
-    
+
     adapter._client.messages.create = AsyncMock(return_value=mock_msg_response)
 
     request = InferenceRequest(
@@ -55,14 +55,16 @@ async def test_anthropic_generate_response() -> None:
         temperature=0.5,
     )
 
-    response = await adapter.generate(request, {"model": "claude-3-5-sonnet", "api_key": "test-key"})
-    
+    response = await adapter.generate(
+        request, {"model": "claude-3-5-sonnet", "api_key": "test-key"}
+    )
+
     assert response.content == "Claude answer"
     assert response.usage.input_tokens == 10
     assert response.usage.output_tokens == 20
     assert response.usage.total_tokens == 30
     assert response.finish_reason == "end_turn"
-    
+
     # Assert client call params
     adapter._client.messages.create.assert_called_once_with(
         model="claude-3-5-sonnet",
@@ -114,8 +116,10 @@ async def test_routing_provider_delegation() -> None:
     """Verify RoutingLLMProvider routes call to the configured adapter."""
     mock_openai = AsyncMock(spec=OpenAILLMAdapter)
     mock_anthropic = AsyncMock(spec=AnthropicLLMAdapter)
-    
-    router = RoutingLLMProvider(openai_adapter=mock_openai, anthropic_adapter=mock_anthropic)
+
+    router = RoutingLLMProvider(
+        openai_adapter=mock_openai, anthropic_adapter=mock_anthropic
+    )
     request = InferenceRequest(messages=[])
 
     # Route to OpenAI

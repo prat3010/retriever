@@ -23,19 +23,31 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 def test_hexagonal_architecture_operator() -> None:
     """Verify domain/abstractions/operator.py has zero forbidden framework/adapter imports."""
-    target = REPO_ROOT / "apps" / "api" / "src" / "domain" / "abstractions" / "operator.py"
+    target = (
+        REPO_ROOT / "apps" / "api" / "src" / "domain" / "abstractions" / "operator.py"
+    )
     with open(target) as f:
         tree = ast.parse(f.read(), filename=str(target))
 
-    forbidden_prefixes = ("src.adapters", "apps.api.src.adapters", "src.routers", "sqlalchemy", "fastapi")
+    forbidden_prefixes = (
+        "src.adapters",
+        "apps.api.src.adapters",
+        "src.routers",
+        "sqlalchemy",
+        "fastapi",
+    )
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 for forbidden in forbidden_prefixes:
-                    assert not alias.name.startswith(forbidden), f"Forbidden import '{alias.name}' in {target}"
+                    assert not alias.name.startswith(forbidden), (
+                        f"Forbidden import '{alias.name}' in {target}"
+                    )
         elif isinstance(node, ast.ImportFrom) and node.module:
             for forbidden in forbidden_prefixes:
-                assert not node.module.startswith(forbidden), f"Forbidden import '{node.module}' in {target}"
+                assert not node.module.startswith(forbidden), (
+                    f"Forbidden import '{node.module}' in {target}"
+                )
 
 
 def test_retriever_cluster_spec_validation() -> None:
@@ -159,13 +171,22 @@ async def test_automated_and_manual_backup_jobs() -> None:
 
     spec = RetrieverClusterSpec(
         name="backup-cluster",
-        backup_policy=ClusterBackupPolicy(enabled=True, schedule="0 3 * * *", s3_bucket="my-backups"),
+        backup_policy=ClusterBackupPolicy(
+            enabled=True, schedule="0 3 * * *", s3_bucket="my-backups"
+        ),
     )
     # Register cluster in in-memory client
-    k8s.register_cluster({"metadata": {"name": spec.name, "namespace": spec.namespace}, "spec": spec.model_dump()})
+    k8s.register_cluster(
+        {
+            "metadata": {"name": spec.name, "namespace": spec.namespace},
+            "spec": spec.model_dump(),
+        }
+    )
 
     status = await reconciler.reconcile(spec)
-    assert any(c.type == "BackupConfigured" and c.status == "True" for c in status.conditions)
+    assert any(
+        c.type == "BackupConfigured" and c.status == "True" for c in status.conditions
+    )
 
     # Trigger manual backup
     job_id = await reconciler.trigger_manual_backup(spec)
@@ -198,7 +219,9 @@ def test_admin_api_operator_endpoints() -> None:
             "image_tag": "v1.2.0-alpha1",
             "postgres_pvc_size": "20Gi",
         }
-        reconcile_resp = client.post("/v1/admin/operator/reconcile", json=spec_payload, headers=headers)
+        reconcile_resp = client.post(
+            "/v1/admin/operator/reconcile", json=spec_payload, headers=headers
+        )
         assert reconcile_resp.status_code == 200
         rec_data = reconcile_resp.json()
         assert rec_data["phase"] == "Running"
@@ -209,7 +232,9 @@ def test_admin_api_operator_endpoints() -> None:
         assert list_resp.status_code == 200
 
         # 4. Backup 404 test on non-existent cluster
-        backup_resp = client.post("/v1/admin/operator/clusters/non-existent/backup", headers=headers)
+        backup_resp = client.post(
+            "/v1/admin/operator/clusters/non-existent/backup", headers=headers
+        )
         assert backup_resp.status_code == 404
 
 
@@ -257,7 +282,13 @@ def test_helm_chart_structure_and_syntax() -> None:
 
 def test_crd_manifest_schema_validation() -> None:
     """Validate CRD manifest OpenAPI v3 schema, group, version, and printer columns."""
-    crd_path = REPO_ROOT / "deploy" / "operator" / "crds" / "retrieverclusters.retriever.run.crd.yaml"
+    crd_path = (
+        REPO_ROOT
+        / "deploy"
+        / "operator"
+        / "crds"
+        / "retrieverclusters.retriever.run.crd.yaml"
+    )
     assert crd_path.is_file()
 
     with open(crd_path) as f:

@@ -26,7 +26,9 @@ class HardPurgeService:
         self.storage = storage_provider
         self.cert_service = certificate_service
 
-    async def hard_purge_document(self, tenant_id: str, document_id: str) -> dict[str, int]:
+    async def hard_purge_document(
+        self, tenant_id: str, document_id: str
+    ) -> dict[str, int]:
         """Permanently destroy all records associated with a document across all storage systems."""
         stats = {
             "chunks_purged": 0,
@@ -37,9 +39,12 @@ class HardPurgeService:
         }
 
         if self.repo:
-            chunks, vectors, doc_purged, storage_path = await self.repo.purge_document_db_records(
-                tenant_id, document_id
-            )
+            (
+                chunks,
+                vectors,
+                doc_purged,
+                storage_path,
+            ) = await self.repo.purge_document_db_records(tenant_id, document_id)
             stats["chunks_purged"] = chunks
             stats["vectors_purged"] = vectors
             stats["document_purged"] = doc_purged
@@ -48,14 +53,20 @@ class HardPurgeService:
                 try:
                     await self.storage.delete_file(storage_path)
                 except Exception as err:
-                    logger.warning(f"Failed to delete physical file '{storage_path}' ({err}).")
+                    logger.warning(
+                        f"Failed to delete physical file '{storage_path}' ({err})."
+                    )
 
         if self.graph_repo:
             try:
-                g_deleted = await self.graph_repo.delete_document_triples(tenant_id, document_id)
+                g_deleted = await self.graph_repo.delete_document_triples(
+                    tenant_id, document_id
+                )
                 stats["graph_triples_purged"] = g_deleted
             except Exception as err:
-                logger.warning(f"Failed to delete graph triples for document '{document_id}' ({err}).")
+                logger.warning(
+                    f"Failed to delete graph triples for document '{document_id}' ({err})."
+                )
 
         return stats
 
@@ -152,7 +163,9 @@ class HardPurgeService:
             return await self.repo.get_compliance_certificates(tenant_id)
         return []
 
-    async def get_certificate_by_id(self, certificate_id: str) -> ComplianceCertificateDTO | None:
+    async def get_certificate_by_id(
+        self, certificate_id: str
+    ) -> ComplianceCertificateDTO | None:
         """Retrieve a specific certificate by its ID."""
         if self.repo and hasattr(self.repo, "get_compliance_certificate_by_id"):
             return await self.repo.get_compliance_certificate_by_id(certificate_id)

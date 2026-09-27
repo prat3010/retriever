@@ -132,14 +132,21 @@ class SwarmDebateRequest(BaseModel):
     """Input specification to trigger a multi-agent dialectic debate."""
 
     tenant_id: str
-    prompt: str = Field(..., min_length=1, description="High-stakes query or complex problem prompt")
+    prompt: str = Field(
+        ..., min_length=1, description="High-stakes query or complex problem prompt"
+    )
     active_roles: list[SwarmAgentRole] | None = Field(
         default=None,
         description="Subset of specialized agent roles to participate (defaults to all 4)",
     )
-    max_rounds: int = Field(default=3, ge=1, le=5, description="Maximum dialectic debate rounds")
+    max_rounds: int = Field(
+        default=3, ge=1, le=5, description="Maximum dialectic debate rounds"
+    )
     quorum_threshold: float = Field(
-        default=0.70, ge=0.50, le=0.95, description="Minimum weighted confidence to reach quorum"
+        default=0.70,
+        ge=0.50,
+        le=0.95,
+        description="Minimum weighted confidence to reach quorum",
     )
     domain_context: str | None = Field(
         default=None, description="Optional grounding background or domain constraints"
@@ -171,7 +178,9 @@ class SwarmDebateProtocol(ABC):
     """Abstract interface for Multi-Agent Swarm Quorum Debate Engine."""
 
     @abstractmethod
-    async def execute_debate(self, request: SwarmDebateRequest) -> QuorumConsensusResult:
+    async def execute_debate(
+        self, request: SwarmDebateRequest
+    ) -> QuorumConsensusResult:
         """Run full multi-round dialectic debate and return quorum consensus result."""
         ...
 

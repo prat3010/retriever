@@ -29,7 +29,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("entity_id", sa.String(255), nullable=False),
-        sa.Column("entity_type", sa.String(50), nullable=False, server_default="api_key"),
+        sa.Column(
+            "entity_type", sa.String(50), nullable=False, server_default="api_key"
+        ),
         sa.Column(
             "key_id",
             UUID(as_uuid=True),
@@ -38,10 +40,17 @@ def upgrade() -> None:
         ),
         sa.Column("risk_level", sa.String(50), nullable=False, server_default="LOW"),
         sa.Column("anomaly_score", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("algorithm_used", sa.String(100), nullable=False, server_default="isolation_forest"),
+        sa.Column(
+            "algorithm_used",
+            sa.String(100),
+            nullable=False,
+            server_default="isolation_forest",
+        ),
         sa.Column("features", JSONB, nullable=False, server_default="{}"),
         sa.Column("contributing_factors", JSONB, nullable=False, server_default="[]"),
-        sa.Column("is_quarantined", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "is_quarantined", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("status", sa.String(50), nullable=False, server_default="active"),
         sa.Column(
             "created_at",
@@ -67,6 +76,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_telemetry_anomalies_risk_status", table_name="telemetry_anomalies")
-    op.drop_index("ix_telemetry_anomalies_tenant_created", table_name="telemetry_anomalies")
+    op.drop_index(
+        "ix_telemetry_anomalies_risk_status", table_name="telemetry_anomalies"
+    )
+    op.drop_index(
+        "ix_telemetry_anomalies_tenant_created", table_name="telemetry_anomalies"
+    )
     op.drop_table("telemetry_anomalies")

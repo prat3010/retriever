@@ -36,7 +36,9 @@ class TenantDb(Base):
     tier = Column(String(50), nullable=False, default="standard")
     isolation_level = Column(String(50), nullable=False, default="logical")
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     # Relationships
     config = relationship(
@@ -123,7 +125,9 @@ class CustomPluginDb(Base):
     manifest = Column(JSONB, nullable=False, default=dict)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
 
 
 class ApiKeyDb(Base):
@@ -795,7 +799,9 @@ class CompiledPromptProgramDb(Base):
     baseline_score = Column(Float, nullable=False, default=0.0)
     compiled_score = Column(Float, nullable=False, default=0.0)
     improvement_pct = Column(Float, nullable=False, default=0.0)
-    metric_name = Column(String(64), nullable=False, default="faithfulness_and_relevancy")
+    metric_name = Column(
+        String(64), nullable=False, default="faithfulness_and_relevancy"
+    )
     compiled_instruction = Column(Text, nullable=False, default="")
     few_shot_demos = Column(JSONB, nullable=False, default=list)
     is_active = Column(Boolean, nullable=False, default=False)
@@ -833,7 +839,9 @@ class WorkflowExecutionDb(Base):
     started_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     __table_args__ = (
         Index("ix_workflow_executions_tenant_status", "tenant_id", "status"),
@@ -897,9 +905,7 @@ class EdgeNodeDb(Base):
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
-    __table_args__ = (
-        Index("ix_edge_nodes_tenant_status", "tenant_id", "status"),
-    )
+    __table_args__ = (Index("ix_edge_nodes_tenant_status", "tenant_id", "status"),)
 
 
 class EdgeSyncCheckpointDb(Base):
@@ -942,9 +948,7 @@ class MultiCloudClusterNodeDb(Base):
     meta_data = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
-    __table_args__ = (
-        Index("ix_multicloud_nodes_region_role", "region", "role"),
-    )
+    __table_args__ = (Index("ix_multicloud_nodes_region_role", "region", "role"),)
 
 
 class MultiCloudFailoverEventDb(Base):
@@ -956,7 +960,9 @@ class MultiCloudFailoverEventDb(Base):
     old_leader = Column(String(64), nullable=False)
     new_leader = Column(String(64), nullable=False)
     generation_term = Column(Integer, nullable=False)
-    trigger_type = Column(String(64), nullable=False, default="manual_operator_override")
+    trigger_type = Column(
+        String(64), nullable=False, default="manual_operator_override"
+    )
     reason = Column(Text, nullable=False)
     quorum_votes_acquired = Column(Integer, nullable=False)
     total_voting_nodes = Column(Integer, nullable=False)
@@ -996,9 +1002,7 @@ class VoiceSessionDb(Base):
 
     tenant = relationship("TenantDb")
 
-    __table_args__ = (
-        Index("ix_voice_sessions_tenant_state", "tenant_id", "state"),
-    )
+    __table_args__ = (Index("ix_voice_sessions_tenant_state", "tenant_id", "state"),)
 
 
 class VoiceTurnDb(Base):
@@ -1142,11 +1146,3 @@ class GoTThoughtDb(Base):
     __table_args__ = (
         Index("ix_got_thoughts_graph_depth", "graph_id", "iteration_depth"),
     )
-
-
-
-
-
-
-
-

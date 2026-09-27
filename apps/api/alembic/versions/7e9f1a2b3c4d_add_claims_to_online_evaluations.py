@@ -28,12 +28,28 @@ def upgrade() -> None:
         sa.Column("query", sa.Text(), nullable=False),
         sa.Column("answer", sa.Text(), nullable=False),
         sa.Column("faithfulness", sa.Float(), nullable=False, server_default="1.0"),
-        sa.Column("context_precision", sa.Float(), nullable=False, server_default="1.0"),
-        sa.Column("hallucination_index", sa.Float(), nullable=False, server_default="0.0"),
+        sa.Column(
+            "context_precision", sa.Float(), nullable=False, server_default="1.0"
+        ),
+        sa.Column(
+            "hallucination_index", sa.Float(), nullable=False, server_default="0.0"
+        ),
         sa.Column("is_alert", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("claims", postgresql.JSONB(astext_type=sa.Text()), nullable=True, server_default=sa.text("'[]'::jsonb")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"),
+        sa.Column(
+            "claims",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
+        ),
+        sa.ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.tenant_id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("eval_id"),
         if_not_exists=True,
     )

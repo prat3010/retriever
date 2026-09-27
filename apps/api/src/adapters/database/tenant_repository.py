@@ -9,9 +9,7 @@ from src.domain.abstractions.tenant import Tenant, TenantConfig, TenantRegistry
 
 
 class SqlTenantRegistry(TenantRegistry):
-    async def create_tenant(
-        self, name: str, tier: str, isolation_level: str
-    ) -> Tenant:
+    async def create_tenant(self, name: str, tier: str, isolation_level: str) -> Tenant:
         """Create a new tenant workspace and return the Tenant entity."""
         # Provision the tenant and default configuration settings atomically
         async with tenant_session(bypass_rls=True) as session:
@@ -61,7 +59,9 @@ class SqlTenantRegistry(TenantRegistry):
                 created_at=db_tenant.created_at.isoformat(),
             )
 
-    async def list_tenants(self, search: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list[Tenant], int]:
+    async def list_tenants(
+        self, search: str | None = None, limit: int = 50, offset: int = 0
+    ) -> tuple[list[Tenant], int]:
         """List tenants with optional search and pagination. Returns (items, total)."""
         async with tenant_session(bypass_rls=True) as session:
             base = select(TenantDb)
@@ -101,7 +101,9 @@ class SqlTenantRegistry(TenantRegistry):
     async def update_config(self, tenant_id: str, config: TenantConfig) -> None:
         """Update configuration settings for the tenant."""
         async with tenant_session(tenant_id=tenant_id) as session:
-            stmt = select(TenantConfigDb).where(TenantConfigDb.tenant_id == uuid.UUID(tenant_id))
+            stmt = select(TenantConfigDb).where(
+                TenantConfigDb.tenant_id == uuid.UUID(tenant_id)
+            )
             result = await session.execute(stmt)
             db_config = result.scalar_one_or_none()
             if not db_config:
@@ -118,7 +120,9 @@ class SqlTenantRegistry(TenantRegistry):
     async def get_config(self, tenant_id: str) -> TenantConfig | None:
         """Retrieve dynamic configuration parameters for the tenant."""
         async with tenant_session(tenant_id=tenant_id) as session:
-            stmt = select(TenantConfigDb).where(TenantConfigDb.tenant_id == uuid.UUID(tenant_id))
+            stmt = select(TenantConfigDb).where(
+                TenantConfigDb.tenant_id == uuid.UUID(tenant_id)
+            )
             result = await session.execute(stmt)
             db_config = result.scalar_one_or_none()
             if not db_config:
@@ -146,13 +150,18 @@ class SqlTenantRegistry(TenantRegistry):
                 try:
                     cursor_time, cursor_id = decode_cursor(cursor)
                     stmt = stmt.where(
-                        (TenantDb.created_at < cursor_time) |
-                        ((TenantDb.created_at == cursor_time) & (TenantDb.tenant_id < cursor_id))
+                        (TenantDb.created_at < cursor_time)
+                        | (
+                            (TenantDb.created_at == cursor_time)
+                            & (TenantDb.tenant_id < cursor_id)
+                        )
                     )
                 except ValueError:
                     pass
 
-            stmt = stmt.order_by(TenantDb.created_at.desc(), TenantDb.tenant_id.desc()).limit(limit + 1)
+            stmt = stmt.order_by(
+                TenantDb.created_at.desc(), TenantDb.tenant_id.desc()
+            ).limit(limit + 1)
             result = await session.execute(stmt)
             rows = result.scalars().all()
 

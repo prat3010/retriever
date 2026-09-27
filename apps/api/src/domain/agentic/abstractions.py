@@ -14,13 +14,17 @@ class ToolDefinition(BaseModel):
     """Schema definition for an executable tool registered in the Agent Toolbox."""
 
     name: str = Field(..., description="Unique tool identifier name")
-    description: str = Field(..., description="Human-readable description of tool capability")
+    description: str = Field(
+        ..., description="Human-readable description of tool capability"
+    )
     parameters_schema: dict[str, Any] = Field(
-        default_factory=dict, description="JSON Schema for required and optional tool arguments"
+        default_factory=dict,
+        description="JSON Schema for required and optional tool arguments",
     )
     category: str = Field(default="utility", description="Tool functional category")
     requires_approval: bool = Field(
-        default=False, description="Whether execution halts at HITL gate for human confirmation"
+        default=False,
+        description="Whether execution halts at HITL gate for human confirmation",
     )
     risk_level: str = Field(
         default="low", description="Risk tier: low | medium | high | critical"
@@ -30,25 +34,37 @@ class ToolDefinition(BaseModel):
 class ToolCall(BaseModel):
     """An invocation request produced by the LLM during an agentic step."""
 
-    call_id: str = Field(..., description="Unique identifier for matching tool call with result")
+    call_id: str = Field(
+        ..., description="Unique identifier for matching tool call with result"
+    )
     tool_name: str = Field(..., description="Target tool name to execute")
-    arguments: dict[str, Any] = Field(default_factory=dict, description="Arguments passed to tool")
+    arguments: dict[str, Any] = Field(
+        default_factory=dict, description="Arguments passed to tool"
+    )
 
 
 class ToolResult(BaseModel):
     """The execution result returned by a tool call."""
 
-    call_id: str = Field(..., description="Identifier matching the originating ToolCall")
+    call_id: str = Field(
+        ..., description="Identifier matching the originating ToolCall"
+    )
     tool_name: str = Field(..., description="Name of executed tool")
-    output: Any = Field(..., description="Returned execution result data or string response")
-    is_error: bool = Field(default=False, description="True if tool execution raised an exception")
+    output: Any = Field(
+        ..., description="Returned execution result data or string response"
+    )
+    is_error: bool = Field(
+        default=False, description="True if tool execution raised an exception"
+    )
 
 
 class AgentStep(BaseModel):
     """A single reasoning and tool execution iteration in an agentic workflow."""
 
     step_index: int = Field(..., description="Zero-based iteration step counter")
-    thought: str = Field(..., description="Agent reasoning or internal plan before action")
+    thought: str = Field(
+        ..., description="Agent reasoning or internal plan before action"
+    )
     tool_calls: list[ToolCall] = Field(default_factory=list)
     tool_results: list[ToolResult] = Field(default_factory=list)
 
@@ -59,12 +75,20 @@ class HITLApprovalRequest(BaseModel):
     action_id: str = Field(..., description="Unique action approval request identifier")
     thread_id: str = Field(..., description="Orchestration thread session identifier")
     tenant_id: str = Field(..., description="Target tenant workspace ID")
-    tool_name: str = Field(..., description="Name of the sensitive tool awaiting approval")
-    arguments: dict[str, Any] = Field(default_factory=dict, description="Proposed tool arguments")
+    tool_name: str = Field(
+        ..., description="Name of the sensitive tool awaiting approval"
+    )
+    arguments: dict[str, Any] = Field(
+        default_factory=dict, description="Proposed tool arguments"
+    )
     risk_level: str = Field(default="high", description="Risk tier: high | critical")
-    description: str = Field(..., description="Human-readable description of what will execute")
+    description: str = Field(
+        ..., description="Human-readable description of what will execute"
+    )
     status: str = Field(default="pending", description="pending | approved | rejected")
-    created_at: float = Field(default_factory=time.time, description="Creation epoch timestamp")
+    created_at: float = Field(
+        default_factory=time.time, description="Creation epoch timestamp"
+    )
 
 
 class HITLApprovalDecision(BaseModel):
@@ -73,10 +97,12 @@ class HITLApprovalDecision(BaseModel):
     action_id: str = Field(..., description="Target action ID being resolved")
     decision: str = Field(..., description="Approval decision: approve | reject")
     modified_arguments: dict[str, Any] | None = Field(
-        default=None, description="Optional override or sanitized arguments to run instead"
+        default=None,
+        description="Optional override or sanitized arguments to run instead",
     )
     comment: str | None = Field(
-        default=None, description="Optional human rationale or instructions to guide the agent"
+        default=None,
+        description="Optional human rationale or instructions to guide the agent",
     )
 
 
@@ -88,16 +114,23 @@ class ThreadCheckpoint(BaseModel):
     tenant_id: str = Field(..., description="Tenant workspace ID")
     node_name: str = Field(..., description="Name of active graph node when saved")
     step_index: int = Field(..., description="Step counter at checkpoint time")
-    state_snapshot: dict[str, Any] = Field(..., description="Serialized thread state payload")
-    created_at: float = Field(default_factory=time.time, description="Epoch timestamp of snapshot")
+    state_snapshot: dict[str, Any] = Field(
+        ..., description="Serialized thread state payload"
+    )
+    created_at: float = Field(
+        default_factory=time.time, description="Epoch timestamp of snapshot"
+    )
 
 
 class ThreadRollbackRequest(BaseModel):
     """Request payload to rewind a thread to an earlier state checkpoint."""
 
-    target_checkpoint_id: str = Field(..., description="Checkpoint ID to rewind state to")
+    target_checkpoint_id: str = Field(
+        ..., description="Checkpoint ID to rewind state to"
+    )
     fork: bool = Field(
-        default=False, description="If True, creates a new branched thread instead of pruning forward steps"
+        default=False,
+        description="If True, creates a new branched thread instead of pruning forward steps",
     )
 
 
@@ -116,13 +149,15 @@ class AgentExecutionRequest(BaseModel):
     tenant_id: str = Field(..., description="Target multi-tenant workspace ID")
     prompt: str = Field(..., description="User task goal or multi-step prompt")
     thread_id: str | None = Field(
-        default=None, description="Optional thread session ID. If None, a new thread is generated."
+        default=None,
+        description="Optional thread session ID. If None, a new thread is generated.",
     )
     max_steps: int = Field(
         default=10, ge=1, le=20, description="Maximum reasoning iterations allowed"
     )
     allowed_tools: list[str] | None = Field(
-        default=None, description="Optional whitelist of tool names permitted for this run"
+        default=None,
+        description="Optional whitelist of tool names permitted for this run",
     )
 
 
@@ -137,7 +172,8 @@ class AgentExecutionResult(BaseModel):
     prompt: str
     final_answer: str
     status: str = Field(
-        default="completed", description="completed | waiting_approval | rejected | error"
+        default="completed",
+        description="completed | waiting_approval | rejected | error",
     )
     steps: list[AgentStep] = Field(default_factory=list)
     pending_approval: HITLApprovalRequest | None = Field(

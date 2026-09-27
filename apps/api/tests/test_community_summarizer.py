@@ -20,7 +20,9 @@ def test_heuristic_summary_generation():
         triples=[
             EntityTriple(subject="Stripe", predicate="PROCESSES", object="CreditCard"),
             EntityTriple(subject="Stripe", predicate="CREATES", object="Invoice"),
-            EntityTriple(subject="WebhookService", predicate="LISTENS_TO", object="Stripe"),
+            EntityTriple(
+                subject="WebhookService", predicate="LISTENS_TO", object="Stripe"
+            ),
         ],
         weight=0.8,
     )
@@ -45,7 +47,9 @@ async def test_llm_summary_integration():
         title="Observability Domain",
         entities=["Prometheus", "Grafana", "OTelCollector"],
         triples=[
-            EntityTriple(subject="OTelCollector", predicate="EXPORTS_TO", object="Prometheus"),
+            EntityTriple(
+                subject="OTelCollector", predicate="EXPORTS_TO", object="Prometheus"
+            ),
             EntityTriple(subject="Grafana", predicate="QUERIES", object="Prometheus"),
         ],
         weight=0.9,
@@ -53,8 +57,10 @@ async def test_llm_summary_integration():
 
     # 1. Successful LLM provider mock
     mock_llm = AsyncMock()
-    mock_llm.generate.return_value = "Executive Summary: Prometheus and Grafana form the core telemetry backbone."
-    
+    mock_llm.generate.return_value = (
+        "Executive Summary: Prometheus and Grafana form the core telemetry backbone."
+    )
+
     result = await summarizer.summarize_community(comm, llm_provider=mock_llm)
     assert "Executive Summary:" in result
     assert comm.summary == result
@@ -62,7 +68,7 @@ async def test_llm_summary_integration():
     # 2. Failing LLM provider triggers heuristic fallback
     failing_llm = AsyncMock()
     failing_llm.generate.side_effect = RuntimeError("API rate limit reached")
-    
+
     fallback_res = await summarizer.summarize_community(comm, llm_provider=failing_llm)
     assert "### Observability Domain" in fallback_res
     assert "Primary Entity Hubs:" in fallback_res

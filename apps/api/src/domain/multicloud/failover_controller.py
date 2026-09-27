@@ -143,7 +143,8 @@ class FailoverController:
 
         # EWMA latency calculation
         node.latency_ms = round(
-            (self.ewma_alpha * probe.latency_ms) + ((1.0 - self.ewma_alpha) * node.latency_ms),
+            (self.ewma_alpha * probe.latency_ms)
+            + ((1.0 - self.ewma_alpha) * node.latency_ms),
             2,
         )
         node.last_heartbeat_at = probe.probed_at
@@ -160,7 +161,10 @@ class FailoverController:
 
         # Trigger automatic failover if primary leader degraded
         if node.node_id == self.active_leader_node_id and not node.is_healthy:
-            if node.consecutive_failures >= self.failover_threshold_failures or node.latency_ms > self.latency_threshold_ms:
+            if (
+                node.consecutive_failures >= self.failover_threshold_failures
+                or node.latency_ms > self.latency_threshold_ms
+            ):
                 return self.execute_automated_failover(
                     reason=f"Primary leader {node.region} degraded after {node.consecutive_failures} failures (latency: {node.latency_ms}ms)",
                     trigger_type=FailoverTriggerType.AUTOMATIC_HEALTH_CHECK,
@@ -177,7 +181,9 @@ class FailoverController:
         candidates = [
             n
             for n in self.nodes.values()
-            if n.node_id != self.active_leader_node_id and n.is_voting_member and n.is_healthy
+            if n.node_id != self.active_leader_node_id
+            and n.is_voting_member
+            and n.is_healthy
         ]
 
         if not candidates:
@@ -189,7 +195,9 @@ class FailoverController:
                 generation_term=self.generation_term,
                 duration_ms=0.0,
                 quorum_votes_acquired=0,
-                total_voting_nodes=len([n for n in self.nodes.values() if n.is_voting_member]),
+                total_voting_nodes=len(
+                    [n for n in self.nodes.values() if n.is_voting_member]
+                ),
                 quorum_state=QuorumState.QUORUM_LOST,
                 message="Quorum lost: No healthy voting candidates available for leader election.",
                 audit_event_id=f"failover-err-{uuid.uuid4().hex[:8]}",
@@ -216,7 +224,9 @@ class FailoverController:
         total_voting = len(voting_nodes)
 
         # Find candidate node for target region
-        target_nodes = [n for n in self.nodes.values() if n.region == request.target_region]
+        target_nodes = [
+            n for n in self.nodes.values() if n.region == request.target_region
+        ]
         if not target_nodes:
             return FailoverResult(
                 success=False,
@@ -257,7 +267,9 @@ class FailoverController:
         old_leader_node = self.nodes.get(self.active_leader_node_id)
         if old_leader_node:
             old_leader_node.role = (
-                ClusterNodeRole.STANDBY_REPLICA if old_leader_node.is_healthy else ClusterNodeRole.DEGRADED
+                ClusterNodeRole.STANDBY_REPLICA
+                if old_leader_node.is_healthy
+                else ClusterNodeRole.DEGRADED
             )
 
         # Promote new leader

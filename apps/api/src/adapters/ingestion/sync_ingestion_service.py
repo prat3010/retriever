@@ -42,18 +42,25 @@ async def ingest_file_sync(
         extract_text_from_file,
     )
 
-    actual_content = file_content if file_content is not None else (content_bytes or b"")
+    actual_content = (
+        file_content if file_content is not None else (content_bytes or b"")
+    )
     if document_id is None:
         document_id = str(uuid.uuid4())
     if file_hash is None:
         file_hash = hashlib.sha256(actual_content).hexdigest()
     if mime_type is None:
-        mime_type = "text/markdown" if filename.endswith(".md") else "application/octet-stream"
+        mime_type = (
+            "text/markdown" if filename.endswith(".md") else "application/octet-stream"
+        )
     if embedder is None:
         from src.container import container
+
         embedder = container.search_service.embedder
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
+    with tempfile.NamedTemporaryFile(
+        delete=False, suffix=os.path.splitext(filename)[1]
+    ) as tmp:
         tmp.write(actual_content)
         tmp_path = tmp.name
 
@@ -83,7 +90,19 @@ async def ingest_file_sync(
     text = anonymizer.anonymize_text(text)
 
     ext = os.path.splitext(filename)[1].lower()
-    code_extensions = {".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".go", ".c", ".cpp", ".rs", ".pyw"}
+    code_extensions = {
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".java",
+        ".go",
+        ".c",
+        ".cpp",
+        ".rs",
+        ".pyw",
+    }
 
     if ext in code_extensions:
         ast_chunker = AstCodeChunker()
@@ -96,7 +115,9 @@ async def ingest_file_sync(
         raw_chunks = ast_chunker.chunk_markdown(text, filename=filename)
     else:
         hierarchical_chunker = ChunkerFactory.get_chunker("hierarchical")
-        raw_chunks = hierarchical_chunker.split_text_with_offsets(text, chunk_size, chunk_overlap)
+        raw_chunks = hierarchical_chunker.split_text_with_offsets(
+            text, chunk_size, chunk_overlap
+        )
 
     prefix = f"[Document: {filename}]\n" if filename else ""
     chunks: list[dict] = []
@@ -107,7 +128,9 @@ async def ingest_file_sync(
 
         raw_content = c["content"]
         content_with_prefix = (
-            f"{prefix}{raw_content}" if prefix and not raw_content.startswith("[Document:") else raw_content
+            f"{prefix}{raw_content}"
+            if prefix and not raw_content.startswith("[Document:")
+            else raw_content
         )
 
         meta = c.get("meta_data") or c.get("metadata") or {}
@@ -125,14 +148,16 @@ async def ingest_file_sync(
         if p_id:
             meta["parent_chunk_id"] = str(p_id)
 
-        chunks.append({
-            "chunk_id": str(c_id),
-            "parent_chunk_id": str(p_id) if p_id else None,
-            "content": content_with_prefix,
-            "token_count": c.get("token_count") or len(content_with_prefix.split()),
-            "chunk_index": c.get("chunk_index", idx),
-            "meta_data": meta,
-        })
+        chunks.append(
+            {
+                "chunk_id": str(c_id),
+                "parent_chunk_id": str(p_id) if p_id else None,
+                "content": content_with_prefix,
+                "token_count": c.get("token_count") or len(content_with_prefix.split()),
+                "chunk_index": c.get("chunk_index", idx),
+                "meta_data": meta,
+            }
+        )
 
     texts_to_embed = [c["content"] for c in chunks]
     embeddings = await embedder.embed_batch(texts_to_embed)
@@ -156,7 +181,9 @@ async def ingest_file_sync(
             session.add(doc)
         else:
             await session.execute(
-                delete(DocumentChunkDb).where(DocumentChunkDb.document_id == uuid.UUID(document_id))
+                delete(DocumentChunkDb).where(
+                    DocumentChunkDb.document_id == uuid.UUID(document_id)
+                )
             )
 
         collection_id = doc.collection_id if doc and doc.collection_id else None

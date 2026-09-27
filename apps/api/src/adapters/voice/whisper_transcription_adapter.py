@@ -39,7 +39,9 @@ class WhisperTranscriptionAdapter(VoiceTranscriptionProtocol):
             return VoiceActivityState.SILENCE
 
         try:
-            samples = struct.unpack(f"<{sample_count}h", audio_frame[: sample_count * 2])
+            samples = struct.unpack(
+                f"<{sample_count}h", audio_frame[: sample_count * 2]
+            )
         except Exception:
             return VoiceActivityState.SILENCE
 
@@ -65,7 +67,9 @@ class WhisperTranscriptionAdapter(VoiceTranscriptionProtocol):
         """Transcribes raw PCM/WAV audio bytes into text with acoustic duration metrics."""
         start_time = time.perf_counter()
 
-        duration_sec = len(audio_bytes) / (sample_rate_hz * 2) if sample_rate_hz > 0 else 1.0
+        duration_sec = (
+            len(audio_bytes) / (sample_rate_hz * 2) if sample_rate_hz > 0 else 1.0
+        )
 
         # Simulate local whisper.cpp / on-device transcription inference latency (~25ms on edge)
         text = "How does Retriever achieve sub-1ms local vector search on sovereign edge nodes?"

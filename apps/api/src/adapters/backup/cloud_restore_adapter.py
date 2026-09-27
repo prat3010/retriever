@@ -42,7 +42,10 @@ class CloudRestoreAdapter(RestoreAdapterInterface):
         digest = hashlib.sha256(raw_key.encode()).digest()
         self._fernet = Fernet(base64.urlsafe_b64encode(digest))
         self._storage = storage
-        self._local_dir = Path(local_backup_dir or os.environ.get("LOCAL_BACKUP_DIR", "/tmp/retriever/backups"))
+        self._local_dir = Path(
+            local_backup_dir
+            or os.environ.get("LOCAL_BACKUP_DIR", "/tmp/retriever/backups")
+        )
 
     async def _read_archive_bytes(self, snapshot_id: str) -> tuple[bytes, str]:
         archive_name = f"{snapshot_id}.tar.gz.enc"
@@ -59,20 +62,30 @@ class CloudRestoreAdapter(RestoreAdapterInterface):
         if self._storage:
             s3_path = f"s3://system_backups/{archive_name}"
             archive_bytes = await self._storage.read_file(s3_path)
-            manifest_bytes = await self._storage.read_file(f"s3://system_backups/{manifest_name}")
+            manifest_bytes = await self._storage.read_file(
+                f"s3://system_backups/{manifest_name}"
+            )
             if archive_bytes and manifest_bytes:
                 manifest_data = json.loads(manifest_bytes.decode("utf-8"))
                 expected_hash = manifest_data.get("sha256_checksum", "")
                 return archive_bytes, expected_hash
 
-        raise FileNotFoundError(f"Snapshot archive or manifest for '{snapshot_id}' not found.")
+        raise FileNotFoundError(
+            f"Snapshot archive or manifest for '{snapshot_id}' not found."
+        )
 
     async def restore_snapshot(self, request: RestoreRequest) -> RestoreResponse:
         start_time = time.perf_counter()
-        logger.info("Starting restoration process for snapshot '%s' (dry_run=%s)", request.snapshot_id, request.dry_run)
+        logger.info(
+            "Starting restoration process for snapshot '%s' (dry_run=%s)",
+            request.snapshot_id,
+            request.dry_run,
+        )
 
         try:
-            ciphertext, expected_hash = await self._read_archive_bytes(request.snapshot_id)
+            ciphertext, expected_hash = await self._read_archive_bytes(
+                request.snapshot_id
+            )
 
             # 1. Cryptographic SHA-256 integrity verification
             computed_hash = hashlib.sha256(ciphertext).hexdigest()
@@ -133,7 +146,9 @@ class CloudRestoreAdapter(RestoreAdapterInterface):
                         f'INSERT INTO "{table}" ({col_names}) VALUES ({placeholders}) ON CONFLICT DO NOTHING'
                     )
 
-                    for batch_chunk in [rows[i:i + 100] for i in range(0, len(rows), 100)]:
+                    for batch_chunk in [
+                        rows[i : i + 100] for i in range(0, len(rows), 100)
+                    ]:
                         await session.execute(insert_stmt, batch_chunk)
 
                 await session.commit()
@@ -150,7 +165,11 @@ class CloudRestoreAdapter(RestoreAdapterInterface):
             )
 
         except Exception as err:
-            logger.exception("Restore operation failed for snapshot '%s': %s", request.snapshot_id, err)
+            logger.exception(
+                "Restore operation failed for snapshot '%s': %s",
+                request.snapshot_id,
+                err,
+            )
             duration = round(time.perf_counter() - start_time, 3)
             return RestoreResponse(
                 snapshot_id=request.snapshot_id,

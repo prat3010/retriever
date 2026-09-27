@@ -30,6 +30,7 @@ router = APIRouter(tags=["Zero-Knowledge Vector Attestation & Grounding"])
 
 # --- Request/Response DTOs ---
 
+
 class ZkpHealthResponse(BaseModel):
     """Health check and parameter status for Platform Battery #33."""
 
@@ -78,6 +79,7 @@ class VerifyCertificateRequest(BaseModel):
 
 
 # --- Endpoints ---
+
 
 @router.get("/v1/zkp/health", response_model=ZkpHealthResponse)
 async def get_zkp_health() -> ZkpHealthResponse:

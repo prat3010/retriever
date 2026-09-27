@@ -40,6 +40,7 @@ class AutoInstrumentationRegistry:
         try:
             # 1. Try native OTel SQLAlchemy instrumentor if installed
             from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
             SQLAlchemyInstrumentor().instrument(engine=engine)
             self.sqlalchemy_instrumented = True
             logger.info("sqlalchemy_otel_instrumented_native")
@@ -49,10 +50,17 @@ class AutoInstrumentationRegistry:
             try:
                 from sqlalchemy import event
 
-                @event.listens_for(engine.sync_engine if hasattr(engine, "sync_engine") else engine, "before_cursor_execute")
-                def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+                @event.listens_for(
+                    engine.sync_engine if hasattr(engine, "sync_engine") else engine,
+                    "before_cursor_execute",
+                )
+                def before_cursor_execute(
+                    conn, cursor, statement, parameters, context, executemany
+                ):
                     context._query_start_time = time.monotonic()
-                    is_vector = any(op in statement for op in ["<->", "<#>", "<=>", "vector_search"])
+                    is_vector = any(
+                        op in statement for op in ["<->", "<#>", "<=>", "vector_search"]
+                    )
                     span_name = "db.vector_query" if is_vector else "db.query"
                     span = self._tracer.start_span(span_name)
                     span.set_attribute("db.system", "postgresql")
@@ -61,8 +69,13 @@ class AutoInstrumentationRegistry:
                         span.set_attribute("db.vector_search", True)
                     context._otel_span = span
 
-                @event.listens_for(engine.sync_engine if hasattr(engine, "sync_engine") else engine, "after_cursor_execute")
-                def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+                @event.listens_for(
+                    engine.sync_engine if hasattr(engine, "sync_engine") else engine,
+                    "after_cursor_execute",
+                )
+                def after_cursor_execute(
+                    conn, cursor, statement, parameters, context, executemany
+                ):
                     span = getattr(context, "_otel_span", None)
                     if span:
                         start = getattr(context, "_query_start_time", None)
@@ -86,6 +99,7 @@ class AutoInstrumentationRegistry:
 
         try:
             from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
             HTTPXClientInstrumentor().instrument()
             self.httpx_instrumented = True
             logger.info("httpx_otel_instrumented")
@@ -105,6 +119,7 @@ class AutoInstrumentationRegistry:
 
         try:
             from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
             CeleryInstrumentor().instrument()
             self.celery_instrumented = True
             logger.info("celery_otel_instrumented")
@@ -130,10 +145,14 @@ class AutoInstrumentationRegistry:
                         span.end()
 
                 @task_failure.connect
-                def on_task_failure(task_id, exception, args, kwargs, traceback, einfo, **_):
+                def on_task_failure(
+                    task_id, exception, args, kwargs, traceback, einfo, **_
+                ):
                     span = getattr(task_id, "_otel_span", None)
                     if span:
-                        span.set_status(Status(StatusCode.ERROR, description=str(exception)))
+                        span.set_status(
+                            Status(StatusCode.ERROR, description=str(exception))
+                        )
                         span.end()
 
                 self.celery_instrumented = True

@@ -15,16 +15,29 @@ from src.main import app
 client = TestClient(app)
 
 
-@patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock, return_value=None)
+@patch(
+    "src.routers.document.quota_service.check_storage_quota",
+    new_callable=AsyncMock,
+    return_value=None,
+)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.create_document", new_callable=AsyncMock)
 @patch("src.main.document_repository.find_by_hash", new_callable=AsyncMock)
 @patch("src.adapters.broker.celery_publisher.celery_app.send_task", autospec=True)
 @patch("src.routers.document.redis_client.get", new_callable=AsyncMock)
 @patch("src.routers.document.redis_client.setex", new_callable=AsyncMock)
 def test_idempotency_keys(
-    mock_setex, mock_get, mock_send_task, mock_find_by_hash, mock_create, mock_validate, mock_get_cfg, mock_check_quota
+    mock_setex,
+    mock_get,
+    mock_send_task,
+    mock_find_by_hash,
+    mock_create,
+    mock_validate,
+    mock_get_cfg,
+    mock_check_quota,
 ) -> None:
     """Verify that specifying an Idempotency-Key caches upload responses and prevents duplicates."""
     tenant_id = str(uuid.uuid4())
@@ -38,7 +51,7 @@ def test_idempotency_keys(
 
     headers = {
         "Authorization": "Bearer ret_live_validtoken.secret",
-        "Idempotency-Key": "unique-req-123"
+        "Idempotency-Key": "unique-req-123",
     }
     file_content = b"Sample text contents to parse and chunk."
 
@@ -66,7 +79,9 @@ def test_idempotency_keys(
     assert mock_get.called
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.tenant_registry.list_tenants_cursor", new_callable=AsyncMock)
 def test_admin_list_tenants_cursor(mock_list_cursor, mock_validate) -> None:
     """GET /v1/admin/tenants returns cursor paginated list when offset is None."""
@@ -79,12 +94,15 @@ def test_admin_list_tenants_cursor(mock_list_cursor, mock_validate) -> None:
     mock_list_cursor.return_value = (
         [
             Tenant(
-                tenant_id="t1", name="Tenant 1", status="active",
-                tier="standard", created_at="2026-01-01T00:00:00",
+                tenant_id="t1",
+                name="Tenant 1",
+                status="active",
+                tier="standard",
+                created_at="2026-01-01T00:00:00",
             )
         ],
         "next-cursor-xyz",
-        True
+        True,
     )
 
     headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
@@ -97,7 +115,9 @@ def test_admin_list_tenants_cursor(mock_list_cursor, mock_validate) -> None:
     assert len(body["items"]) == 1
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.document_repository.list_documents_cursor", new_callable=AsyncMock)
 def test_list_documents_cursor(mock_list_cursor, mock_validate) -> None:
     """GET /v1/tenants/{tenantId}/documents returns cursor paginated list when limit/cursor is specified."""
@@ -124,11 +144,13 @@ def test_list_documents_cursor(mock_list_cursor, mock_validate) -> None:
             )
         ],
         "cursor-next",
-        True
+        True,
     )
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
-    response = client.get(f"/v1/tenants/{tenant_id}/documents?limit=10", headers=headers)
+    response = client.get(
+        f"/v1/tenants/{tenant_id}/documents?limit=10", headers=headers
+    )
     assert response.status_code == 200
     body = response.json()
     assert "pagination" in body
@@ -137,10 +159,14 @@ def test_list_documents_cursor(mock_list_cursor, mock_validate) -> None:
     assert len(body["items"]) == 1
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.inference_orchestrator.get_session", new_callable=AsyncMock)
 @patch("src.main.session_repo.get_messages_cursor", new_callable=AsyncMock)
-def test_list_messages_cursor(mock_get_messages_cursor, mock_get_session, mock_validate) -> None:
+def test_list_messages_cursor(
+    mock_get_messages_cursor, mock_get_session, mock_validate
+) -> None:
     """GET /v1/tenants/{tenantId}/chat/sessions/{sessionId}/messages returns cursor paginated chat history."""
     tenant_id = str(uuid.uuid4())
     session_id = str(uuid.uuid4())
@@ -161,15 +187,21 @@ def test_list_messages_cursor(mock_get_messages_cursor, mock_get_session, mock_v
                 role="user",
                 content="Hello",
                 name=None,
-                created_at="2026-01-01T00:00:00"
+                created_at="2026-01-01T00:00:00",
             )
         ],
         "next-msg-cursor",
-        True
+        True,
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_uuid}
-    response = client.get(f"/v1/tenants/{tenant_id}/chat/sessions/{session_id}/messages?limit=10", headers=headers)
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_uuid,
+    }
+    response = client.get(
+        f"/v1/tenants/{tenant_id}/chat/sessions/{session_id}/messages?limit=10",
+        headers=headers,
+    )
     assert response.status_code == 200
     body = response.json()
     assert "pagination" in body
@@ -178,11 +210,15 @@ def test_list_messages_cursor(mock_get_messages_cursor, mock_get_session, mock_v
     assert len(body["items"]) == 1
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.main.search_service.search", new_callable=AsyncMock)
 @patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.adapters.telemetry.rate_limiter_dep.get_rate_limiter")
-def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock_validate) -> None:
+def test_rate_limit_headers(
+    mock_get_limiter, mock_get_config, mock_search, mock_validate
+) -> None:
     """Verify that requests set X-RateLimit headers based on rate limiter metrics."""
     tenant_id = str(uuid.uuid4())
     mock_validate.return_value = UserContext(
@@ -193,15 +229,13 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
     )
 
     from src.domain.abstractions.retrieval import SearchMeta, SearchResponse
+
     mock_search.return_value = SearchResponse(
         query="test",
         results=[],
         search_meta=SearchMeta(
-            strategy="dense",
-            total_candidates=0,
-            returned_results=0,
-            duration_ms=10.0
-        )
+            strategy="dense", total_candidates=0, returned_results=0, duration_ms=10.0
+        ),
     )
 
     mock_config = MagicMock()
@@ -215,10 +249,7 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
 
     mock_limiter = AsyncMock()
     mock_limiter.acquire.return_value = RateLimitResult(
-        allowed=True,
-        limit=1000,
-        remaining=999,
-        reset_after=30
+        allowed=True, limit=1000, remaining=999, reset_after=30
     )
     mock_get_limiter.return_value = mock_limiter
 
@@ -226,7 +257,7 @@ def test_rate_limit_headers(mock_get_limiter, mock_get_config, mock_search, mock
     response = client.post(
         f"/v1/tenants/{tenant_id}/search",
         json={"query": "test", "limit": 5},
-        headers=headers
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.headers["X-RateLimit-Limit"] == "1000"

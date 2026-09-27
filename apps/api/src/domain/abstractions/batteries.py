@@ -14,7 +14,6 @@ class BatteryCategory(StrEnum):
     EDGE_DISTRIBUTION = "edge_distribution"
 
 
-
 class BatteryStatus(StrEnum):
     ACTIVE = "active"
     STANDBY = "standby"
@@ -22,11 +21,15 @@ class BatteryStatus(StrEnum):
 
 
 class PlatformBatteryDTO(BaseModel):
-    id: str = Field(..., description="Unique slug for the battery, e.g. 'colbert_maxsim'")
+    id: str = Field(
+        ..., description="Unique slug for the battery, e.g. 'colbert_maxsim'"
+    )
     name: str = Field(..., description="Human-readable battery name")
     category: BatteryCategory
     status: BatteryStatus
-    algorithm_foundation: str = Field(..., description="Mathematical or algorithmic architecture")
+    algorithm_foundation: str = Field(
+        ..., description="Mathematical or algorithmic architecture"
+    )
     milestone: str = Field(..., description="Origin milestone and version")
     latency_profile: str = Field(..., description="Benchmark latency profile")
     description: str = Field(..., description="Operational capability explanation")

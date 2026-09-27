@@ -22,9 +22,7 @@ class TenantConfig(BaseModel):
 
 class TenantRegistry(ABC):
     @abstractmethod
-    async def create_tenant(
-        self, name: str, tier: str, isolation_level: str
-    ) -> Tenant:
+    async def create_tenant(self, name: str, tier: str, isolation_level: str) -> Tenant:
         """Create a new tenant workspace and return the Tenant entity."""
         pass
 
@@ -34,7 +32,9 @@ class TenantRegistry(ABC):
         pass
 
     @abstractmethod
-    async def list_tenants(self, search: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list[Tenant], int]:
+    async def list_tenants(
+        self, search: str | None = None, limit: int = 50, offset: int = 0
+    ) -> tuple[list[Tenant], int]:
         """List tenants with optional search, pagination. Returns (items, total)."""
         pass
 

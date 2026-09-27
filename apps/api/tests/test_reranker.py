@@ -15,7 +15,11 @@ def adapter():
 
 def _result(chunk_id="c1", score=0.5, content="text"):
     return SearchResult(
-        chunk_id=chunk_id, document_id="d1", content=content, score=score, metadata={},
+        chunk_id=chunk_id,
+        document_id="d1",
+        content=content,
+        score=score,
+        metadata={},
     )
 
 
@@ -45,7 +49,9 @@ def test_lazy_client_not_created_at_init(adapter):
 
 
 def test_lazy_client_created_on_access(adapter):
-    with patch("src.adapters.cognitive.reranker_adapter.cohere.AsyncClientV2") as mock_cls:
+    with patch(
+        "src.adapters.cognitive.reranker_adapter.cohere.AsyncClientV2"
+    ) as mock_cls:
         _ = adapter.client
         mock_cls.assert_called_once_with(api_key="test-key")
 
@@ -64,7 +70,10 @@ async def test_rerank_basic(adapter):
     mock_client.rerank.return_value = mock_resp
 
     result = await adapter.rerank(
-        query="test query", candidates=candidates, top_n=5, threshold=0.0,
+        query="test query",
+        candidates=candidates,
+        top_n=5,
+        threshold=0.0,
     )
 
     assert len(result) == 2
@@ -89,7 +98,10 @@ async def test_rerank_threshold_filtering(adapter):
     mock_client.rerank.return_value = mock_resp
 
     result = await adapter.rerank(
-        query="test", candidates=candidates, top_n=5, threshold=0.5,
+        query="test",
+        candidates=candidates,
+        top_n=5,
+        threshold=0.5,
     )
 
     assert len(result) == 1
@@ -104,7 +116,10 @@ async def test_rerank_score_remapped(adapter):
     mock_client.rerank.return_value = mock_resp
 
     result = await adapter.rerank(
-        query="test", candidates=candidates, top_n=5, threshold=0.0,
+        query="test",
+        candidates=candidates,
+        top_n=5,
+        threshold=0.0,
     )
 
     assert result[0].score == 0.987654
@@ -119,7 +134,10 @@ async def test_rerank_model_overrides_default(adapter):
 
     adapter.model = "rerank-v2"
     await adapter.rerank(
-        query="test", candidates=candidates, top_n=5, threshold=0.0,
+        query="test",
+        candidates=candidates,
+        top_n=5,
+        threshold=0.0,
     )
 
     assert mock_client.rerank.call_args[1]["model"] == "rerank-v2"

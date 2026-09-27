@@ -37,7 +37,9 @@ class EscalationReason(StrEnum):
 class TaskComplexity(BaseModel):
     """Evaluation of query complexity and tier assignment."""
 
-    score: float = Field(..., ge=0.0, le=1.0, description="Normalized complexity score from 0.0 to 1.0")
+    score: float = Field(
+        ..., ge=0.0, le=1.0, description="Normalized complexity score from 0.0 to 1.0"
+    )
     tier_assigned: ModelTier
     estimated_steps: int = Field(default=1, ge=1, le=20)
     rationale: str
@@ -97,7 +99,9 @@ class EconomicOrchestratorProtocol(ABC):
     """Abstract port for complexity analysis, escalation checks, and economic telemetry."""
 
     @abstractmethod
-    def classify_complexity(self, query: str, allowed_tools: list[str] | None = None) -> TaskComplexity:
+    def classify_complexity(
+        self, query: str, allowed_tools: list[str] | None = None
+    ) -> TaskComplexity:
         """Classify task difficulty and determine appropriate starting tier."""
         pass
 

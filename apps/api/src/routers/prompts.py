@@ -119,9 +119,13 @@ async def list_compiled_prompts(
         repo = container.compiled_prompt_repo
         return await repo.list_programs(tenantId)
     except TenantIsolationViolationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.get("/compiled/active", response_model=CompiledPromptProgram | None)
@@ -133,9 +137,13 @@ async def get_active_compiled_prompt(
         repo = container.compiled_prompt_repo
         return await repo.get_active_program(tenantId)
     except TenantIsolationViolationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.post("/compiled/{programId}/activate", response_model=CompiledPromptProgram)
@@ -154,14 +162,20 @@ async def activate_compiled_prompt(
             )
         program = await repo.get_program(tenantId, programId)
         if not program:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
+            )
         return program
     except HTTPException:
         raise
     except TenantIsolationViolationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.post("/compiled/{programId}/deactivate", response_model=CompiledPromptProgram)
@@ -175,14 +189,20 @@ async def deactivate_compiled_prompt(
         await repo.deactivate_program(tenantId, programId)
         program = await repo.get_program(tenantId, programId)
         if not program:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
+            )
         return program
     except HTTPException:
         raise
     except TenantIsolationViolationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.delete("/compiled/{programId}")
@@ -196,6 +216,10 @@ async def delete_compiled_prompt(
         success = await repo.delete_program(tenantId, programId)
         return {"success": success, "deleted_program_id": programId}
     except TenantIsolationViolationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc

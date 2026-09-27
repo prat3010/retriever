@@ -1,4 +1,5 @@
 """Automated test suite for Document-Level Access Control List (ACL) Inheritance & Pre-Retrieval Enforcement (M125)."""
+
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -178,7 +179,9 @@ async def test_ingest_file_sync_preserves_acl_metadata():
     tenant_id = str(uuid.uuid4())
 
     mock_embedder = AsyncMock()
-    mock_embedder.embed_batch = AsyncMock(side_effect=lambda texts: [[0.05] * 768 for _ in texts])
+    mock_embedder.embed_batch = AsyncMock(
+        side_effect=lambda texts: [[0.05] * 768 for _ in texts]
+    )
 
     # Mock session
     mock_session = AsyncMock()
@@ -202,7 +205,10 @@ async def test_ingest_file_sync_preserves_acl_metadata():
         async def __aexit__(self, exc_type, exc, tb):
             pass
 
-    with patch("src.adapters.ingestion.sync_ingestion_service.tenant_session", return_value=FakeTenantSession()):
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session",
+        return_value=FakeTenantSession(),
+    ):
         count = await ingest_file_sync(
             tenant_id=tenant_id,
             document_id=doc_id,
@@ -222,6 +228,8 @@ async def test_ingest_file_sync_preserves_acl_metadata():
         chunk_records = [o for o in added_objects if isinstance(o, DocumentChunkDb)]
         assert len(chunk_records) > 0
         for chunk in chunk_records:
-            assert chunk.meta_data["allowed_users"] == ["client_owner@enterprise.internal"]
+            assert chunk.meta_data["allowed_users"] == [
+                "client_owner@enterprise.internal"
+            ]
             assert chunk.meta_data["allowed_groups"] == ["procurement-executives"]
             assert chunk.meta_data["is_public"] is False

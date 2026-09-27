@@ -19,7 +19,9 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.add_column("audit_logs", sa.Column("entry_hash", sa.String(64), nullable=True))
-    op.add_column("audit_logs", sa.Column("previous_hash", sa.String(64), nullable=True))
+    op.add_column(
+        "audit_logs", sa.Column("previous_hash", sa.String(64), nullable=True)
+    )
 
 
 def downgrade() -> None:

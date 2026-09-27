@@ -44,9 +44,7 @@ class RabbitMQEventPublisher(EventPublisher):
         ch.exchange_declare(
             exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True
         )
-        ch.exchange_declare(
-            exchange=DLX_NAME, exchange_type="fanout", durable=True
-        )
+        ch.exchange_declare(exchange=DLX_NAME, exchange_type="fanout", durable=True)
 
         for queue_name, routing_keys in QUEUES_AND_ROUTING.items():
             ch.queue_declare(

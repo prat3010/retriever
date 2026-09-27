@@ -1,4 +1,5 @@
 """Native Slack Workspace Integration & Block Kit Service."""
+
 import hashlib
 import hmac
 import logging
@@ -31,12 +32,16 @@ class SlackService:
         try:
             req_time = int(timestamp)
             if abs(time.time() - req_time) > 300:
-                logger.warning("Slack webhook rejected: timestamp too old (%s)", timestamp)
+                logger.warning(
+                    "Slack webhook rejected: timestamp too old (%s)", timestamp
+                )
                 return False
         except (ValueError, TypeError):
             return False
 
-        sig_basestring = f"v0:{timestamp}:{raw_body.decode('utf-8', errors='replace')}".encode()
+        sig_basestring = (
+            f"v0:{timestamp}:{raw_body.decode('utf-8', errors='replace')}".encode()
+        )
         computed_hash = hmac.new(
             signing_secret.encode("utf-8"),
             sig_basestring,

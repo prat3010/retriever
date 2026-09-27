@@ -311,7 +311,9 @@ def test_custom_connector_registration_decorator() -> None:
         async def validate_credentials(self, config: ConnectorConfig) -> bool:
             return True
 
-        async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+        async def fetch_documents(
+            self, config: ConnectorConfig
+        ) -> list[DiscoveredDocument]:
             return [
                 DiscoveredDocument(
                     filename="lead_1.md",

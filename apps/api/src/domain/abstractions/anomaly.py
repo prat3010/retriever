@@ -11,22 +11,27 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-
 class AnomalyFeatureVector(BaseModel):
     """Extracted behavioral metrics for an API key or tenant within a sliding window."""
 
-    entity_id: str = Field(..., description="Unique API key ID or Tenant ID being monitored")
+    entity_id: str = Field(
+        ..., description="Unique API key ID or Tenant ID being monitored"
+    )
     entity_type: Literal["api_key", "tenant"] = Field(
         default="api_key", description="Entity category: 'api_key' | 'tenant'"
     )
     tenant_id: str = Field(..., description="Owning tenant UUID")
     window_start: datetime = Field(..., description="Start of observation window")
     window_end: datetime = Field(..., description="End of observation window")
-    request_count: int = Field(default=0, ge=0, description="Total requests observed in window")
+    request_count: int = Field(
+        default=0, ge=0, description="Total requests observed in window"
+    )
     request_velocity_rpm: float = Field(
         default=0.0, ge=0.0, description="Requests per minute velocity"
     )
-    input_tokens_avg: float = Field(default=0.0, ge=0.0, description="Mean input tokens per request")
+    input_tokens_avg: float = Field(
+        default=0.0, ge=0.0, description="Mean input tokens per request"
+    )
     output_tokens_avg: float = Field(
         default=0.0, ge=0.0, description="Mean output tokens per request"
     )
@@ -61,7 +66,10 @@ class AnomalyScore(BaseModel):
     entity_type: Literal["api_key", "tenant"] = Field(default="api_key")
     tenant_id: str = Field(..., description="Owning tenant UUID")
     anomaly_score: float = Field(
-        ..., ge=0.0, le=1.0, description="Calibrated anomaly probability (0.0=nominal, 1.0=anomaly)"
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Calibrated anomaly probability (0.0=nominal, 1.0=anomaly)",
     )
     is_anomaly: bool = Field(
         default=False, description="True if anomaly score exceeds operational threshold"
@@ -70,14 +78,16 @@ class AnomalyScore(BaseModel):
         default="LOW", description="Qualitative risk classification"
     )
     contributing_factors: list[str] = Field(
-        default_factory=list, description="Human-readable explanations for why this entity was flagged"
+        default_factory=list,
+        description="Human-readable explanations for why this entity was flagged",
     )
     algorithm_used: str = Field(
         default="isolation_forest",
         description="Detection algorithm used: 'isolation_forest' | 'numpy_multivariate_baseline'",
     )
     features: dict[str, float] = Field(
-        default_factory=dict, description="Raw normalized feature map evaluated by the model"
+        default_factory=dict,
+        description="Raw normalized feature map evaluated by the model",
     )
     detected_at: datetime = Field(
         default_factory=utc_now, description="Timestamp of anomaly evaluation"

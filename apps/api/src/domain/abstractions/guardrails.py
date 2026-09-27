@@ -18,7 +18,9 @@ class GuardrailExecutionMode(StrEnum):
     OFF = "off"
     FAST_INPUT_ONLY = "fast_input_only"  # Sub-20ms heuristic + injection scanner
     FULL_CONVERSATIONAL = "full_conversational"  # Fast-path + Colang flow execution
-    STRICT_FACTUAL = "strict_factual"  # Full conversational + post-inference claim grounding
+    STRICT_FACTUAL = (
+        "strict_factual"  # Full conversational + post-inference claim grounding
+    )
 
 
 class GuardrailAction(StrEnum):
@@ -95,7 +97,9 @@ class TenantGuardrailsConfig(BaseModel):
     competitor_shield_enabled: bool = True
     competitor_names: list[str] = Field(default_factory=list)
     brand_tone: str = "professional, objective, and factual"
-    grounding_threshold: float = 0.70  # Min context entailment required in STRICT_FACTUAL
+    grounding_threshold: float = (
+        0.70  # Min context entailment required in STRICT_FACTUAL
+    )
     fallback_response: str = "I am specifically scoped to assist with our platform services and documentation. How may I help you within that scope?"
     updated_at: str = ""
 

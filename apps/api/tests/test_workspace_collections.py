@@ -23,7 +23,9 @@ client = TestClient(app)
 def test_build_filter_clause_with_collection_id() -> None:
     """Verify build_filter_clause includes collection_id SQL filter when provided."""
     coll_id = str(uuid.uuid4())
-    clause, params, _join_sql = build_filter_clause([], [], chunk_alias="dc", collection_id=coll_id)
+    clause, params, _join_sql = build_filter_clause(
+        [], [], chunk_alias="dc", collection_id=coll_id
+    )
 
     assert "dc.collection_id = CAST(:collection_id AS uuid)" in clause
     assert params["collection_id"] == coll_id
@@ -31,7 +33,9 @@ def test_build_filter_clause_with_collection_id() -> None:
 
 def test_build_filter_clause_without_collection_id() -> None:
     """Verify build_filter_clause omits collection_id when None."""
-    clause, params, _join_sql = build_filter_clause([], [], chunk_alias="dc", collection_id=None)
+    clause, params, _join_sql = build_filter_clause(
+        [], [], chunk_alias="dc", collection_id=None
+    )
 
     assert "collection_id" not in clause
     assert "collection_id" not in params
@@ -54,11 +58,15 @@ def test_query_builder_propagates_collection_id() -> None:
 
 
 @patch("src.routers.document.celery_app.send_task")
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.routers.document.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.routers.document.quota_service.check_storage_quota", new_callable=AsyncMock)
 @patch("src.routers.document.document_repository.find_by_hash", new_callable=AsyncMock)
-@patch("src.routers.document.document_repository.create_document", new_callable=AsyncMock)
+@patch(
+    "src.routers.document.document_repository.create_document", new_callable=AsyncMock
+)
 @patch("src.routers.document.local_storage.save_file", new_callable=AsyncMock)
 def test_upload_document_with_collection_id(
     mock_save_file,
@@ -102,7 +110,9 @@ def test_upload_document_with_collection_id(
 # ── 4. Search Router Collection Isolation ────────────────────────────────────
 
 
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.routers.search.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.routers.search.search_service.search", new_callable=AsyncMock)
 def test_search_documents_passes_collection_id(
@@ -122,7 +132,9 @@ def test_search_documents_passes_collection_id(
     mock_search.return_value = MagicMock(
         query="Vector test",
         results=[],
-        search_meta=MagicMock(strategy="hybrid", total_candidates=0, returned_results=0, duration_ms=1.5),
+        search_meta=MagicMock(
+            strategy="hybrid", total_candidates=0, returned_results=0, duration_ms=1.5
+        ),
     )
 
     headers = {"Authorization": "Bearer ret_live_validtoken.secret"}
@@ -144,7 +156,9 @@ def test_search_documents_passes_collection_id(
 
 
 @patch.object(container, "nemo_guardrail_service", None)
-@patch("src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock)
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
 @patch("src.routers.chat.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.routers.chat.quota_service.check_inference_quota", new_callable=AsyncMock)
 @patch("src.routers.chat.inference_orchestrator.get_session", new_callable=AsyncMock)
@@ -184,8 +198,15 @@ def test_chat_message_passes_collection_id(
         finish_reason="stop",
     )
 
-    headers = {"Authorization": "Bearer ret_live_validtoken.secret", "X-User-ID": user_id}
-    payload = {"query": "Tell me about Workspace A", "stream": False, "collectionId": coll_id}
+    headers = {
+        "Authorization": "Bearer ret_live_validtoken.secret",
+        "X-User-ID": user_id,
+    }
+    payload = {
+        "query": "Tell me about Workspace A",
+        "stream": False,
+        "collectionId": coll_id,
+    }
 
     response = client.post(
         "/v1/tenants/tenant_123/chat/sessions/sess_workspace_1/messages",

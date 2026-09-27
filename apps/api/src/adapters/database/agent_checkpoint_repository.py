@@ -217,7 +217,9 @@ class SqlAgentCheckpointRepository(StateCheckpointerProtocol):
                 self._memory_cache[cache_key] = results
                 return results
         except Exception as err:
-            logger.debug(f"Database list_thread_checkpoints note ({err})", exc_info=False)
+            logger.debug(
+                f"Database list_thread_checkpoints note ({err})", exc_info=False
+            )
             return []
 
     async def rollback_to_checkpoint(

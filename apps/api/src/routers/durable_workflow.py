@@ -68,7 +68,11 @@ async def list_tenant_blueprints(
     return container.durable_workflow_adapter.list_registered_workflows()
 
 
-@router.post("/events", response_model=list[WorkflowExecutionRecord], status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/events",
+    response_model=list[WorkflowExecutionRecord],
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def dispatch_workflow_event(
     tenantId: str,
     event: WorkflowEventDispatch,
@@ -78,13 +82,21 @@ async def dispatch_workflow_event(
     try:
         return await container.durable_workflow_adapter.dispatch_event(tenantId, event)
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
     except Exception as err:
         logger.error("Failed to dispatch workflow event: %s", err)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
 
 
-@router.post("/{workflowName}/run", response_model=WorkflowExecutionRecord, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/{workflowName}/run",
+    response_model=WorkflowExecutionRecord,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def run_named_workflow(
     tenantId: str,
     workflowName: str,
@@ -101,12 +113,18 @@ async def run_named_workflow(
     try:
         return await container.durable_workflow_adapter.start_workflow(tenantId, req)
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
     except ValueError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
     except Exception as err:
         logger.error("Failed to start workflow '%s': %s", workflowName, err)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
 
 
 @router.get("/executions", response_model=WorkflowListResponse)
@@ -129,7 +147,9 @@ async def list_tenant_executions(
             offset=offset,
         )
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
 
 
 @router.get("/executions/{executionId}", response_model=WorkflowExecutionRecord)
@@ -140,7 +160,9 @@ async def get_execution_detail(
 ) -> WorkflowExecutionRecord:
     """Get full state and step-level checkpoints of an execution."""
     try:
-        rec = await container.durable_workflow_adapter.get_execution(tenantId, executionId)
+        rec = await container.durable_workflow_adapter.get_execution(
+            tenantId, executionId
+        )
         if not rec:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -148,7 +170,9 @@ async def get_execution_detail(
             )
         return rec
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
 
 
 @router.post("/executions/{executionId}/retry", response_model=WorkflowExecutionRecord)
@@ -159,14 +183,22 @@ async def retry_failed_execution(
 ) -> WorkflowExecutionRecord:
     """Replay execution starting from the failed step checkpoint."""
     try:
-        return await container.durable_workflow_adapter.retry_execution(tenantId, executionId)
+        return await container.durable_workflow_adapter.retry_execution(
+            tenantId, executionId
+        )
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
     except ValueError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
     except Exception as err:
         logger.error("Failed to retry execution '%s': %s", executionId, err)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
 
 
 @router.post("/executions/{executionId}/cancel", response_model=WorkflowExecutionRecord)
@@ -177,11 +209,17 @@ async def cancel_workflow_execution(
 ) -> WorkflowExecutionRecord:
     """Cancel an active or queued workflow execution."""
     try:
-        return await container.durable_workflow_adapter.cancel_execution(tenantId, executionId)
+        return await container.durable_workflow_adapter.cancel_execution(
+            tenantId, executionId
+        )
     except TenantIsolationViolationError as err:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(err)
+        ) from err
     except ValueError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
 
 
 # ── Platform Admin Endpoints ───────────────────────────────────────────────────

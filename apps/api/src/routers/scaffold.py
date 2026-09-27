@@ -58,7 +58,9 @@ def verify_scaffolding_code(files: list[ScaffoldedFile]) -> AstValidationResult:
 @router.post("/apply")
 def apply_scaffolding_plan(
     plan: ScaffoldingPlan,
-    dry_run: bool = Query(default=False, description="Simulate emission without writing to disk"),
+    dry_run: bool = Query(
+        default=False, description="Simulate emission without writing to disk"
+    ),
 ) -> dict[str, Any]:
     """Write verified plugin to `src/plugins/custom/{plugin_id}/` and hot-mount it."""
     # Pre-flight AST validation

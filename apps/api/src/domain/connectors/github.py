@@ -1,4 +1,5 @@
 """GitHub REST API Data Connector for Repositories, Documentation, and Issues."""
+
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -74,14 +75,20 @@ class GitHubConnector(BaseConnector):
             logger.warning("GitHub credential validation error for %s: %s", repo, exc)
             return False
 
-    def _format_issue_to_document(self, repo: str, issue: dict[str, Any]) -> DiscoveredDocument:
+    def _format_issue_to_document(
+        self, repo: str, issue: dict[str, Any]
+    ) -> DiscoveredDocument:
         """Format GitHub issue or pull request into structured markdown."""
         number = issue.get("number", 0)
         title = issue.get("title", "")
         body = issue.get("body") or "(No description provided)"
         state = issue.get("state", "open")
         author = issue.get("user", {}).get("login", "unknown")
-        labels = [lbl.get("name", "") for lbl in issue.get("labels", []) if isinstance(lbl, dict)]
+        labels = [
+            lbl.get("name", "")
+            for lbl in issue.get("labels", [])
+            if isinstance(lbl, dict)
+        ]
         is_pr = "pull_request" in issue
         item_type = "Pull Request" if is_pr else "Issue"
         created_at = issue.get("created_at", "")
@@ -104,7 +111,9 @@ class GitHubConnector(BaseConnector):
         ]
 
         content = "\n".join(lines)
-        filename = f"github_{repo.replace('/', '_')}_{'pr' if is_pr else 'issue'}_{number}.md"
+        filename = (
+            f"github_{repo.replace('/', '_')}_{'pr' if is_pr else 'issue'}_{number}.md"
+        )
 
         return DiscoveredDocument(
             filename=filename,
@@ -123,7 +132,9 @@ class GitHubConnector(BaseConnector):
             },
         )
 
-    async def fetch_documents(self, config: ConnectorConfig) -> list[DiscoveredDocument]:
+    async def fetch_documents(
+        self, config: ConnectorConfig
+    ) -> list[DiscoveredDocument]:
         """Fetch all documents from target repo without prior cursor."""
         docs, _ = await self.fetch_incremental(config, ConnectorSyncState())
         return docs

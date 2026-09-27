@@ -170,7 +170,9 @@ class DAGWorkflowCompiler:
             missing_inputs = [
                 var
                 for var in node.input_keys
-                if var not in available_variables and var != "query" and var != "context"
+                if var not in available_variables
+                and var != "query"
+                and var != "context"
             ]
             if missing_inputs:
                 warnings.append(

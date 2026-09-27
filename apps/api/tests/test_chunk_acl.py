@@ -1,6 +1,5 @@
 """Tests for Milestone 41: Chunk-Level Granular Access Control (ACL) & DB RLS Hardening."""
 
-
 from src.adapters.vector.filter_builder import build_filter_clause
 from src.domain.abstractions.ingestion import DocumentChunk
 from src.domain.abstractions.retrieval import SearchQuery
@@ -47,7 +46,6 @@ def test_filter_builder_acl_clause_empty_user_context() -> None:
     )
     assert sql == ""
     assert params == {}
-
 
 
 def test_search_query_user_context() -> None:

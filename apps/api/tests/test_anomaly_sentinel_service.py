@@ -24,7 +24,9 @@ def test_shannon_entropy_calculation():
     assert calculate_shannon_entropy("aaaaaaa") == 0.0
 
     # High variety / natural English text
-    entropy_en = calculate_shannon_entropy("The quick brown fox jumps over the lazy dog.")
+    entropy_en = calculate_shannon_entropy(
+        "The quick brown fox jumps over the lazy dog."
+    )
     assert 3.5 <= entropy_en <= 5.0
 
     # Two equally probable characters (1 bit)
@@ -91,7 +93,10 @@ async def test_scan_telemetry_triggers_quarantine_and_alert():
         anomaly_score=0.92,
         is_anomaly=True,
         risk_level="CRITICAL",
-        contributing_factors=["Abnormal request velocity (600 rpm)", "High token ratio (90x)"],
+        contributing_factors=[
+            "Abnormal request velocity (600 rpm)",
+            "High token ratio (90x)",
+        ],
         algorithm_used="isolation_forest",
         features={"request_velocity_rpm": 600.0},
     )
@@ -133,7 +138,9 @@ async def test_service_unquarantine_delegation():
     mock_repo = AsyncMock()
     mock_repo.unquarantine_key.return_value = True
 
-    service = AnomalySentinelService(detector=AnomalyDetectorAdapter(), repository=mock_repo)
+    service = AnomalySentinelService(
+        detector=AnomalyDetectorAdapter(), repository=mock_repo
+    )
     success = await service.unquarantine_key("key_123", resolved_by="admin_prateek")
 
     assert success is True

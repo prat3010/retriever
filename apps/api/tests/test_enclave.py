@@ -33,11 +33,25 @@ from src.main import app
 
 def test_enclave_domain_abstractions_purity():
     """Verify that domain abstractions import zero forbidden frameworks."""
-    domain_file = Path(__file__).resolve().parents[1] / "src" / "domain" / "abstractions" / "enclave.py"
+    domain_file = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "domain"
+        / "abstractions"
+        / "enclave.py"
+    )
     assert domain_file.exists()
 
     tree = ast.parse(domain_file.read_text(), filename=str(domain_file))
-    forbidden = {"fastapi", "sqlalchemy", "cryptography", "redis", "pika", "celery", "adapters"}
+    forbidden = {
+        "fastapi",
+        "sqlalchemy",
+        "cryptography",
+        "redis",
+        "pika",
+        "celery",
+        "adapters",
+    }
 
     imported_modules = set()
     for node in ast.walk(tree):
@@ -76,7 +90,9 @@ def test_attestation_nonce_lifecycle():
     adapter._nonces[expired_nonce.nonce] = expired_nonce
 
     evidence_exp = adapter.generate_evidence(expired_nonce.nonce)
-    report_exp = adapter.verify_evidence(evidence_exp, expected_nonce=expired_nonce.nonce)
+    report_exp = adapter.verify_evidence(
+        evidence_exp, expected_nonce=expired_nonce.nonce
+    )
     assert report_exp.is_valid is False
     assert "expired" in report_exp.details.get("error", "").lower()
 
@@ -92,7 +108,10 @@ def test_hardware_attestation_verification_and_rejection():
     # Valid verification
     report = adapter.verify_evidence(evidence, expected_nonce=nonce_obj.nonce)
     assert report.is_valid is True
-    assert report.trust_level in {AttestationTrustLevel.HARDWARE_ROOTED, AttestationTrustLevel.SIMULATED}
+    assert report.trust_level in {
+        AttestationTrustLevel.HARDWARE_ROOTED,
+        AttestationTrustLevel.SIMULATED,
+    }
     assert report.pcr_measurement == adapter.pcr0_measurement
 
     # Forged signature rejection
@@ -111,7 +130,9 @@ def test_hardware_attestation_verification_and_rejection():
     nonce_obj3 = adapter.generate_nonce(ttl_seconds=300)
     tampered_pcr_ev = adapter.generate_evidence(nonce_obj3.nonce)
     tampered_pcr_ev.pcr_measurement = "0" * 64
-    report_tampered = adapter.verify_evidence(tampered_pcr_ev, expected_nonce=nonce_obj3.nonce)
+    report_tampered = adapter.verify_evidence(
+        tampered_pcr_ev, expected_nonce=nonce_obj3.nonce
+    )
     assert report_tampered.is_valid is False
 
 
@@ -145,7 +166,9 @@ def test_tenant_isolation_and_aad_tampering():
     tenant_alpha = "tn_alpha_111"
     tenant_beta = "tn_beta_222"
 
-    sealed_alpha = adapter.seal(tenant_id=tenant_alpha, plaintext="Alpha confidential data")
+    sealed_alpha = adapter.seal(
+        tenant_id=tenant_alpha, plaintext="Alpha confidential data"
+    )
 
     # Attempt cross-tenant unseal: tenant_beta attempts to unseal alpha's ciphertext
     fraudulent_payload = sealed_alpha.model_copy(update={"tenant_id": tenant_beta})
@@ -160,7 +183,9 @@ def test_tenant_isolation_and_aad_tampering():
     # Attempt Ciphertext tampering
     ct_raw = bytearray(base64.b64decode(sealed_alpha.ciphertext))
     ct_raw[0] ^= 0x01
-    tampered_ct_payload = sealed_alpha.model_copy(update={"ciphertext": base64.b64encode(ct_raw).decode()})
+    tampered_ct_payload = sealed_alpha.model_copy(
+        update={"ciphertext": base64.b64encode(ct_raw).decode()}
+    )
     with pytest.raises(ValueError, match="authentication tag verification failed"):
         adapter.unseal(tampered_ct_payload)
 
@@ -220,7 +245,9 @@ async def test_fastapi_enclave_endpoints():
         admin_headers = {"X-Admin-Master-Key": settings.ADMIN_MASTER_KEY}
 
         # 1. GET /v1/admin/edge/attestation/nonce
-        nonce_res = await client.get("/v1/admin/edge/attestation/nonce", headers=admin_headers)
+        nonce_res = await client.get(
+            "/v1/admin/edge/attestation/nonce", headers=admin_headers
+        )
         assert nonce_res.status_code == 200
         nonce_data = nonce_res.json()
         assert "nonce" in nonce_data
@@ -238,14 +265,18 @@ async def test_fastapi_enclave_endpoints():
         assert verify_res.json()["is_valid"] is True
 
         # 3. GET /v1/admin/edge/attestation/report
-        report_res = await client.get("/v1/admin/edge/attestation/report", headers=admin_headers)
+        report_res = await client.get(
+            "/v1/admin/edge/attestation/report", headers=admin_headers
+        )
         assert report_res.status_code == 200
         report_data = report_res.json()
         assert report_data["is_valid"] is True
         assert report_data["trust_level"] in ["hardware_rooted", "simulated"]
 
         # 3. POST /v1/admin/edge/enclave/purge-keys
-        purge_res = await client.post("/v1/admin/edge/enclave/purge-keys", headers=admin_headers)
+        purge_res = await client.post(
+            "/v1/admin/edge/enclave/purge-keys", headers=admin_headers
+        )
         assert purge_res.status_code == 200
         assert purge_res.json()["status"] == "success"
 

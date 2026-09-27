@@ -11,27 +11,180 @@ from dataclasses import dataclass, field
 
 # Generic stopwords to filter out, preserving code and architectural tokens
 DEFAULT_STOPWORDS = {
-    "a", "about", "above", "after", "again", "against", "all", "am", "an",
-    "and", "any", "are", "aren't", "as", "at", "be", "because", "been",
-    "before", "being", "below", "between", "both", "but", "by", "can't",
-    "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't",
-    "doing", "don't", "down", "during", "each", "few", "for", "from",
-    "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having",
-    "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself",
-    "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've",
-    "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's",
-    "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of",
-    "off", "on", "once", "only", "or", "other", "ought", "our", "ours",
-    "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd",
-    "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than",
-    "that", "that's", "the", "their", "theirs", "them", "themselves", "then",
-    "there", "there's", "these", "they", "they'd", "they'll", "they're",
-    "they've", "this", "those", "through", "to", "too", "under", "until",
-    "up", "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've",
-    "were", "weren't", "what", "what's", "when", "when's", "where", "where's",
-    "which", "while", "who", "who's", "whom", "why", "why's", "with", "won't",
-    "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your",
-    "yours", "yourself", "yourselves"
+    "a",
+    "about",
+    "above",
+    "after",
+    "again",
+    "against",
+    "all",
+    "am",
+    "an",
+    "and",
+    "any",
+    "are",
+    "aren't",
+    "as",
+    "at",
+    "be",
+    "because",
+    "been",
+    "before",
+    "being",
+    "below",
+    "between",
+    "both",
+    "but",
+    "by",
+    "can't",
+    "cannot",
+    "could",
+    "couldn't",
+    "did",
+    "didn't",
+    "do",
+    "does",
+    "doesn't",
+    "doing",
+    "don't",
+    "down",
+    "during",
+    "each",
+    "few",
+    "for",
+    "from",
+    "further",
+    "had",
+    "hadn't",
+    "has",
+    "hasn't",
+    "have",
+    "haven't",
+    "having",
+    "he",
+    "he'd",
+    "he'll",
+    "he's",
+    "her",
+    "here",
+    "here's",
+    "hers",
+    "herself",
+    "him",
+    "himself",
+    "his",
+    "how",
+    "how's",
+    "i",
+    "i'd",
+    "i'll",
+    "i'm",
+    "i've",
+    "if",
+    "in",
+    "into",
+    "is",
+    "isn't",
+    "it",
+    "it's",
+    "its",
+    "itself",
+    "let's",
+    "me",
+    "more",
+    "most",
+    "mustn't",
+    "my",
+    "myself",
+    "no",
+    "nor",
+    "not",
+    "of",
+    "off",
+    "on",
+    "once",
+    "only",
+    "or",
+    "other",
+    "ought",
+    "our",
+    "ours",
+    "ourselves",
+    "out",
+    "over",
+    "own",
+    "same",
+    "shan't",
+    "she",
+    "she'd",
+    "she'll",
+    "she's",
+    "should",
+    "shouldn't",
+    "so",
+    "some",
+    "such",
+    "than",
+    "that",
+    "that's",
+    "the",
+    "their",
+    "theirs",
+    "them",
+    "themselves",
+    "then",
+    "there",
+    "there's",
+    "these",
+    "they",
+    "they'd",
+    "they'll",
+    "they're",
+    "they've",
+    "this",
+    "those",
+    "through",
+    "to",
+    "too",
+    "under",
+    "until",
+    "up",
+    "very",
+    "was",
+    "wasn't",
+    "we",
+    "we'd",
+    "we'll",
+    "we're",
+    "we've",
+    "were",
+    "weren't",
+    "what",
+    "what's",
+    "when",
+    "when's",
+    "where",
+    "where's",
+    "which",
+    "while",
+    "who",
+    "who's",
+    "whom",
+    "why",
+    "why's",
+    "with",
+    "won't",
+    "would",
+    "wouldn't",
+    "you",
+    "you'd",
+    "you'll",
+    "you're",
+    "you've",
+    "your",
+    "yours",
+    "yourself",
+    "yourselves",
 }
 
 
@@ -77,7 +230,9 @@ class SublinearSparseEngine:
                 tokens.append(w_lower)
 
             # Split camelCase: e.g. parseIntent -> parse, intent
-            camel_parts = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\d|\W|$)|\d+", word)
+            camel_parts = re.findall(
+                r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\d|\W|$)|\d+", word
+            )
             if len(camel_parts) > 1:
                 for cp in camel_parts:
                     cp_lower = cp.lower()
@@ -139,7 +294,9 @@ class SublinearSparseEngine:
             return 1.0
         return math.log(1.0 + (self.doc_count + 0.5) / 0.5)
 
-    def score_query_bm25(self, query: str, top_k: int = 10) -> list[SparseScoredCandidate]:
+    def score_query_bm25(
+        self, query: str, top_k: int = 10
+    ) -> list[SparseScoredCandidate]:
         """Score indexed documents against query terms using sublinear BM25."""
         if not query or self.doc_count == 0:
             return []
@@ -175,8 +332,15 @@ class SublinearSparseEngine:
                     else:
                         tf_scaled = float(raw_tf)
 
-                    len_norm = 1.0 - self.b + self.b * (doc_len / self.avg_doc_len if self.avg_doc_len > 0 else 1.0)
-                    term_score = idf * ((tf_scaled * (self.k1 + 1.0)) / (tf_scaled + self.k1 * len_norm))
+                    len_norm = (
+                        1.0
+                        - self.b
+                        + self.b
+                        * (doc_len / self.avg_doc_len if self.avg_doc_len > 0 else 1.0)
+                    )
+                    term_score = idf * (
+                        (tf_scaled * (self.k1 + 1.0)) / (tf_scaled + self.k1 * len_norm)
+                    )
                     score += term_score
 
             if score > 0:

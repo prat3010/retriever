@@ -31,7 +31,9 @@ logger = logging.getLogger("db_snapshot")
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Trigger an encrypted cloud database snapshot.")
+    parser = argparse.ArgumentParser(
+        description="Trigger an encrypted cloud database snapshot."
+    )
     parser.add_argument(
         "--local-dir",
         type=str,

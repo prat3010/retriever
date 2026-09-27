@@ -1,4 +1,5 @@
 """Unit tests for Milestone 71: Corrective RAG (CRAG) & Agentic Reflection Loop."""
+
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
@@ -58,7 +59,9 @@ def test_document_refiner_sentence_splitting_and_filtering() -> None:
 def test_refine_search_results_metadata() -> None:
     """Verify refine_search_results sets is_refined metadata tag."""
     cands = [
-        _make_result("c1", "Sentence 1 is long enough to split. Sentence 2 has pricing details."),
+        _make_result(
+            "c1", "Sentence 1 is long enough to split. Sentence 2 has pricing details."
+        ),
     ]
     refined = refine_search_results("pricing", cands)
     assert len(refined) == 1
@@ -70,7 +73,11 @@ async def test_crag_prepare_context_correct_branch() -> None:
     """Verify CORRECT branch refines documents without secondary search."""
     mock_search = AsyncMock()
     initial_chunks = [
-        _make_result("c1", "Exact information about project escrow milestone releases.", score=0.9),
+        _make_result(
+            "c1",
+            "Exact information about project escrow milestone releases.",
+            score=0.9,
+        ),
     ]
     resp = MagicMock()
     resp.results = initial_chunks
@@ -120,7 +127,9 @@ async def test_crag_prepare_context_ambiguous_branch() -> None:
         _make_result("c1", "Partial local notes on topic.", score=0.5),
     ]
     web_chunks = [
-        _make_result("w1", "External web search results with fresh details.", score=0.85),
+        _make_result(
+            "w1", "External web search results with fresh details.", score=0.85
+        ),
     ]
 
     resp1 = MagicMock(results=initial_chunks)

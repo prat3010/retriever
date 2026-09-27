@@ -40,7 +40,9 @@ def test_update_pricing_config_admin(mock_tenant_session) -> None:
     }
 
     # Verify 401 without admin key
-    unauth_resp = client.put("/v1/admin/config/pricing", json={"pricing": updated_payload})
+    unauth_resp = client.put(
+        "/v1/admin/config/pricing", json={"pricing": updated_payload}
+    )
     assert unauth_resp.status_code == 401
 
     # Verify 200 with admin key

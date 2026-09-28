@@ -60,6 +60,7 @@ class PromptTemplate(BaseModel):
     name: str = "default"
     content: str = ""
     is_system_prompt: bool = False
+    is_locked: bool = False
 
 
 class ChatSessionInfo(BaseModel):

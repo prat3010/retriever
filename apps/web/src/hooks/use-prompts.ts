@@ -5,6 +5,7 @@ export interface PromptTemplate {
   name: string;
   content: string;
   isSystemPrompt: boolean;
+  isLocked?: boolean;
 }
 
 export function usePrompts(tenantId: string | undefined) {
@@ -18,7 +19,7 @@ export function usePrompts(tenantId: string | undefined) {
 export function useCreatePrompt(tenantId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { name: string; content: string; is_system_prompt: boolean }) =>
+    mutationFn: (payload: { name: string; content: string; is_system_prompt: boolean; is_locked?: boolean }) =>
       api.post(`/v1/admin/tenants/${tenantId}/prompts`, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["prompts", tenantId] });
@@ -29,7 +30,7 @@ export function useCreatePrompt(tenantId: string) {
 export function useUpdatePrompt(tenantId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, ...payload }: { name: string; content: string; is_system_prompt: boolean }) =>
+    mutationFn: ({ name, ...payload }: { name: string; content: string; is_system_prompt: boolean; is_locked?: boolean }) =>
       api.put(`/v1/admin/tenants/${tenantId}/prompts/${encodeURIComponent(name)}`, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["prompts", tenantId] });

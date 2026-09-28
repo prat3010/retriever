@@ -53,6 +53,7 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                 name=row.name,
                 content=row.content,
                 is_system_prompt=row.is_system_prompt,
+                is_locked=getattr(row, "is_locked", False),
             )
 
     async def save_template(
@@ -70,6 +71,8 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
             if row:
                 row.content = template.content
                 row.is_system_prompt = template.is_system_prompt
+                if hasattr(template, "is_locked") and template.is_locked is not None:
+                    row.is_locked = template.is_locked
             else:
                 session.add(
                     PromptTemplateDb(
@@ -77,6 +80,7 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                         name=template.name,
                         content=template.content,
                         is_system_prompt=template.is_system_prompt,
+                        is_locked=template.is_locked,
                     )
                 )
             await session.flush()
@@ -102,6 +106,7 @@ class SqlPromptTemplateRegistry(PromptTemplateRegistry):
                     name=row.name,
                     content=row.content,
                     is_system_prompt=row.is_system_prompt,
+                    is_locked=getattr(row, "is_locked", False),
                 )
                 for row in result.scalars().all()
             ]

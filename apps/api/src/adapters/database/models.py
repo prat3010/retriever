@@ -387,6 +387,7 @@ class PromptTemplateDb(Base):
     name = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     is_system_prompt = Column(Boolean, nullable=False, default=False)
+    is_locked = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 

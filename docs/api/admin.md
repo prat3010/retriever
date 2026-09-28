@@ -126,6 +126,34 @@ Purges exact and cosine-similarity semantic caches for a tenant or globally.
 
 ---
 
+### 2.4 Prompt Template Administration & Enterprise Governance Lock
+
+Cluster administrators can create, update, and toggle the `isLocked` flag on prompt templates across any tenant or global scope.
+
+- **HTTP Method:** `GET` / `POST` / `PUT`
+- **Paths:**
+  - `GET /v1/admin/prompts`: List all prompt templates with `isLocked` status.
+  - `POST /v1/admin/prompts`: Create template with `{ name, content, tenantId?, isLocked? }`.
+  - `PUT /v1/admin/prompts/{name}`: Update template or toggle lock state with `{ content, tenantId?, isLocked? }`.
+- **Authentication:** `Bearer <ADMIN_JWT>` or `X-Admin-Master-Key: <KEY>`
+- **Response Schema (`200 OK` for GET):**
+```json
+{
+  "prompts": [
+    {
+      "name": "default",
+      "tenantId": "c9a28c30-e34d-4871-bc01-e9451d6c8b09",
+      "content": "You are a helpful, accurate AI assistant...",
+      "isSystemPrompt": true,
+      "isLocked": true,
+      "createdAt": "2026-08-25T05:37:00Z"
+    }
+  ]
+}
+```
+
+---
+
 ## 3. Error Responses & Status Codes
 
 | Status Code | Code | Reason / Description |

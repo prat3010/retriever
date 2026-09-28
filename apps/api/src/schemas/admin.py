@@ -56,6 +56,7 @@ class CreatePromptRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     content: str = Field(...)
     is_system_prompt: bool = False
+    is_locked: bool | None = None
 
 
 class PreviewPromptRequest(BaseModel):
@@ -66,3 +67,16 @@ class PreviewPromptRequest(BaseModel):
 
 class ApplyPresetRequest(BaseModel):
     preset: str
+
+
+class UpdateTenantPromptRequest(BaseModel):
+    content: str = Field(..., min_length=1)
+    system_prompt_name: str = "default"
+
+
+class TenantPromptResponse(BaseModel):
+    name: str
+    content: str
+    isSystemPrompt: bool
+    isLocked: bool
+

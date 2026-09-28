@@ -32,6 +32,11 @@ from src.adapters.cognitive.corrective_retrieval_adapter import (
 from src.adapters.cognitive.dspy_compiler_adapter import DSPyCompilerAdapter
 from src.adapters.cognitive.gateway_router import GatewayRouterAdapter
 from src.adapters.cognitive.hf_embedding_adapter import HFEmbeddingAdapter
+from src.adapters.cognitive.jev_client import JevClient
+from src.adapters.cognitive.jev_decision_adapters import (
+    JevCorrectiveRetrievalAdapter,
+    JevQueryIntentAdapter,
+)
 from src.adapters.cognitive.langgraph_orchestrator import LangGraphOrchestrator
 from src.adapters.cognitive.local_reranker_adapter import LocalRerankerAdapter
 from src.adapters.cognitive.modal_client import ServerlessGpuClientAdapter
@@ -270,6 +275,23 @@ class Container:
                 return BraveSearchAdapter(api_key=key)
             return TavilySearchAdapter(api_key=key)
 
+        # --- System 1 Fast-Path Decision Plane (Battery #42 - TypeSafe Jev) ---
+        jev_client = JevClient(
+            api_key=settings.JEV_API_KEY,
+            base_url=settings.JEV_BASE_URL,
+            timeout_sec=settings.JEV_TIMEOUT_MS / 1000.0,
+        )
+        self._cache["jev_client"] = jev_client
+
+        llm_intent_classifier = LLMQueryIntentAdapter(llm=llm)
+        if settings.ENABLE_SYSTEM_ONE_INTENT and settings.JEV_API_KEY:
+            intent_classifier = JevQueryIntentAdapter(
+                jev_client=jev_client,
+                fallback=llm_intent_classifier,
+            )
+        else:
+            intent_classifier = llm_intent_classifier
+
         self._cache["search_service"] = HybridSearchService(
             vector_search=PgVectorSearchAdapter(),
             keyword_search=keyword_search_instance,
@@ -284,7 +306,7 @@ class Container:
             else None,
             self_query=LLMSelfQueryAdapter(llm=llm),
             query_rewriter=LLMQueryRewriterAdapter(llm=llm),
-            query_intent_classifier=LLMQueryIntentAdapter(llm=llm),
+            query_intent_classifier=intent_classifier,
             web_search_factory=web_search_factory,
             graph_repository=self._cache["graph_repository"],
         )
@@ -343,7 +365,15 @@ class Container:
         )
 
         # --- Corrective Retrieval ---
-        corrective_provider = LLMCorrectiveRetrievalAdapter(llm=llm)
+        llm_corrective = LLMCorrectiveRetrievalAdapter(llm=llm)
+        if settings.ENABLE_SYSTEM_ONE_CRAG and settings.JEV_API_KEY:
+            corrective_provider = JevCorrectiveRetrievalAdapter(
+                jev_client=self._cache["jev_client"],
+                fallback=llm_corrective,
+            )
+        else:
+            corrective_provider = llm_corrective
+
         self._cache["corrective_provider"] = corrective_provider
         self._cache["corrective_service"] = CorrectiveRetrievalService(
             search_service=self._cache["search_service"],

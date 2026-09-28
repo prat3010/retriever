@@ -237,6 +237,14 @@ class Settings(BaseSettings):
     SERVERLESS_GPU_TIER: str = "A10G"
     SERVERLESS_IDLE_TIMEOUT_SEC: int = 300
 
+    # System 1 Fast-Path Decision Plane (Battery #42 - TypeSafe Jev)
+    JEV_API_KEY: str | None = None
+    JEV_BASE_URL: str = "https://api.typesafe.ai/v1"
+    SYSTEM_ONE_DECISION_ENGINE: Literal["auto", "jev", "llm", "heuristic"] = "auto"
+    ENABLE_SYSTEM_ONE_INTENT: bool = True
+    ENABLE_SYSTEM_ONE_CRAG: bool = True
+    JEV_TIMEOUT_MS: int = 400
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,*"
 

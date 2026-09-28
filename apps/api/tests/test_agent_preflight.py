@@ -41,6 +41,11 @@ def test_detect_provider_auto_detection():
     assert p == "openai"
     assert var == "OPENAI_API_KEY"
 
+    # TypeSafe Jev
+    p, var = detect_provider("jev_test_key_9999")
+    assert p == "jev"
+    assert var == "JEV_API_KEY"
+
 
 def test_detect_provider_with_hint():
     p, var = detect_provider("custom-key-123", hint="gemini")
@@ -54,6 +59,10 @@ def test_detect_provider_with_hint():
     p, var = detect_provider("custom-key-789", hint="cohere")
     assert p == "cohere"
     assert var == "COHERE_API_KEY"
+
+    p, var = detect_provider("custom-key-000", hint="jev")
+    assert p == "jev"
+    assert var == "JEV_API_KEY"
 
 
 def test_mask_key():

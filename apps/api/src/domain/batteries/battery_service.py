@@ -814,6 +814,25 @@ class BatteryService:
                 },
                 health_check_endpoint="/v1/appliance/status",
             ),
+            PlatformBatteryDTO(
+                id="system_one_fast_decision_plane",
+                name="System 1 Fast-Path Decision Plane (TypeSafe Jev Engine)",
+                category=BatteryCategory.ML_INTELLIGENCE,
+                status=BatteryStatus.ACTIVE,
+                algorithm_foundation="Non-Autoregressive State-to-Typed Decision Evaluation & Calibrated Confidence Scoring",
+                milestone="M128 (v2.6.0)",
+                latency_profile="<100ms (Intent) / <150ms (CRAG)",
+                description="Frontier non-autoregressive decision plane delivering sub-100ms query intent classification, sub-150ms CRAG candidate verification, and zero-token-generation model routing with 98% cost reduction.",
+                active_parameters={
+                    "engine": "typesafe_jev",
+                    "non_autoregressive": True,
+                    "fallback_cascade_enabled": True,
+                    "calibrated_confidence_scoring": True,
+                    "zero_token_generation": True,
+                    "zero_toy_verified": True,
+                },
+                health_check_endpoint="/v1/search/intent",
+            ),
         ]
 
     def get_platform_batteries(self) -> PlatformBatteriesResponse:

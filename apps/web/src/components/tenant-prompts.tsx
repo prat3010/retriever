@@ -19,7 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Eye, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Loader2, Lock, Unlock } from "lucide-react";
+import type { PromptTemplate } from "@/hooks/use-prompts";
 
 export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
   const { data: prompts, isLoading } = usePrompts(tenantId);
@@ -28,12 +29,22 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
   const deletePrompt = useDeletePrompt(tenantId);
   const previewPrompt = usePreviewPrompt(tenantId);
 
-  const [editDialog, setEditDialog] = useState<{ name: string; content: string; is_system_prompt: boolean } | null>(null);
+  const [editDialog, setEditDialog] = useState<{
+    name: string;
+    content: string;
+    is_system_prompt: boolean;
+    is_locked: boolean;
+  } | null>(null);
   const [preview, setPreview] = useState<Array<{ role: string; content: string }> | null>(null);
 
   async function handleSave() {
     if (!editDialog) return;
-    const payload = { name: editDialog.name, content: editDialog.content, is_system_prompt: editDialog.is_system_prompt };
+    const payload = {
+      name: editDialog.name,
+      content: editDialog.content,
+      is_system_prompt: editDialog.is_system_prompt,
+      is_locked: editDialog.is_locked,
+    };
     try {
       if (prompts?.some((p) => p.name === editDialog.name)) {
         await updatePrompt.mutateAsync(payload);
@@ -45,6 +56,20 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
       setEditDialog(null);
     } catch {
       toast.error("Failed to save prompt");
+    }
+  }
+
+  async function handleToggleLock(prompt: PromptTemplate) {
+    try {
+      await updatePrompt.mutateAsync({
+        name: prompt.name,
+        content: prompt.content,
+        is_system_prompt: prompt.isSystemPrompt,
+        is_locked: !prompt.isLocked,
+      });
+      toast.success(prompt.isLocked ? "Prompt unlocked for tenant edits" : "Prompt locked by admin policy");
+    } catch {
+      toast.error("Failed to update lock status");
     }
   }
 
@@ -81,7 +106,7 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
       <div className="flex justify-end">
         <Dialog open={!!editDialog && !preview} onOpenChange={(open) => { if (!open) setEditDialog(null); }}>
           <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setEditDialog({ name: "", content: "", is_system_prompt: true })} aria-label="Create new prompt template">
+            <Button size="sm" onClick={() => setEditDialog({ name: "", content: "", is_system_prompt: true, is_locked: false })} aria-label="Create new prompt template">
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> New Prompt
             </Button>
           </DialogTrigger>
@@ -99,6 +124,18 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
                 <div className="space-y-2">
                   <Label htmlFor="prompt-content">Content</Label>
                   <Textarea id="prompt-content" className="font-mono text-xs h-48" value={editDialog.content} onChange={(e) => setEditDialog({ ...editDialog, content: e.target.value })} placeholder="You are a helpful assistant..." />
+                </div>
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="prompt-locked"
+                    checked={editDialog.is_locked}
+                    onChange={(e) => setEditDialog({ ...editDialog, is_locked: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                  />
+                  <Label htmlFor="prompt-locked" className="text-xs font-medium cursor-pointer">
+                    🔒 Lock Master Prompt (Prevent Tenant API Modification)
+                  </Label>
                 </div>
               </div>
             )}
@@ -124,12 +161,38 @@ export function TenantPromptsTab({ tenantId }: { tenantId: string }) {
               <div className="flex items-center gap-2">
                 <CardTitle className="text-sm font-medium">{p.name}</CardTitle>
                 <Badge variant={p.isSystemPrompt ? "default" : "secondary"}>{p.isSystemPrompt ? "system" : "user"}</Badge>
+                {p.isLocked && (
+                  <Badge variant="destructive" className="text-xs">
+                    🔒 Locked
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleToggleLock(p)}
+                  aria-label={p.isLocked ? `Unlock prompt ${p.name}` : `Lock prompt ${p.name}`}
+                  title={p.isLocked ? "Unlock prompt for tenant" : "Lock prompt (admin policy)"}
+                >
+                  {p.isLocked ? <Lock className="h-4 w-4 text-amber-500" /> : <Unlock className="h-4 w-4 text-muted-foreground" />}
+                </Button>
                 <Button size="icon" variant="ghost" onClick={() => handlePreview(p.name)} aria-label={`Preview prompt template ${p.name}`}>
                   <Eye className="h-4 w-4" aria-hidden="true" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setEditDialog({ name: p.name, content: p.content, is_system_prompt: p.isSystemPrompt })} aria-label={`Edit prompt template ${p.name}`}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() =>
+                    setEditDialog({
+                      name: p.name,
+                      content: p.content,
+                      is_system_prompt: p.isSystemPrompt,
+                      is_locked: !!p.isLocked,
+                    })
+                  }
+                  aria-label={`Edit prompt template ${p.name}`}
+                >
                   <Pencil className="h-4 w-4" aria-hidden="true" />
                 </Button>
                 <Button size="icon" variant="ghost" onClick={() => handleDelete(p.name)} aria-label={`Delete prompt template ${p.name}`}>

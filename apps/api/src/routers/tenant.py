@@ -40,6 +40,8 @@ from src.domain.projection.abstractions import (
 from src.schemas.admin import (
     ApiKeyCreatedResponse,
     CreateApiKeyRequest,
+    TenantPromptResponse,
+    UpdateTenantPromptRequest,
     ValidateKeyRequest,
     ValidateKeyResponse,
 )
@@ -699,3 +701,72 @@ async def get_tenant_telemetry_anomalies(
 async def get_tenant_batteries(tenantId: str) -> PlatformBatteriesResponse:
     """Retrieve platform batteries and active engine capabilities available for this tenant."""
     return battery_service.get_tenant_batteries(tenantId)
+
+
+# ── Milestone 120: Tenant-Scoped Master Prompt & Policy Lock ─────────────────
+
+
+@router.get(
+    "/tenants/{tenantId}/prompts/default",
+    status_code=status.HTTP_200_OK,
+    response_model=TenantPromptResponse,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def get_tenant_default_prompt(tenantId: str) -> TenantPromptResponse:
+    """Retrieve the active default master system prompt for the authenticated tenant."""
+    template = await template_registry.get_template(tenantId, "default")
+    if not template:
+        return TenantPromptResponse(
+            name="default",
+            content="You are a helpful and accurate enterprise AI assistant. Always ground your responses in the provided context and preserve conversation memory across turns.",
+            isSystemPrompt=True,
+            isLocked=False,
+        )
+    return TenantPromptResponse(
+        name=template.name,
+        content=template.content,
+        isSystemPrompt=template.is_system_prompt,
+        isLocked=template.is_locked,
+    )
+
+
+@router.put(
+    "/tenants/{tenantId}/prompts/default",
+    status_code=status.HTTP_200_OK,
+    response_model=TenantPromptResponse,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def update_tenant_default_prompt(
+    tenantId: str,
+    payload: UpdateTenantPromptRequest,
+) -> TenantPromptResponse:
+    """Update the default master system prompt. Rejects with HTTP 403 if locked by admin policy."""
+    from src.domain.abstractions.inference import PromptTemplate
+
+    existing = await template_registry.get_template(tenantId, "default")
+    if existing and existing.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Master system prompt is locked by cluster administrator policy.",
+        )
+
+    updated_template = PromptTemplate(
+        tenant_id=tenantId,
+        name="default",
+        content=payload.content,
+        is_system_prompt=True,
+        is_locked=False,
+    )
+    await template_registry.save_template(tenantId, updated_template)
+    await audit_logger.write(
+        tenantId,
+        "tenant.prompt.updated",
+        "Default master system prompt updated by tenant",
+    )
+    return TenantPromptResponse(
+        name="default",
+        content=payload.content,
+        isSystemPrompt=True,
+        isLocked=False,
+    )
+

@@ -142,6 +142,8 @@ PROVIDER_MAP = {
     "mistral": "MISTRAL_API_KEY",
     "cohere": "COHERE_API_KEY",
     "tavily": "TAVILY_API_KEY",
+    "jev": "JEV_API_KEY",
+    "typesafe": "JEV_API_KEY",
 }
 
 
@@ -171,6 +173,8 @@ def detect_provider(key: str, hint: str | None = None) -> tuple[str, str]:
         return ("openai", "OPENAI_API_KEY")
     elif key.startswith("mistral_"):
         return ("mistral", "MISTRAL_API_KEY")
+    elif key.startswith("jev_") or key.startswith("ts_"):
+        return ("jev", "JEV_API_KEY")
 
     if hint_clean:
         var_name = (
@@ -293,6 +297,7 @@ def sense_environment(root_dir: Path) -> dict:
                             "GROQ_API_KEY",
                             "MISTRAL_API_KEY",
                             "COHERE_API_KEY",
+                            "JEV_API_KEY",
                         )
                         and v
                     ):
@@ -397,15 +402,23 @@ def print_pretty(data: dict):
     print(f"  • Embeddings:     {GREEN}Local Ollama (nomic-embed-text) — $0 Cost{NC}")
 
     cfg_keys = env.get("configured_keys", {})
-    if cfg_keys:
+    chat_keys = {k: v for k, v in cfg_keys.items() if k != "JEV_API_KEY"}
+    jev_key = cfg_keys.get("JEV_API_KEY")
+
+    if chat_keys:
         keys_summary = ", ".join(
-            f"{k.replace('_API_KEY', '')} ({v})" for k, v in cfg_keys.items()
+            f"{k.replace('_API_KEY', '')} ({v})" for k, v in chat_keys.items()
         )
         print(f"  • Chat Inference: {GREEN}Cloud Key Configured [{keys_summary}]{NC}")
     else:
         print(
             f"  • Chat Inference: {CYAN}Local Ollama ($0 cost) OR Cloud BYOK (none configured){NC}"
         )
+
+    if jev_key:
+        print(f"  • System 1 Engine: {GREEN}TypeSafe Jev Active (Battery #42) [{jev_key}]{NC}")
+    else:
+        print(f"  • System 1 Engine: {DIM}Local Heuristic / LLM Fallback (JEV_API_KEY optional){NC}")
 
     print("\n----------------------------------------------------------------------")
     if rec["can_auto_launch_docker"]:
@@ -433,7 +446,7 @@ def main():
             "  python3 scripts/agent_preflight.py --set-key <key>  # Auto-detect provider & inject key into .env\n"
             "  python3 scripts/agent_preflight.py --set-key <provider> <key>  # Explicit provider key injection\n\n"
             "Supported Providers:\n"
-            "  openai, gemini, anthropic, groq, mistral, cohere\n"
+            "  openai, gemini, anthropic, groq, mistral, cohere, jev\n"
         )
         sys.exit(0)
 

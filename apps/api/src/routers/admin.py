@@ -792,6 +792,7 @@ async def admin_list_prompts(tenantId: str) -> list[dict]:
             "name": t.name,
             "content": t.content,
             "isSystemPrompt": t.is_system_prompt,
+            "isLocked": t.is_locked,
         }
         for t in templates
     ]
@@ -813,6 +814,7 @@ async def admin_create_prompt(tenantId: str, payload: CreatePromptRequest) -> di
         name=payload.name,
         content=payload.content,
         is_system_prompt=payload.is_system_prompt,
+        is_locked=payload.is_locked if payload.is_locked is not None else False,
     )
     await template_registry.save_template(tenantId, template, bypass_rls=True)
     return {"name": payload.name, "status": "created"}
@@ -831,6 +833,7 @@ async def admin_get_prompt(tenantId: str, name: str) -> dict:
         "name": template.name,
         "content": template.content,
         "isSystemPrompt": template.is_system_prompt,
+        "isLocked": template.is_locked,
     }
 
 
@@ -845,11 +848,13 @@ async def admin_update_prompt(
     existing = await template_registry.get_template(tenantId, name, bypass_rls=True)
     if not existing:
         raise HTTPException(status_code=404, detail="Prompt template not found.")
+    is_locked = payload.is_locked if payload.is_locked is not None else existing.is_locked
     template = PromptTemplate(
         tenant_id=tenantId,
         name=name,
         content=payload.content,
         is_system_prompt=payload.is_system_prompt,
+        is_locked=is_locked,
     )
     await template_registry.save_template(tenantId, template, bypass_rls=True)
     return {"name": name, "status": "updated"}

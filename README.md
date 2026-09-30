@@ -1,128 +1,74 @@
-# Retriever — The Open-Source Enterprise Cognitive Engine
+# Retriever — Open-Source Multi-Tenant RAG Engine
 
 <div align="center">
 
-[![Release](https://img.shields.io/badge/release-v1.0.0--rc1-blueviolet.svg)](https://github.com/prat3010/retriever/releases)
+[![Release](https://img.shields.io/badge/release-v2.2.0-blueviolet.svg)](https://github.com/prat3010/retriever/releases)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
-[![Tests](https://img.shields.io/badge/tests-821%2B%20passed%20%E2%9C%93-brightgreen.svg)](tests/)
-[![Batteries](https://img.shields.io/badge/batteries-42%20included-ff69b4.svg)](#-the-42-platform-batteries)
-[![SDKs](https://img.shields.io/badge/SDKs-Python%20%7C%20TypeScript-informational.svg)](#-decoupled-client-sdks)
+[![Tests](https://img.shields.io/badge/tests-passed%20%E2%9C%93-brightgreen.svg)](tests/)
+[![Architecture](https://img.shields.io/badge/architecture-hexagonal-green.svg)](#-architecture)
 
-**The un-bloated, Hexagonal alternative to LangChain + Pinecone + LiteLLM + Celery.**  
-*Strict PostgreSQL Row-Level Security, ColBERT MaxSim reranking, GraphRAG, NeMo Guardrails, scale-to-zero vLLM serving, sovereign edge sync, multi-cloud failover, sovereign edge voice, autonomous ReAct loops, multi-agent swarm quorum debate, and cognitive long-horizon memory.*
+**A fast, local-first retrieval engine replacing the fragmented LangChain + Pinecone + LiteLLM stack.**  
+*Strict PostgreSQL Row-Level Security, pgvector HNSW + BM25 hybrid search, $0 local Ollama embeddings, Celery async ingestion, and a 1-line embeddable chat widget.*
 
-[🎯 Production Archetypes](#-what-can-you-build-with-retriever-production-archetypes) • [📊 Empirical Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md) • [🚀 Deploy & Connect Frontend](docs/guides/DEPLOYMENT_AND_FRONTEND_INTEGRATION.md) • [📚 Full Documentation](docs/) • [⚡ 30-Second Quickstart](#-quick-start-30-second-dopamine)
+[🚀 Quickstart](#-quick-start) • [🏗️ Architecture](#️-architecture) • [📖 Core Subsystems](#-core-subsystems) • [🔌 Client SDKs](#-client-sdks) • [📊 Benchmarks](docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md)
 
 </div>
 
-> ### 🤖 1-Word AI Onboarding (Zero Reading Required)
-> **Don't waste time reading setup guides.** Open this repo in **Cursor**, **Windsurf**, **Claude Code**, or **Antigravity** and simply type:
-> 
-> ```text
-> Setup
-> ```
-> 
-> Your AI agent will inspect your machine, configure environment variables, boot local containers, and run a live demo query in <60 seconds.
+---
+
+## 💡 Why Retriever?
+
+Most RAG setups in production end up as fragile glue code: teams stitch together LangChain (heavy abstractions), Pinecone or Qdrant ($100s/mo with cross-tenant leak risks), LiteLLM, Celery, and custom OCR scripts.
+
+**Retriever replaces the fragmented stack with a single, high-performance engine built on PostgreSQL 16 + pgvector:**
+
+| Capability | Retriever (Open-Source) | Pinecone / Closed Cloud | LangChain / LlamaIndex |
+|:---|:---:|:---:|:---:|
+| **Architecture** | **Pure Hexagonal (Zero Lock-in)** | Proprietary Cloud | Library Wrappers |
+| **Multi-Tenancy** | **PostgreSQL RLS (Database-Level)** | Namespace Filtering | Application-Level Filtering |
+| **Hybrid Retrieval** | **Concurrent HNSW + BM25 + RRF Fusion** | Dense Vector Only | Manual Glue Code |
+| **Reranking** | **ColBERT MaxSim Late Interaction** | Add-on Service | Separate Library |
+| **Embeddings** | **$0 Local Ollama (`nomic-embed-text`)** | Cloud API Costs | External Provider |
+| **Document Ingestion** | **Docling OCR + Celery Worker Queues** | None | Community Loaders |
+| **Deploy Target** | **1-Click Docker Compose ($10/mo VPS)** | Cloud Subscription | Self-Managed Pipeline |
 
 ---
 
-## 💡 Why Retriever? The "Anti-Wrapper" Stack Killer
+## 🎯 Production Use Cases
 
-Most RAG setups in 2026 are fragile glue code: developers stitch together LangChain (abstraction hell), Pinecone ($100s/mo with cross-tenant leak risks), LiteLLM, Celery, and custom OCR scripts. And when running dedicated models, teams pay $720/mo per client for idle GPUs.
+Retriever is designed for engineering teams that need rock-solid, verifiable retrieval without multi-vendor subscription sprawl:
 
-**Retriever replaces the entire fragmented stack with a single, clean Hexagonal engine:**
+### 1. 🏢 Multi-Tenant B2B AI SaaS
+* **Strict Tenant Isolation:** Enforced via PostgreSQL Row-Level Security (RLS) directly on connection sessions (`SET LOCAL app.current_tenant = ...`). Vectors, chunks, and metadata cannot leak across tenant boundaries, even if application logic fails.
+* **Per-Tenant Quotas:** Built-in rate limiting, token budgets, and API key management per workspace.
 
-| Capability | Retriever (Open-Source) | Pinecone / Qdrant | LangChain / LlamaIndex | LiteLLM Proxy | Dify / AnythingLLM |
-|:---|:---:|:---:|:---:|:---:|:---:|
-| **Architecture** | **Pure Hexagonal (0-lockin)** | Proprietary Cloud | Spaghetti Wrappers | Routing Proxy | Monolith App |
-| **Multi-Tenancy** | **PostgreSQL RLS (DB-Level)** | Namespace only | Application-level filter | Virtual keys only | Basic workspace |
-| **Hybrid Search & Fusion** | **Concurrent HNSW + BM25 Fan-Out + ONNX ColBERT** | Dense only | Manual glue code | N/A | Dense only |
-| **Resilient Local Embeddings**| **Circuit Breaker + Deterministic Failover (M124)**| None | Manual try/catch | Basic retry | None |
-| **Layout OCR & Tables** | **Docling Vision OCR (Built-in)** | None | Paid API integration | N/A | Basic text extract |
-| **Knowledge Graph** | **Dual GraphRAG (Neo4j / CTEs)** | None | Add-on package | N/A | None |
-| **Prompt Optimization** | **DSPy Teleprompter (M92)** | None | Manual prompt tweaking | N/A | None |
-| **Conversational Safety** | **NVIDIA NeMo Colang (M94)** | None | Basic regex | None | Keyword blocklist |
-| **Durable Asynchronous Jobs**| **Step-Memoized Checkpoints (M95)**| None | Fragile in-memory | N/A | Basic background |
-| **Dedicated GPU Serving** | **Scale-to-Zero vLLM / Modal (M96)** | N/A | None | N/A | None |
-| **Sovereign Edge Sync** | **SQLite FTS5 + Binary Vectors (M98)** | None | N/A | None | None |
-| **Multi-Cloud Failover** | **Quorum Consensus + Turso LibSQL (M99)**| None | None | None | None |
-| **Sovereign Edge Voice** | **Local Whisper + Neural TTS (M100)** | None | None | None | None |
-| **Autonomous ReAct Loop**| **Cyclic State Machine & Anti-Loop (M104)**| None | Fragile wrappers | N/A | Simple chains |
-| **Multi-Model Orchestrator**| **Dynamic Escalation & Savings Ledger (M105)**| None | None | Basic fallback | None |
-| **Cognitive Agent Memory**| **Ebbinghaus Decay + Postgres RLS (M108/M124)**| None | None | None | None |
-| **Multi-Agent Swarm Quorum**| **Dialectic Debate + Dynamic LLM (M109/M124)**| None | Complex graph DAGs | None | None |
-| **Graph-of-Thoughts Planner**| **DAG Reasoning + Postgres RLS (M123/M124)**| None | Complex code | None | None |
-| **Monthly Compute Cost** | **$0 - $15 (Scale-to-Zero)** | $100 - $1,000+ | High token waste | Subscription | Server rental |
-| **Self-Hosted On-Prem** | **1-Click Docker (`compose up`)** | Closed Cloud | Code library | Self-hosted | Self-hosted |
+### 2. 💬 1-Line Embeddable AI Concierge
+* **Instant Deployment:** Drop a single `<script src=".../widget.js">` tag onto any website, documentation portal, or e-commerce store.
+* **Custom Persona & Branding:** Configure system prompts, theme accents, and custom greetings via REST API or the Web Studio.
+
+### 3. 📄 High-Precision Enterprise Document Grounding
+* **Tabular Layout Accuracy:** Vision-native Docling OCR preserves multi-column PDF layouts, tables, and section hierarchies.
+* **Verifiable Citations:** Returns page numbers, character ranges, and presigned document links so users can audit the exact source of every answer.
+
+### 4. 💰 $0 Local-First RAG
+* **Zero API Costs for Vectors:** Generates high-dimensional vector embeddings locally via Ollama (`nomic-embed-text`) with zero per-token fees.
+* **Semantic Answer Cache:** Sub-15ms cached responses for recurring user questions, slashing downstream LLM inference costs.
 
 ---
 
-## 🎯 What Can You Build with Retriever? (Production Archetypes)
-
-Retriever is not a toy "chat-with-a-PDF" wrapper. It is an enterprise cognitive substrate designed for high-consequence workloads where data leaks, hallucinated numbers, and runaway GPU bills are unacceptable:
-
-### 1. 🏢 Zero-Leak B2B Multi-Tenant AI SaaS
-* **The Nightmare:** In Pinecone or naive vector setups, one missing `metadata.filter(tenant_id=...)` line in application code leaks Client A's confidential trade secrets to Client B.
-* **The Retriever Reality:** Strict **PostgreSQL Row-Level Security (RLS)** is enforced at the database connection layer (`SET LOCAL app.current_tenant = ...`). It is mathematically impossible for vector data or cross-attention spans to cross tenant boundaries, even if application code fails.
-* **Batteries Activated:** `dense_vector_hnsw` • `edge_token_shield` • `enterprise_identity_federation` (SCIM 2.0 / SAML SSO).
-
-### 2. 📊 High-Stakes Financial & Legal Due Diligence
-* **The Nightmare:** Naive text splitters shred 10-K balance sheets, income statements, and credit agreements, turning multi-column tables into scrambled nonsense and causing LLMs to hallucinate critical earnings numbers.
-* **The Retriever Reality:** Vision-native **Docling OCR** reconstructs tabular Markdown geometry with sub-millimeter precision. **ColBERT MaxSim** late interaction runs token-level cross-attention over footnote numbers, and a **sandboxed Python REPL** calculates verified audit math before answering.
-* **Batteries Activated:** `docling_ocr_parser` • `colbert_maxsim_reranker` • `rlm_repl_sandbox`.
-
-### 3. 🏥 Air-Gapped Sovereign Defense & Healthcare Intelligence
-* **The Nightmare:** Defense contractors, hospitals, and national agencies are legally prohibited under HIPAA, ITAR, and the EU AI Act from streaming sensitive data to public cloud AI APIs.
-* **The Retriever Reality:** 100% sovereign, air-gapped, and zero-egress. Runs local **Ollama** embeddings (`nomic-embed-text`), embedded **SQLite 3 FTS5 + binary float vectors**, and hardware-sealed AES-256-GCM memory enclaves with Zero-Knowledge Merkle leaf attestation.
-* **Batteries Activated:** `sovereign_edge_sync` • `zero_trust_kms_enclave` • `zkp_vector_attestation`.
-
-### 4. 🕸️ Multi-Hop Regulatory & Supply Chain Graph Discovery
-* **The Nightmare:** Dense vector search is blind to relational structure: *"Find all tier-2 suppliers in Munich that share corporate directors with sanctioned entities under Contract X."*
-* **The Retriever Reality:** **Dual-Engine GraphRAG** traverses entity-relation-entity triples via Neo4j Cypher and recursive PostgreSQL CTEs, resolving multi-hop causal chains across thousands of disconnected PDF filings and schematic diagrams.
-* **Batteries Activated:** `graphrag_topology` • `neo4j_cypher_engine` • `multimodal_vision_graphrag`.
-
-### 5. 🎙️ Full-Duplex Sovereign Voice Concierge (<300ms Latency)
-* **The Nightmare:** Cloud voice agents (OpenAI Realtime / ElevenLabs) incur 2–4 second roundtrip latency, charge exorbitant per-minute rates, and pipe private customer voice biometrics into third-party cloud logs.
-* **The Retriever Reality:** Full-duplex WebRTC streaming audio agent with local **Whisper ASR**, RMS/ZCR voice activity detection, sub-second vector grounding, and on-device neural TTS for conversational telephony and dispatch.
-* **Batteries Activated:** `sovereign_edge_voice`.
-
-### 6. ⚖️ Autonomous Multi-Agent Swarm Due Diligence
-* **The Nightmare:** Single-agent LLMs hallucinate or succumb to prompt sycophancy when analyzing complex technical trade-offs or RFP compliance matrices.
-* **The Retriever Reality:** A **4-agent dialectic debate swarm** (Proponent, Skeptic, Compliance Officer, Synthesizer) engages in multi-round quorum debate, resolving conflicts via weighted voting, backed by **Ebbinghaus exponential memory decay** and Graph-of-Thought backtracking.
-* **Batteries Activated:** `multi_agent_swarm_quorum` • `cognitive_agent_memory` • `hierarchical_memory_got_planner` • `react_execution_loop`.
-
-### 7. 💰 Scale-to-Zero Dedicated Model Serving ($720/mo → $12/mo)
-* **The Nightmare:** Provisioning dedicated A10G/H100 instances for 50 enterprise customers costs \$36,000/month in idle compute just to keep weights warm.
-* **The Retriever Reality:** Serverless **vLLM** scales to absolute zero when idle and swaps customer-specific fine-tuned LoRA adapters dynamically in milliseconds upon incoming HTTP/SSE requests.
-* **Batteries Activated:** `serverless_gpu_vllm` • `continuous_preference_tuning`.
-
----
-
-## ⚡ Quick Start (30-Second Dopamine)
+## ⚡ Quick Start
 
 Spin up the entire platform locally with zero external API dependencies (runs 100% free with local Ollama embeddings):
 
-### Option 0: AI Coding Assistant (Recommended)
-Open this repository in Cursor, Windsurf, Claude Code, or Antigravity, and simply send:
-```text
-Setup
-```
-Your AI agent will sense your hardware, launch the stack, and test your first search query autonomously.
-
-### Option A: The 1-Line Drop-In
-```bash
-curl -fsSL https://get.retriever.run | bash
-```
-
-### Option B: Docker Compose
+### Option A: Docker Compose (Production Stack)
 ```bash
 # 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API, Web Studio)
 git clone https://github.com/prat3010/retriever.git && cd retriever
 docker compose up -d
 
-# 2. Verify health readiness (<60 seconds)
+# 2. Verify readiness
 curl http://localhost:8000/health/readiness
 # {"status":"ready","environment":"production"}
 
@@ -130,15 +76,41 @@ curl http://localhost:8000/health/readiness
 curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/search \
   -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
   -H "Content-Type: application/json" \
-  -d '{"query": "How does ColBERT late interaction work?"}'
+  -d '{"query": "How does hybrid search fusion work?"}'
 ```
 
-- **Interactive API Documentation:** Visit [`http://localhost:8000/docs`](http://localhost:8000/docs)
-- **Control Plane & SaaS Studio:** Visit [`http://localhost:3000`](http://localhost:3000)
+- **Interactive Swagger Docs:** [`http://localhost:8000/docs`](http://localhost:8000/docs)
+- **Web Admin Studio:** [`http://localhost:3000`](http://localhost:3000)
+
+### Option B: Local Python Development
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest apps/api/tests/
+```
 
 ---
 
-## 🛠️ Instant Developer Tools (Zero Boilerplate)
+## 🏗️ Core Subsystems
+
+Retriever wires together production-tested retrieval components through Hexagonal dependency injection:
+
+| Subsystem | Layer | Description |
+|:---|:---|:---|
+| **`pgvector_hnsw`** | Core Retrieval | Sub-millisecond approximate nearest-neighbor search directly in PostgreSQL. |
+| **`sparse_bm25`** | Core Retrieval | PostgreSQL full-text search with stemming and Reciprocal Rank Fusion (RRF). |
+| **`colbert_maxsim`** | Reranking | Fine-grained token-level cross-attention similarity for high-precision spans. |
+| **`docling_parser`** | Ingestion | Layout-aware multi-column PDF and table Markdown extraction. |
+| **`semantic_cache`** | Performance | Vector-similarity caching for sub-15ms instant responses to repeated queries. |
+| **`celery_workers`** | Async Pipeline | Background worker swarm for non-blocking document ingestion and vectorization. |
+| **`rls_isolation`** | Security | PostgreSQL Row-Level Security ensuring strict multi-tenant boundary enforcement. |
+| **`streaming_sse`** | Real-Time API | Server-Sent Events delivering token streaming with live citation references. |
+| **`widget_embed`** | Integration | Standalone `<script>` embed widget with customizable theme and system prompts. |
+| **`resilient_embedder`** | Reliability | Stateful circuit breaker with deterministic local Ollama fallback. |
+
+---
+
+## 🛠️ Developer Tools
 
 Retriever ships with out-of-the-box CLI, IDE, and browser tools so you can test and ingest knowledge in seconds:
 
@@ -147,7 +119,6 @@ Chat directly with your vector knowledge base from your shell with grounded cita
 ```bash
 python3 scripts/chat_repl.py
 ```
-*Auto-discovers registered tenants, issues ephemeral session keys, and displays token-level ColBERT MaxSim citations.*
 
 ### 2. 📂 Batch Directory Ingestion
 Recursively crawl and vector-index an entire directory of PDFs, Markdown, TXT, or JSON files in one command:
@@ -156,13 +127,13 @@ python3 scripts/ingest_directory.py --tenant <tenantId> --dir ./docs
 ```
 
 ### 3. 🌐 1-Line Embeddable Chat Widget
-Drop an enterprise AI concierge into **any** website or landing page with zero external npm dependencies:
+Drop an AI assistant into **any** website or landing page with zero external dependencies:
 ```html
 <script 
   src="http://localhost:8000/v1/integrations/extension/bundle" 
   data-tenant="YOUR_TENANT_ID" 
   data-key="YOUR_API_KEY" 
-  data-title="Retriever Concierge"
+  data-title="Knowledge Assistant"
   data-color="#2563eb">
 </script>
 ```
@@ -182,9 +153,9 @@ Connect your AI coding assistant directly to Retriever's hybrid search and docum
 
 ---
 
-## 📦 Decoupled Client SDKs
+## 📦 Client SDKs
 
-Integrate Retriever natively into your applications with our official client SDKs:
+Integrate Retriever natively into your applications with official client SDKs:
 
 ### TypeScript / JavaScript (Node, Browser & Next.js)
 ```bash
@@ -195,8 +166,8 @@ import { RetrieverClient } from "@prat3010/retriever-client";
 
 const client = new RetrieverClient({
   baseUrl: "http://localhost:8000",
-  apiKey: "ret_live_demo_00000000000000000000000000000000",
-  tenantId: "00000000-0000-0000-0000-000000000001",
+  apiKey: "YOUR_API_KEY",
+  tenantId: "YOUR_TENANT_ID",
 });
 
 const results = await client.search("How does hybrid search fusion work?");
@@ -212,199 +183,25 @@ from retriever import RetrieverClient
 
 client = RetrieverClient(
     base_url="http://localhost:8000",
-    api_key="ret_live_demo_00000000000000000000000000000000",
-    tenant_id="00000000-0000-0000-0000-000000000001",
+    api_key="YOUR_API_KEY",
+    tenant_id="YOUR_TENANT_ID",
 )
 
 results = client.search("How does hybrid search fusion work?")
 print(results.results[0].content)
 ```
 
-### ☸️ Enterprise Kubernetes (Helm 3 & Native Operator)
-Deploy high-availability multi-replica clusters with HorizontalPodAutoscaler v2, cert-manager TLS, pgvector, and Redis:
-```bash
-helm install retriever ./deploy/helm/retriever --namespace retriever --create-namespace
-```
-Or manage clusters declaratively via the Kubernetes Operator:
-```bash
-kubectl apply -f deploy/operator/crds/retrieverclusters.retriever.run.crd.yaml
-kubectl apply -f deploy/operator/samples/retriever_cluster_production.yaml
-```
-See the [Helm Chart Guide](deploy/helm/retriever/README.md) and [Kubernetes Operator Guide](deploy/operator/README.md).
-
 ---
 
-### 🔋 The 42 Platform Batteries
+## 🛡️ Architectural Principles
 
-Retriever ships with **42 production-grade batteries** pre-wired through Hexagonal dependency injection:
-
-| # | Battery Name | Category | Architectural Capability |
-|:---:|:---|:---|:---|
-| **1** | `dense_vector_hnsw` | Core Retrieval | pgvector HNSW Cosine Indexing with Dynamic Dimensionality (768, 1536, 3072) |
-| **2** | `sparse_lexical_bm25` | Core Retrieval | Native PostgreSQL Full-Text Search with English Stemming & RRF Fusion |
-| **3** | `colbert_maxsim_reranker` | Late Interaction | Token-Level Cross-Attention Similarity over Query/Document Token Embeddings |
-| **4** | `docling_ocr_parser` | Multimodal Ingestion | Vision Layout Parsing, Markdown Table Reconstruction & Bounding-Box Citations |
-| **5** | `rlm_repl_sandbox` | Code Execution | Recursive Language Model Document Synthesis with Sandboxed Python REPL |
-| **6** | `graphrag_topology` | Graph Reasoning | Dual-Engine GraphRAG with Neo4j Cypher and PostgreSQL Recursive CTEs |
-| **7** | `isolation_forest_sentinel` | ML Operations | Scikit-Learn Unsupervised Behavioral Profiling with Automated Token-Quarantine |
-| **8** | `quantile_effort_regressor` | ML Operations | Gradient Boosted Quantile Regressors ($P_{10}, P_{50}, P_{90}$) for Scope Estimation |
-| **9** | `zero_cookie_persona_clusterer` | ML Operations | Unsupervised KMeans Buyer Intent Clustering with Conversion Propensity Scoring |
-| **10** | `edge_token_shield` | Rate Limiting | Distributed Redis Sliding-Window Token Throttling with Resilient SSE Reconnections |
-| **11** | `llama_guard_safety` | LLM Safety | Llama Guard 3 Prompt Injection Filtering and Zero-Trust PII Redaction |
-| **12** | `longllmlingua_compressor` | Token Optimization | Perplexity-Directed Prompt Compression Removing up to 70% of Filler Tokens |
-| **13** | `nemo_conversational_guardrails` | Conversational Safety | NVIDIA NeMo Colang Multi-Turn Topical Moderation and Jailbreak Prevention |
-| **14** | `neo4j_cypher_engine` | Knowledge Graph | Enterprise Cypher Graph Engine with Hardware-Sensed Fallback to PostgreSQL CTEs |
-| **15** | `durable_workflow_engine` | Async Workflows | Step-Memoized Fault-Tolerant Checkpoint State Machines with Exponential Backoff |
-| **16** | `serverless_gpu_vllm` | ML Serving | Scale-to-Zero Serverless vLLM with Dynamic Multi-Tenant LoRA Tensor Swapping |
-| **17** | `autonomous_fde_metaprogrammer` | Extensibility | AST-Verified Hexagonal Code Synthesis and Dynamic In-Process Plugin Mounting |
-| **18** | `sovereign_edge_sync` | Edge Distribution | Embedded SQLite 3 FTS5, Binary Float32 Vectors & Differential Delta CRDT Sync |
-| **19** | `multicloud_failover_libsql` | Edge Distribution | Monotonic Generation Raft Quorum + EWMA Circuit Breakers & Turso LibSQL Replication |
-| **20** | `sovereign_edge_voice` | Sovereign Audio | Full-Duplex Neural Voice with Local Whisper ASR, RMS/ZCR VAD & WebRTC Streaming |
-| **21** | `zero_trust_kms_enclave` | Hardware Security | Sub-Enclave AES-256-GCM Hardware Encryption with Cloud KMS Remote Attestation |
-| **22** | `autonomous_edge_swarm` | Edge Distribution | Decentralized Anti-Entropy Gossip Mesh with Vector CRDT Sync & Split-Brain Quorum |
-| **23** | `autonomous_react_loop` | Agentic Reasoning | Directed DAG Multi-Turn ReAct Tool Loop with Self-Healing Dynamic Ast Corrections |
-| **24** | `smart_tool_gateway` | Gateway Economics | Heuristic Cost-Aware Semantic Tool Router with Model Escalation Routing |
-| **25** | `studio_tool_cockpit` | Developer Experience | Visual Model Context Protocol (MCP) Tool Builder & Dynamic JSON-RPC Stdio Invoker |
-| **26** | `zero_toy_conformance` | Architecture Safety | Static AST Hexagonal Boundary Enforcement & Anti-Toy Algorithmic Gatekeeper |
-| **27** | `cdc_community_connectors` | System Extensibility | High-Watermark CDC Pipelines (PostgreSQL, S3, GitHub, Slack) with ETag Caching |
-| **28** | `kubernetes_native_operator` | System Extensibility | Level-Triggered State Reconciler, RetrieverCluster CRD OpenAPI v3 & Helm 3 Charts |
-| **29** | `multimodal_vision_graphrag` | Computation Graph | Architectural Schematic Parsing, Bounding-Box Graph Construction & Cross-Modal RRF |
-| **30** | `distributed_mcp_mesh` | System Extensibility | P2P MCP Mesh Topology, HMAC-SHA256 Trust Envelopes & Dynamic ReAct Task Delegation |
-| **31** | `mesh_load_balancer` | System Extensibility | Power-of-Two-Choices (P2C) + EWMA Latency Decay + Saturation Load Shedding & Scale-to-Zero Lifecycle |
-| **32** | `vector_raft_sharding` | Edge Distribution | Consistent Virtual-Node Hash Partitioning + Raft Quorum Replication & Parallel Scatter-Gather Fusion |
-| **33** | `zkp_vector_attestation` | Safety & Defense | Deterministic Binary Merkle Trees + Zero-Knowledge Leaf Commitments + Ed25519 Grounding Certificates |
-| **34** | `enterprise_identity_federation` | Safety & Defense | SAML 2.0 Identity Provider SSO + RFC 7644 SCIM 2.0 Directory Sync & Pre-Retrieval RB-VAC Pruning |
-| **35** | `continuous_preference_tuning` | ML Intelligence | Continuous DPO / ORPO Preference Fine-Tuning + Automated Validation Gate & Hot LoRA Rollback |
-| **36** | `confidential_mpc_enclave` | Safety & Defense | Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves with Additive Secret Sharing |
-| **37** | `autonomous_benchmark_gatekeeper` | ML Intelligence | Autonomous Continuous Benchmark & Regression Gatekeeper with Two-Sample Welch's t-test |
-| **38** | `hierarchical_memory_got_planner` | Cognitive Reasoning | Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) DAG Reasoning & Ebbinghaus Decay |
-| **39** | `enterprise_saas_connectors_acl` | System Extensibility | Recursive Folder & Block Tree Crawlers + Atlassian XHTML/Markdown & Microsoft Graph Delta Stream + JSONB Array Containment (?|) ACL Filtering |
-| **40** | `visual_dag_workflow_composer` | System Extensibility | Declarative DAG Compilation + Kahn's Topological Sort Cycle Detection + Step-Level Streaming Event Bus & Cost Attribution |
-| **41** | `sovereign_air_gapped_appliance` | Edge Distribution | TPM 2.0 / Apple Secure Enclave AES-256-GCM Hardware Vector Sealing & Zero-Egress Network Sentinel |
-| **42** | `system_one_fast_decision_plane` | ML Intelligence | Non-Autoregressive State-to-Typed Decision Evaluation & Calibrated Confidence Scoring (TypeSafe Jev Engine) |
-
----
-
-## 🛡️ Architectural Durability: Why Retriever is Future-Proof
-
-A common question from engineering directors, CTOs, and technical evaluators is:  
-> *"When frontier LLMs reach 10-million-token context windows, won't retrieval systems become obsolete?"*
-
-The answer is an unequivocal **no**. Retriever was architected specifically to thrive across technological model transitions through **5 immutable architectural invariants**:
-
-### 1. The "Infinite Context Window" Economic & Latency Fallacy
-Dumping raw 500-page corporate repositories directly into an LLM's context window is economically and operationally non-viable in production:
-- **Cost Economics:** Processing a 10M-token prompt on frontier models costs between **\$15 and \$50 per query**. Retriever retrieves and packs only the top-k relevant spans, executing queries for **<\$0.001**.
-- **Time-to-First-Token (TTFT):** Ingesting millions of tokens incurs 25–45 seconds of pre-fill processing latency. Retriever's HNSW + BM25 + ColBERT late-interaction pipeline retrieves relevant passages in **<200ms**.
-- **Needle-in-a-Haystack Degradation:** Empirical research demonstrates that LLM retrieval accuracy degrades sharply ("lost-in-the-middle") as prompt size expands. Retriever's **token-level ColBERT MaxSim cross-attention** and **4-Agent Quorum Consensus** pinpoints exact clauses with verified string-span grounding.
-
-### 2. Model-Agnostic Hexagonal Boundaries (Zero Vendor Lock-in)
-Retriever's core domain layer (`src/domain/`) enforces strictly **zero external framework or vendor SDK imports** (`0` imports from OpenAI, Anthropic, or proprietary APIs).  
-Every model interaction executes across abstract domain protocols (`LLMProviderProtocol`, `EmbeddingProviderProtocol`). When a new frontier model (GPT-6, Claude 4, or open-weights Llama 5) is released, swapping models requires editing **one adapter class** without modifying business logic, memory systems, or database schemas.
-
-👉 *Want to swap vector databases, LLMs, chunkers, or guardrails? See our complete step-by-step tutorial:* **[Hexagonal Architecture Extension & Adapter Guide](docs/guides/EXTENDING_RETRIEVER_ADAPTERS.md)**.
-
-### 3. The 30-Year PostgreSQL Foundation
-While specialized vector database startups (Pinecone, Chroma, Milvus) face commercial volatility, acquisition risks, and aggressive pricing shifts, Retriever is anchored on **PostgreSQL 16 with `pgvector`**:
-- The world's most battle-tested, ACID-compliant relational engine running in global production for over 30 years.
-- Combines structured relational data, JSONB tenant configs, native BM25 full-text search, graph recursive CTEs, and HNSW vector indexes within a **single unified database**.
-
-### 4. Universal Open Standards (Model Context Protocol - MCP)
-Retriever is a native **Model Context Protocol (MCP)** server (Milestone 103). Rather than existing as an isolated software silo, all 34 platform batteries are exposed via standard JSON-RPC 2.0 (SSE and Stdio) transports. Any future AI model, IDE (Cursor, VS Code), or autonomous agent framework (Claude Desktop) can natively discover, authorize, and invoke Retriever tools out-of-the-box.
-
-### 5. Sovereign Edge Immunity & Regulatory Durability
-Data privacy legislation (GDPR, HIPAA, EU AI Act, India DPDP Act) is expanding globally, legally prohibiting the transmission of confidential corporate IP to public cloud AI endpoints. Retriever's **offline embedded SQLite FTS5 engine**, **local Ollama embedding pipeline**, and **hardware-rooted micro-enclave memory sealing** guarantee that your retrieval infrastructure remains compliant, air-gapped, and resilient against cloud policy mandates.
-
-### 6. System 1 Fast-Path Decision Plane (Non-Autoregressive Intelligence)
-Traditional RAG pipelines waste thousands of dollars and introduce 1.5s–3.0s latency delays by calling autoregressive LLMs (System 2) just to classify query intent, route requests, or judge chunk relevance. Retriever incorporates a **System 1 Fast-Path Decision Plane (Battery #42 - TypeSafe Jev Engine)** that executes structured, typed decisions and calibrated confidence scoring in parallel in **<100ms** with zero token generation overhead and 98% reduced operating costs.
-
----
-
-## 🏛️ Architectural Topology: Pure Hexagonal Core
-
-```text
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ CLIENT CONTROL PLANE & SAAS STUDIO (Next.js 16)                                        │
- │ • Chat Studio, Documents Library, Search Inspector, Embed Configurator & Observability │
- │ • Supabase Auth PKCE Session Verification & Multi-Tenant Routing                       │
- └──────────────────────────────────────────┬─────────────────────────────────────────────┘
-                                            │ REST / SSE API Streams (X-User-ID / Bearer)
-                                            ▼
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │ FASTAPI APPLICATION GATEWAY (`apps/api/src/routers`)                                   │
-  │ • Routers: /v1/chat, /v1/search, /v1/documents, /v1/voice, /v1/multicloud, /v1/edge    │
-  │ • Guardrails: Llama Guard 3 Injection Filter & NeMo Conversational Moderation Rails    │
-  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
-                                             │
-                                             ▼
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │ COGNITIVE DOMAIN CORE (`apps/api/src/domain`)                                          │
-  │ • Pure Python abstractions (0 framework / database imports)                            │
-  │ • Hybrid Search (HNSW + BM25 + ColBERT MaxSim + RRF Fusion)                            │
-  │ • GraphRAG Knowledge Graph Indexing & Neo4j / Pg Triples                               │
-  │ • DSPy Declarative Prompt Compilation & Self-Optimization                              │
-  │ • Durable Checkpoint State Machine & Step Memoization (M95)                            │
-  │ • Sovereign Edge Voice & Local Whisper / WebRTC Speech Synthesis (M100)                │
-  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
-                                             │
-                                             ▼
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │ INFRASTRUCTURE ADAPTERS (`apps/api/src/adapters`)                                      │
-  │ • Database: PostgreSQL 16 + pgvector (Row-Level Security Tenant Isolation)              │
-  │ • Serving: Serverless Modal / BentoML vLLM A10G with Dynamic LoRA Tensor Swapping      │
-  │ • Edge & Voice: Embedded SQLite FTS5, Turso LibSQL Replicas, Local Whisper & Neural TTS│
-  │ • Broker / Cache: Redis Semantic Cache & Sliding-Window Token Shield                    │
-  │ • Async Tasks: Celery / RabbitMQ Workers & Distributed Schedulers                      │
-  └────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📚 Complete Technical Documentation
-
-- **[Hexagonal Extensibility & Adapters Guide](docs/guides/EXTENDING_RETRIEVER_ADAPTERS.md):** How to customize or swap vector stores, LLMs, chunkers, and guardrails.
-- **[Production Deployment & Frontend Integration](docs/guides/DEPLOYMENT_AND_FRONTEND_INTEGRATION.md):** Docker Compose, Nginx SSL, and React/Next.js/Node recipes.
-- **[Enterprise Security Whitepaper](docs/security/ENTERPRISE_RAG_SECURITY_WHITEPAPER.md):** PostgreSQL RLS isolation, AES-256 envelope encryption, and zero PII retention.
-- **[REST API Reference](docs/api/):** Complete specifications for all 25+ REST/SSE endpoints.
-- **[Architecture Decision Records (ADRs)](docs/decisions/):** 32 accepted architectural decisions (PostgreSQL, pgvector, ColBERT, GraphRAG, NeMo, vLLM, LibSQL, WebRTC Voice, MCP Mesh, Vector Sharding).
-- **[Production Operations Runbooks](docs/runbooks/):** Operational guides for SREs and MLOps teams.
-- **[Project Health & Test Status](docs/operations/PROJECT_STATUS.md):** Continuous verification matrix across 125 test suites.
-- **[Product Roadmap & Batteries Matrix](ROADMAP.md):** Platform roadmap and 34 production batteries overview.
-
----
-
-## 🧪 Automated Testing & Benchmark Baselines
-
-```bash
-# 1. Zero-Toy & Anti-Mock Static Analysis Linter (ensures 0 mock classes, faked scores, or dummy frames)
-python3 scripts/audit_zero_toy.py
-
-# 2. Run Zero-Toy Invariant regression test
-uv run pytest apps/api/tests/test_zero_toy_invariants.py -v
-
-# 3. Run complete unit & integration test suite (730+ tests across 108 suites)
-uv run pytest apps/api/tests/ -v
-
-# 4. Verify strict Hexagonal import boundaries (0 framework imports in domain)
-uv run pytest apps/api/tests/test_architecture.py -v
-
-# 5. Code formatting & linting conformance
-uv run ruff check apps/api/src/ apps/api/tests/
-```
-
----
-
-## 👷 Author & Architecture
-
-Retriever is engineered by **[Prateek Sharma](https://github.com/prat3010)**.
-
-> **Need Retriever deployed inside your enterprise VPC (AWS/GCP/Azure) with custom compliance, private fine-tuned LoRA pipelines, or proprietary ERP/CRM connectors?**  
-> 
-> 👉 Open an issue or discussion on **[GitHub Discussions](https://github.com/prat3010/retriever/discussions)**  
-> ✉️ Enterprise inquiries: `prateeqsharma@gmail.com`
+1. **The 30-Year PostgreSQL Foundation:** Rather than running fragile bespoke vector databases, Retriever is anchored on PostgreSQL 16 with `pgvector`—combining relational data, JSONB tenant configs, BM25 full-text search, and HNSW indexes within a single unified database.
+2. **Model-Agnostic Hexagonal Boundaries:** The core domain layer (`src/domain/`) enforces strictly zero external vendor SDK imports. Swapping from local Ollama to OpenAI, Anthropic, or Groq requires editing a single adapter without altering domain logic.
+3. **Local-First Economics:** Embeddings default to local Ollama (`nomic-embed-text`). You can run millions of vector operations per month with $0 external API bills.
+4. **Standard Protocols:** In addition to clean REST and SSE endpoints, Retriever exposes tools via the Model Context Protocol (MCP) so AI agents can query your knowledge base natively.
 
 ---
 
 ## 📄 License
 
-Retriever is open-source software licensed under the **[Apache License 2.0](LICENSE)**.
+Apache 2.0 — Free for commercial and non-commercial use.

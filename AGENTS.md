@@ -9,7 +9,7 @@ Welcome the developer warmly and explain what Retriever is in 4 concise, high-im
 1. **Un-bloated Hexagonal Alternative:** Replaces the fragmented LangChain + Pinecone + LiteLLM stack with a single enterprise-grade engine.
 2. **Strict Multi-Tenancy:** Database-level PostgreSQL Row-Level Security (RLS) ensures vector data never leaks across tenants.
 3. **Local-First & 100% Free:** Uses local Ollama (`nomic-embed-text`) out of the box — zero external API keys or token costs needed for embeddings.
-4. **38 Production Batteries:** Hybrid fusion (HNSW + BM25 + ColBERT MaxSim), GraphRAG, DSPy optimization, Ebbinghaus long-horizon memory, and Graph-of-Thought planning.
+4. **Core Production Subsystems:** Hybrid fusion (HNSW + BM25 + ColBERT MaxSim), layout-aware OCR, and PostgreSQL Row-Level Security.
 
 ### Beat 2: Autonomous Machine Diagnostics
 Run the preflight diagnostic tool immediately:
@@ -65,39 +65,16 @@ Once Docker services boot:
 # Workspace Coding Rules & Constraints
 
 ## Architectural Constraints (Hexagonal & Multi-Tenancy)
-- **Enforced Codebase Patterns:** Always follow the learned architectural conventions documented in `.agents/rules/patterns.md`.
 - **Hexagonal Boundary Rule:** Code under `src/domain/` MUST ONLY import abstract interfaces from `src/domain/abstractions/` or standard Python libraries. **NEVER** import infrastructure adapters (`src/adapters/`), API routers (`src/routers/`), database frameworks (`sqlalchemy`), or external API SDKs directly in domain files.
-- **Multi-Tenancy Isolation Rule:** Every database entity, query method, and backend API MUST strictly scope operations by `tenant_id`. Frontend components MUST NOT hardcode fallback tenant UUIDs or silently default unauthenticated requests to guest UUIDs.
-- **Retriever Purity & Consumer Decoupling Invariant Rule:**
-  - **Zero Consumer Domain References:** The source code of `retriever` (`apps/api/src/`, `apps/web/src/`, `packages/`, etc.) MUST NEVER contain references, hardcoded URLs, or naming couplings to consumer applications, external client domains, or personal portfolio websites (e.g., `prateeq.in`, `prateeq.in/rag`).
-  - **Zero Marketing Pollution in Core Engine:** Never add consumer-specific marketing calculators (such as ad-hoc competitor pricing comparison formulas) or promotional facades into `retriever`. All algorithms, routers, and services must serve genuine, multi-tenant enterprise RAG use cases.
-  - **Generic Multi-Tenant Isolation:** All consumer platforms (including portfolio sites or enterprise clients) are strictly treated as standard, decoupled tenants identified only by generic UUIDs or slugs (`tenant_id`), consuming the platform via public REST, SSE, or embeddable widget interfaces.
+- **Multi-Tenancy Isolation Rule:** Every database entity, query method, and backend API MUST strictly scope operations by `tenant_id` using PostgreSQL Row-Level Security (RLS).
+- **Decoupled Engine Core:** The core engine of `retriever` must remain standalone and generic. Never hardcode consumer domain URLs or marketing formulas into the backend.
 
-## Embedding Constraints
-- **Always use a local model for generating embeddings.** (e.g., local Ollama using `nomic-embed-text` on `http://host.docker.internal:11434/v1`).
-- **Do NOT use client-provided LLM keys** (such as Gemini, OpenAI, or Cohere) for embedding tasks to avoid hitting API rate limits and preserving quotas.
+## Embedding & LLM Constraints
+- **Local-First Embeddings:** Always default to local Ollama (`nomic-embed-text`) for generating embeddings to avoid external token costs and rate limits.
+- **Configurable LLM Inference:** Chat completion supports local Ollama or cloud providers (OpenAI, Gemini, Groq, Anthropic) configured via environment variables.
 
-## Production-First & Zero-Toy Utility Invariant Rule (No Mocks, No Gimmicks)
-- **Rule:** All backend algorithms, adapters, cognitive workflows, and administrative endpoints MUST be genuine, production-grade implementations with verified enterprise utility.
-- **Strict Invariants:**
-  1. **Zero Algorithmic Shortcuts or Fakes:** Do NOT implement naive regex heuristics and mislabel them as SOTA ML algorithms (e.g. calling simple regex "LongLLMLingua" or keyword matching "Llama Guard 3"). If an algorithm is specified, implement the authentic model/math or provide a transparent, explicitly labeled fallback.
-  2. **Zero Mock Data Returns:** All endpoints must query real database models, execute genuine vector operations, and emit verified telemetry. Never return static synthetic mock data in production routers.
-  3. **Pragmatic Production Value:** Prioritize core platform reliability (safe blue/green releases, atomic symlinks, rollback gates, concurrent load testing benchmarks, and unsupervised GraphRAG clustering) over cosmetic features.
-  4. **Strict Conformance:** Every endpoint and adapter must be verified by automated Pytest suites with genuine database and memory integration.
-  5. **Automated Zero-Toy Linter Gate & Fail-Fast Mandate:**
-     - Always run `python3 scripts/audit_zero_toy.py` and `pytest apps/api/tests/test_zero_toy_invariants.py` before finishing any task. It must report 0 violations.
-     - Never fake missing integrations or unconfigured credentials. If an external service is not yet implemented or missing keys, throw `NotImplementedError` or return `HTTP 501 / 400` with an honest descriptive error. Never return synthetic fake data, simulated 200 OK facades, or dummy frame fallbacks.
-
-## Code Style & Formatting Rules
-- **Always run `ruff check --fix` on modified Python files** before making commits or finishing tasks to ensure imports and formatting conform to project CI standards.
-
-## Agent Architecture Pre-Flight & Graph Intelligence
-- **Architecture Knowledge Graph Pre-Flight:** Before creating, editing, or modifying ANY database table, API route router, domain service, or infrastructure adapter, the agent MUST run:
-  ```bash
-  python3 scripts/query_architecture.py --target <entity_or_api>
-  ```
-  to inspect the full blast radius, upstream callers, downstream dependencies, and linked PRDs.
-
-## Autonomous Execution & Zero Unnecessary Manual Delegation
-- **Rule:** The agent MUST autonomously execute all actionable operational and configuration steps (e.g., applying database DDL migrations via MCP tools `apply_migration`/`execute_sql`, running local migration scripts, syncing cache revalidations, executing seed scripts, and verifying schemas) using the tools available. NEVER delegate or defer executable steps to the user as "manual tasks" if the agent has the capability, permissions, or tools to execute them directly. ONLY surface manual actions to the user if they are strictly impossible for the agent to execute autonomously (e.g., configuring external OAuth credentials in Google Cloud / Razorpay web consoles, hardware actions, or providing secret credentials known only to the human).
+## Code Quality & Testing
+- **Formatting:** Always run `ruff check --fix` on modified Python files before finishing tasks.
+- **Test Verification:** Ensure `pytest apps/api/tests/` passes without regressions.
+- **Pragmatic Simplicity:** Prioritize core platform reliability, clean boundaries, and genuine functionality over speculative layers or simulated features.
 

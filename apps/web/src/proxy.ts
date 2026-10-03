@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  || process.env.API_URL
-  || "http://localhost:8000";
+const API_BASE = (process.env.API_URL && !process.env.API_URL.startsWith("/"))
+  ? process.env.API_URL
+  : (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.startsWith("/")
+    ? process.env.NEXT_PUBLIC_API_URL
+    : "https://rag.prateeq.in");
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

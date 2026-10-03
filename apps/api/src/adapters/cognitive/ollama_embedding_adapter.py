@@ -11,7 +11,7 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
         self,
         base_url: str = DEFAULT_BASE_URL,
         model: str = DEFAULT_MODEL,
-        timeout: float = 30.0,
+        timeout: float = 300.0,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
@@ -22,7 +22,7 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
             self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(self._timeout, connect=5.0)
+                timeout=httpx.Timeout(self._timeout, connect=10.0, read=self._timeout)
             )
         return self._client
 
@@ -47,13 +47,13 @@ class OllamaEmbeddingAdapter(EmbeddingProvider):
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         results: list[list[float]] = []
-        batch_size = 20
+        batch_size = 5
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
             response = await self.client.post(
                 f"{self._base_url}/api/embed",
                 json={"model": self._model, "input": batch},
-                timeout=300.0,
+                timeout=httpx.Timeout(self._timeout, connect=10.0, read=self._timeout),
             )
             response.raise_for_status()
             results.extend(response.json()["embeddings"])

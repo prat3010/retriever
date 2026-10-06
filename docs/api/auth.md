@@ -167,5 +167,6 @@ console.log("Tenant:", session.tenantId, "Roles:", session.roles);
 ## 🔗 Related Architecture & Cross-References
 - [Master System Design](../implementation/system-design.md)
 - [Database Schemas & pgvector](../infrastructure/database_and_schemas.md)
+- [Authentication & Identity Integration Guide](../guides/AUTHENTICATION_INTEGRATION_GUIDE.md)
 - [TypeScript Client SDK](../integrations/typescript_sdk.md)
 - [Cloudflare Edge Proxy](../integrations/cloudflare_proxy_worker.md)

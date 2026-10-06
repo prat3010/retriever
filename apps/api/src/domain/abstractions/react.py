@@ -45,6 +45,7 @@ class ReActEventType(StrEnum):
     CIRCUIT_BREAKER = "circuit_breaker"
     MODEL_ESCALATION = "model_escalation"
     FINAL_ANSWER = "final_answer"
+    QUERY_PLAN = "query_plan"
     ERROR = "error"
 
 
@@ -79,6 +80,10 @@ class ReActLoopConfig(BaseModel):
     self_healing_enabled: bool = Field(
         default=True,
         description="Whether tool execution errors trigger self-healing prompt recovery",
+    )
+    enable_query_planning: bool = Field(
+        default=False,
+        description="Whether to run dynamic query planning before executing ReAct loop",
     )
     allowed_tools: list[str] | None = Field(
         default=None,

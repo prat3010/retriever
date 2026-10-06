@@ -4,18 +4,17 @@ from typing import Any
 
 from src.domain.abstractions.evaluation import (
     AggregateScores,
-    DeepEvalScores,
     EvalDatasetRepository,
     EvalRun,
     EvalRunRepository,
     EvalRunResult,
     EvalRunResultScores,
-    RagasScores,
 )
 from src.domain.abstractions.inference import ChatMessage, InferenceRequest
 from src.domain.abstractions.retrieval import (
     SearchQuery,
 )
+from src.domain.evaluation.metrics import compute_rag_scores
 from src.domain.evaluation.search_metrics import compute_search_metrics
 from src.domain.inference.orchestrator import InferenceOrchestrator
 from src.domain.retrieval.search_service import HybridSearchService
@@ -95,8 +94,16 @@ class EvalRunService:
                 relevant_chunk_ids=question.relevant_chunk_ids,
             )
 
-            ragas_scores = RagasScores()
-            deepeval_scores = DeepEvalScores()
+            default_ragas, default_deepeval = compute_rag_scores(
+                question=question.question,
+                generated_answer=generated_answer or "",
+                contexts=context_chunks,
+                ground_truth_answer=question.ground_truth_answer,
+                relevant_chunk_ids=question.relevant_chunk_ids,
+                retrieved_chunk_ids=retrieved_chunk_ids,
+            )
+            ragas_scores = default_ragas
+            deepeval_scores = default_deepeval
 
             if generated_answer:
                 if self.ragas_fn is not None:

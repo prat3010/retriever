@@ -38,7 +38,6 @@ async def ingest_file_sync(
     import tempfile
 
     from processing_core import (
-        extract_layout_from_pdf,
         extract_text_from_file,
     )
 
@@ -64,14 +63,24 @@ async def ingest_file_sync(
         tmp.write(actual_content)
         tmp_path = tmp.name
 
-    layout_meta = {"has_tables": False, "table_count": 0, "layout_parsed": False}
+    layout_meta = {
+        "has_tables": False,
+        "table_count": 0,
+        "has_forms": False,
+        "form_count": 0,
+        "layout_parsed": False,
+    }
     try:
         if filename.lower().endswith(".pdf") or mime_type == "application/pdf":
-            layout_result = extract_layout_from_pdf(tmp_path)
+            from processing_core import extract_layout_aware_document
+
+            layout_result = extract_layout_aware_document(tmp_path)
             text = layout_result["text"]
             layout_meta = {
                 "has_tables": layout_result["has_tables"],
                 "table_count": layout_result["table_count"],
+                "has_forms": layout_result.get("has_forms", False),
+                "form_count": layout_result.get("form_count", 0),
                 "layout_parsed": True,
             }
         else:
@@ -113,6 +122,11 @@ async def ingest_file_sync(
     elif ext == ".md":
         ast_chunker = AstCodeChunker()
         raw_chunks = ast_chunker.chunk_markdown(text, filename=filename)
+    elif layout_meta.get("has_tables") or layout_meta.get("has_forms"):
+        layout_chunker = ChunkerFactory.get_chunker("layout_aware")
+        raw_chunks = layout_chunker.split_text_with_offsets(
+            text, chunk_size, chunk_overlap
+        )
     else:
         hierarchical_chunker = ChunkerFactory.get_chunker("hierarchical")
         raw_chunks = hierarchical_chunker.split_text_with_offsets(

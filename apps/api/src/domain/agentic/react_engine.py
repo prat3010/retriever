@@ -116,6 +116,30 @@ class ReActExecutionEngine(ReActLoopProtocol):
             except Exception as mem_err:
                 logger.debug("Cognitive memory guidance retrieval skipped: %s", mem_err)
 
+        # Dynamic Query Planning (2026 Standards)
+        if cfg.enable_query_planning:
+            try:
+                from src.domain.agentic.query_planner import AgenticQueryPlanner
+
+                planner = AgenticQueryPlanner()
+                plan = planner.decompose_query(
+                    query=query,
+                    tenant_id=tenant_id,
+                    available_tools=[t.name for t in available_tools],
+                )
+                yield ReActEvent(
+                    event_id=str(uuid4()),
+                    event_type=ReActEventType.QUERY_PLAN,
+                    step_index=0,
+                    state=ReActState.REASONING,
+                    data=plan.model_dump(),
+                )
+                system_msg += f"\n\nPre-Computed Execution Plan ({plan.complexity}):\n"
+                for step in plan.steps:
+                    system_msg += f"- [{step.step_id}] ({step.step_type}): {step.description}\n"
+            except Exception as plan_err:
+                logger.debug("Agentic query planning skipped: %s", plan_err)
+
         messages = [
             ChatMessage(role="system", content=system_msg),
             ChatMessage(

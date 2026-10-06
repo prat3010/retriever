@@ -108,6 +108,185 @@ def extract_layout_from_pdf(storage_path: str) -> dict[str, Any]:
     }
 
 
+def extract_form_fields(text: str) -> dict[str, str]:
+    """Extract key-value form fields from text (e.g. 'Invoice Number: INV-001', 'Total: $500')."""
+    import re
+
+    fields: dict[str, str] = {}
+    pattern = re.compile(
+        r"^[ \t]*([A-Za-z0-9][A-Za-z0-9 _\-\./#]{1,50}?)[ \t]*[:=][ \t]+(.+)$"
+    )
+    for line in text.splitlines():
+        match = pattern.match(line)
+        if match:
+            k = match.group(1).strip()
+            v = match.group(2).strip()
+            if k and v and len(k) <= 50 and len(v) <= 500:
+                fields[k] = v
+    return fields
+
+
+def extract_structured_blocks(text: str) -> list[dict[str, Any]]:
+    """Parse document text into semantic layout blocks: headings, tables, forms, and paragraphs.
+
+    Preserves structural integrity for downstream chunking and retrieval.
+    """
+    import re
+
+    blocks: list[dict[str, Any]] = []
+    lines = text.splitlines()
+    i = 0
+    n = len(lines)
+
+    table_pattern = re.compile(r"^[ \t]*\|(.+)\|[ \t]*$")
+    separator_pattern = re.compile(r"^[ \t]*\|([ \t]*:?-+:?[ \t]*\|)+[ \t]*$")
+    heading_pattern = re.compile(r"^(#{1,6})\s+(.+)$")
+    kv_pattern = re.compile(
+        r"^[ \t]*([A-Za-z0-9][A-Za-z0-9 _\-\./#]{1,40}?)[ \t]*[:=][ \t]+(.+)$"
+    )
+
+    current_para: list[str] = []
+
+    def flush_para():
+        nonlocal current_para
+        if current_para:
+            content = "\n".join(current_para).strip()
+            if content:
+                blocks.append(
+                    {
+                        "type": "paragraph",
+                        "content": content,
+                        "metadata": {"char_count": len(content)},
+                    }
+                )
+            current_para = []
+
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+
+        if not stripped:
+            flush_para()
+            i += 1
+            continue
+
+        # 1. Heading check
+        heading_match = heading_pattern.match(stripped)
+        if heading_match:
+            flush_para()
+            level = len(heading_match.group(1))
+            title = heading_match.group(2).strip()
+            blocks.append(
+                {
+                    "type": "heading",
+                    "content": stripped,
+                    "metadata": {"level": level, "title": title},
+                }
+            )
+            i += 1
+            continue
+
+        # 2. Markdown Table check
+        if table_pattern.match(stripped):
+            flush_para()
+            table_lines = [line]
+            i += 1
+            while i < n and (
+                table_pattern.match(lines[i].strip())
+                or separator_pattern.match(lines[i].strip())
+            ):
+                table_lines.append(lines[i])
+                i += 1
+
+            headers = []
+            if len(table_lines) >= 2:
+                raw_header = table_lines[0].strip().strip("|").split("|")
+                headers = [h.strip() for h in raw_header]
+            table_content = "\n".join(table_lines)
+            blocks.append(
+                {
+                    "type": "table",
+                    "content": table_content,
+                    "metadata": {
+                        "headers": headers,
+                        "rows_count": max(0, len(table_lines) - 2)
+                        if len(table_lines) >= 2
+                        else len(table_lines),
+                        "is_markdown_table": True,
+                    },
+                }
+            )
+            continue
+
+        # 3. Form / Key-Value block check (contiguous KV pairs, min 2)
+        kv_match = kv_pattern.match(stripped)
+        if kv_match:
+            kv_lines = [line]
+            next_idx = i + 1
+            while (
+                next_idx < n
+                and lines[next_idx].strip()
+                and kv_pattern.match(lines[next_idx].strip())
+            ):
+                kv_lines.append(lines[next_idx])
+                next_idx += 1
+
+            if len(kv_lines) >= 2:
+                flush_para()
+                form_fields = extract_form_fields("\n".join(kv_lines))
+                blocks.append(
+                    {
+                        "type": "form",
+                        "content": "\n".join(kv_lines),
+                        "metadata": {
+                            "fields": form_fields,
+                            "field_count": len(form_fields),
+                        },
+                    }
+                )
+                i = next_idx
+                continue
+
+        # 4. Narrative line
+        current_para.append(line)
+        i += 1
+
+    flush_para()
+    return blocks
+
+
+def extract_layout_aware_document(storage_path: str) -> dict[str, Any]:
+    """Extract layout-aware document structure, preserving tables, forms, and section hierarchy."""
+    base_layout = (
+        extract_layout_from_pdf(storage_path)
+        if storage_path.lower().endswith(".pdf")
+        else {
+            "text": extract_text_from_file(storage_path),
+            "page_count": 1,
+            "has_tables": False,
+            "table_count": 0,
+            "pages": [{"page": 1, "has_text": True, "table_count": 0}],
+        }
+    )
+
+    full_text = base_layout.get("text", "")
+    blocks = extract_structured_blocks(full_text)
+    form_fields = extract_form_fields(full_text)
+
+    table_block_count = sum(1 for b in blocks if b["type"] == "table")
+    return {
+        "text": full_text,
+        "page_count": base_layout.get("page_count", 1),
+        "has_tables": base_layout.get("has_tables", False) or table_block_count > 0,
+        "table_count": max(base_layout.get("table_count", 0), table_block_count),
+        "has_forms": len(form_fields) > 0,
+        "form_count": sum(1 for b in blocks if b["type"] == "form"),
+        "form_fields": form_fields,
+        "pages": base_layout.get("pages", []),
+        "structured_blocks": blocks,
+    }
+
+
 def extract_text_from_pdf(storage_path: str) -> str:
     """Extract layout-aware text (including formatted tables) from PDF."""
     layout = extract_layout_from_pdf(storage_path)

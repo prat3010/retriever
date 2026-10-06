@@ -9,6 +9,7 @@ import logging
 import operator
 from collections.abc import Awaitable, Callable
 from typing import Any
+from uuid import uuid4
 
 from src.domain.agentic.abstractions import ToolDefinition, ToolResult
 
@@ -234,6 +235,259 @@ class ToolRegistry:
             return f"System metrics for {metric_type}: active healthy status, 42 queries in past hour."
 
         self.register_tool(metrics_def, _default_metrics)
+
+        # 4a. 2026 Structured Tabular Query Tool
+        table_query_def = ToolDefinition(
+            name="table_query",
+            description="Query and compute metrics on markdown tables (filter rows, sum columns, average, count).",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "table_markdown": {
+                        "type": "string",
+                        "description": "Markdown table text containing headers and rows",
+                    },
+                    "column": {
+                        "type": "string",
+                        "description": "Column name to target for filtering or math operations",
+                    },
+                    "filter_value": {
+                        "type": "string",
+                        "description": "Sub-string value to match when filtering rows",
+                    },
+                    "operation": {
+                        "type": "string",
+                        "description": "Operation: 'filter' | 'sum' | 'avg' | 'count' | 'columns'",
+                        "default": "filter",
+                    },
+                },
+                "required": ["table_markdown"],
+            },
+            category="tabular",
+            requires_approval=False,
+            risk_level="low",
+        )
+
+        def _execute_table_query(
+            table_markdown: str = "",
+            column: str | None = None,
+            filter_value: str | None = None,
+            operation: str = "filter",
+            context: str | None = None,
+            query: str | None = None,
+        ) -> str:
+            import re
+
+            raw_text = table_markdown or context or ""
+            # Parse contiguous table blocks rather than flattening the whole document
+            table_blocks: list[list[str]] = []
+            current_block: list[str] = []
+
+            for line in raw_text.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("|") and stripped.endswith("|"):
+                    current_block.append(stripped)
+                else:
+                    if len(current_block) >= 2:
+                        table_blocks.append(current_block)
+                    current_block = []
+            if len(current_block) >= 2:
+                table_blocks.append(current_block)
+
+            if not table_blocks:
+                return "Error: No valid markdown table detected."
+
+            # If multiple tables exist, pick the one that matches column or filter_value if possible
+            target_block = table_blocks[0]
+            if len(table_blocks) > 1 and (column or filter_value):
+                for b in table_blocks:
+                    b_headers = [h.strip() for h in re.split(r"(?<!\\)\|", b[0].strip("|"))]
+                    if column and any(h.lower() == column.lower() for h in b_headers):
+                        target_block = b
+                        break
+                    if filter_value and any(filter_value.lower() in row.lower() for row in b):
+                        target_block = b
+                        break
+
+            lines = target_block
+            # Split headers respecting escaped pipes
+            raw_headers = [h.strip().replace(r"\|", "|") for h in re.split(r"(?<!\\)\|", lines[0].strip("|"))]
+            headers = [h for h in raw_headers if h != ""]
+            if not headers:
+                headers = raw_headers
+
+            data_rows = []
+            for row_line in lines[2:]:
+                raw_cells = [c.strip().replace(r"\|", "|") for c in re.split(r"(?<!\\)\|", row_line.strip("|"))]
+                if len(raw_cells) < len(headers):
+                    raw_cells.extend([""] * (len(headers) - len(raw_cells)))
+                row_dict = dict(zip(headers, raw_cells[: len(headers)], strict=False))
+                data_rows.append(row_dict)
+
+            op = operation.lower()
+            # Automatic operation inference if query is provided
+            if query:
+                q_lower = query.lower()
+                if op == "filter":
+                    if any(w in q_lower for w in ["sum", "total"]):
+                        op = "sum"
+                    elif any(w in q_lower for w in ["avg", "average", "mean"]):
+                        op = "avg"
+                    elif any(w in q_lower for w in ["count", "how many"]):
+                        op = "count"
+
+            if op == "columns":
+                return f"Columns: {', '.join(headers)}"
+
+            def _count_numeric_cells(col_name: str) -> int:
+                count = 0
+                for r in data_rows:
+                    val = r.get(col_name, "").strip()
+                    val_clean = re.sub(r"[,\$€₹£\s]", "", val)
+                    if re.match(r"^[-+]?\d+(?:\.\d+)?%?$", val_clean):
+                        count += 1
+                return count
+
+            col_idx = None
+            if column:
+                for h in headers:
+                    if h.lower() == column.lower():
+                        col_idx = h
+                        break
+            elif query:
+                candidates = [h for h in headers if h.lower() in query.lower()]
+                if candidates:
+                    if op in {"sum", "avg"}:
+                        candidates.sort(key=_count_numeric_cells, reverse=True)
+                    col_idx = candidates[0]
+
+            if op == "count":
+                return f"Total rows: {len(data_rows)}"
+
+            if op in {"sum", "avg"}:
+                if col_idx is None:
+                    # Pick column with the most numeric cells
+                    numeric_cols = sorted(headers, key=_count_numeric_cells, reverse=True)
+                    target_col = numeric_cols[0] if numeric_cols and _count_numeric_cells(numeric_cols[0]) > 0 else (headers[1] if len(headers) > 1 else headers[0])
+                else:
+                    target_col = col_idx
+
+                numbers = []
+                for r in data_rows:
+                    val_str = r.get(target_col, "").strip()
+                    clean_num = re.sub(r"[,\$€₹£\s]", "", val_str)
+                    if re.match(r"^[-+]?\d+(?:\.\d+)?%?$", clean_num):
+                        try:
+                            numbers.append(float(clean_num.rstrip("%")))
+                        except ValueError:
+                            pass
+                if not numbers:
+                    return f"No numeric values found in column '{target_col}'."
+                if op == "sum":
+                    return f"Sum of '{target_col}': {sum(numbers):.2f}"
+                return f"Average of '{target_col}': {sum(numbers) / len(numbers):.2f}"
+
+            # Filter operation
+            if col_idx and filter_value:
+                filtered = [
+                    r
+                    for r in data_rows
+                    if filter_value.lower() in r.get(col_idx, "").lower()
+                ]
+            elif filter_value:
+                filtered = [
+                    r
+                    for r in data_rows
+                    if any(filter_value.lower() in v.lower() for v in r.values())
+                ]
+            else:
+                filtered = data_rows
+
+            if not filtered:
+                return "No rows matching filter criteria."
+            res_lines = [f"Found {len(filtered)} matching rows:"]
+            for r in filtered:
+                res_lines.append(" | ".join(f"{k}: {v}" for k, v in r.items()))
+            return "\n".join(res_lines)
+
+        self.register_tool(table_query_def, _execute_table_query)
+
+        # 4b. 2026 Agentic Query Planner Tool
+        planner_def = ToolDefinition(
+            name="query_planner",
+            description="Decompose complex queries into structured execution plans.",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "User question to plan execution for",
+                    },
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Tenant namespace identifier",
+                        "default": "default",
+                    },
+                },
+                "required": ["query"],
+            },
+            category="planning",
+            requires_approval=False,
+            risk_level="low",
+        )
+
+        def _execute_query_planner(query: str, tenant_id: str = "default") -> str:
+            from src.domain.agentic.query_planner import AgenticQueryPlanner
+
+            planner = AgenticQueryPlanner()
+            plan = planner.decompose_query(query=query, tenant_id=tenant_id)
+            return plan.model_dump_json(indent=2)
+
+        self.register_tool(planner_def, _execute_query_planner)
+
+        # 4c. 2026 Multi-Step Retrieval Tool
+        multi_retrieval_def = ToolDefinition(
+            name="multi_step_retrieval",
+            description="Execute multi-query decomposed retrieval across multiple sub-queries with deduplication.",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "sub_queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of sub-queries to retrieve in parallel",
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Top chunks per sub-query",
+                        "default": 3,
+                    },
+                },
+                "required": ["sub_queries"],
+            },
+            category="retrieval",
+            requires_approval=False,
+            risk_level="low",
+        )
+
+        async def _execute_multi_retrieval(
+            sub_queries: list[str], top_k: int = 3
+        ) -> str:
+            results = []
+            seen_outputs = set()
+            for sq in sub_queries:
+                r = await self.execute_tool(
+                    call_id=f"sq_{uuid4().hex[:6]}",
+                    tool_name="hybrid_search",
+                    arguments={"query": sq, "top_k": top_k},
+                )
+                output_str = str(r.output).strip()
+                if output_str not in seen_outputs:
+                    seen_outputs.add(output_str)
+                    results.append(f"Sub-query '{sq}':\n{output_str}")
+            return "\n\n---\n\n".join(results) if results else "No context retrieved."
+
+        self.register_tool(multi_retrieval_def, _execute_multi_retrieval)
 
         # 5. SENSITIVE: Document Delete Tool (Triggers HITL Gateway)
         doc_del_def = ToolDefinition(

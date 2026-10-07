@@ -41,6 +41,7 @@ class ReActEventType(StrEnum):
     THOUGHT = "thought"
     TOOL_START = "tool_start"
     TOOL_DONE = "tool_done"
+    TOOL_SUBSET = "tool_subset"
     SELF_HEALING = "self_healing"
     CIRCUIT_BREAKER = "circuit_breaker"
     MODEL_ESCALATION = "model_escalation"
@@ -88,6 +89,28 @@ class ReActLoopConfig(BaseModel):
     allowed_tools: list[str] | None = Field(
         default=None,
         description="Optional tool whitelist; None allows all registered batteries",
+    )
+    enable_dynamic_tool_subsetting: bool = Field(
+        default=True,
+        description="Dynamically filter candidate tools to query relevance to avoid menu overload",
+    )
+    max_active_tools: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Max tools to dynamically present to the LLM per prompt",
+    )
+    max_observation_chars: int = Field(
+        default=1500,
+        ge=200,
+        le=20000,
+        description="Maximum characters per tool observation before truncation",
+    )
+    observation_compression_window: int = Field(
+        default=2,
+        ge=1,
+        le=5,
+        description="Number of recent turns to preserve in full; earlier turns get compressed into succinct notes",
     )
 
 

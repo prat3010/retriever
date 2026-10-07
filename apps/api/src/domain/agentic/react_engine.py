@@ -73,6 +73,42 @@ def _tool_call_signature(tool_name: str, arguments: dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _compress_observation_message(content: str) -> str:
+    """Compress a verbose raw observation JSON message into a lightweight summary note.
+
+    Prevents intra-loop context rot by purging redundant payload data while preserving takeaways.
+    """
+    if not content.startswith("Tool Observations:\n"):
+        return content
+    if "Prior Step Observation Summary:" in content:
+        return content
+    try:
+        raw_json_str = (
+            content.removeprefix("Tool Observations:\n")
+            .split("\n\nContinue")[0]
+            .strip()
+        )
+        obs_list = json.loads(raw_json_str)
+        summaries = []
+        for o in obs_list:
+            t_name = o.get("tool_name", "tool")
+            status = o.get("status", "success")
+            out_str = str(o.get("output", o.get("error", ""))).strip()
+            first_line = out_str.splitlines()[0] if out_str else ""
+            excerpt = (first_line[:140] + "...") if len(first_line) > 140 else first_line
+            summaries.append(f"- Tool '{t_name}' ({status}): {excerpt}")
+        return (
+            "Prior Step Observation Summary:\n"
+            + "\n".join(summaries)
+            + "\n\nContinue reasoning or provide final_answer."
+        )
+    except Exception:
+        return (
+            content[:300]
+            + "... [prior observations compacted]\n\nContinue reasoning or provide final_answer."
+        )
+
+
 class ReActExecutionEngine(ReActLoopProtocol):
     """Domain engine executing multi-turn cyclic ReAct reasoning loops."""
 
@@ -102,6 +138,41 @@ class ReActExecutionEngine(ReActLoopProtocol):
 
         # Retrieve available tools
         available_tools = self.tools.list_tools(cfg.allowed_tools)
+
+        # Dynamic Tool Subsetting ('Smart Waiter' pattern - Maddy Zhang Concept 3)
+        if (
+            cfg.enable_dynamic_tool_subsetting
+            and len(available_tools) > cfg.max_active_tools
+        ):
+            if self.orchestrator and hasattr(
+                self.orchestrator, "filter_tools_for_query"
+            ):
+                subsetted_tools = self.orchestrator.filter_tools_for_query(
+                    query=query,
+                    available_tools=available_tools,
+                    max_tools=cfg.max_active_tools,
+                )
+            else:
+                subsetted_tools = self.tools.filter_tools_for_query(
+                    query=query,
+                    available_tools=available_tools,
+                    max_tools=cfg.max_active_tools,
+                )
+
+            yield ReActEvent(
+                event_id=f"ev_{uuid4().hex[:8]}",
+                event_type=ReActEventType.TOOL_SUBSET,
+                step_index=0,
+                state=ReActState.SELECTING_TOOL,
+                data={
+                    "total_available": len(available_tools),
+                    "active_tools_count": len(subsetted_tools),
+                    "active_tools": [t.name for t in subsetted_tools],
+                    "query": query,
+                },
+            )
+            available_tools = subsetted_tools
+
         tools_schema_str = json.dumps(
             [t.model_dump() for t in available_tools], indent=2
         )
@@ -425,11 +496,20 @@ class ReActExecutionEngine(ReActLoopProtocol):
                         }
                     )
                 else:
+                    str_out = str(output_data)
+                    if len(str_out) > cfg.max_observation_chars:
+                        truncated_out = (
+                            str_out[: cfg.max_observation_chars]
+                            + f"\n... [Output truncated to {cfg.max_observation_chars} chars. Use specific filters, sub-queries, or arguments for deeper details]"
+                        )
+                    else:
+                        truncated_out = output_data
+
                     observations.append(
                         {
                             "tool_name": t_name,
                             "status": "success",
-                            "output": output_data,
+                            "output": truncated_out,
                         }
                     )
 
@@ -448,6 +528,24 @@ class ReActExecutionEngine(ReActLoopProtocol):
                     content=f"Tool Observations:\n{json.dumps(observations, indent=2, default=str)}\n\nContinue reasoning or provide final_answer.",
                 )
             )
+
+            # Rolling Observation Compression ('Pack light' - Maddy Zhang Concept 4)
+            if cfg.observation_compression_window > 0:
+                obs_indices = [
+                    i
+                    for i, m in enumerate(messages)
+                    if m.role == "user"
+                    and m.content.startswith("Tool Observations:\n")
+                ]
+                cutoff_count = len(obs_indices) - cfg.observation_compression_window
+                if cutoff_count > 0:
+                    for idx_to_compress in obs_indices[:cutoff_count]:
+                        messages[idx_to_compress] = ChatMessage(
+                            role="user",
+                            content=_compress_observation_message(
+                                messages[idx_to_compress].content
+                            ),
+                        )
 
             # Record turn for cognitive memory consolidation (M108)
             turn_summaries.append(

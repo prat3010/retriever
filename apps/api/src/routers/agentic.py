@@ -38,6 +38,22 @@ class ReActStreamRequest(BaseModel):
     allowed_tools: list[str] | None = Field(
         default=None, description="Optional whitelist of allowed tool names"
     )
+    enable_dynamic_tool_subsetting: bool = Field(
+        default=True,
+        description="Dynamically filter candidate tools to query relevance",
+    )
+    max_active_tools: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Max tools to dynamically present to the LLM per prompt",
+    )
+    max_observation_chars: int = Field(
+        default=1500,
+        ge=200,
+        le=20000,
+        description="Max characters per tool observation",
+    )
 
 
 @router.post(
@@ -54,6 +70,9 @@ async def stream_agent_workflow(
         max_turns=request.max_turns,
         timeout_seconds=request.timeout_seconds,
         allowed_tools=request.allowed_tools,
+        enable_dynamic_tool_subsetting=request.enable_dynamic_tool_subsetting,
+        max_active_tools=request.max_active_tools,
+        max_observation_chars=request.max_observation_chars,
     )
 
     async def sse_event_generator():

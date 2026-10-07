@@ -352,3 +352,160 @@ async def test_fastapi_agentic_stream_endpoint():
         assert "event_id" in first_event
         assert "event_type" in first_event
         assert "state" in first_event
+
+
+@pytest.mark.asyncio
+async def test_dynamic_tool_subsetting_reduces_menu():
+    """Verify dynamic tool subsetting limits menu to top N tools and emits TOOL_SUBSET event."""
+    tool_reg = ToolRegistry()
+    assert len(tool_reg.list_tools()) >= 8  # Default registry has 8+ tools
+
+    # Query requires calculation
+    mock_llm = MockSequentialLlm(
+        [
+            json.dumps({"thought": "Direct answer", "final_answer": "Done"}),
+        ]
+    )
+    engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
+
+    events = []
+    async for ev in engine.run_loop_stream(
+        tenant_id="t-subset",
+        query="Calculate 450 * 12",
+        config=ReActLoopConfig(max_active_tools=3, enable_dynamic_tool_subsetting=True),
+    ):
+        events.append(ev)
+
+    subset_events = [e for e in events if e.event_type == ReActEventType.TOOL_SUBSET]
+    assert len(subset_events) == 1
+    subset_data = subset_events[0].data
+    assert subset_data["active_tools_count"] == 3
+    assert "calculator" in subset_data["active_tools"]
+
+    # Verify system prompt only contained the 3 active tools
+    req = mock_llm.recorded_requests[0]
+    system_msg = req.messages[0].content
+    assert "calculator" in system_msg
+    # Some unrelated tools should have been pruned from the prompt schema
+    pruned_tools = [
+        t.name
+        for t in tool_reg.list_tools()
+        if t.name not in subset_data["active_tools"]
+    ]
+    assert len(pruned_tools) > 0
+
+
+def test_tool_subsetting_relevance_matching():
+    """Test heuristic scoring across distinct query intents."""
+    tool_reg = ToolRegistry()
+
+    # 1. Math query -> calculator
+    math_tools = tool_reg.filter_tools_for_query("What is the sum of 500 and 200?", max_tools=3)
+    assert any(t.name == "calculator" for t in math_tools)
+
+    # 2. Table query -> table_query
+    table_tools = tool_reg.filter_tools_for_query(
+        "Filter the markdown table rows where column status is active", max_tools=3
+    )
+    assert any(t.name == "table_query" for t in table_tools)
+
+    # 3. Destructive query -> document_delete
+    del_tools = tool_reg.filter_tools_for_query("Permanently delete document doc_99", max_tools=3)
+    assert any(t.name == "document_delete" for t in del_tools)
+
+
+@pytest.mark.asyncio
+async def test_per_observation_truncation_cap():
+    """Verify tool outputs exceeding max_observation_chars are cleanly truncated."""
+    tool_reg = ToolRegistry()
+
+    # Register a verbose tool returning a 10,000 char string
+    verbose_tool = ToolDefinition(
+        name="verbose_fetcher",
+        description="Returns an extremely long document dump",
+        parameters_schema={"type": "object", "properties": {}},
+    )
+    tool_reg.register_tool(verbose_tool, lambda: "X" * 10000)
+
+    mock_llm = MockSequentialLlm(
+        [
+            json.dumps({
+                "thought": "Fetch huge doc",
+                "tool_calls": [{"tool_name": "verbose_fetcher", "arguments": {}}],
+            }),
+            json.dumps({"thought": "Done", "final_answer": "Finished reading"}),
+        ]
+    )
+
+    engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
+    await engine.run_loop(
+        tenant_id="t-trunc",
+        query="Fetch large data",
+        config=ReActLoopConfig(
+            max_turns=2,
+            allowed_tools=["verbose_fetcher"],
+            max_observation_chars=400,
+        ),
+    )
+
+    # Inspect the user observation message recorded by LLM
+    second_req = mock_llm.recorded_requests[1]
+    obs_msg = next(
+        m
+        for m in second_req.messages
+        if m.role == "user" and "Tool Observations" in m.content
+    )
+    assert "Output truncated to 400 chars" in obs_msg.content
+    # Raw output should not exceed 400 chars + notice prefix
+    assert "X" * 500 not in obs_msg.content
+
+
+@pytest.mark.asyncio
+async def test_rolling_observation_compression():
+    """Verify older turn observations are rolled into concise notes while recent turns stay full."""
+    tool_reg = ToolRegistry()
+
+    # Step 0: calculator (10 + 10)
+    # Step 1: calculator (20 + 20)
+    # Step 2: final answer
+    mock_llm = MockSequentialLlm(
+        [
+            json.dumps({
+                "thought": "Step 0 add 10",
+                "tool_calls": [{"tool_name": "calculator", "arguments": {"expression": "10 + 10"}}],
+            }),
+            json.dumps({
+                "thought": "Step 1 add 20",
+                "tool_calls": [{"tool_name": "calculator", "arguments": {"expression": "20 + 20"}}],
+            }),
+            json.dumps({"thought": "All done", "final_answer": "40"}),
+        ]
+    )
+
+    engine = ReActExecutionEngine(llm_provider=mock_llm, tool_registry=tool_reg)
+    await engine.run_loop(
+        tenant_id="t-compress",
+        query="Calculate in 2 steps",
+        config=ReActLoopConfig(
+            max_turns=3,
+            allowed_tools=["calculator"],
+            observation_compression_window=1,  # Keep only 1 recent observation in full detail
+        ),
+    )
+
+    # Inspect the final request sent to the LLM (for step 2)
+    final_req = mock_llm.recorded_requests[2]
+    user_msgs = [m for m in final_req.messages if m.role == "user"]
+
+    # Initial prompt is index 0
+    # Step 0 observation is index 1 -> Should be compressed into "Prior Step Observation Summary"
+    # Step 1 observation is index 2 -> Should be full "Tool Observations:"
+    step0_obs = user_msgs[1].content
+    step1_obs = user_msgs[2].content
+
+    assert "Prior Step Observation Summary:" in step0_obs
+    assert "Tool 'calculator' (success): 20" in step0_obs
+
+    assert "Tool Observations:" in step1_obs
+    assert '"expression": "20 + 20"' in final_req.messages[3].content or "40" in step1_obs
+

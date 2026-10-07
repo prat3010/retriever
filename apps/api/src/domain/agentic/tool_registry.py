@@ -7,6 +7,7 @@ import ast
 import inspect
 import logging
 import operator
+import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 from uuid import uuid4
@@ -65,6 +66,173 @@ class ToolRegistry:
         if allowed_tools is None:
             return list(self._tools.values())
         return [defn for name, defn in self._tools.items() if name in allowed_tools]
+
+    def filter_tools_for_query(
+        self,
+        query: str,
+        available_tools: list[ToolDefinition] | None = None,
+        max_tools: int = 5,
+    ) -> list[ToolDefinition]:
+        """Dynamically score and select the top most relevant tools for a user query.
+
+        Prevents prompt bloat and tool selection confusion ('the smart waiter' pattern).
+        """
+        tools = (
+            available_tools
+            if available_tools is not None
+            else list(self._tools.values())
+        )
+        if len(tools) <= max_tools:
+            return tools
+
+        q_lower = query.lower()
+        query_words = set(re.findall(r"\b[a-zA-Z0-9_\$%-]+\b", q_lower))
+
+        # Intent heuristic keywords
+        math_keywords = {
+            "calculate",
+            "calc",
+            "math",
+            "add",
+            "sum",
+            "sub",
+            "multiply",
+            "divide",
+            "average",
+            "total",
+            "cost",
+            "revenue",
+            "rate",
+            "$",
+            "%",
+            "price",
+        }
+        table_keywords = {
+            "table",
+            "column",
+            "row",
+            "markdown",
+            "csv",
+            "dataframe",
+            "filter",
+            "aggregate",
+            "dataset",
+        }
+        retrieval_keywords = {
+            "search",
+            "find",
+            "document",
+            "knowledge",
+            "what is",
+            "who is",
+            "explain",
+            "policy",
+            "retrieval",
+            "chunk",
+            "context",
+            "history",
+        }
+        destructive_keywords = {
+            "delete",
+            "remove",
+            "purge",
+            "erase",
+            "revoke",
+            "drop",
+        }
+        config_keywords = {
+            "prompt",
+            "template",
+            "configure",
+            "update prompt",
+            "system prompt",
+        }
+        planning_keywords = {
+            "plan",
+            "decompose",
+            "multi-step",
+            "sub-queries",
+            "break down",
+            "roadmap",
+        }
+        metric_keywords = {
+            "metric",
+            "usage",
+            "quota",
+            "latency",
+            "system",
+            "stats",
+            "telemetry",
+            "token",
+        }
+
+        scored_tools: list[tuple[float, ToolDefinition]] = []
+
+        for defn in tools:
+            score = 1.0  # baseline
+            t_name = defn.name.lower()
+            category = (defn.category or "").lower()
+            desc = (defn.description or "").lower()
+
+            # 1. Exact name match or token match in query
+            if t_name in q_lower or any(
+                part in query_words for part in t_name.split("_")
+            ):
+                score += 8.0
+
+            # 2. Category / intent affinity
+            if category == "math" and (
+                query_words & math_keywords or any(char.isdigit() for char in query)
+            ):
+                score += 6.0
+            elif category == "tabular" and (query_words & table_keywords):
+                score += 6.0
+            elif category == "retrieval":
+                if query_words & retrieval_keywords:
+                    score += 5.0
+                if t_name == "hybrid_search":
+                    score += 3.0
+            elif category == "destructive" and (query_words & destructive_keywords):
+                score += 8.0
+            elif category == "configuration" and (query_words & config_keywords):
+                score += 8.0
+            elif category == "security" and (
+                query_words & destructive_keywords or "key" in query_words
+            ):
+                score += 8.0
+            elif category == "system" and (query_words & metric_keywords):
+                score += 6.0
+            elif category == "planning" and (query_words & planning_keywords):
+                score += 6.0
+
+            # 3. Lexical description overlap
+            desc_words = set(re.findall(r"\b[a-zA-Z0-9_-]+\b", desc))
+            common = query_words & desc_words
+            score += len(common) * 1.5
+
+            scored_tools.append((score, defn))
+
+        # Sort descending by score
+        scored_tools.sort(key=lambda x: x[0], reverse=True)
+        selected = [t for _, t in scored_tools[:max_tools]]
+
+        # Ensure hybrid_search is retained if available in pool, unless purely mathematical
+        has_retrieval_in_selected = any(t.name == "hybrid_search" for t in selected)
+        hybrid_tool = next((t for t in tools if t.name == "hybrid_search"), None)
+        is_pure_math = (
+            len(query_words & math_keywords) >= 2
+            and not (query_words & retrieval_keywords)
+        )
+
+        if (
+            hybrid_tool
+            and not has_retrieval_in_selected
+            and not is_pure_math
+            and max_tools > 0
+        ):
+            selected[-1] = hybrid_tool
+
+        return selected
 
     async def execute_tool(
         self,

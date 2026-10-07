@@ -17,6 +17,7 @@ from src.domain.abstractions.economic_orchestrator import (
     ModelTier,
     TaskComplexity,
 )
+from src.domain.agentic.abstractions import ToolDefinition
 
 # Blended token costs per token (USD)
 DEFAULT_RATES: dict[str, float] = {
@@ -50,6 +51,20 @@ class SmartToolRouter(EconomicOrchestratorProtocol):
     def get_model_for_tier(self, tier: ModelTier) -> str:
         """Return the default concrete model ID for a given tier."""
         return self.tier_models.get(tier, self.tier_models[ModelTier.MID_TIER])
+
+    def filter_tools_for_query(
+        self,
+        query: str,
+        available_tools: list[ToolDefinition],
+        max_tools: int = 5,
+    ) -> list[ToolDefinition]:
+        """Dynamically subset available tools to the most relevant candidates for the query."""
+        from src.domain.agentic.tool_registry import ToolRegistry
+
+        registry_helper = ToolRegistry()
+        return registry_helper.filter_tools_for_query(
+            query=query, available_tools=available_tools, max_tools=max_tools
+        )
 
     def classify_complexity(
         self, query: str, allowed_tools: list[str] | None = None

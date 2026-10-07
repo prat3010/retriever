@@ -21,7 +21,7 @@ from fastapi import (
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
-from src.adapters.api.security import verify_admin_key
+from src.adapters.api.security import verify_admin_key, verify_tenant_or_admin
 from src.config import settings
 from src.container import (
     admin_repository,
@@ -459,12 +459,12 @@ async def admin_upload_document(
 @router.post(
     "/tenants/{tenantId}/documents/ingest",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_admin_key)],
+    dependencies=[Depends(verify_tenant_or_admin)],
 )
 @router.post(
     "/tenants/{tenantId}/documents/upload",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_admin_key)],
+    dependencies=[Depends(verify_tenant_or_admin)],
 )
 async def admin_ingest_document_sync(
     tenantId: str,

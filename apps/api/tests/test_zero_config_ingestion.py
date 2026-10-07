@@ -274,3 +274,123 @@ async def test_zero_config_xlsx_ingestion() -> None:
         assert all(
             t.startswith("[Document: financial_model.xlsx]\n") for t in texts_embedded
         )
+
+
+@pytest.mark.asyncio
+async def test_zero_config_markdown_with_tables_and_forms_ingestion() -> None:
+    """Verify markdown containing tables or forms uses layout-aware chunker and records metadata."""
+    tenant_id = str(uuid.uuid4())
+    doc_id = str(uuid.uuid4())
+    filename = "service_catalog.md"
+    content = b"""# Engineering Service Catalog
+
+Role: Principal AI Architect
+Location: Remote / Global
+Day Rate: $300 USD
+
+| Engine Tier | Price INR | Price USD | Turnaround |
+| --- | --- | --- | --- |
+| Tier 1 Landing Page | \xe2\x82\xb930,000 | $400 | 3-5 Days |
+| Tier 2 Multipage Web | \xe2\x82\xb955,000 | $750 | 1-2 Weeks |
+| Tier 3 Full-Stack SaaS | \xe2\x82\xb9175,000 | $2,400 | 2-4 Weeks |
+"""
+
+    embedder = AsyncMock()
+    embedder.embed_batch.side_effect = lambda texts: [[0.35] * 1536 for _ in texts]
+
+    mock_doc = MagicMock()
+    mock_doc.collection_id = None
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_doc
+
+    mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute.return_value = mock_result
+
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
+        mock_tenant_session.return_value.__aenter__.return_value = mock_session
+
+        chunk_count = await ingest_file_sync(
+            tenant_id=tenant_id,
+            document_id=doc_id,
+            filename=filename,
+            file_content=content,
+            file_hash="hash_md_table",
+            mime_type="text/markdown",
+            embedder=embedder,
+        )
+
+        assert chunk_count >= 1
+        added_chunks = [
+            call.args[0]
+            for call in mock_session.add.call_args_list
+            if hasattr(call.args[0], "meta_data")
+        ]
+        assert len(added_chunks) == chunk_count
+        # Assert that layout_meta and chunker captured table or form elements
+        has_table_meta = any(
+            c.meta_data.get("is_table") or c.meta_data.get("element_type") == "table"
+            for c in added_chunks
+        )
+        assert has_table_meta
+
+
+@pytest.mark.asyncio
+async def test_zero_config_pure_markdown_layout_aware_chunking() -> None:
+    """Verify pure narrative markdown uses LayoutAwareChunker with section path breadcrumbs."""
+    tenant_id = str(uuid.uuid4())
+    doc_id = str(uuid.uuid4())
+    filename = "pure_narrative.md"
+    content = b"""# Systems Architecture
+## Subsystem Alpha
+This section discusses the core architectural decisions and decoupled domain boundaries.
+
+## Subsystem Beta
+This section details performance budgets and low-latency cache invalidation.
+"""
+
+    embedder = AsyncMock()
+    embedder.embed_batch.side_effect = lambda texts: [[0.42] * 1536 for _ in texts]
+
+    mock_doc = MagicMock()
+    mock_doc.collection_id = None
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_doc
+
+    mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute.return_value = mock_result
+
+    with patch(
+        "src.adapters.ingestion.sync_ingestion_service.tenant_session"
+    ) as mock_tenant_session:
+        mock_tenant_session.return_value.__aenter__.return_value = mock_session
+
+        chunk_count = await ingest_file_sync(
+            tenant_id=tenant_id,
+            document_id=doc_id,
+            filename=filename,
+            file_content=content,
+            file_hash="hash_pure_md",
+            mime_type="text/markdown",
+            embedder=embedder,
+        )
+
+        assert chunk_count >= 1
+        added_chunks = [
+            call.args[0]
+            for call in mock_session.add.call_args_list
+            if hasattr(call.args[0], "meta_data")
+        ]
+        assert len(added_chunks) == chunk_count
+        # Assert layout_aware strategy and section_path breadcrumbs were captured
+        assert any(
+            c.meta_data.get("strategy") == "layout_aware" for c in added_chunks
+        )
+        assert any(
+            "section_path" in c.meta_data for c in added_chunks
+        )
+
+

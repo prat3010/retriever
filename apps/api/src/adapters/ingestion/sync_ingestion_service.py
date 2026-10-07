@@ -1,4 +1,5 @@
 import logging
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -113,16 +114,30 @@ async def ingest_file_sync(
         ".pyw",
     }
 
+    has_text_table = bool(re.search(r"^[ \t]*\|.+?\|[ \t]*$", text, re.MULTILINE))
+    has_text_form = bool(
+        re.search(
+            r"(?:^[ \t]*[A-Za-z0-9][A-Za-z0-9 _\-\./#]{1,40}?[ \t]*[:=][ \t]+.+\r?\n){2,}",
+            text,
+            re.MULTILINE,
+        )
+    )
+    if has_text_table:
+        layout_meta["has_tables"] = True
+    if has_text_form:
+        layout_meta["has_forms"] = True
+
     if ext in code_extensions:
         ast_chunker = AstCodeChunker()
         if ext in {".py", ".pyw"}:
             raw_chunks = ast_chunker.chunk_python_ast(text, filename=filename)
         else:
             raw_chunks = ast_chunker._fallback_line_chunker(text, filename=filename)
-    elif ext == ".md":
-        ast_chunker = AstCodeChunker()
-        raw_chunks = ast_chunker.chunk_markdown(text, filename=filename)
-    elif layout_meta.get("has_tables") or layout_meta.get("has_forms"):
+    elif (
+        ext in {".md", ".markdown"}
+        or layout_meta.get("has_tables")
+        or layout_meta.get("has_forms")
+    ):
         layout_chunker = ChunkerFactory.get_chunker("layout_aware")
         raw_chunks = layout_chunker.split_text_with_offsets(
             text, chunk_size, chunk_overlap
@@ -155,12 +170,13 @@ async def ingest_file_sync(
                 meta = json.loads(meta)
             except Exception:
                 meta = {}
-        meta = dict(meta)
-        meta.update(layout_meta)
+        chunk_meta = dict(layout_meta)
+        chunk_meta.update(meta)
         if doc_metadata:
-            meta.update(doc_metadata)
+            chunk_meta.update(doc_metadata)
         if p_id:
-            meta["parent_chunk_id"] = str(p_id)
+            chunk_meta["parent_chunk_id"] = str(p_id)
+        meta = chunk_meta
 
         chunks.append(
             {

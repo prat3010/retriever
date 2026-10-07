@@ -57,7 +57,9 @@ env/
 
 # Local file storage
 apps/api/storage/
-data/
+data/*
+!data/tenants/
+!data/test_tenants.json
 
 # Build artifacts
 **/dist/

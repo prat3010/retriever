@@ -84,7 +84,8 @@ def find_files(
 def upload_file_multipart(
     url: str,
     file_path: Path,
-    admin_key: str,
+    admin_key: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[bool, dict]:
     """Uploads a single file using pure standard library multipart encoding."""
     boundary = "----WebKitFormBoundary" + os.urandom(16).hex()
@@ -104,15 +105,20 @@ def upload_file_multipart(
     ]
     payload = b"\r\n".join(body_parts)
 
+    headers = {
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Accept": "application/json",
+        "User-Agent": "Retriever-Ingest-CLI/1.0",
+    }
+    if admin_key:
+        headers["X-Admin-Master-Key"] = admin_key
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     req = urllib.request.Request(
         url,
         data=payload,
-        headers={
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "X-Admin-Master-Key": admin_key,
-            "Accept": "application/json",
-            "User-Agent": "Retriever-Ingest-CLI/1.0",
-        },
+        headers=headers,
         method="POST",
     )
 
@@ -178,6 +184,11 @@ def main():
         help="Admin Master Key (or set RETRIEVER_ADMIN_MASTER_KEY)",
     )
     parser.add_argument(
+        "--api-key",
+        default=os.getenv("RETRIEVER_API_KEY"),
+        help="Tenant API Key (Bearer token, or set RETRIEVER_API_KEY)",
+    )
+    parser.add_argument(
         "--ext",
         default="md,txt,pdf,json,csv",
         help="Comma-separated file extensions to include (default: md,txt,pdf,json,csv)",
@@ -206,23 +217,10 @@ def main():
         print(f"{RED}[ERROR] Directory not found: {target_dir}{NC}")
         sys.exit(1)
 
-    if not args.dry_run and not args.tenant:
-        print(
-            f"{RED}[ERROR] Missing --tenant ID or RETRIEVER_TENANT_ID env variable.{NC}"
-        )
-        sys.exit(1)
-
-    if not args.dry_run and not args.admin_key:
-        print(
-            f"{RED}[ERROR] Missing --admin-key or RETRIEVER_ADMIN_MASTER_KEY env variable.{NC}"
-        )
-        sys.exit(1)
-
-    ext_set = {
-        f".{e.strip().lstrip('.').lower()}" for e in args.ext.split(",") if e.strip()
-    }
-
     tenant_id = args.tenant
+    api_key = args.api_key
+    admin_key = args.admin_key
+
     if tenant_id:
         test_tenants_file = (
             Path(__file__).resolve().parent.parent / "data" / "test_tenants.json"
@@ -230,10 +228,30 @@ def main():
         if test_tenants_file.is_file():
             try:
                 mapping = json.loads(test_tenants_file.read_text())
-                if tenant_id in mapping and "tenant_id" in mapping[tenant_id]:
-                    tenant_id = mapping[tenant_id]["tenant_id"]
+                if tenant_id in mapping:
+                    tenant_info = mapping[tenant_id]
+                    if "tenant_id" in tenant_info:
+                        tenant_id = tenant_info["tenant_id"]
+                    if not api_key and not admin_key and "api_key" in tenant_info:
+                        api_key = tenant_info["api_key"]
             except Exception:
                 pass
+
+    if not args.dry_run and not tenant_id:
+        print(
+            f"{RED}[ERROR] Missing --tenant ID or RETRIEVER_TENANT_ID env variable.{NC}"
+        )
+        sys.exit(1)
+
+    if not args.dry_run and not admin_key and not api_key:
+        print(
+            f"{RED}[ERROR] Missing authentication credentials: specify --admin-key or --api-key (or set RETRIEVER_ADMIN_MASTER_KEY / RETRIEVER_API_KEY).{NC}"
+        )
+        sys.exit(1)
+
+    ext_set = {
+        f".{e.strip().lstrip('.').lower()}" for e in args.ext.split(",") if e.strip()
+    }
 
     print(f"\n{CYAN}{BOLD}Retriever Batch Directory Ingestion Engine{NC}")
     print(f"  • Source Directory: {target_dir}")
@@ -242,6 +260,8 @@ def main():
     if not args.dry_run:
         print(f"  • Target Tenant:    {tenant_id} (input: {args.tenant})")
         print(f"  • API Gateway:      {args.api_url}")
+        auth_desc = "Admin Master Key" if admin_key else f"Tenant API Key ({api_key[:16]}...)"
+        print(f"  • Auth Mode:        {auth_desc}")
     print("----------------------------------------------------------------------")
 
     files = find_files(
@@ -275,7 +295,12 @@ def main():
         )
         sys.stdout.flush()
 
-        ok, resp = upload_file_multipart(upload_url, file_path, args.admin_key)
+        ok, resp = upload_file_multipart(
+            upload_url,
+            file_path,
+            admin_key=admin_key,
+            api_key=api_key,
+        )
         if ok:
             doc_id = resp.get("documentId", resp.get("id", "uploaded"))
             print(f"{GREEN}✓ OK{NC} {DIM}(ID: {doc_id}){NC}")

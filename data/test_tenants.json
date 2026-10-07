@@ -1,0 +1,51 @@
+{
+  "fin_audit": {
+    "tenant_id": "b0d64742-d5e9-425f-a6ca-57eb003cf2be",
+    "name": "Financial Due Diligence",
+    "tier": "enterprise",
+    "api_key": "ret_live_QRxo6YSXiaw.ZQj45Uj5t1I-sfDSbeeiRR7wInngruLW",
+    "prefix": "ret_live_QRxo6YSXiaw"
+  },
+  "tech_docs": {
+    "tenant_id": "a2ed5bda-eec6-4427-badf-49e4b4df5cec",
+    "name": "Engineering Docs",
+    "tier": "pro",
+    "api_key": "ret_live_81Raa1AKMz0.DNM9j88PNexqknPbMytQD9wYpGtdKo8C",
+    "prefix": "ret_live_81Raa1AKMz0"
+  },
+  "graph_research": {
+    "tenant_id": "7328b9aa-071a-4256-b9be-b1827509e9fe",
+    "name": "Scientific Research",
+    "tier": "enterprise",
+    "api_key": "ret_live_ZqkvXHgCZRk.u_3w6iP4CO7V3nym0i0A5j6urjz9hvWa",
+    "prefix": "ret_live_ZqkvXHgCZRk"
+  },
+  "support_ops": {
+    "tenant_id": "26a3f7d9-63a0-4263-a933-8a34d99a8e11",
+    "name": "Support Ops",
+    "tier": "growth",
+    "api_key": "ret_live_8lGPaRerH2k.Q6uNw57K0RNcugHakPyxPwrudY2yhLen",
+    "prefix": "ret_live_8lGPaRerH2k"
+  },
+  "red_team": {
+    "tenant_id": "a8f18df7-4ba3-4de9-9837-772a3d0ac582",
+    "name": "Security Red Team",
+    "tier": "enterprise",
+    "api_key": "ret_live_RmRy_HzLyuA.CuU8AkCveQ-sU0P7rygYhdYmzIgPbp9L",
+    "prefix": "ret_live_RmRy_HzLyuA"
+  },
+  "portfolio_twin": {
+    "tenant_id": "6797e2c8-745a-4bd1-aa4c-3854b8d79c22",
+    "name": "Portfolio AI Twin",
+    "tier": "enterprise",
+    "api_key": "ret_live_TaaRP0w94H8.a3_CjGsoQY57Fy5bv9Kk40zfUOoH4ak2",
+    "prefix": "ret_live_TaaRP0w94H8"
+  },
+  "scoping_concierge": {
+    "tenant_id": "1f85286c-9d9a-4ebc-9c62-a99360a5ece4",
+    "name": "Scoping & Retriever Concierge",
+    "tier": "enterprise",
+    "api_key": "ret_live_eae27a51db3b44ef81e16df59137eda7bcfdc987dc204d6bacb9db0089a7886a",
+    "prefix": "ret_live_eae27a51db3b"
+  }
+}

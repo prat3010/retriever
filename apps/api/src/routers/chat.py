@@ -672,20 +672,39 @@ async def chat_completions(
         ChatMessage(role="user", content=user_query),
     ]
 
+    target_model = (
+        payload.model
+        or getattr(tenant_config.gateway_settings, "primary_model", None)
+        or getattr(tenant_config.ai_provider, "default_model", None)
+        or "openai/gpt-4o-mini"
+    )
+    fallback_models = list(
+        getattr(tenant_config.gateway_settings, "fallback_models", None) or []
+    )
+    gw_config: dict[str, Any] = {
+        "model": target_model,
+        "fallback_models": fallback_models,
+        "cooldown_seconds": getattr(
+            tenant_config.gateway_settings, "cooldown_seconds", 60
+        ),
+        "tenant_id": str(resolved_tenant_id),
+    }
+
     llm_resp = await container.gateway_router.generate(
         InferenceRequest(
             messages=llm_messages,
             temperature=payload.temperature if payload.temperature is not None else 0.4,
             max_tokens=payload.max_tokens or 2048,
         ),
-        {"model": payload.model or "gemini-2.5-flash"},
+        gw_config,
     )
 
+    actual_model = gw_config.get("_actual_model", target_model)
     completion_payload = {
         "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
         "object": "chat.completion",
         "created": int(time.time()),
-        "model": payload.model or "gemini-2.5-flash",
+        "model": actual_model,
         "choices": [
             {
                 "index": 0,

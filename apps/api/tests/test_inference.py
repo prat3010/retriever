@@ -628,3 +628,84 @@ async def test_prepare_inference_parent_child_expansion() -> None:
     ]
     assert passed_chunks[0]["content"] == "full expanded parent section text"
     assert passed_chunks[0]["chunk_id"] == "child_1"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_system_prompt_and_history() -> None:
+    """Verify chat_completions endpoint resolves system prompt and preserves conversation history."""
+    from fastapi import Response
+
+    from src.routers.chat import (
+        ChatCompletionMessage,
+        ChatCompletionRequest,
+        chat_completions,
+    )
+
+    mock_template = MagicMock(content="You are Prateeq's AI Twin clone.")
+    mock_search_res = MagicMock(results=[
+        SearchResult(
+            chunk_id="chk_1",
+            document_id="doc_1",
+            content="Retriever uses local Ollama nomic-embed-text.",
+            score=0.95,
+        )
+    ])
+
+    with (
+        patch("src.routers.chat.template_registry.get_template", new_callable=AsyncMock) as mock_get_template,
+        patch("src.routers.chat.search_service.search", new_callable=AsyncMock) as mock_search,
+        patch("src.routers.chat.container.gateway_router.generate", new_callable=AsyncMock) as mock_generate,
+        patch("src.routers.chat._get_redis_conn") as mock_redis,
+    ):
+        mock_get_template.return_value = mock_template
+        mock_search.return_value = mock_search_res
+        mock_generate.return_value = InferenceResponse(
+            content="I run on local Ollama nomic-embed-text for zero cost.",
+            usage=Usage(input_tokens=100, output_tokens=30, total_tokens=130),
+            finish_reason="stop",
+        )
+        mock_redis_inst = AsyncMock()
+        mock_redis_inst.get.return_value = None
+        mock_redis.return_value = mock_redis_inst
+
+        user_ctx = UserContext(
+            user_id="user_123",
+            tenant_id="tenant_abc",
+            roles=["user"],
+            scopes=["chat:write"],
+            key_id="key_1",
+        )
+
+        payload = ChatCompletionRequest(
+            messages=[
+                ChatCompletionMessage(role="user", content="hello"),
+                ChatCompletionMessage(role="assistant", content="hey there"),
+                ChatCompletionMessage(role="user", content="what is your embedder?"),
+            ],
+            stream=False,
+            use_repl=False,
+        )
+
+        resp = await chat_completions(
+            tenantId="tenant_abc",
+            payload=payload,
+            response=Response(),
+            user_context=user_ctx,
+        )
+
+        assert resp["choices"][0]["message"]["content"] == "I run on local Ollama nomic-embed-text for zero cost."
+        assert mock_get_template.called
+        # Verify messages sent to gateway router
+        sent_messages = mock_generate.call_args[0][0].messages
+        assert sent_messages[0].role == "system"
+        assert "You are Prateeq's AI Twin clone." in sent_messages[0].content
+        assert "Retriever uses local Ollama nomic-embed-text." in sent_messages[0].content
+        # Verify history was included
+        assert sent_messages[1].role == "user"
+        assert sent_messages[1].content == "hello"
+        assert sent_messages[2].role == "assistant"
+        assert sent_messages[2].content == "hey there"
+        # Current query is last
+        assert sent_messages[3].role == "user"
+        assert sent_messages[3].content == "what is your embedder?"
+

@@ -35,6 +35,7 @@ from src.container import (
     quota_service,
     search_service,
     session_repo,
+    template_registry,
 )
 from src.domain.abstractions.identity import UserContext
 from src.domain.abstractions.inference import ChatMessageFeedback
@@ -597,6 +598,25 @@ async def chat_completions(
 
     response.headers["X-Cache-Lookup"] = "MISS"
 
+    caller_system_msg = next(
+        (m.content for m in payload.messages if m.role == "system"), None
+    )
+    base_system = caller_system_msg
+    if not base_system:
+        try:
+            template = await template_registry.get_template(
+                resolved_tenant_id, "default"
+            )
+            if template and template.content:
+                base_system = template.content
+        except Exception as exc:
+            logging.getLogger("api").debug(
+                f"Failed to fetch default template: {exc}"
+            )
+
+    if not base_system:
+        base_system = "You are a helpful, precise enterprise assistant."
+
     search_res = await search_service.search(
         SearchQuery(tenant_id=resolved_tenant_id, query=user_query, top_k=5)
     )
@@ -606,22 +626,32 @@ async def chat_completions(
     )
 
     grounded_system = (
-        "You are a helpful, precise enterprise assistant. "
-        "Answer the user's question using the provided grounded context below. "
-        "Cite facts accurately.\n\n"
-        f"Grounded Context:\n{context_text}"
+        f"{base_system}\n\n"
+        f"Grounded Context Knowledge Base:\n{context_text}\n\n"
+        "Core Response Directives:\n"
+        "- Synthesize facts, architecture details, and technical evidence directly from the grounded context above.\n"
+        "- Maintain your designated persona consistently: speak naturally in the first person ('I', 'my work', 'my architecture', 'my philosophy').\n"
+        "- Weave references cleanly into natural prose without raw brackets like [1, 2] unless explicitly requested.\n"
+        "- Produce complete, well-formed, articulate responses. Never truncate or finish mid-sentence."
     )
+
+    history_turns: list[ChatMessage] = []
+    if len(payload.messages) > 1:
+        for m in payload.messages[:-1]:
+            if m.role in ("user", "assistant") and m.content:
+                history_turns.append(ChatMessage(role=m.role, content=m.content))
 
     llm_messages = [
         ChatMessage(role="system", content=grounded_system),
+        *history_turns,
         ChatMessage(role="user", content=user_query),
     ]
 
     llm_resp = await container.gateway_router.generate(
         InferenceRequest(
             messages=llm_messages,
-            temperature=payload.temperature,
-            max_tokens=payload.max_tokens or 1024,
+            temperature=payload.temperature if payload.temperature is not None else 0.4,
+            max_tokens=payload.max_tokens or 2048,
         ),
         {"model": payload.model or "gemini-2.5-flash"},
     )

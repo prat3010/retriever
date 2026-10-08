@@ -34,7 +34,11 @@ import os
 
 SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000"
 RETRIEVER_ROOT = API_ROOT.parent.parent
-WEBSITE_ROOT = Path("/Users/prateeksharma/Developer/Prateek_website")
+WEBSITE_ROOT = Path(
+    os.environ.get("EXTERNAL_DOCS_ROOT")
+    or os.environ.get("WEBSITE_ROOT")
+    or str(RETRIEVER_ROOT.parent / "Prateek_website")
+)
 
 SUPABASE_URL = (
     os.environ.get("RETRIEVER_SUPABASE_URL")

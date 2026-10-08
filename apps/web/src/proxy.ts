@@ -5,7 +5,7 @@ const API_BASE = (process.env.API_URL && !process.env.API_URL.startsWith("/"))
   ? process.env.API_URL
   : (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.startsWith("/")
     ? process.env.NEXT_PUBLIC_API_URL
-    : "https://rag.prateeq.in");
+    : "http://localhost:8000");
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

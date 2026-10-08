@@ -1,0 +1,13 @@
+{
+  "tenant_id": "00000000-0000-0000-0000-000000000001",
+  "name": "Demo Tenant — Acme Systems",
+  "tier": "enterprise",
+  "system_prompt": "You are a helpful, precise engineering assistant for Acme Systems. Ground your answers strictly in the provided documentation. If no relevant information is present in the context, politely state that you do not have verified knowledge on the topic.",
+  "active_model": "gemini-2.5-flash",
+  "temperature": 0.4,
+  "max_tokens": 2048,
+  "fallbacks": {
+    "engine_error": "⚠️ [Engine Notice] The cognitive service is currently experiencing high load. Please retry in a moment.",
+    "no_context_found": "No verified records were found for that query in the Acme Systems knowledge base."
+  }
+}

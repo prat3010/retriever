@@ -14,19 +14,11 @@ from src.adapters.cognitive.ast_code_chunker import AstCodeChunker  # noqa: E402
 from src.domain.ingestion.ragignore import RagIgnoreFilter  # noqa: E402
 
 PUBLIC_DOC_FILES = [
-    "docs/00_README.md",
-    "docs/03_Product_Goals_Objectives_and_Success_Metrics.md",
-    "docs/05_User_Experience_and_Interaction_Design.md",
-    "docs/10_Content_Platform_Architecture.md",
-    "docs/12_AI_Integration_Strategy.md",
-    "docs/09_Section_Specifications/07_Pricing.md",
-    "docs/09_Section_Specifications/12_Scoping_Lab.md",
-    "docs/09_Section_Specifications/13_Client_Workspace_Dashboard.md",
-    "docs/14_Razorpay_Payments_and_Invoicing.md",
-    "docs/15_Performance_and_Accessibility.md",
-    "docs/16_Security_and_Privacy.md",
-    "docs/MIDDLEMAN_PARTNERSHIP_AGREEMENT.md",
-    "docs/REVENUE_EXECUTION_PLAN.md",
+    "README.md",
+    "docs/architecture.md",
+    "docs/cognitive/hybrid_search_and_fusion.md",
+    "docs/cognitive/agentic_workflows_and_repl.md",
+    "docs/benchmarks/EMPIRICAL_LOAD_BENCHMARK_REPORT.md",
 ]
 
 
@@ -36,19 +28,19 @@ def file_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def process_ingestion(target: str) -> None:
+def process_ingestion(target: str, docs_dir: Path | None = None) -> None:
     workspace_dir = Path(__file__).resolve().parent.parent
-    website_dir = workspace_dir.parent / "Prateek_website"
-    ignore_filter = RagIgnoreFilter(root_dir=website_dir)
+    base_docs = docs_dir or workspace_dir
+    ignore_filter = RagIgnoreFilter(root_dir=base_docs)
     chunker = AstCodeChunker()
 
     if target == "public_docs":
         print(
-            "🔍 Syncing Public Documentation Catalog for tenant 'demo_public_docs'..."
+            "🔍 Syncing Documentation Catalog for tenant 'demo_public_docs'..."
         )
         valid_files = []
         for rel_file in PUBLIC_DOC_FILES:
-            full_p = website_dir / rel_file
+            full_p = base_docs / rel_file
             if full_p.is_file() and not ignore_filter.is_ignored(full_p):
                 valid_files.append(full_p)
 
@@ -90,8 +82,13 @@ def main() -> None:
         default="public_docs",
         help="Target indexing catalog",
     )
+    parser.add_argument(
+        "--docs-dir",
+        default=None,
+        help="Custom root directory containing documentation to index (defaults to repository root)",
+    )
     args = parser.parse_args()
-    process_ingestion(args.target)
+    process_ingestion(args.target, docs_dir=Path(args.docs_dir) if args.docs_dir else None)
 
 
 if __name__ == "__main__":

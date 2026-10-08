@@ -42,26 +42,31 @@ RED = "\033[0;31m"
 DIM = "\033[2m"
 NC = "\033[0m"
 
-DB_URL = os.environ.get(
-    "DATABASE_DIRECT_URL",
-    os.environ.get(
-        "DATABASE_URL",
-        "postgresql://retriever_local:M4MetalPower2026!@db.uexdpufgmuevsrfijfrf.supabase.co:5432/postgres",
-    ),
+DB_URL = (
+    os.environ.get("DATABASE_DIRECT_URL")
+    or os.environ.get("DATABASE_URL")
+    or "postgresql://localhost:5432/retriever"
 ).replace("postgresql+asyncpg://", "postgresql://")
 
-TENANTS = [
-    {
-        "name": "Prateeq Sharma — Portfolio AI Twin",
-        "tenant_id": uuid.UUID("6797e2c8-745a-4bd1-aa4c-3854b8d79c22"),
-        "dir": REPO_ROOT / "data" / "tenants" / "tenant_portfolio_twin",
-    },
-    {
-        "name": "Prateeq Scoping & Retriever Concierge",
-        "tenant_id": uuid.UUID("1f85286c-9d9a-4ebc-9c62-a99360a5ece4"),
-        "dir": REPO_ROOT / "data" / "tenants" / "tenant_scoping_concierge",
-    },
-]
+
+def discover_tenant_bundles(tenants_dir: Path) -> list[dict]:
+    """Dynamically discover tenant bundles with tenant.json manifests."""
+    bundles = []
+    if tenants_dir.is_dir():
+        for entry in sorted(tenants_dir.iterdir()):
+            manifest = entry / "tenant.json"
+            if entry.is_dir() and manifest.is_file():
+                try:
+                    data = json.loads(manifest.read_text(encoding="utf-8"))
+                    docs_dir = entry / "documents" if (entry / "documents").is_dir() else entry
+                    bundles.append({
+                        "name": data.get("name", entry.name),
+                        "tenant_id": uuid.UUID(str(data["tenant_id"])),
+                        "dir": docs_dir,
+                    })
+                except Exception as err:
+                    print(f"  ⚠️ Skipping {entry.name}: {err}")
+    return bundles
 
 
 async def ingest_tenant(
@@ -231,8 +236,12 @@ async def main():
 
     total_stats = {"docs": 0, "chunks": 0, "vectors": 0}
 
+    tenants = discover_tenant_bundles(REPO_ROOT / "data" / "tenants")
+    if not tenants:
+        print(f"{YELLOW}No tenant bundles with tenant.json found in data/tenants/{NC}")
+
     try:
-        for tenant_info in TENANTS:
+        for tenant_info in tenants:
             stats = await ingest_tenant(conn, tenant_info, embedder, chunker)
             total_stats["docs"] += stats["docs"]
             total_stats["chunks"] += stats["chunks"]

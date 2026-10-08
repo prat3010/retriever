@@ -59,6 +59,10 @@ env/
 apps/api/storage/
 data/*
 !data/tenants/
+data/tenants/*
+!data/tenants/demo/
+!data/tenants/.gitignore
+!data/tenants/README.md
 !data/test_tenants.json
 
 # Build artifacts

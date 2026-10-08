@@ -1,0 +1,6 @@
+# Ignore all custom and private tenant packs
+*
+!.gitignore
+!README.md
+!demo/
+!demo/**

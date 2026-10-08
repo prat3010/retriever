@@ -641,7 +641,7 @@ async def test_chat_completions_system_prompt_and_history() -> None:
         chat_completions,
     )
 
-    mock_template = MagicMock(content="You are Prateeq's AI Twin clone.")
+    mock_template = MagicMock(content="You are a helpful AI assistant for Acme Systems.")
     mock_search_res = MagicMock(results=[
         SearchResult(
             chunk_id="chk_1",
@@ -698,7 +698,7 @@ async def test_chat_completions_system_prompt_and_history() -> None:
         # Verify messages sent to gateway router
         sent_messages = mock_generate.call_args[0][0].messages
         assert sent_messages[0].role == "system"
-        assert "You are Prateeq's AI Twin clone." in sent_messages[0].content
+        assert "You are a helpful AI assistant for Acme Systems." in sent_messages[0].content
         assert "Retriever uses local Ollama nomic-embed-text." in sent_messages[0].content
         # Verify history was included
         assert sent_messages[1].role == "user"

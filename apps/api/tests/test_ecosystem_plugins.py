@@ -117,7 +117,8 @@ async def test_google_drive_connector_discovery():
 
     docs = await connector.fetch_documents(config)
     assert len(docs) >= 1
-    assert "gdrive" in docs[0].filename
+    assert "quarterly" in docs[0].filename or "gdrive" in docs[0].filename
+    assert "google" in docs[0].source_url
     assert docs[0].metadata["source"] == "google_drive"
     assert docs[0].metadata["folder_id"] == "1A2B3C4D5E6F"
 

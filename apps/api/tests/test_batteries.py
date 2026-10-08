@@ -17,9 +17,9 @@ def test_platform_batteries_inventory_completeness():
     """Verify that all 38 platform batteries exist, have valid fields, and active status."""
     resp = battery_service.get_platform_batteries()
     assert isinstance(resp, PlatformBatteriesResponse)
-    assert resp.total_batteries == 41
+    assert resp.total_batteries == 42
     assert resp.active_count >= 24
-    assert len(resp.batteries) == 41
+    assert len(resp.batteries) == 42
 
     # Check key expected battery IDs
     expected_ids = {
@@ -64,6 +64,7 @@ def test_platform_batteries_inventory_completeness():
         "enterprise_saas_connectors_acl",
         "visual_dag_workflow_composer",
         "sovereign_air_gapped_appliance",
+        "system_one_fast_decision_plane",
     }
     actual_ids = {b.id for b in resp.batteries}
     assert expected_ids == actual_ids
@@ -98,9 +99,9 @@ def test_admin_batteries_endpoint():
         resp = client.get("/v1/admin/platform/batteries", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_batteries"] == 41
+        assert data["total_batteries"] == 42
         assert data["active_count"] >= 24
-        assert len(data["batteries"]) == 41
+        assert len(data["batteries"]) == 42
 
 
 def test_enterprise_saas_connectors_acl_battery():

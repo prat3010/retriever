@@ -37,15 +37,27 @@ def test_filter_builder_acl_clause_generation() -> None:
 
 
 def test_filter_builder_acl_clause_empty_user_context() -> None:
+    # Admin context bypasses ACL clauses
     sql, params, _ = build_filter_clause(
+        filters=[],
+        tags=[],
+        chunk_alias="dc",
+        user_id=None,
+        user_role="admin",
+    )
+    assert sql == ""
+    assert params == {}
+
+    # Empty user context with default ACL enforcement enforces public/unrestricted visibility
+    sql_public, params_public, _ = build_filter_clause(
         filters=[],
         tags=[],
         chunk_alias="dc",
         user_id=None,
         user_role=None,
     )
-    assert sql == ""
-    assert params == {}
+    assert "is_public" in sql_public
+    assert params_public == {}
 
 
 def test_search_query_user_context() -> None:

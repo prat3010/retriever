@@ -532,12 +532,13 @@ async def classify_scoping_intent(
         ChatMessage(role="system", content=system_prompt),
         ChatMessage(role="user", content=f"Project Scope: {payload.prompt}"),
     ]
-    model_override = (
+    raw_model = (
         payload.model
         or getattr(tenant_config.ai_provider, "default_model", None)
         or getattr(tenant_config.ai_provider, "model", None)
         or "meta-llama/llama-3.3-70b-instruct"
     )
+    model_override = raw_model if isinstance(raw_model, str) else "meta-llama/llama-3.3-70b-instruct"
     config: dict[str, Any] = {"model": model_override}
 
     try:

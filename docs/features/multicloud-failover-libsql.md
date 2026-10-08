@@ -168,7 +168,7 @@ The step-by-step productionization roadmap is outlined below:
 ```
 
 ### Step 1: Physical Multi-Cloud VPS Provisioning
-- **Oracle Cloud (BOM):** Retain `YOUR_SERVER_IP` (Ubuntu 24.04, 4 OCPU, 24GB RAM ARM64).
+- **Oracle Cloud (BOM):** Retain `YOUR_SERVER_IP` (Ubuntu 24.04, VM.Standard.E2.1.Micro, 1 OCPU, 1GB RAM + 7GB Swap).
 - **AWS (us-east-1):** Provision an EC2 `t4g.small` (2 vCPU, 2GB RAM ARM64) in North Virginia running Dockerized Retriever.
 - **Fly.io (fra):** Deploy a lightweight Fly Machine (`shared-cpu-1x`, 1GB RAM) in Frankfurt, Germany.
 - **Environment Configuration:** Update `MULTI_CLOUD_REGION_ENDPOINTS` in `.env.production`:

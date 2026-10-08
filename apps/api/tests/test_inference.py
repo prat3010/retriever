@@ -651,12 +651,22 @@ async def test_chat_completions_system_prompt_and_history() -> None:
         )
     ])
 
+    mock_cfg = MagicMock()
+    mock_cfg.feature_flags.enable_reranking = False
+    mock_cfg.feature_flags.enable_hybrid_search = True
+    mock_cfg.feature_flags.enable_query_rewriting = False
+    mock_cfg.feature_flags.enable_self_query = False
+    mock_cfg.feature_flags.enable_colbert_rerank = False
+    mock_cfg.hybrid_alpha = 0.7
+
     with (
         patch("src.routers.chat.template_registry.get_template", new_callable=AsyncMock) as mock_get_template,
+        patch("src.routers.chat.config_service.get_tenant_config", new_callable=AsyncMock) as mock_get_cfg,
         patch("src.routers.chat.search_service.search", new_callable=AsyncMock) as mock_search,
         patch("src.routers.chat.container.gateway_router.generate", new_callable=AsyncMock) as mock_generate,
         patch("src.routers.chat._get_redis_conn") as mock_redis,
     ):
+        mock_get_cfg.return_value = mock_cfg
         mock_get_template.return_value = mock_template
         mock_search.return_value = mock_search_res
         mock_generate.return_value = InferenceResponse(

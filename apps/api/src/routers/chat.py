@@ -527,6 +527,8 @@ class ChatCompletionRequest(BaseModel):
     use_repl: bool = False
     temperature: float = 0.2
     max_tokens: int | None = None
+    enable_reranking: bool | None = None
+    enable_hybrid: bool | None = None
 
 
 @router.post(
@@ -617,9 +619,32 @@ async def chat_completions(
     if not base_system:
         base_system = "You are a helpful, precise enterprise assistant."
 
-    search_res = await search_service.search(
-        SearchQuery(tenant_id=resolved_tenant_id, query=user_query, top_k=5)
+    tenant_config = await config_service.get_tenant_config(resolved_tenant_id)
+    resolved_enable_reranking = (
+        payload.enable_reranking
+        if payload.enable_reranking is not None
+        else tenant_config.feature_flags.enable_reranking
     )
+    resolved_enable_hybrid = (
+        payload.enable_hybrid
+        if payload.enable_hybrid is not None
+        else tenant_config.feature_flags.enable_hybrid_search
+    )
+
+    search_query = SearchQuery(
+        tenant_id=resolved_tenant_id,
+        query=user_query,
+        top_k=5,
+        enable_hybrid=resolved_enable_hybrid,
+        enable_reranking=resolved_enable_reranking,
+        enable_query_rewriting=tenant_config.feature_flags.enable_query_rewriting,
+        enable_self_query=tenant_config.feature_flags.enable_self_query,
+        enable_colbert_rerank=getattr(
+            tenant_config.feature_flags, "enable_colbert_rerank", False
+        ),
+        hybrid_alpha=getattr(tenant_config, "hybrid_alpha", 0.7),
+    )
+    search_res = await search_service.search(search_query)
     context_chunks = search_res.results
     context_text = "\n\n".join(
         [f"[{i + 1}] {c.content}" for i, c in enumerate(context_chunks)]

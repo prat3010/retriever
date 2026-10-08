@@ -218,7 +218,7 @@ def generate_reports(
             "target_url": target_url,
             "system_specs": {
                 "environment": "Oracle Cloud Infrastructure (VPS 130.210.35.134) + Vercel Edge Control Plane",
-                "compute": "4 OCPU ARM Ampere A1, 24 GB RAM",
+                "compute": "1 OCPU (AMD x86), 1 GB RAM + 7 GB Swap (VM.Standard.E2.1.Micro)",
                 "storage_engine": "PostgreSQL 16 + pgvector (HNSW Indexing) + Local Redis Cache",
                 "backend_framework": "FastAPI (ASGI) + Uvicorn Workers + Hexagonal Architecture",
                 "quality_gates": "Gate 10 AST Zero-Toy Static Verification Passed (0 mocks, 0 synthetic math)",
@@ -245,7 +245,7 @@ def generate_reports(
         "",
         f"> **Generated at:** `{timestamp}`  ",
         f"> **Target System:** `{target_url}`  ",
-        "> **Environment:** Oracle Cloud ARM Ampere (4 OCPU, 24GB RAM) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  ",
+        "> **Environment:** Oracle Cloud VM.Standard.E2.1.Micro (1 OCPU, 1 GB RAM + 7 GB Swap) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  ",
         "> **Verification Gate:** Gate 10 Zero-Toy Static AST Verified (100% Genuine Network Packets, Zero Mocks, Zero Synthetic Score Padding)",
         "",
         "---",

@@ -2,7 +2,7 @@
 
 > **Generated at:** `2026-09-19 23:18:47Z`  
 > **Target System:** `http://localhost:8000`  
-> **Environment:** Oracle Cloud ARM Ampere (4 OCPU, 24GB RAM) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  
+> **Environment:** Oracle Cloud VM.Standard.E2.1.Micro (1 OCPU, 1 GB RAM + 7 GB Swap) • PostgreSQL 16 + pgvector • FastAPI Hexagonal Architecture  
 > **Verification Gate:** Gate 10 Zero-Toy Static AST Verified (100% Genuine Network Packets, Zero Mocks, Zero Synthetic Score Padding)
 
 ---

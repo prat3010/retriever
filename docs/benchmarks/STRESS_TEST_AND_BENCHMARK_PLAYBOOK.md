@@ -30,7 +30,7 @@ This playbook documents the design, automation, empirical execution, and root-ca
                                                                                ▼
                                                             ┌──────────────────────────────────────┐
                                                             │   Oracle Cloud VPS (Ubuntu 24.04)    │
-                                                            │   4 OCPU ARM Ampere A1 • 24 GB RAM   │
+                                                            │ 1 OCPU AMD (x86) • 1GB RAM + 7GB Swap│
                                                             │   IP: YOUR_SERVER_IP                 │
                                                             ├──────────────────────────────────────┤
                                                             │ Nginx Reverse Proxy (SSL / TLS 1.3)  │
@@ -53,8 +53,8 @@ This playbook documents the design, automation, empirical execution, and root-ca
 ```
 
 ### Hardware & Environment Specifications
-* **Cloud Provider:** Oracle Cloud Infrastructure (OCI Always Free / Tier 1 Ampere Architecture)
-* **Compute:** 4 OCPU ARM Neoverse-N1, 24 GB RAM, 200 GB NVMe Storage
+* **Cloud Provider:** Oracle Cloud Infrastructure (OCI Always Free / VM.Standard.E2.1.Micro)
+* **Compute:** 1 OCPU AMD EPYC (x86_64), 1 GB Physical RAM + 7 GB NVMe Swap, 44 GB Boot Volume
 * **OS:** Ubuntu 24.04 LTS (Kernel 6.8.0-1008-oracle)
 * **Web Gateway:** Nginx 1.24.0 with HTTP/2, SSL termination, and security headers
 * **Application Framework:** FastAPI 0.110+ on Python 3.12 / 3.13 ASGI
@@ -167,7 +167,7 @@ python3 scripts/run_load_benchmark.py --target http://localhost:8000 --users 10,
 When asked about Retriever's scalability, performance, or systems architecture in technical rounds, use the following structured responses:
 
 ### Q1: "How does Retriever handle high concurrent load?"
-> *"Retriever uses an asynchronous Hexagonal architecture on top of FastAPI and Uvicorn. In our empirical load tests against our Oracle Cloud ARM instance, we demonstrated flat memory usage and zero connection pool leaks across concurrent user sweeps. At 20 concurrent virtual users bursting 120 requests, our Nginx and ASGI rate-limiting layers actively throttle traffic at 120 req/min to protect PostgreSQL connection pools from starvation. Our complete P50, P95, and P99 latency percentiles are publicly published and reproducible via our open-source benchmark suite."*
+> *"Retriever uses an asynchronous Hexagonal architecture on top of FastAPI and Uvicorn. In our empirical load tests against our Oracle Cloud VM.Standard.E2.1.Micro instance (1 OCPU, 1GB RAM + 7GB Swap), we demonstrated flat memory usage and zero connection pool leaks across concurrent user sweeps. At 20 concurrent virtual users bursting 120 requests, our Nginx and ASGI rate-limiting layers actively throttle traffic at 120 req/min to protect PostgreSQL connection pools from starvation. Our complete P50, P95, and P99 latency percentiles are publicly published and reproducible via our open-source benchmark suite."*
 
 ### Q2: "Why is P50 latency around ~2 seconds for remote calls?"
 > *"Because that measures the complete end-to-end HTTPS network packet traversal from a local client machine to an Oracle Cloud VPS in India, through Nginx SSL handshake, Uvicorn ASGI dispatch, PostgreSQL async connection checkout, executing an active `SELECT 1` heartbeat, and returning the JSON payload. For internal and cached vector queries, response latency drops to single-digit milliseconds via our Redis semantic caching tier."*

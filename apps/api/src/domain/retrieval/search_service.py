@@ -68,6 +68,29 @@ class HybridSearchService:
         """Execute the full hybrid search pipeline with speculative parallel pre-retrieval."""
         start_time = time.monotonic()
 
+        # Check exact query cache BEFORE speculative pre-retrieval LLM calls
+        if self.cache_provider is not None:
+            try:
+                cached_exact = await self.cache_provider.get_cached_search_by_query_text(
+                    query.tenant_id, query.query
+                )
+                if cached_exact is not None and isinstance(cached_exact, list):
+                    duration_ms = (time.monotonic() - start_time) * 1000.0
+                    return SearchResponse(
+                        query=query.query,
+                        results=cached_exact,
+                        search_meta=SearchMeta(
+                            strategy="exact_cache_hit",
+                            total_candidates=len(cached_exact),
+                            returned_results=len(cached_exact),
+                            duration_ms=round(duration_ms, 2),
+                        ),
+                    )
+            except Exception as exc:
+                logger.warning(
+                    f"Exact query cache lookup failed for tenant '{query.tenant_id}': {exc}"
+                )
+
         # -1. Classify query intent and override top_k / feature flags
         if query.enable_query_intent and self.query_intent_classifier:
             try:
@@ -128,6 +151,7 @@ class HybridSearchService:
                     query.tenant_id, raw_embedding
                 )
                 if cached_results is not None:
+                    duration_ms = (time.monotonic() - start_time) * 1000.0
                     return SearchResponse(
                         query=query.query,
                         results=cached_results,
@@ -135,7 +159,7 @@ class HybridSearchService:
                             strategy="semantic_cache_hit",
                             total_candidates=len(cached_results),
                             returned_results=len(cached_results),
-                            duration_ms=0.0,
+                            duration_ms=round(duration_ms, 2),
                         ),
                     )
             except Exception as exc:

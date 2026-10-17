@@ -395,12 +395,15 @@ async def test_web_search_per_tenant_api_key() -> None:
     mock_vector = AsyncMock()
     mock_vector.search_similar.return_value = [_make_result("local_1", 0.45)]
 
+    from src.adapters.cognitive.tavily_adapter import TavilySearchAdapter
+
     service = HybridSearchService(
         vector_search=mock_vector,
         keyword_search=MagicMock(),
         embedder=AsyncMock(),
         reranker=MagicMock(),
         web_search=AsyncMock(),
+        web_search_factory=lambda name, key: TavilySearchAdapter(api_key=key),
     )
 
     query = SearchQuery(

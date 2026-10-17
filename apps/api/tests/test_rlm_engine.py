@@ -120,7 +120,12 @@ async def test_rlm_engine_multi_turn_repl_loop():
     good_code_resp = InferenceResponse(
         content="```python\nresult = len(chunks) * 10\n```"
     )
-    mock_llm.generate = AsyncMock(side_effect=[bad_code_resp, good_code_resp])
+    synth_resp = InferenceResponse(
+        content="Multi-turn REPL loop completed in 2 turn(s). Output: 10"
+    )
+    mock_llm.generate = AsyncMock(
+        side_effect=[bad_code_resp, good_code_resp, synth_resp]
+    )
 
     mock_search = MagicMock(spec=HybridSearchService)
     mock_search.search = AsyncMock(

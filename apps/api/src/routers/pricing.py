@@ -16,6 +16,7 @@ DEFAULT_PRICING = {
         "plans": [
             {
                 "id": "starter_inr",
+                "planId": "starter_inr",
                 "name": "Starter",
                 "price": "1,999",
                 "period": "/month",
@@ -33,6 +34,7 @@ DEFAULT_PRICING = {
             },
             {
                 "id": "pro_inr",
+                "planId": "pro_inr",
                 "name": "Pro",
                 "price": "5,999",
                 "period": "/month",
@@ -51,6 +53,7 @@ DEFAULT_PRICING = {
             },
             {
                 "id": "business_inr",
+                "planId": "business_inr",
                 "name": "Business",
                 "price": "14,999",
                 "period": "/month",
@@ -75,6 +78,7 @@ DEFAULT_PRICING = {
         "plans": [
             {
                 "id": "starter_usd",
+                "planId": "starter_usd",
                 "name": "Starter",
                 "price": "29",
                 "period": "/month",
@@ -92,6 +96,7 @@ DEFAULT_PRICING = {
             },
             {
                 "id": "pro_usd",
+                "planId": "pro_usd",
                 "name": "Pro",
                 "price": "79",
                 "period": "/month",
@@ -110,6 +115,7 @@ DEFAULT_PRICING = {
             },
             {
                 "id": "business_usd",
+                "planId": "business_usd",
                 "name": "Business",
                 "price": "199",
                 "period": "/month",

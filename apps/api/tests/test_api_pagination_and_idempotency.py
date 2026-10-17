@@ -1,3 +1,5 @@
+"""Tests for API cursor pagination, idempotency keys, and rate limit headers."""
+
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch

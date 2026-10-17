@@ -85,7 +85,12 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
         self._window = window_seconds
         self._max_requests = max_requests
 
-    async def acquire(self, key: str, cost: float = 1.0) -> RateLimitResult:
+    async def acquire(
+        self,
+        key: str,
+        cost: float = 1.0,
+        max_requests_override: int | None = None,
+    ) -> RateLimitResult:
         """Attempt to consume *cost* tokens for *key*.
 
         Uses a Lua script for atomic sliding-window check-and-add.
@@ -94,6 +99,11 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
 
         now = time.time()
         suffix = uuid.uuid4().hex
+        effective_limit = (
+            max_requests_override
+            if max_requests_override is not None
+            else self._max_requests
+        )
         try:
             res = await self._redis.eval(
                 _SLIDING_WINDOW_SCRIPT,
@@ -101,11 +111,11 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
                 key,
                 now,
                 self._window,
-                self._max_requests,
+                effective_limit,
                 cost,
                 suffix,
             )
-            return _parse_rate_limit_result(res, self._max_requests)
+            return _parse_rate_limit_result(res, effective_limit)
         except Exception as err:
             logger.warning(
                 f"Redis rate limiter failed on key {key}, failing open: {err}"
@@ -113,7 +123,7 @@ class RedisSlidingWindowRateLimiter(RateLimiter):
             # Fail open on Redis errors — allow the request
             return RateLimitResult(
                 allowed=True,
-                limit=self._max_requests,
-                remaining=self._max_requests,
+                limit=effective_limit,
+                remaining=effective_limit,
                 reset_after=0,
             )

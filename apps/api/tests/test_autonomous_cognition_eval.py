@@ -16,6 +16,7 @@ async def test_rlm_multi_turn_repl_loop():
     mock_llm.generate = AsyncMock(
         side_effect=[
             MagicMock(content="```python\nresult = sum(c.score for c in chunks)\n```"),
+            MagicMock(content="Multi-turn REPL loop completed with score 4.5"),
         ]
     )
 

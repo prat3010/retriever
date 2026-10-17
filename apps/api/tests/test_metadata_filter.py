@@ -10,7 +10,7 @@ from src.domain.abstractions.retrieval import MetadataFilter
 
 
 def test_no_filters_or_tags() -> None:
-    sql, params, join = build_filter_clause([], [])
+    sql, params, join = build_filter_clause([], [], enable_acl_filter=False)
     assert sql == ""
     assert params == {}
     assert join == ""

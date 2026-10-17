@@ -100,7 +100,14 @@ async def test_search_keywords_with_filters(
     )
 
     mock_build_filter.assert_called_once_with(
-        flt, [], "dc", collection_id=None, user_id=None, user_role=None
+        flt,
+        [],
+        "dc",
+        collection_id=None,
+        user_id=None,
+        user_role=None,
+        user_groups=None,
+        enable_acl_filter=True,
     )
     call_params = mock_db_session.execute.call_args[0][1]
     assert call_params["f_0"] == "active"

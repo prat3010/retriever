@@ -1,3 +1,5 @@
+"""Tests for tenant configuration encryption (ConfigEncrypter) and S3 storage adapters."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

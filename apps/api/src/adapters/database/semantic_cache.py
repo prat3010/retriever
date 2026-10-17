@@ -52,6 +52,47 @@ class PgSemanticCacheAdapter(SemanticCacheProvider):
                 return results
         return None
 
+    async def get_cached_search_by_query_text(
+        self,
+        tenant_id: str,
+        query_text: str,
+    ) -> list[SearchResult] | None:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+                {"tenant_id": tenant_id},
+            )
+            res = await conn.execute(
+                text(
+                    """
+                    SELECT search_results FROM semantic_cache 
+                    WHERE tenant_id = :tenant_id
+                    AND LOWER(TRIM(query_text)) = LOWER(TRIM(:query_text))
+                    AND expires_at > NOW()
+                    ORDER BY created_at DESC LIMIT 1
+                    """
+                ),
+                {"tenant_id": tenant_id, "query_text": query_text},
+            )
+            row = res.fetchone()
+            if row and row[0]:
+                cached_results_raw = (
+                    json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                )
+                results = []
+                for item in cached_results_raw:
+                    results.append(
+                        SearchResult(
+                            chunk_id=item["chunk_id"],
+                            document_id=item["document_id"],
+                            content=item["content"],
+                            score=item["score"],
+                            metadata=item.get("metadata", {}),
+                        )
+                    )
+                return results
+        return None
+
     async def cache_search(
         self,
         tenant_id: str,

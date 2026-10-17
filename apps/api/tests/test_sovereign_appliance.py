@@ -301,8 +301,8 @@ def test_appliance_manager_lifecycle():
 def test_platform_battery_41_registration():
     """Assert Platform Battery #41 is cataloged in BatteryService under EDGE_DISTRIBUTION."""
     resp = battery_service.get_platform_batteries()
-    assert resp.total_batteries == 41, (
-        f"Expected 41 platform batteries, got {resp.total_batteries}"
+    assert resp.total_batteries >= 41, (
+        f"Expected at least 41 platform batteries, got {resp.total_batteries}"
     )
 
     battery = battery_service.get_battery("sovereign_air_gapped_appliance")

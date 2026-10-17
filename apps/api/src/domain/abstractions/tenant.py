@@ -50,6 +50,15 @@ class TenantRegistry(ABC):
         """Deactivate (suspend) a tenant. Returns True if found and deactivated."""
         pass
 
+    async def update_tenant(
+        self,
+        tenant_id: str,
+        tier: str | None = None,
+        is_active: bool | None = None,
+    ) -> Tenant | None:
+        """Update tenant tier and/or active status."""
+        return await self.get_tenant(tenant_id)
+
     @abstractmethod
     async def update_config(self, tenant_id: str, config: TenantConfig) -> None:
         """Update configuration settings for the tenant."""

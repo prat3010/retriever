@@ -123,26 +123,42 @@ async def get_current_user(
                     except PyJWTError:
                         payload = None
 
-                # Strategy B: If RS256 algorithm & JWKS key is available
+                # Strategy B: If RS256 / ES256 algorithm & JWKS key is available
                 if payload is None and kid and jwks_uri:
                     jwk = await _fetch_jwks_key(jwks_uri, kid)
-                    if jwk and jwk.get("kty") == "RSA":
-                        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(jwk)
-                        decode_kwargs: dict = {
-                            "algorithms": ["RS256"],
-                            "options": {},
-                        }
-                        if settings.OIDC_AUDIENCE:
-                            decode_kwargs["audience"] = settings.OIDC_AUDIENCE
-                        else:
-                            decode_kwargs["options"]["verify_aud"] = False
+                    if jwk:
+                        public_key = None
+                        alg_list = []
+                        kty = jwk.get("kty")
+                        if kty == "RSA":
+                            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(jwk)
+                            alg_list = ["RS256"]
+                        elif kty == "EC":
+                            public_key = jwt.algorithms.ECAlgorithm.from_jwk(jwk)
+                            alg_list = ["ES256"]
 
-                        if issuer_url:
-                            decode_kwargs["issuer"] = issuer_url
-                        else:
-                            decode_kwargs["options"]["verify_iss"] = False
+                        if public_key:
+                            decode_kwargs: dict = {
+                                "algorithms": alg_list,
+                                "options": {},
+                            }
+                            if settings.OIDC_AUDIENCE:
+                                decode_kwargs["audience"] = [
+                                    settings.OIDC_AUDIENCE,
+                                    "authenticated",
+                                ]
+                            else:
+                                decode_kwargs["options"]["verify_aud"] = False
 
-                        payload = jwt.decode(clean_token, public_key, **decode_kwargs)
+                            if issuer_url:
+                                decode_kwargs["issuer"] = issuer_url
+                            else:
+                                decode_kwargs["options"]["verify_iss"] = False
+
+                            try:
+                                payload = jwt.decode(clean_token, public_key, **decode_kwargs)
+                            except PyJWTError:
+                                payload = None
 
                 # Strategy C: Fallback to Supabase Auth API GET /auth/v1/user
                 if payload is None and settings.SUPABASE_URL:
@@ -380,7 +396,21 @@ async def verify_scopes(
             pass
 
     for scope in security_scopes.scopes:
-        if scope in user_context.scopes:
+        matched = False
+        for user_scope in user_context.scopes:
+            if user_scope == scope:
+                matched = True
+                break
+            if user_scope.endswith(":*") and scope.startswith(user_scope[:-1]):
+                matched = True
+                break
+            if user_scope == "*":
+                if scope == "document:delete":
+                    continue  # Delete requires explicit scope or admin role
+                matched = True
+                break
+
+        if matched:
             continue
 
         allowed = False

@@ -1,3 +1,5 @@
+"""Regression tests for suspended tenant authentication, cache transactions, session ownership, and rate limiting."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

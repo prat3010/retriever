@@ -1,3 +1,5 @@
+"""Tests for semantic/recursive chunking, guardrails PII redaction, and citation formatting."""
+
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch

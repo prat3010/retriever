@@ -1,3 +1,5 @@
+"""Tests for cryptographic audit trails, OIDC federated authentication, data retention, and granular RBAC."""
+
 import datetime
 import json
 import uuid
@@ -258,3 +260,25 @@ async def test_granular_rbac_scope_checking() -> None:
     security_scopes_write = SecurityScopes(scopes=["document:write"])
     # Should allow
     await verify_scopes(security_scopes_write, user_context, mock_request_write)
+
+    # Test 4: Wildcard prefix allows matching sub-scopes
+    user_context_wildcard = UserContext(
+        user_id=str(uuid.uuid4()),
+        tenant_id="test-tenant",
+        roles=["client"],
+        scopes=["document:*", "chat:*"],
+    )
+    await verify_scopes(SecurityScopes(scopes=["document:read"]), user_context_wildcard)
+    await verify_scopes(SecurityScopes(scopes=["chat:write"]), user_context_wildcard)
+
+    # Test 5: Wildcard "*" allows read/write but rejects document:delete for non-admin
+    user_context_star = UserContext(
+        user_id=str(uuid.uuid4()),
+        tenant_id="test-tenant",
+        roles=["client"],
+        scopes=["*"],
+    )
+    await verify_scopes(SecurityScopes(scopes=["document:read"]), user_context_star)
+    with pytest.raises(HTTPException) as exc_del:
+        await verify_scopes(SecurityScopes(scopes=["document:delete"]), user_context_star)
+    assert exc_del.value.status_code == status.HTTP_403_FORBIDDEN

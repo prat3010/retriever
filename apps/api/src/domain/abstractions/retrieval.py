@@ -147,6 +147,13 @@ class SemanticCacheProvider(ABC):
     ) -> list[SearchResult] | None:
         pass
 
+    async def get_cached_search_by_query_text(
+        self,
+        tenant_id: str,
+        query_text: str,
+    ) -> list[SearchResult] | None:
+        return None
+
     @abstractmethod
     async def cache_search(
         self,

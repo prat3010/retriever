@@ -62,7 +62,12 @@ class RateLimiter(ABC):
     """Port for rate limiting — token-bucket / sliding-window checks."""
 
     @abstractmethod
-    async def acquire(self, key: str, cost: float = 1.0) -> RateLimitResult:
+    async def acquire(
+        self,
+        key: str,
+        cost: float = 1.0,
+        max_requests_override: int | None = None,
+    ) -> RateLimitResult:
         """Attempt to consume *cost* tokens for *key*."""
         pass
 

@@ -1,3 +1,5 @@
+"""Regression tests for embedding retry batching and document filetype extraction filtering."""
+
 import os
 from unittest.mock import AsyncMock, MagicMock
 

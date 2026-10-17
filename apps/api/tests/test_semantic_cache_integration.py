@@ -1,3 +1,5 @@
+"""Tests for semantic cache lookups, write-through invalidation, and asynchronous bulk insertion tasks."""
+
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -49,6 +51,7 @@ async def test_semantic_cache_hit(
 
     # Mock cache provider hit
     mock_cache_provider = AsyncMock()
+    mock_cache_provider.get_cached_search_by_query_text.return_value = None
     mock_cache_provider.get_cached_search.return_value = [
         SearchResult(
             chunk_id="chunk-111",
@@ -92,6 +95,66 @@ async def test_semantic_cache_hit(
 @patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
 @patch("src.main.search_service.embedder.embed_text", new_callable=AsyncMock)
 @patch("src.main.search_service.vector_search.search_similar", new_callable=AsyncMock)
+async def test_exact_query_cache_hit(
+    mock_search_similar, mock_embed, mock_get_config, mock_validate
+) -> None:
+    tenant_id = "test-tenant"
+    user_uuid = str(uuid.uuid4())
+
+    mock_validate.return_value = UserContext(
+        user_id=user_uuid,
+        tenant_id=tenant_id,
+        roles=["client"],
+        scopes=["document:read"],
+    )
+
+    config = TenantConfiguration(tenant_id=tenant_id)
+    mock_get_config.return_value = config
+
+    mock_cache_provider = AsyncMock()
+    mock_cache_provider.get_cached_search_by_query_text.return_value = [
+        SearchResult(
+            chunk_id="chunk-exact-999",
+            document_id="doc-exact-999",
+            content="Exact query cached content.",
+            score=1.0,
+            metadata={"filename": "exact.pdf"},
+        )
+    ]
+
+    original_cache = search_service.cache_provider
+    search_service.cache_provider = mock_cache_provider
+
+    try:
+        response = client.post(
+            f"/v1/tenants/{tenant_id}/search",
+            json={"query": "Exact cached search query", "limit": 10},
+            headers={
+                "Authorization": "Bearer ret_live_validtoken.secret",
+                "X-User-ID": user_uuid,
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["searchMeta"]["strategy"] == "exact_cache_hit"
+        assert len(body["results"]) == 1
+        assert body["results"][0]["chunkId"] == "chunk-exact-999"
+
+        # Neither embedding nor vector search should be called on exact cache hit
+        mock_embed.assert_not_called()
+        mock_search_similar.assert_not_called()
+    finally:
+        search_service.cache_provider = original_cache
+
+
+@pytest.mark.asyncio
+@patch(
+    "src.adapters.api.security.identity_provider.validate_token", new_callable=AsyncMock
+)
+@patch("src.main.config_service.get_tenant_config", new_callable=AsyncMock)
+@patch("src.main.search_service.embedder.embed_text", new_callable=AsyncMock)
+@patch("src.main.search_service.vector_search.search_similar", new_callable=AsyncMock)
 async def test_semantic_cache_miss_and_write(
     mock_search_similar, mock_embed, mock_get_config, mock_validate
 ) -> None:
@@ -108,11 +171,13 @@ async def test_semantic_cache_miss_and_write(
     config = TenantConfiguration(tenant_id=tenant_id)
     config.feature_flags.enable_hybrid_search = False
     config.feature_flags.enable_reranking = False
+    config.bm25_settings.enable_bm25 = False
     mock_get_config.return_value = config
     mock_embed.return_value = [0.1] * 768
 
     # Mock cache provider miss
     mock_cache_provider = AsyncMock()
+    mock_cache_provider.get_cached_search_by_query_text.return_value = None
     mock_cache_provider.get_cached_search.return_value = None
 
     # Mock search similar return

@@ -98,6 +98,32 @@ class SqlTenantRegistry(TenantRegistry):
             await session.flush()
             return True
 
+    async def update_tenant(
+        self,
+        tenant_id: str,
+        tier: str | None = None,
+        is_active: bool | None = None,
+    ) -> Tenant | None:
+        """Update tenant tier and/or active status."""
+        async with tenant_session(bypass_rls=True) as session:
+            stmt = select(TenantDb).where(TenantDb.tenant_id == uuid.UUID(tenant_id))
+            result = await session.execute(stmt)
+            db_tenant = result.scalar_one_or_none()
+            if not db_tenant:
+                return None
+            if tier is not None:
+                db_tenant.tier = tier
+            if is_active is not None:
+                db_tenant.status = "active" if is_active else "suspended"
+            await session.flush()
+            return Tenant(
+                tenant_id=str(db_tenant.tenant_id),
+                name=db_tenant.name,
+                status=db_tenant.status,
+                tier=db_tenant.tier,
+                created_at=db_tenant.created_at.isoformat() if db_tenant.created_at else "",
+            )
+
     async def update_config(self, tenant_id: str, config: TenantConfig) -> None:
         """Update configuration settings for the tenant."""
         async with tenant_session(tenant_id=tenant_id) as session:

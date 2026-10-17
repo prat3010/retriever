@@ -233,6 +233,36 @@ async def admin_get_tenant(tenantId: str) -> dict:
     }
 
 
+class TenantUpdateRequest(BaseModel):
+    tier: str | None = None
+    is_active: bool | None = None
+
+
+@router.patch(
+    "/tenants/{tenantId}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_update_tenant(tenantId: str, payload: TenantUpdateRequest) -> dict:
+    updated = await tenant_registry.update_tenant(
+        tenantId, tier=payload.tier, is_active=payload.is_active
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Tenant not found.")
+    await audit_logger.write(
+        tenantId,
+        "tenant.updated",
+        f"Tenant updated (tier={updated.tier}, status={updated.status})",
+    )
+    return {
+        "tenantId": str(updated.tenant_id),
+        "name": updated.name,
+        "status": updated.status,
+        "tier": updated.tier,
+        "createdAt": updated.created_at,
+    }
+
+
 @router.delete(
     "/tenants/{tenantId}",
     status_code=status.HTTP_200_OK,

@@ -1,3 +1,5 @@
+"""Unit tests for convex hybrid fusion and alpha interpolation in search service."""
+
 from unittest.mock import AsyncMock
 
 import pytest

@@ -72,6 +72,7 @@ class SearchMeta(BaseModel):
     total_candidates: int
     returned_results: int
     duration_ms: float
+    stages: dict[str, float] | None = None
 
 
 class SearchResponse(BaseModel):

@@ -84,6 +84,11 @@ class HybridSearchService:
                             total_candidates=len(cached_exact),
                             returned_results=len(cached_exact),
                             duration_ms=round(duration_ms, 2),
+                            stages={
+                                "embedding_ms": 0.0,
+                                "search_ms": 0.0,
+                                "fusion_ms": 0.0,
+                            },
                         ),
                     )
             except Exception as exc:
@@ -121,14 +126,18 @@ class HybridSearchService:
                     return []
             return []
 
-        async def _run_raw_embed() -> list[float]:
+        embed_duration_ms: float = 0.0
+
+        async def _run_raw_embed() -> tuple[list[float], float]:
+            t_emb = time.monotonic()
             try:
-                return await self.embedder.embed_text(query.query)
+                emb = await self.embedder.embed_text(query.query)
+                return emb, (time.monotonic() - t_emb) * 1000.0
             except Exception as exc:
                 logger.warning(
                     f"Raw query embedding failed for query '{query.query[:50]}': {exc}"
                 )
-                return []
+                return [], (time.monotonic() - t_emb) * 1000.0
 
         sq_res, hyde_res, raw_embed_res = await asyncio.gather(
             _run_self_query(),
@@ -139,7 +148,11 @@ class HybridSearchService:
 
         parsed_filters = sq_res if isinstance(sq_res, list) else []
         rewritten_list = hyde_res if isinstance(hyde_res, list) else []
-        raw_embedding = raw_embed_res if isinstance(raw_embed_res, list) else []
+        raw_embedding, embed_duration_ms = (
+            raw_embed_res
+            if isinstance(raw_embed_res, tuple) and len(raw_embed_res) == 2
+            else ([], 0.0)
+        )
 
         if parsed_filters:
             query.filters = query.filters + parsed_filters
@@ -160,6 +173,11 @@ class HybridSearchService:
                             total_candidates=len(cached_results),
                             returned_results=len(cached_results),
                             duration_ms=round(duration_ms, 2),
+                            stages={
+                                "embedding_ms": round(embed_duration_ms, 2),
+                                "search_ms": 0.0,
+                                "fusion_ms": 0.0,
+                            },
                         ),
                     )
             except Exception as exc:
@@ -173,14 +191,18 @@ class HybridSearchService:
             embed_query = rewritten_list[0]
             if embed_query != query.query:
                 try:
+                    t_hyde_emb = time.monotonic()
                     query_embedding = await self.embedder.embed_text(embed_query)
+                    embed_duration_ms += (time.monotonic() - t_hyde_emb) * 1000.0
                 except Exception as exc:
                     logger.warning(f"HyDE rewritten query embedding failed: {exc}")
                     query_embedding = raw_embedding
 
         if not query_embedding:
             try:
+                t_retry_emb = time.monotonic()
                 query_embedding = await self.embedder.embed_text(query.query)
+                embed_duration_ms += (time.monotonic() - t_retry_emb) * 1000.0
             except Exception as exc:
                 logger.error(
                     f"Query embedding failed for '{query.query[:50]}': {exc}. "
@@ -199,14 +221,17 @@ class HybridSearchService:
                 logger.warning(f"LoRA domain adaptation skipped: {exc}")
 
         # 3. Fan-out: parallel dense + sparse searches
+        t_search_start = time.monotonic()
         search_k = query.top_k * (
             query.rerank_candidate_multiplier if query.enable_reranking else 1
         )
         vector_results, keyword_results = await self._fan_out_search(
             query, query_embedding, search_k
         )
+        search_duration_ms = (time.monotonic() - t_search_start) * 1000.0
 
         # 4. Determine strategy and fuse results
+        t_fuse_start = time.monotonic()
         strategy = self._determine_strategy(query, vector_results, keyword_results)
         fused = self._fuse_results(query, strategy, vector_results, keyword_results)
 
@@ -232,6 +257,7 @@ class HybridSearchService:
 
         # 6. Trim to requested limit
         final_results = fused[: query.top_k]
+        fuse_duration_ms = (time.monotonic() - t_fuse_start) * 1000.0
 
         # 7. Web search fallback if scores are low
         if (
@@ -251,6 +277,11 @@ class HybridSearchService:
                 total_candidates=len(vector_results) + len(keyword_results),
                 returned_results=len(final_results),
                 duration_ms=round(elapsed_ms, 2),
+                stages={
+                    "embedding_ms": round(embed_duration_ms, 2),
+                    "search_ms": round(search_duration_ms, 2),
+                    "fusion_ms": round(fuse_duration_ms, 2),
+                },
             ),
         )
 

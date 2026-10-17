@@ -17,6 +17,7 @@ from src.schemas.search import (
     SearchRequest,
     SearchResponseDto,
     SearchResultItem,
+    SearchStages,
 )
 
 router = APIRouter(tags=["Search"])
@@ -127,5 +128,14 @@ async def search_documents(
             totalCandidates=response.search_meta.total_candidates,
             returnedResults=response.search_meta.returned_results,
             durationMs=response.search_meta.duration_ms,
+            stages=(
+                SearchStages(
+                    embeddingMs=response.search_meta.stages.get("embedding_ms", 0.0),
+                    searchMs=response.search_meta.stages.get("search_ms", 0.0),
+                    fusionMs=response.search_meta.stages.get("fusion_ms", 0.0),
+                )
+                if response.search_meta.stages
+                else None
+            ),
         ),
     )

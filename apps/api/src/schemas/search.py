@@ -25,11 +25,18 @@ class SearchResultItem(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class SearchStages(BaseModel):
+    embeddingMs: float = 0.0
+    searchMs: float = 0.0
+    fusionMs: float = 0.0
+
+
 class SearchMetaResponse(BaseModel):
     strategy: str
     totalCandidates: int
     returnedResults: int
     durationMs: float
+    stages: SearchStages | None = None
 
 
 class SearchResponseDto(BaseModel):

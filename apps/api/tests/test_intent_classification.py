@@ -80,6 +80,7 @@ async def test_classify_intent_success_mock_llm(auth_headers: dict[str, str]) ->
         assert "ai_voice_agent" in body["data"]["feature_ids"]
         assert body["data"]["confidence_score"] == 0.96
         assert body["data"]["retriever_engine_recommended"] is True
+        assert body["provider"] == "groq"
         assert body["inputTokens"] == 150
         assert body["outputTokens"] == 85
         assert body["latencyMs"] >= 0
@@ -119,6 +120,52 @@ async def test_classify_intent_fallback_on_llm_error(
         assert body["data"]["archetype_id"] == "ai_rag_app"
         assert body["data"]["base_engine_id"] == "saas"
         assert "ai_rag" in body["data"]["feature_ids"]
+        assert "search" not in body["data"]["feature_ids"]
+        assert "blog" not in body["data"]["feature_ids"]
+        canonical_features = {
+            "auth", "payments", "cms", "ai_rag", "ai_agents", "admin", "email",
+            "booking", "commerce", "lms", "crm", "pwa", "i18n", "integrations",
+            "video", "migration", "ai_voice_agent", "ai_vision_ocr"
+        }
+        assert set(body["data"]["feature_ids"]).issubset(canonical_features)
+        assert body["provider"] == "fallback"
+
+
+@pytest.mark.asyncio
+async def test_classify_intent_fallback_booking(
+    auth_headers: dict[str, str],
+) -> None:
+    with (
+        patch(
+            "src.container.inference_orchestrator.llm.generate",
+            side_effect=RuntimeError("LLM offline"),
+        ),
+        patch(
+            "src.container.config_service.get_tenant_config", new_callable=AsyncMock
+        ) as mock_config,
+    ):
+        mock_cfg = AsyncMock()
+        mock_cfg.ai_provider.model = "meta-llama/llama-3.3-70b-instruct"
+        mock_cfg.ai_provider.provider_name = "groq"
+        mock_config.return_value = mock_cfg
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                "/v1/tenants/test-tenant/intent/classify",
+                headers=auth_headers,
+                json={
+                    "prompt": "We need doctor clinic appointment booking with calendar synchronization and deposit payment"
+                },
+            )
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success"] is True
+        assert body["data"]["archetype_id"] == "booking_appointments"
+        assert body["data"]["base_engine_id"] == "multipage"
+        assert "booking" in body["data"]["feature_ids"]
+        assert "payments" in body["data"]["feature_ids"]
         assert body["provider"] == "fallback"
 
 

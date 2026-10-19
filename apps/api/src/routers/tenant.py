@@ -522,8 +522,9 @@ async def classify_scoping_intent(
         "Analyze the user's project description and map it to software architecture parameters. "
         "Return ONLY a JSON object matching this schema:\n"
         f"{json.dumps(json_schema)}\n"
-        "Valid feature_ids: 'auth', 'admin', 'payments', 'email', 'cms', 'search', 'blog', "
-        "'ai_rag', 'ai_voice_agent', 'ai_vision_ocr', 'ai_agents', 'integrations', 'commerce', 'lms', 'analytics', 'seo', 'multi_language'. "
+        "Valid feature_ids: 'auth', 'payments', 'cms', 'ai_rag', 'ai_agents', 'admin', 'email', "
+        "'booking', 'commerce', 'lms', 'crm', 'pwa', 'i18n', 'integrations', 'video', 'migration', "
+        "'ai_voice_agent', 'ai_vision_ocr'. "
         "Valid base_engine_id: 'landing' (single-page waitlist/landing), 'multipage' (multi-page/e-commerce), 'saas' (web app/portal/dashboard/RAG). "
         "Output pure valid JSON only without markdown formatting."
     )
@@ -557,12 +558,28 @@ async def classify_scoping_intent(
     except Exception as exc:
         logger.warning(f"Structured intent classification fallback due to error: {exc}")
         p_lower = payload.prompt.lower()
+        is_voice = any(
+            k in p_lower for k in ["voice", "speech", "calling bot", "elevenlabs"]
+        )
         is_rag = any(
             k in p_lower
             for k in ["rag", "knowledge base", "vector", "citation", "semantic search"]
         )
-        is_voice = any(
-            k in p_lower for k in ["voice", "speech", "calling bot", "elevenlabs"]
+        is_agents = any(
+            k in p_lower
+            for k in ["agent", "autonomous", "tool calling", "multi-agent"]
+        )
+        is_ocr = any(
+            k in p_lower
+            for k in ["ocr", "vision", "invoice parser", "extract pdf", "document scan"]
+        )
+        is_lms = any(
+            k in p_lower
+            for k in ["course", "lms", "lesson", "academy"]
+        )
+        is_booking = any(
+            k in p_lower
+            for k in ["booking", "appointment", "doctor", "clinic", "calendar", "reservation"]
         )
         is_ecom = any(
             k in p_lower for k in ["store", "ecommerce", "e-commerce", "shop", "cart"]
@@ -583,11 +600,23 @@ async def classify_scoping_intent(
                 summary_rationale="Configured with conversational Voice AI agent, Retriever RAG knowledge base, and audio synthesis.",
                 retriever_engine_recommended=True,
             )
+        elif is_agents:
+            intent_result = ScopingIntentResult(
+                archetype_id="autonomous_agents",
+                base_engine_id="saas",
+                feature_ids=["ai_agents", "ai_rag", "auth", "admin", "email", "integrations"],
+                brand_asset_id="comprehensive",
+                maintenance_plan_id="premium",
+                suggested_timeline="4 to 5 Weeks",
+                confidence_score=0.94,
+                summary_rationale="Configured with autonomous AI agents, tool execution, and vector memory.",
+                retriever_engine_recommended=True,
+            )
         elif is_rag:
             intent_result = ScopingIntentResult(
                 archetype_id="ai_rag_app",
                 base_engine_id="saas",
-                feature_ids=["ai_rag", "auth", "admin", "search", "email"],
+                feature_ids=["ai_rag", "auth", "admin", "email"],
                 brand_asset_id="basic",
                 maintenance_plan_id="premium",
                 suggested_timeline="4 Weeks",
@@ -595,11 +624,47 @@ async def classify_scoping_intent(
                 summary_rationale="Configured with Retriever Enterprise RAG engine, pgvector semantic indexing, and role-based admin center.",
                 retriever_engine_recommended=True,
             )
+        elif is_ocr:
+            intent_result = ScopingIntentResult(
+                archetype_id="vision_ocr_saas",
+                base_engine_id="saas",
+                feature_ids=["ai_vision_ocr", "auth", "payments", "admin", "email"],
+                brand_asset_id="basic",
+                maintenance_plan_id="standard",
+                suggested_timeline="3 to 4 Weeks",
+                confidence_score=0.93,
+                summary_rationale="Configured with Layout OCR, document JSON pipelines, and payments.",
+                retriever_engine_recommended=True,
+            )
+        elif is_lms:
+            intent_result = ScopingIntentResult(
+                archetype_id="lms_portal",
+                base_engine_id="saas",
+                feature_ids=["lms", "auth", "payments", "cms", "email"],
+                brand_asset_id="comprehensive",
+                maintenance_plan_id="standard",
+                suggested_timeline="4 Weeks",
+                confidence_score=0.92,
+                summary_rationale="Configured with student authentication, course CMS, and payment billing.",
+                retriever_engine_recommended=False,
+            )
+        elif is_booking:
+            intent_result = ScopingIntentResult(
+                archetype_id="booking_appointments",
+                base_engine_id="multipage",
+                feature_ids=["booking", "payments", "auth", "email"],
+                brand_asset_id="basic",
+                maintenance_plan_id="standard",
+                suggested_timeline="2 to 3 Weeks",
+                confidence_score=0.92,
+                summary_rationale="Configured with real-time appointment booking, upfront deposits, and calendar sync.",
+                retriever_engine_recommended=False,
+            )
         elif is_ecom:
             intent_result = ScopingIntentResult(
                 archetype_id="ecommerce",
                 base_engine_id="multipage",
-                feature_ids=["commerce", "payments", "email"],
+                feature_ids=["commerce", "payments", "auth", "email", "integrations"],
                 brand_asset_id="comprehensive",
                 maintenance_plan_id="standard",
                 suggested_timeline="3 to 4 Weeks",
@@ -631,15 +696,13 @@ async def classify_scoping_intent(
                 summary_rationale="Configured with full-stack SaaS platform architecture with authentication, billing, and admin center.",
                 retriever_engine_recommended=False,
             )
-        provider_name = tenant_config.ai_provider.provider_name or "fallback"
+        provider_name = "fallback"
         input_tokens = 0
         output_tokens = 0
-        finish_reason = "fallback"
     else:
-        provider_name = tenant_config.ai_provider.provider_name
+        provider_name = tenant_config.ai_provider.provider_name or "llm"
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
-        finish_reason = response.finish_reason
 
     latency_ms = max(1, int((time.perf_counter() - start_time) * 1000))
 
@@ -647,7 +710,7 @@ async def classify_scoping_intent(
         success=True,
         data=intent_result,
         model=model_override,
-        provider=finish_reason or provider_name,
+        provider=provider_name,
         inputTokens=input_tokens,
         outputTokens=output_tokens,
         latencyMs=latency_ms,

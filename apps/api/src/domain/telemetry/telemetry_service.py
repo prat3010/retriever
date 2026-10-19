@@ -4,9 +4,12 @@ Coordinates real-time database queries and fallback calculations for
 tenant token quotas, storage bytes, cache hit savings, satisfaction, and SLA latencies.
 """
 
+import logging
 from typing import Any
 
 from src.domain.abstractions.telemetry import TenantLiveTelemetry
+
+logger = logging.getLogger(__name__)
 
 
 class LiveTelemetryService:
@@ -22,8 +25,11 @@ class LiveTelemetryService:
         ):
             try:
                 return await self.repository.get_tenant_live_telemetry(tenant_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(
+                    f"Failed to fetch live telemetry for tenant {tenant_id}: {e}",
+                    exc_info=True,
+                )
 
         # Clean fallback if no records or repository unavailable
         return TenantLiveTelemetry(

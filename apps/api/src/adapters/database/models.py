@@ -690,6 +690,9 @@ class OnlineEvaluationDb(Base):
     claims = Column(JSONB, nullable=True, default=list)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
+    # Column synonyms for query backward compatibility
+    faithfulness_score = synonym("faithfulness")
+
 
 class PaymentTransactionDb(Base):
     __tablename__ = "payment_transactions"

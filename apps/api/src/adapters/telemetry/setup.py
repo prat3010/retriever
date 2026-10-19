@@ -63,9 +63,10 @@ def init_telemetry(app: FastAPI) -> None:
     get_tracer()
 
     # 3. Auto-Instrumentation (SQLAlchemy, HTTPX, Celery)
+    from src.adapters.database.connection import engine
     from src.adapters.telemetry.auto_instrumentation import registry
 
-    registry.instrument_all()
+    registry.instrument_all(engine=engine)
 
     # 4. Metrics
     get_metrics()

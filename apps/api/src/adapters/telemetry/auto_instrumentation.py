@@ -129,14 +129,14 @@ class AutoInstrumentationRegistry:
             try:
                 from celery.signals import task_failure, task_postrun, task_prerun
 
-                @task_prerun.connect
+                @task_prerun.connect(weak=False)
                 def on_task_prerun(task_id, task, args, kwargs, **_):
                     span = self._tracer.start_span(f"celery.task.{task.name}")
                     span.set_attribute("celery.task_id", str(task_id))
                     span.set_attribute("celery.task_name", str(task.name))
                     task._otel_span = span
 
-                @task_postrun.connect
+                @task_postrun.connect(weak=False)
                 def on_task_postrun(task_id, task, args, kwargs, retval, state, **_):
                     span = getattr(task, "_otel_span", None)
                     if span:
@@ -144,11 +144,12 @@ class AutoInstrumentationRegistry:
                         span.set_status(Status(StatusCode.OK))
                         span.end()
 
-                @task_failure.connect
+                @task_failure.connect(weak=False)
                 def on_task_failure(
-                    task_id, exception, args, kwargs, traceback, einfo, **_
+                    task_id, exception, args, kwargs, traceback, einfo, **extra
                 ):
-                    span = getattr(task_id, "_otel_span", None)
+                    task = extra.get("sender") or (task_id if hasattr(task_id, "_otel_span") else None)
+                    span = getattr(task, "_otel_span", None)
                     if span:
                         span.set_status(
                             Status(StatusCode.ERROR, description=str(exception))

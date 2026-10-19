@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import (
@@ -40,7 +40,7 @@ class SqlTelemetryRepository:
             doc_count = int(doc_res[0]) if doc_res and doc_res[0] else 0
             storage_bytes = int(doc_res[1]) if doc_res and doc_res[1] else 0
 
-            # 2. Token Usage & Latencies
+            # 2. Token Usage & Latencies (Current 30-day billing window)
             inf_stmt = select(
                 func.coalesce(
                     func.sum(
@@ -49,7 +49,10 @@ class SqlTelemetryRepository:
                     0,
                 ),
                 func.coalesce(func.avg(InferenceLogDb.latency_ms), 0.0),
-            ).where(InferenceLogDb.tenant_id == tenant_uuid)
+            ).where(
+                InferenceLogDb.tenant_id == tenant_uuid,
+                InferenceLogDb.created_at >= func.now() - text("INTERVAL '30 days'"),
+            )
             inf_res = (await session.execute(inf_stmt)).first()
             tokens_used = int(inf_res[0]) if inf_res and inf_res[0] else 0
             avg_latency = float(inf_res[1]) if inf_res and inf_res[1] else 0.0
@@ -75,7 +78,7 @@ class SqlTelemetryRepository:
 
             # 5. Online Quality Evaluations
             eval_stmt = select(
-                func.coalesce(func.avg(OnlineEvaluationDb.faithfulness_score), 0.95),
+                func.coalesce(func.avg(OnlineEvaluationDb.faithfulness), 0.95),
                 func.coalesce(func.avg(OnlineEvaluationDb.context_precision), 0.90),
                 func.coalesce(func.avg(OnlineEvaluationDb.hallucination_index), 0.05),
             ).where(OnlineEvaluationDb.tenant_id == tenant_uuid)

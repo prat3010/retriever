@@ -81,3 +81,42 @@ def test_admin_live_telemetry_endpoint():
     assert "satisfaction_rate" in data
     assert "avg_faithfulness" in data
     assert "hallucination_index" in data
+
+
+def test_sql_telemetry_repository_statement_compatibility():
+    """Verify SqlTelemetryRepository queries compile against real SQLAlchemy models without attribute errors."""
+    from sqlalchemy import func, select, text
+
+    from src.adapters.database.models import (
+        InferenceLogDb,
+        OnlineEvaluationDb,
+    )
+
+    # 1. Verify OnlineEvaluationDb column access
+    assert hasattr(OnlineEvaluationDb, "faithfulness")
+    assert hasattr(OnlineEvaluationDb, "faithfulness_score")
+
+    eval_stmt = select(
+        func.coalesce(func.avg(OnlineEvaluationDb.faithfulness), 0.95),
+        func.coalesce(func.avg(OnlineEvaluationDb.faithfulness_score), 0.95),
+        func.coalesce(func.avg(OnlineEvaluationDb.context_precision), 0.90),
+        func.coalesce(func.avg(OnlineEvaluationDb.hallucination_index), 0.05),
+    )
+    compiled_eval = str(eval_stmt)
+    assert "online_evaluations" in compiled_eval
+
+    # 2. Verify InferenceLogDb 30-day window statement
+    inf_stmt = select(
+        func.coalesce(
+            func.sum(
+                InferenceLogDb.prompt_tokens + InferenceLogDb.completion_tokens
+            ),
+            0,
+        ),
+        func.coalesce(func.avg(InferenceLogDb.latency_ms), 0.0),
+    ).where(
+        InferenceLogDb.created_at >= func.now() - text("INTERVAL '30 days'")
+    )
+    compiled_inf = str(inf_stmt)
+    assert "inference_logs" in compiled_inf
+    assert "INTERVAL '30 days'" in compiled_inf

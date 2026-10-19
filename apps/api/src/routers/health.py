@@ -36,7 +36,8 @@ async def readiness_probe() -> HealthResponse:
             try:
                 await redis_client.ping()
             except Exception:
-                pass
+                if settings.ENVIRONMENT == "production":
+                    raise
 
         if settings.STORAGE_PROVIDER == "s3":
             if hasattr(local_storage, "client"):

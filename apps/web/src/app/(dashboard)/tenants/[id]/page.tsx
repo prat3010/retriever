@@ -23,6 +23,7 @@ import { TenantComplianceTab } from "@/components/tenant-compliance";
 import { TenantBillingTab } from "@/components/tenant-billing";
 import { TenantWorkflowTab } from "@/components/tenant-workflow";
 import { TenantGuardrailsTab } from "@/components/tenant-guardrails";
+import { TenantChatHistoryTab } from "@/components/tenant-chat-history";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -68,6 +69,7 @@ export default function TenantDetailPage() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
+            <TabsTrigger value="sessions">💬 Chat Sessions</TabsTrigger>
             <TabsTrigger value="config">Config</TabsTrigger>
             <TabsTrigger value="observability">🛰️ Observability</TabsTrigger>
             <TabsTrigger value="hallucinations">📈 Hallucinations</TabsTrigger>
@@ -143,6 +145,10 @@ export default function TenantDetailPage() {
 
           <TabsContent value="guardrails">
             <TenantGuardrailsTab tenantId={tenantId} />
+          </TabsContent>
+
+          <TabsContent value="sessions">
+            <TenantChatHistoryTab tenantId={tenantId} />
           </TabsContent>
         </Tabs>
       </div>

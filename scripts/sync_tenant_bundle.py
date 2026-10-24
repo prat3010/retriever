@@ -173,8 +173,9 @@ async def ingest_bundle_direct_db(
     t_id = uuid.UUID(manifest["tenant_id"])
     t_name = manifest["name"]
 
-    print(f"🔌 Connecting to PostgreSQL at {db_url.split('@')[-1]}...")
-    conn = await asyncpg.connect(db_url, ssl="require" if "supabase" in db_url else "prefer")
+    clean_db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+    print(f"🔌 Connecting to PostgreSQL at {clean_db_url.split('@')[-1]}...")
+    conn = await asyncpg.connect(clean_db_url, ssl="require" if "supabase" in clean_db_url else "prefer")
     await pgvector.asyncpg.register_vector(conn)
     print(f"  {GREEN}✓ Connected to database.{NC}")
 

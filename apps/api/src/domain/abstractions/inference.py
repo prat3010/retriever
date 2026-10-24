@@ -25,6 +25,7 @@ class ChatMessage(BaseModel):
     name: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
     images: list[dict] = Field(default_factory=list)
+    created_at: str | None = None
 
 
 class SentenceAttribution(BaseModel):
@@ -68,6 +69,17 @@ class ChatSessionInfo(BaseModel):
     tenant_id: str
     user_id: str | None = None
     created_at: str = ""
+
+
+class ChatSessionSummary(BaseModel):
+    session_id: str
+    tenant_id: str
+    user_id: str | None = None
+    created_at: str = ""
+    updated_at: str | None = None
+    message_count: int = 0
+    first_message_snippet: str | None = None
+    last_message_snippet: str | None = None
 
 
 class InferenceLog(BaseModel):
@@ -167,6 +179,13 @@ class ChatSessionRepository(ABC):
         self, session_id: str, tenant_id: str
     ) -> ChatSessionInfo | None:
         """Retrieve a chat session by ID, scoped to tenant."""
+        pass
+
+    @abstractmethod
+    async def list_sessions(
+        self, tenant_id: str, limit: int = 50, offset: int = 0
+    ) -> list[ChatSessionSummary]:
+        """List chat sessions for a tenant with message counts and snippets."""
         pass
 
     @abstractmethod

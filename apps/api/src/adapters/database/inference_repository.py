@@ -22,6 +22,7 @@ from src.domain.abstractions.inference import (
     ChatMessageInfo,
     ChatSessionInfo,
     ChatSessionRepository,
+    ChatSessionSummary,
     InferenceLog,
     InferenceLogWriter,
     PromptTemplate,
@@ -193,6 +194,65 @@ class SqlChatSessionRepository(ChatSessionRepository):
                 created_at=row.created_at.isoformat(),
             )
 
+    async def list_sessions(
+        self, tenant_id: str, limit: int = 50, offset: int = 0
+    ) -> list[ChatSessionSummary]:
+        async with tenant_session(tenant_id=tenant_id, bypass_rls=True) as session:
+            stmt = (
+                select(ChatSessionDb)
+                .where(ChatSessionDb.tenant_id == uuid.UUID(tenant_id))
+                .order_by(ChatSessionDb.created_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await session.execute(stmt)
+            sessions = result.scalars().all()
+            if not sessions:
+                return []
+
+            session_ids = [s.session_id for s in sessions]
+            msg_stmt = (
+                select(ChatMessageDb)
+                .where(
+                    ChatMessageDb.tenant_id == uuid.UUID(tenant_id),
+                    ChatMessageDb.session_id.in_(session_ids),
+                )
+                .order_by(ChatMessageDb.created_at.asc())
+            )
+            msg_res = await session.execute(msg_stmt)
+            all_msgs = msg_res.scalars().all()
+
+            session_msgs: dict[uuid.UUID, list[ChatMessageDb]] = {
+                sid: [] for sid in session_ids
+            }
+            for m in all_msgs:
+                if m.session_id in session_msgs:
+                    session_msgs[m.session_id].append(m)
+
+            summaries: list[ChatSessionSummary] = []
+            for s in sessions:
+                msgs = session_msgs.get(s.session_id, [])
+                first_snip = msgs[0].content[:120] if msgs else None
+                last_snip = msgs[-1].content[:120] if msgs else None
+                updated_at_iso = (
+                    msgs[-1].created_at.isoformat()
+                    if msgs and msgs[-1].created_at
+                    else s.created_at.isoformat()
+                )
+                summaries.append(
+                    ChatSessionSummary(
+                        session_id=str(s.session_id),
+                        tenant_id=str(s.tenant_id),
+                        user_id=str(s.user_id) if s.user_id else None,
+                        created_at=s.created_at.isoformat(),
+                        updated_at=updated_at_iso,
+                        message_count=len(msgs),
+                        first_message_snippet=first_snip,
+                        last_message_snippet=last_snip,
+                    )
+                )
+            return summaries
+
     async def add_message(
         self,
         tenant_id: str,
@@ -239,6 +299,7 @@ class SqlChatSessionRepository(ChatSessionRepository):
                     tool_calls=[ToolCall(**tc) for tc in row.tool_calls]
                     if row.tool_calls
                     else [],
+                    created_at=row.created_at.isoformat() if row.created_at else None,
                 )
                 for row in rows
             ]

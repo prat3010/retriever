@@ -45,6 +45,7 @@ from src.container import (
     pii_anonymizer,
     retention_worker,
     search_service,
+    session_repo,
     template_registry,
     tenant_registry,
     user_repository,
@@ -962,6 +963,45 @@ async def admin_reindex_codebase(
 async def get_tenant_feedback_analytics(tenantId: str) -> Any:
     analytics = await feedback_repo.get_feedback_analytics(tenantId)
     return analytics
+
+
+@router.get(
+    "/tenants/{tenantId}/chat/sessions",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_list_chat_sessions(
+    tenantId: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+) -> list[dict]:
+    try:
+        sessions = await session_repo.list_sessions(tenantId, limit=limit, offset=offset)
+        return [s.model_dump() for s in sessions]
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tenant ID format.",
+        ) from err
+
+
+@router.get(
+    "/tenants/{tenantId}/chat/sessions/{sessionId}/messages",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_key)],
+)
+async def admin_get_chat_session_messages(
+    tenantId: str,
+    sessionId: str,
+) -> list[dict]:
+    try:
+        msgs = await session_repo.get_messages(tenantId, sessionId)
+        return [m.model_dump() for m in msgs]
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tenant or session ID format.",
+        ) from err
 
 
 @router.get(

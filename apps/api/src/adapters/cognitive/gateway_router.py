@@ -30,6 +30,26 @@ logger = logging.getLogger("api")
 # Master Catalog of Gateway Models
 CATALOG_MODELS: list[GatewayModelInfo] = [
     GatewayModelInfo(
+        model_id="gemini-3.8-flash",
+        provider="gemini",
+        name="Google Gemini 3.8 Flash",
+        input_cost_per_1k=0.075,
+        output_cost_per_1k=0.30,
+        capabilities=["chat", "vision", "tools", "json"],
+        is_local=False,
+        description="Next-gen ultra-low latency model engineered for sub-300ms agentic reasoning and complex coding.",
+    ),
+    GatewayModelInfo(
+        model_id="gemini-4-argon",
+        provider="gemini",
+        name="Google Gemini 4 Argon",
+        input_cost_per_1k=1.00,
+        output_cost_per_1k=4.00,
+        capabilities=["chat", "vision", "tools", "json"],
+        is_local=False,
+        description="Flagship frontier model for deep reasoning, multi-page PRD document analysis, and system architecture.",
+    ),
+    GatewayModelInfo(
         model_id="gemini-2.5-flash",
         provider="gemini",
         name="Google Gemini 2.5 Flash",

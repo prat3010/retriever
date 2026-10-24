@@ -726,3 +726,64 @@ def test_admin_reindex_codebase_unauthorized() -> None:
         f"/v1/admin/tenants/{system_tenant}/reindex",
     )
     assert response.status_code == 401
+
+
+@patch("src.routers.admin.session_repo.list_sessions", new_callable=AsyncMock)
+def test_admin_list_chat_sessions(mock_list, tenant_id: str) -> None:
+    """GET /v1/admin/tenants/{id}/chat/sessions returns sessions summary."""
+    from src.domain.abstractions.inference import ChatSessionSummary
+
+    mock_list.return_value = [
+        ChatSessionSummary(
+            session_id="sess-123",
+            tenant_id=tenant_id,
+            created_at="2026-10-24T12:00:00",
+            message_count=4,
+            first_message_snippet="Hello scoping copilot",
+            last_message_snippet="Here is your blueprint",
+        )
+    ]
+    response = client.get(
+        f"/v1/admin/tenants/{tenant_id}/chat/sessions",
+        headers=auth_header,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["session_id"] == "sess-123"
+    assert data[0]["message_count"] == 4
+
+
+@patch("src.routers.admin.session_repo.get_messages", new_callable=AsyncMock)
+def test_admin_get_chat_session_messages(mock_msgs, tenant_id: str) -> None:
+    """GET /v1/admin/tenants/{id}/chat/sessions/{sessionId}/messages returns message list."""
+    from src.domain.abstractions.inference import ChatMessage
+
+    mock_msgs.return_value = [
+        ChatMessage(role="user", content="I need a SaaS platform", created_at="2026-10-24T12:00:00"),
+        ChatMessage(role="assistant", content="We recommend Full-Stack SaaS MVP", created_at="2026-10-24T12:00:05"),
+    ]
+    response = client.get(
+        f"/v1/admin/tenants/{tenant_id}/chat/sessions/sess-123/messages",
+        headers=auth_header,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["role"] == "user"
+    assert data[0]["created_at"] == "2026-10-24T12:00:00"
+    assert data[1]["role"] == "assistant"
+    assert data[1]["created_at"] == "2026-10-24T12:00:05"
+
+
+@patch("src.routers.admin.session_repo.get_messages", new_callable=AsyncMock)
+def test_admin_get_chat_session_messages_invalid_uuid(mock_msgs, tenant_id: str) -> None:
+    """GET /v1/admin/tenants/{id}/chat/sessions/{sessionId}/messages returns 400 on ValueError."""
+    mock_msgs.side_effect = ValueError("badly formed hexadecimal UUID string")
+    response = client.get(
+        f"/v1/admin/tenants/{tenant_id}/chat/sessions/not-a-uuid/messages",
+        headers=auth_header,
+    )
+    assert response.status_code == 400
+    assert "Invalid tenant or session ID format" in response.json()["detail"]
+

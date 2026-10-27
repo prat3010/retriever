@@ -1,4 +1,5 @@
 import json
+import logging
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
@@ -6,6 +7,8 @@ from pydantic import BaseModel, Field
 from src.adapters.api.security import verify_admin_key
 from src.adapters.database.connection import tenant_session
 from src.adapters.database.models import ConfigurationDb
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1", tags=["Pricing"])
 
@@ -161,8 +164,10 @@ async def get_pricing_config() -> dict:
             if config_entry and config_entry.value:
                 val = config_entry.value
                 return val if isinstance(val, dict) else json.loads(val)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(
+            f"Failed to retrieve dynamic pricing config from database, using defaults: {exc}"
+        )
     return DEFAULT_PRICING
 
 

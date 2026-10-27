@@ -121,8 +121,9 @@ fi
 # 5. Live Search Verification (30-Second Dopamine)
 echo -e "\n${BOLD}[5/5] Executing First Live Search Verification Query...${NC}"
 DEMO_KEY="ret_live_demo_00000000000000000000000000000000"
+DEMO_TENANT_ID="00000000-0000-0000-0000-000000000001"
 
-QUERY_RESP="$(curl -s -X POST http://localhost:8000/v1/search \
+QUERY_RESP="$(curl -s -X POST "http://localhost:8000/v1/tenants/${DEMO_TENANT_ID}/search" \
     -H "Authorization: Bearer $DEMO_KEY" \
     -H "Content-Type: application/json" \
     -d '{"query": "How does ColBERT late interaction work?"}' 2>/dev/null || echo "")"
@@ -141,9 +142,10 @@ echo -e "• REST API Gateway:      ${CYAN}http://localhost:8000${NC}"
 echo -e "• Interactive OpenAPI:   ${CYAN}http://localhost:8000/docs${NC}"
 echo -e "• SaaS Studio Workspace: ${CYAN}http://localhost:3000${NC}"
 echo -e "• Master Demo API Key:   ${BOLD}$DEMO_KEY${NC}"
+echo -e "• Demo Workspace Tenant: ${BOLD}$DEMO_TENANT_ID${NC}"
 echo ""
 echo -e "${BOLD}Try a query right now in your terminal:${NC}"
-echo -e "  curl -X POST http://localhost:8000/v1/search \\"
+echo -e "  curl -X POST http://localhost:8000/v1/tenants/${DEMO_TENANT_ID}/search \\"
 echo -e "    -H \"Authorization: Bearer $DEMO_KEY\" \\"
 echo -e "    -H \"Content-Type: application/json\" \\"
 echo -e "    -d '{\"query\": \"How does scale-to-zero vLLM serving work?\"}'"

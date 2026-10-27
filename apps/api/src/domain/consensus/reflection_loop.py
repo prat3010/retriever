@@ -47,10 +47,10 @@ CRITIQUE CRITERIA:
 OUTPUT FORMAT:
 Return ONLY a valid JSON object matching this schema:
 {{
-  "approved": true | false,
-  "confidence_score": float between 0.0 and 1.0,
+  "is_approved": true | false,
+  "critique_score": float between 0.0 and 1.0,
   "critique_feedback": "Detailed explanation of flaws if not approved, or approval confirmation",
-  "missing_facts": ["fact 1", "fact 2"]
+  "unsupported_claims": ["unsupported claim 1", "unsupported claim 2"]
 }}
 """
 
@@ -148,19 +148,38 @@ class MultiAgentConsensusEngine:
                     raw_critic = raw_critic.strip("`").strip()
 
                 critic_json = json.loads(raw_critic)
-                evaluation = CriticEvaluation(
-                    is_approved=bool(critic_json.get("is_approved", True)),
-                    critique_score=float(critic_json.get("critique_score", 1.0)),
-                    critique_feedback=str(
-                        critic_json.get("critique_feedback", "Approved")
-                    ),
-                    unsupported_claims=critic_json.get("unsupported_claims", []),
+                is_approved_val = critic_json.get("is_approved")
+                if is_approved_val is None:
+                    is_approved_val = critic_json.get("approved")
+                if is_approved_val is None:
+                    is_approved_val = False
+
+                score_val = critic_json.get("critique_score")
+                if score_val is None:
+                    score_val = critic_json.get("confidence_score", 0.0)
+
+                feedback_val = str(
+                    critic_json.get(
+                        "critique_feedback",
+                        critic_json.get("feedback", "No critique feedback provided"),
+                    )
                 )
-            except Exception:
+
+                unsupported_val = critic_json.get("unsupported_claims")
+                if unsupported_val is None:
+                    unsupported_val = critic_json.get("missing_facts", [])
+
                 evaluation = CriticEvaluation(
-                    is_approved=True,
-                    critique_score=1.0,
-                    critique_feedback="Critic evaluation parsed as approved.",
+                    is_approved=bool(is_approved_val),
+                    critique_score=float(score_val),
+                    critique_feedback=feedback_val,
+                    unsupported_claims=list(unsupported_val) if isinstance(unsupported_val, list) else [],
+                )
+            except Exception as parse_err:
+                evaluation = CriticEvaluation(
+                    is_approved=False,
+                    critique_score=0.0,
+                    critique_feedback=f"Critic response failed to parse as valid JSON: {parse_err}. Revision required.",
                     unsupported_claims=[],
                 )
 

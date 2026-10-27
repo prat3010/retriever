@@ -67,6 +67,14 @@ celery_app.conf.update(
     task_result_expires=3600,
     result_expires=3600,
     task_routes={
+        "process_document": {
+            "queue": "ingestion.parse",
+            "routing_key": "ingestion.parse",
+        },
+        "generate_embeddings": {
+            "queue": "knowledge.embed",
+            "routing_key": "knowledge.embed",
+        },
         "workers.src.tasks.process_document": {
             "queue": "ingestion.parse",
             "routing_key": "ingestion.parse",

@@ -27,15 +27,9 @@ DEFAULT_TARGET = os.getenv("RETRIEVER_API_URL", "http://localhost:8000")
 DEFAULT_TENANT_ID = os.getenv(
     "LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4"
 )
-DEFAULT_API_KEY = os.getenv(
-    "LOAD_TEST_API_KEY",
-    "ret_live_eae27a51db3b44ef81e16df59137eda7bcfdc987dc204d6bacb9db0089a7886a",
-)
+DEFAULT_API_KEY = os.getenv("LOAD_TEST_API_KEY", "")
 DEFAULT_USER_ID = os.getenv("LOAD_TEST_USER_ID", "36e62429-419e-48ef-af92-533afca9e028")
-DEFAULT_ADMIN_KEY = os.getenv(
-    "ADMIN_MASTER_KEY",
-    "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266",
-)
+DEFAULT_ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "")
 
 
 def probe_http(

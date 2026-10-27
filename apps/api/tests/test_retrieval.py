@@ -386,6 +386,34 @@ def test_bm25_reranker_immutability_and_scoring() -> None:
     assert reranked[1].chunk_id == "c2"
 
 
+def test_bm25_reranker_corpus_frequency_scaling() -> None:
+    """Verify BM25 reranker scales IDF using global corpus statistics when provided."""
+    from src.domain.retrieval.bm25_reranker import bm25_rerank
+
+    doc1 = _make_result("c1", 0.5, content="General database information and reports")
+    doc2 = _make_result("c2", 0.5, content="Specific pgvector configuration parameters")
+    candidates = [doc1, doc2]
+
+    # Query with one common corpus term ("database") and one rare corpus term ("pgvector")
+    query = "database pgvector"
+
+    # Local candidate calculation (both appear once in candidates)
+    local_reranked = bm25_rerank(query, candidates)
+    assert len(local_reranked) == 2
+
+    # Global corpus scaling: database is in 5000/10000 docs, pgvector is in only 2/10000 docs
+    corpus_reranked = bm25_rerank(
+        query,
+        candidates,
+        corpus_size=10000,
+        corpus_df={"database": 5000, "pgvector": 2},
+    )
+
+    # In global corpus scaling, doc2 (with rare pgvector) receives higher BM25 score
+    assert corpus_reranked[0].chunk_id == "c2"
+    assert corpus_reranked[0].score > corpus_reranked[1].score
+
+
 def test_fusion_strategy_selection() -> None:
     service = HybridSearchService(
         vector_search=MagicMock(),

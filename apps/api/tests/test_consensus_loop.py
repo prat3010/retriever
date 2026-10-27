@@ -170,3 +170,67 @@ def test_consensus_endpoint(mock_execute):
     assert response.status_code == 200
     data = response.json()
     assert data["final_response"] == "Audited final answer"
+
+
+@pytest.mark.asyncio
+async def test_consensus_reflection_loop_with_standard_llm_prompt_schema():
+    """Verify reflection loop parses LLM schema (approved, confidence_score, missing_facts) and triggers revision."""
+    mock_llm = MagicMock(spec=LlmProvider)
+
+    # Round 1: Critic returns standard LLM output with approved: false
+    gen_resp_1 = InferenceResponse(content="Draft 1: Untested claims.")
+    critic_resp_1 = InferenceResponse(
+        content='{"approved": false, "confidence_score": 0.35, "critique_feedback": "Draft contains unsupported facts.", "missing_facts": ["fact A", "fact B"]}'
+    )
+
+    # Round 2: Revised draft and Critic approves with standard LLM output
+    gen_resp_2 = InferenceResponse(content="Draft 2: Grounded factual claims.")
+    critic_resp_2 = InferenceResponse(
+        content='{"approved": true, "confidence_score": 0.98, "critique_feedback": "All facts verified.", "missing_facts": []}'
+    )
+
+    mock_llm.generate = AsyncMock(
+        side_effect=[gen_resp_1, critic_resp_1, gen_resp_2, critic_resp_2]
+    )
+
+    mock_search = MagicMock(spec=HybridSearchService)
+    mock_search.search = AsyncMock(
+        return_value=SearchResponse(
+            results=[
+                SearchResult(
+                    chunk_id="c1",
+                    document_id="d1",
+                    content="Source fact A and fact B verified in section 1.",
+                    score=0.99,
+                )
+            ],
+            query="test query",
+            search_meta=SearchMeta(
+                strategy="hybrid",
+                total_candidates=1,
+                returned_results=1,
+                duration_ms=2.0,
+            ),
+        )
+    )
+
+    engine = MultiAgentConsensusEngine(
+        default_llm=mock_llm,
+        search_service=mock_search,
+    )
+
+    req = ConsensusRequest(
+        tenant_id=str(uuid.uuid4()),
+        prompt="Audit question",
+        max_reflection_rounds=3,
+    )
+
+    result = await engine.execute_consensus(req)
+
+    assert result.approved_on_round == 2
+    assert len(result.reflection_history) == 2
+    assert result.reflection_history[0]["evaluation"]["is_approved"] is False
+    assert result.reflection_history[0]["evaluation"]["critique_score"] == 0.35
+    assert result.reflection_history[0]["evaluation"]["unsupported_claims"] == ["fact A", "fact B"]
+    assert result.reflection_history[1]["evaluation"]["is_approved"] is True
+    assert "Grounded factual claims" in result.final_response

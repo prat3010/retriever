@@ -6,6 +6,7 @@ layout-aware re-ingestion cycle.
 """
 
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -16,12 +17,12 @@ TENANTS = [
     {
         "name": "Prateeq Sharma — Portfolio AI Twin",
         "tenant_id": "6797e2c8-745a-4bd1-aa4c-3854b8d79c22",
-        "api_key": "ret_live_TaaRP0w94H8.a3_CjGsoQY57Fy5bv9Kk40zfUOoH4ak2",
+        "api_key": os.getenv("RETRIEVER_PORTFOLIO_API_KEY", ""),
     },
     {
         "name": "Prateeq Scoping Engine",
         "tenant_id": "1f85286c-9d9a-4ebc-9c62-a99360a5ece4",
-        "api_key": "ret_live_eae27a51db3b44ef81e16df59137eda7bcfdc987dc204d6bacb9db0089a7886a",
+        "api_key": os.getenv("RETRIEVER_SCOPING_API_KEY", ""),
     },
 ]
 

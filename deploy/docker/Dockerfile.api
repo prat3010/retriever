@@ -28,6 +28,10 @@ RUN cd /app/packages/processing-core && uv pip install --system -e .
 COPY apps/api/pyproject.toml /app/apps/api/pyproject.toml
 RUN cd /app/apps/api && uv pip install --system -e .
 
+# Copy Worker dependencies and install
+COPY workers/pyproject.toml /app/workers/pyproject.toml
+RUN cd /app/workers && uv pip install --system -e .
+
 # Final runtime image
 FROM python:3.11-slim AS runtime
 
@@ -36,7 +40,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/root/.local/bin:${PATH}" \
-    PYTHONPATH="/app/apps/api:/app/packages/processing-core/src"
+    PYTHONPATH="/app/apps/api:/app/packages/processing-core/src:/app"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -51,6 +55,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy packages and application source
 COPY packages/processing-core /app/packages/processing-core
 COPY apps/api /app/apps/api
+COPY workers /app/workers
 COPY scripts /app/scripts
 
 # Setup entrypoint script

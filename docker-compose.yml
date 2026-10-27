@@ -104,6 +104,42 @@ services:
     networks:
       - retriever-network
 
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: retriever-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "workers.src.celery_app", "worker", "--loglevel=info", "-Q", "ingestion.parse,knowledge.embed,periodic,evaluation,default", "-c", "2"]
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-retriever}:${POSTGRES_PASSWORD:-retriever}@postgres:5432/${POSTGRES_DB:-retriever}
+      REDIS_URL: redis://redis:6379/0
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://ollama:11434
+      ADMIN_MASTER_KEY: ${ADMIN_MASTER_KEY:-ret_live_master_admin_secret_0000000000000}
+      SECRET_KEY: ${SECRET_KEY:-retriever-local-dev-secret-key-32-chars-long-min}
+      KEY_ENCRYPTION_KEY: ${KEY_ENCRYPTION_KEY:-dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcy1sb25nIQ==}
+      STORAGE_PROVIDER: local
+      STORAGE_BUCKET: retriever-documents
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - retriever_storage:/app/storage
+    networks:
+      - retriever-network
+
   web:
     build:
       context: .

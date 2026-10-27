@@ -30,6 +30,13 @@ except Exception:
     done
 fi
 
+# If a custom command is provided (e.g. Celery worker), execute it after DB readiness
+if [ $# -gt 0 ]; then
+    echo "Executing custom command: $@"
+    cd /app
+    exec "$@"
+fi
+
 echo "Running database schema migrations..."
 cd /app/apps/api
 alembic upgrade head || {

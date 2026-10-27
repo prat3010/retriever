@@ -1,10 +1,13 @@
 """Admin API routes."""
 
 import hashlib
+import logging
 import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 import httpx
 from fastapi import (
@@ -476,8 +479,11 @@ async def admin_upload_document(
                 ],
                 queue="ingestion.parse",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error(
+                f"Failed to dispatch Celery ingestion task for document '{doc_id}' in admin upload: {exc}",
+                exc_info=True,
+            )
 
     return {
         "documentId": str(doc_id),
@@ -553,8 +559,10 @@ async def admin_process_document(
                 )
                 if res.status_code == 200:
                     file_content = res.content
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                f"Remote storage download failed for document '{documentId}' on tenant '{tenantId}': {exc}"
+            )
 
     if file_content is None:
         doc.status = "FAILED"

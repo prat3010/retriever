@@ -777,6 +777,7 @@ process_document_async = _run_process_document
 
 
 @celery_app.task(
+    name="process_document",
     bind=True,
     base=DatabaseTask,
     max_retries=3,
@@ -934,6 +935,7 @@ _generate_embeddings_async = _run_generate_embeddings
 
 
 @celery_app.task(
+    name="generate_embeddings",
     bind=True,
     base=DatabaseTask,
     max_retries=5,

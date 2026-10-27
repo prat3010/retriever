@@ -21,7 +21,7 @@ invariants:
 
 #api #search #hybrid #rrf #crossencoder #ast #pgvector #retriever
 
-> **Authoritative specification for hybrid dense vector (pgvector HNSW) and sparse lexical (BM25/SPLADE) search with Reciprocal Rank Fusion (RRF) and Cross-Encoder neural reranking.**
+> **Authoritative specification for hybrid dense vector (pgvector HNSW) and sparse lexical (PostgreSQL tsvector full-text & BM25 rerank) search with Reciprocal Rank Fusion (RRF) and ColBERT MaxSim / Cross-Encoder neural reranking.**
 
 ---
 

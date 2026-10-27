@@ -64,7 +64,7 @@ Spin up the entire platform locally with zero external API dependencies (runs 10
 
 ### Option A: Docker Compose (Production Stack)
 ```bash
-# 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API, Web Studio)
+# 1. Clone and launch full stack (PostgreSQL 16 + pgvector, Redis, Ollama, API, Celery Worker, Web Studio)
 git clone https://github.com/prat3010/retriever.git && cd retriever
 docker compose up -d
 
@@ -73,7 +73,7 @@ curl http://localhost:8000/health/readiness
 # {"status":"ready","environment":"production"}
 
 # 3. Query the auto-seeded demo workspace
-curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/search \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/search \
   -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
   -H "Content-Type: application/json" \
   -d '{"query": "How does hybrid search fusion work?"}'
@@ -98,8 +98,8 @@ Retriever wires together production-tested retrieval components through Hexagona
 | Subsystem | Layer | Description |
 |:---|:---|:---|
 | **`pgvector_hnsw`** | Core Retrieval | Sub-millisecond approximate nearest-neighbor search directly in PostgreSQL. |
-| **`sparse_bm25`** | Core Retrieval | PostgreSQL full-text search with stemming and Reciprocal Rank Fusion (RRF). |
-| **`colbert_maxsim`** | Reranking | Fine-grained token-level cross-attention similarity for high-precision spans. |
+| **`sparse_bm25`** | Core Retrieval | PostgreSQL full-text search with stemming, corpus IDF scaling, and Reciprocal Rank Fusion (RRF). |
+| **`colbert_maxsim`** | Reranking | Fine-grained token-level late-interaction MaxSim scoring with threshold filtering. |
 | **`docling_parser`** | Ingestion | Layout-aware multi-column PDF and table Markdown extraction. |
 | **`semantic_cache`** | Performance | Vector-similarity caching for sub-15ms instant responses to repeated queries. |
 | **`celery_workers`** | Async Pipeline | Background worker swarm for non-blocking document ingestion and vectorization. |

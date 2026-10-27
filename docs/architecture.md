@@ -950,14 +950,15 @@ A separate Next.js app at `apps/web/` provides a browser-based admin interface f
 - **Login:** Admin Master Key (from server `.env` `ADMIN_MASTER_KEY`)
 - **Stack:** Next.js App Router, shadcn/ui, Tailwind CSS, TanStack React Query, Zustand
 
-### 16.8 Known Limitations / Technical Debt
+### 16.8 Known Limitations / Technical Debt (Standalone 1GB RAM Minimal VPS Setup)
+
+> [!NOTE]
+> For multi-container deployments, Celery worker queues (`retriever-worker`) and Redis are fully containerized in [`docker-compose.yml`](../docker-compose.yml). The limitations below describe the minimal $0/month single-process VPS topology where workers are disabled due to 1GB RAM memory limits.
 
 | Issue | Impact | Fix |
 |---|---|---|
 | Single uvicorn worker | No concurrency — one request blocks others | Deploy with gunicorn + multiple workers, or add second VPS |
-| No Redis cache | Tenant config fetched from DB on every request | Deploy Redis on same VPS (~50 MB RAM) or use Supabase's built-in cache |
-| No Celery/RabbitMQ | Document ingestion blocks the API process | Add RabbitMQ on VPS + Celery worker |
-| Synchronous ingestion | Large PDFs (50+ pages) timeout the HTTP request | Requires async worker (previous point) |
+| Standalone VPS: In-process Redis/Celery disabled | Large PDF ingestion runs synchronously in single-process mode | Spin up `retriever-worker` container via Docker Compose (requires >= 2GB RAM) |
 | LLM keys on `.env` | Rotation is a manual SSH + restart | Use tenant-config LLM keys (encrypted in DB) instead of env var fallback |
 | No monitoring | No alerts for downtime, key expiry, or disk space | Add UptimeRobot + Sentry + disk usage cron |
 | No DB backups | Supabase data has no automated snapshot | `pg_dump` cron to object storage |
@@ -970,13 +971,13 @@ A separate Next.js app at `apps/web/` provides a browser-based admin interface f
 curl http://localhost:8000/health
 
 # Search test
-curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/search \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/search \
   -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
   -H "Content-Type: application/json" \
   -d '{"query": "test", "top_k": 3}'
 
 # Chat test (requires active LLM key)
-curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000000/chat/sessions \
+curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/chat/sessions \
   -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "a8b819bb-61bb-450b-9662-62bd06b188d3"}'

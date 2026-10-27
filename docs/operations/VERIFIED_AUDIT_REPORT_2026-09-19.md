@@ -68,7 +68,7 @@ Direct REST probe verification was conducted against the production Oracle Cloud
 | 3 | **Convex hybrid** | `apps/api/src/domain/retrieval/search_service.py:372-413` `alpha*DenseNorm + (1-alpha)*SparseNorm` min-max normalized | **Production** |
 | 4 | **Authentic BM25 reranker** | `apps/api/src/domain/retrieval/bm25_reranker.py:12` `idf=log(1+(n-df+0.5)/(df+0.5))`, `k1=1.5 b=0.75`, length norm | **Production** (see bug: mutates score) |
 | 5 | **Sparse lexical FTS** | `apps/api/src/adapters/vector/keyword_repository.py:41` `to_tsvector('english') @@ websearch_to_tsquery` + `ts_rank_cd(...,2)` with GIN `setup.py:115` | **Production** (is `ts_rank_cd`, not Robertson BM25 despite label) |
-| 6 | **Sublinear BM25 vectorizer** | `apps/api/src/domain/retrieval/sparse_vectorizer.py:66-192` `tf=1+log(tf)`, RSJ IDF, camel/snake tokenization | **Production** but **dead code** (never wired to `search_service`) |
+| 6 | **Sublinear BM25 vectorizer** | `apps/api/src/domain/retrieval/sparse_vectorizer.py:66-192` | **Resolved**: Pruned dead-code hash-bucket file in Sprint 2; retrieval standardized on PostgreSQL full-text search and corpus-frequency scaled `bm25_reranker.py`. |
 | 7 | **Chunking** | `apps/api/src/domain/ingestion/chunker_factory.py:21` `SlidingChunker` tiktoken `cl100k_base` with offsets; `HierarchicalChunker:154` parent/child UUID linking; `SemanticChunker:80` paragraph units; `ContextualChunker:229` Anthropic Contextual Retrieval header | **Production** |
 | 8 | **Ingestion pipeline** | `apps/api/src/adapters/ingestion/sync_ingestion_service.py:21` `processing_core pdf_parser` → chunk → `embedder.embed_batch` → `vector_records*` by dim 768/1024/1536/3072 → GraphRAG triples | **Production** |
 | 9 | **PDF table handling** | `packages/processing-core/src/processing_core/pdf_parser.py:52` `pdfplumber extract_text(layout=True)` + `extract_tables()` → `convert_table_to_markdown` GFM tables | **Production** (`pdfplumber`, not Docling) |
@@ -139,7 +139,7 @@ Direct REST probe verification was conducted against the production Oracle Cloud
 | **RET-3** | `domain/retrieval/search_service.py:362` + `334-340` | `_determine_strategy` never selects `"normalized_hybrid"`, leaving `_fuse_normalized_hybrid:447` dead code. `hybrid_convex` always chosen when both legs succeed due to `hasattr hybrid_alpha`. |
 | **RET-4** | `domain/retrieval/colbert_engine.py:70` | `(dot+1)/2` compresses `[-1, 1]` to `[0, 1]`, hiding negative signals; hash vectors center at ~0.5 resulting in MaxSim being constant noise. |
 | **RET-5** | `domain/retrieval/search_service.py:272,274` | Direct imports from `src.adapters.cognitive.brave_adapter` and `tavily_adapter` inside domain layer violates Hexagonal Boundary Rule (`domain/` must only import abstractions). |
-| **RET-6** | `domain/retrieval/sparse_vectorizer.py:66` | Authentic BM25 vectorizer implemented but **never wired to `search_service`** (only `bm25_reranker` imported). |
+| **RET-6** | `domain/retrieval/sparse_vectorizer.py:66` | **RESOLVED (Sprint 2):** Unreferenced dead-code file pruned via `git rm`. Production retrieval verified on PostgreSQL full-text search and corpus-frequency scaled `bm25_reranker.py`. |
 | **RET-7** | `adapters/vector/vector_repository.py:37` | F-string `{table_name}` from allowlisted `get_vector_table_name(dim)` is safe, but bypasses prepared-statement cache. |
 
 ---

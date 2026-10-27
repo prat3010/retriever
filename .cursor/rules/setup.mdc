@@ -35,7 +35,7 @@ Present 3 clear paths:
 - Poll `http://localhost:8000/health/readiness`
 - Run a live demo query against the seeded demo workspace:
   ```bash
-  curl -X POST http://localhost:8000/v1/search \
+  curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/search \
     -H "Authorization: Bearer ret_live_demo_00000000000000000000000000000000" \
     -H "Content-Type: application/json" \
     -d '{"query": "How does ColBERT late interaction work?"}'

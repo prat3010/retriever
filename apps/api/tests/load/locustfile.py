@@ -12,9 +12,7 @@ from locust import HttpUser, between, task
 DEMO_TENANT_ID = os.getenv(
     "LOAD_TEST_TENANT_ID", "1f85286c-9d9a-4ebc-9c62-a99360a5ece4"
 )
-DEMO_API_KEY = os.getenv(
-    "LOAD_TEST_API_KEY", "ret_live_hUQ-4muveDE.w9aBPR9iJBMbWeaUapCwUR-_T9IlwmXh"
-)
+DEMO_API_KEY = os.getenv("LOAD_TEST_API_KEY", "")
 DEMO_USER_ID = os.getenv("LOAD_TEST_USER_ID", "36e62429-419e-48ef-af92-533afca9e028")
 
 SAMPLE_QUERIES = [

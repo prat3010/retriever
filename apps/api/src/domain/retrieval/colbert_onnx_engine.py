@@ -107,6 +107,7 @@ class NeuralColbertEngine:
         query: str,
         candidates: list[SearchResult],
         top_k: int = 10,
+        threshold: float = 0.0,
     ) -> list[SearchResult]:
         """Rerank candidate SearchResults using ColBERT token-level late-interaction."""
         if not candidates or not query.strip():
@@ -131,9 +132,10 @@ class NeuralColbertEngine:
 
                     # Blend neural late-interaction score with upstream retrieval score
                     blended = 0.85 * neural_score + 0.15 * min(1.0, c.score)
-                    scored_candidates.append(
-                        c.model_copy(update={"score": round(blended, 4)})
-                    )
+                    if blended >= threshold:
+                        scored_candidates.append(
+                            c.model_copy(update={"score": round(blended, 4)})
+                        )
 
                 scored_candidates.sort(key=lambda x: x.score, reverse=True)
                 return scored_candidates[:top_k]
@@ -150,7 +152,8 @@ class NeuralColbertEngine:
         reranked: list[SearchResult] = []
         for c, s in zip(candidates, scores, strict=False):
             blended = 0.85 * s + 0.15 * min(1.0, c.score)
-            reranked.append(c.model_copy(update={"score": round(blended, 4)}))
+            if blended >= threshold:
+                reranked.append(c.model_copy(update={"score": round(blended, 4)}))
 
         reranked.sort(key=lambda x: x.score, reverse=True)
         return reranked[:top_k]

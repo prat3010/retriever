@@ -333,8 +333,10 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                     lora_adapter = await self.tenant_lora_repo.get_active_adapter(
                         tenant_id, adapter_type="llm"
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning(
+                        f"Failed to fetch active LoRA adapter for tenant '{tenant_id}': {exc}"
+                    )
             return await self.serverless_gpu_client.execute_serverless_completion(
                 request, cfg, lora_adapter=lora_adapter
             )
@@ -469,8 +471,10 @@ class GatewayRouterAdapter(LlmProvider, GatewayRouterProtocol):
                                     tenant_id, adapter_type="llm"
                                 )
                             )
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.warning(
+                                f"Failed to fetch active LoRA adapter for stream on tenant '{tenant_id}': {exc}"
+                            )
                     configuration["_actual_model"] = model
                     configuration["_actual_provider"] = provider
                     async for (

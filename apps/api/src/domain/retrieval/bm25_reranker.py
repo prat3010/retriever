@@ -14,7 +14,10 @@ def bm25_rerank(
     candidates: list[SearchResult],
     k1: float = 1.5,
     b: float = 0.75,
+    corpus_size: int | None = None,
+    corpus_df: dict[str, int] | None = None,
 ) -> list[SearchResult]:
+    """Rerank search candidate results using BM25 scoring with optional corpus-level IDF scaling."""
     if not candidates or not query.strip():
         return candidates
 
@@ -27,6 +30,7 @@ def bm25_rerank(
     avgdl = sum(doc_lengths) / len(doc_lengths) if doc_lengths else 1.0
 
     n = len(candidates)
+    effective_n = max(n, corpus_size) if corpus_size is not None else n
 
     # Document frequency: in how many candidates does each query token appear
     df: Counter[str] = Counter()
@@ -47,7 +51,8 @@ def bm25_rerank(
             tf = tf_counter.get(qt, 0)
             if tf == 0:
                 continue
-            idf = math.log(1 + (n - df.get(qt, 0) + 0.5) / (df.get(qt, 0) + 0.5))
+            term_df = corpus_df.get(qt, df.get(qt, 0)) if corpus_df else df.get(qt, 0)
+            idf = math.log(1 + (effective_n - term_df + 0.5) / (term_df + 0.5))
             numerator = tf * (k1 + 1)
             denominator = tf + k1 * (1 - b + b * doc_len / avgdl)
             score += idf * numerator / denominator

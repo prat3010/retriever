@@ -9,6 +9,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
+from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class HybridSearchService:
         web_search_factory: Callable[[str, str], WebSearchProvider | None]
         | None = None,
         graph_repository: BaseGraphRepository | None = None,
+        colbert_engine: Any | None = None,
     ) -> None:
         self.vector_search = vector_search
         self.keyword_search = keyword_search
@@ -63,6 +65,7 @@ class HybridSearchService:
         self.query_intent_classifier = query_intent_classifier
         self.web_search_factory = web_search_factory
         self.graph_repository = graph_repository
+        self.colbert_engine = colbert_engine
 
     async def search(self, query: SearchQuery) -> SearchResponse:
         """Execute the full hybrid search pipeline with speculative parallel pre-retrieval."""
@@ -359,31 +362,32 @@ class HybridSearchService:
         query_embedding: list[float],
         search_k: int,
     ) -> tuple[list[SearchResult], list[SearchResult]]:
-        """Execute vector and keyword searches with graceful degradation."""
-        vector_results: list[SearchResult] = []
-        keyword_results: list[SearchResult] = []
-
-        try:
-            vector_results = await self.vector_search.search_similar(
-                tenant_id=query.tenant_id,
-                embedding=query_embedding,
-                top_k=search_k,
-                filters=query.filters,
-                tags=query.tags,
-                collection_id=query.collection_id,
-                user_id=query.user_id,
-                user_role=query.user_role,
-                user_groups=query.user_groups,
-                enable_acl_filter=query.enable_acl_filter,
-            )
-        except Exception as exc:
-            logger.warning(
-                f"Vector search leg failed for tenant '{query.tenant_id}': {exc}"
-            )
-
-        if query.enable_hybrid or query.enable_bm25:
+        """Execute vector and keyword searches concurrently with graceful degradation."""
+        async def _run_vector() -> list[SearchResult]:
             try:
-                keyword_results = await self.keyword_search.search_keywords(
+                return await self.vector_search.search_similar(
+                    tenant_id=query.tenant_id,
+                    embedding=query_embedding,
+                    top_k=search_k,
+                    filters=query.filters,
+                    tags=query.tags,
+                    collection_id=query.collection_id,
+                    user_id=query.user_id,
+                    user_role=query.user_role,
+                    user_groups=query.user_groups,
+                    enable_acl_filter=query.enable_acl_filter,
+                )
+            except Exception as exc:
+                logger.warning(
+                    f"Vector search leg failed for tenant '{query.tenant_id}': {exc}"
+                )
+                return []
+
+        async def _run_keyword() -> list[SearchResult]:
+            if not (query.enable_hybrid or query.enable_bm25):
+                return []
+            try:
+                return await self.keyword_search.search_keywords(
                     tenant_id=query.tenant_id,
                     query_text=query.query,
                     top_k=search_k,
@@ -399,7 +403,12 @@ class HybridSearchService:
                 logger.warning(
                     f"Keyword search leg failed for tenant '{query.tenant_id}': {exc}"
                 )
+                return []
 
+        vector_results, keyword_results = await asyncio.gather(
+            _run_vector(),
+            _run_keyword(),
+        )
         return vector_results, keyword_results
 
     def _determine_strategy(
@@ -591,15 +600,26 @@ class HybridSearchService:
 
         if enable_colbert or reranker_engine == "colbert":
             try:
-                from src.domain.retrieval.colbert_engine import score_colbert_maxsim
+                colbert = self.colbert_engine
+                if colbert is None:
+                    from src.domain.retrieval.colbert_onnx_engine import (
+                        NeuralColbertEngine,
+                    )
 
-                reranked = score_colbert_maxsim(
+                    colbert = NeuralColbertEngine()
+
+                reranked = colbert.rerank_candidates(
                     query=query.query,
                     candidates=candidates,
-                    top_n=query.top_k,
+                    top_k=query.top_k,
                     threshold=query.reranking_threshold,
                 )
-                return reranked, strategy + "_colbert_maxsim"
+                strategy_tag = (
+                    "_neural_colbert_maxsim"
+                    if getattr(colbert, "is_neural_active", False)
+                    else "_colbert_maxsim"
+                )
+                return reranked, strategy + strategy_tag
             except Exception as exc:
                 logger.warning(
                     f"ColBERT MaxSim reranking failed for query '{query.query[:50]}': {exc}"

@@ -3,12 +3,15 @@
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import (
     APIRouter,
@@ -159,8 +162,11 @@ async def upload_document(
                 ],
                 queue="ingestion.parse",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error(
+                f"Failed to dispatch Celery ingestion task for document '{doc_id}' on tenant '{tenantId}': {exc}",
+                exc_info=True,
+            )
 
     response_payload = {
         "documentId": str(doc_id),

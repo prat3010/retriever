@@ -180,8 +180,8 @@ async def get_current_user(
                                     "app_metadata": user_data.get("app_metadata", {}),
                                     "user_metadata": user_data.get("user_metadata", {}),
                                 }
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug(f"Supabase auth user resolution failed: {exc}")
 
                 if payload:
                     tenant_id = (
@@ -392,8 +392,10 @@ async def verify_scopes(
                 filename = body.get("filename")
                 if filename and "." in filename:
                     doc_type_param = filename.split(".")[-1].lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(
+                f"Request body inspection for RBAC attributes skipped: {exc}"
+            )
 
     for scope in security_scopes.scopes:
         matched = False

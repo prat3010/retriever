@@ -11,7 +11,8 @@ tags:
 blast_radius: HIGH
 security_auth: BEARER_JWT
 invariants:
-  - "Chat streaming MUST emit Server-Sent Events with structured event keys ('token', 'citation', 'done', 'error')."
+  - "Session chat streaming MUST emit Server-Sent Events with structured event keys ('token', 'citation', 'done', 'error')."
+  - "OpenAI-compatible chat completions MUST emit delta frames and terminate with [DONE] when stream=true."
   - "Every citation MUST include chunk_id, document_id, and relevance score."
   - "User prompt MUST pass Llama Guard 3 injection filter before triggering LLM generation."
 ---
@@ -198,6 +199,63 @@ Submit user satisfaction feedback (thumbs up/down, detailed criteria scores) for
   "message": "Feedback submitted successfully."
 }
 ```
+
+---
+
+### 2.5 OpenAI-Compatible Chat Completions (Terminal / Copilot)
+
+The portfolio terminal and scoping copilot use this stateless endpoint instead of the session API. It accepts an OpenAI-style message array, performs one hybrid retrieval pass, and optionally streams the answer over SSE.
+
+- **HTTP Method:** `POST`
+- **Path:** `/v1/tenants/{tenantId}/chat/completions`
+- **Authentication:** `Bearer <TOKEN>`
+- **Request Body:**
+```json
+{
+  "messages": [
+    { "role": "system", "content": "You are the portfolio AI Twin." },
+    { "role": "user", "content": "What does Prateek build?" }
+  ],
+  "stream": true,
+  "temperature": 0.4,
+  "max_tokens": 700,
+  "top_k": 3,
+  "enable_reranking": false,
+  "enable_query_rewriting": false,
+  "enable_self_query": false,
+  "enable_colbert_rerank": false
+}
+```
+- **Streaming response (`text/event-stream`):**
+```text
+data: {"choices":[{"delta":{"content":"Prateek"}}]}
+
+data: {"choices":[{"delta":{"content":" builds"}}]}
+
+data: [DONE]
+```
+- **Non-streaming response:** standard OpenAI-compatible `chat.completion` JSON with `choices[0].message.content`, `usage`, and `citations`.
+- **Cache behavior:** `X-Cache-Lookup: HIT|MISS` is set on every response. The cache key covers the full message thread plus model, retrieval flags, `top_k`, temperature, and `max_tokens`; entries expire after 600 seconds. Cache hits replay the stored answer as SSE when `stream: true`.
+- **Stream errors:** the server emits `data: {"error":"...","retryable":true}` before `[DONE]`. Partial answers are not cached.
+
+### 2.6 Warm Up Tenant Pools
+
+Exercises the local embedding model, vector store, and Redis without spending LLM tokens. Intended for a scheduled probe (the website calls it every five minutes).
+
+- **HTTP Method:** `POST`
+- **Path:** `/v1/tenants/{tenantId}/warmup`
+- **Authentication:** `Bearer <TOKEN>`
+- **Request Body:** `{}`
+- **Response (`200 OK`):**
+```json
+{
+  "status": "warm",
+  "tenant_id": "c9a28c30-e34d-4871-bc01-e9451d6c8b09",
+  "latency_ms": 812.4
+}
+```
+
+The probe issues a unique low-cost search so the embedding model is actually exercised rather than served from the exact-query cache.
 
 ---
 

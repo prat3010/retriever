@@ -268,7 +268,7 @@ async def send_chat_message(
                     delta = event.get("delta", "")
                     buffer += delta
                     buffer = _format_citations(
-                        buffer, search_response.results, citation_template
+                        buffer, context_chunks, citation_template
                     )
 
                     last_bracket = buffer.rfind("[")
@@ -529,6 +529,59 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: int | None = None
     enable_reranking: bool | None = None
     enable_hybrid: bool | None = None
+    top_k: int | None = Field(default=None, ge=1, le=20)
+    enable_query_rewriting: bool | None = None
+    enable_self_query: bool | None = None
+    enable_colbert_rerank: bool | None = None
+
+
+CHAT_CACHE_TTL_SECONDS = 600
+CHAT_CACHE_VERSION = 2
+
+
+def _chat_cache_key(tenant_id: str, payload: ChatCompletionRequest) -> str:
+    """Key the cache on the whole conversation and request shape.
+
+    The previous key used only the latest user query, which let an answer from
+    one conversation leak into another and ignored model/prompt changes.
+    """
+    canonical = json.dumps(
+        {
+            "version": CHAT_CACHE_VERSION,
+            "model": payload.model,
+            "messages": [
+                {"role": message.role, "content": message.content}
+                for message in payload.messages
+            ],
+            "enable_hybrid": payload.enable_hybrid,
+            "enable_reranking": payload.enable_reranking,
+            "enable_query_rewriting": payload.enable_query_rewriting,
+            "enable_self_query": payload.enable_self_query,
+            "enable_colbert_rerank": payload.enable_colbert_rerank,
+            "top_k": payload.top_k,
+            "temperature": payload.temperature,
+            "max_tokens": payload.max_tokens,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(canonical.encode()).hexdigest()
+    return f"semantic_cache:chat:{tenant_id}:{digest}"
+
+
+def _sse_frame(payload: dict[str, Any] | str) -> str:
+    if isinstance(payload, str):
+        return f"data: {payload}\n\n"
+    return f"data: {json.dumps(payload, separators=(',', ':'))}\n\n"
+
+
+def _stream_headers(cache_lookup: str) -> dict[str, str]:
+    return {
+        "X-Cache-Lookup": cache_lookup,
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
 
 
 @router.post(
@@ -588,13 +641,31 @@ async def chat_completions(
         }
 
     # 2. Semantic Cache Check (Probe 2.2)
-    cache_key = f"semantic_cache:chat:{resolved_tenant_id}:{hashlib.sha256(user_query.strip().lower().encode()).hexdigest()}"
+    cache_key = _chat_cache_key(resolved_tenant_id, payload)
     redis_conn = _get_redis_conn()
     try:
         cached_raw = await redis_conn.get(cache_key)
         if cached_raw:
+            cached_payload = json.loads(cached_raw)
             response.headers["X-Cache-Lookup"] = "HIT"
-            return json.loads(cached_raw)
+            if not payload.stream:
+                return cached_payload
+
+            cached_text = (
+                (cached_payload.get("choices") or [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+
+            async def _cached_stream() -> AsyncGenerator[str, None]:
+                yield _sse_frame({"choices": [{"delta": {"content": cached_text}}]})
+                yield _sse_frame("[DONE]")
+
+            return StreamingResponse(
+                _cached_stream(),
+                media_type="text/event-stream",
+                headers=_stream_headers("HIT"),
+            )
     except Exception as exc:
         logging.getLogger("api").warning(f"Redis cache lookup failed: {exc}")
 
@@ -612,9 +683,7 @@ async def chat_completions(
             if template and template.content:
                 base_system = template.content
         except Exception as exc:
-            logging.getLogger("api").debug(
-                f"Failed to fetch default template: {exc}"
-            )
+            logging.getLogger("api").debug(f"Failed to fetch default template: {exc}")
 
     if not base_system:
         base_system = "You are a helpful, precise enterprise assistant."
@@ -630,18 +699,31 @@ async def chat_completions(
         if payload.enable_hybrid is not None
         else tenant_config.feature_flags.enable_hybrid_search
     )
+    resolved_enable_query_rewriting = (
+        payload.enable_query_rewriting
+        if payload.enable_query_rewriting is not None
+        else tenant_config.feature_flags.enable_query_rewriting
+    )
+    resolved_enable_self_query = (
+        payload.enable_self_query
+        if payload.enable_self_query is not None
+        else getattr(tenant_config.feature_flags, "enable_self_query", False)
+    )
+    resolved_enable_colbert_rerank = (
+        payload.enable_colbert_rerank
+        if payload.enable_colbert_rerank is not None
+        else getattr(tenant_config.feature_flags, "enable_colbert_rerank", False)
+    )
 
     search_query = SearchQuery(
         tenant_id=resolved_tenant_id,
         query=user_query,
-        top_k=5,
+        top_k=payload.top_k or 5,
         enable_hybrid=resolved_enable_hybrid,
         enable_reranking=resolved_enable_reranking,
-        enable_query_rewriting=tenant_config.feature_flags.enable_query_rewriting,
-        enable_self_query=tenant_config.feature_flags.enable_self_query,
-        enable_colbert_rerank=getattr(
-            tenant_config.feature_flags, "enable_colbert_rerank", False
-        ),
+        enable_query_rewriting=resolved_enable_query_rewriting,
+        enable_self_query=resolved_enable_self_query,
+        enable_colbert_rerank=resolved_enable_colbert_rerank,
         hybrid_alpha=getattr(tenant_config, "hybrid_alpha", 0.7),
     )
     search_res = await search_service.search(search_query)
@@ -690,14 +772,95 @@ async def chat_completions(
         "tenant_id": str(resolved_tenant_id),
     }
 
-    llm_resp = await container.gateway_router.generate(
-        InferenceRequest(
-            messages=llm_messages,
-            temperature=payload.temperature if payload.temperature is not None else 0.4,
-            max_tokens=payload.max_tokens or 2048,
-        ),
-        gw_config,
+    inference_request = InferenceRequest(
+        messages=llm_messages,
+        temperature=payload.temperature if payload.temperature is not None else 0.4,
+        max_tokens=payload.max_tokens or 2048,
     )
+
+    citation_payload = [
+        {
+            "document_id": str(c.document_id),
+            "chunk_id": str(c.chunk_id),
+            "score": c.score,
+        }
+        for c in context_chunks
+    ]
+
+    if payload.stream:
+
+        async def _live_stream() -> AsyncGenerator[str, None]:
+            parts: list[str] = []
+            input_tokens = 0
+            output_tokens = 0
+            stream_completed = False
+            try:
+                async for chunk in container.gateway_router.generate_stream(
+                    inference_request, gw_config
+                ):
+                    if not isinstance(chunk, dict):
+                        continue
+                    delta = chunk.get("delta") or ""
+                    if delta:
+                        parts.append(delta)
+                        yield _sse_frame({"choices": [{"delta": {"content": delta}}]})
+                    usage = chunk.get("usage")
+                    if isinstance(usage, dict):
+                        input_tokens = usage.get("input_tokens", input_tokens)
+                        output_tokens = usage.get("output_tokens", output_tokens)
+                stream_completed = True
+            except Exception as exc:
+                logging.getLogger("api").warning(f"Streaming completion failed: {exc}")
+                yield _sse_frame(
+                    {
+                        "error": "The cognitive engine stream was interrupted. Please retry.",
+                        "retryable": True,
+                    }
+                )
+            finally:
+                full_text = "".join(parts)
+                if full_text and stream_completed:
+                    stream_payload = {
+                        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+                        "object": "chat.completion",
+                        "created": int(time.time()),
+                        "model": gw_config.get("_actual_model", target_model),
+                        "choices": [
+                            {
+                                "index": 0,
+                                "message": {
+                                    "role": "assistant",
+                                    "content": full_text,
+                                },
+                                "finish_reason": "stop",
+                            }
+                        ],
+                        "usage": {
+                            "prompt_tokens": input_tokens,
+                            "completion_tokens": output_tokens,
+                            "total_tokens": input_tokens + output_tokens,
+                        },
+                        "citations": citation_payload,
+                    }
+                    try:
+                        await redis_conn.setex(
+                            cache_key,
+                            CHAT_CACHE_TTL_SECONDS,
+                            json.dumps(stream_payload),
+                        )
+                    except Exception as exc:
+                        logging.getLogger("api").warning(
+                            f"Redis cache write failed: {exc}"
+                        )
+            yield _sse_frame("[DONE]")
+
+        return StreamingResponse(
+            _live_stream(),
+            media_type="text/event-stream",
+            headers=_stream_headers("MISS"),
+        )
+
+    llm_resp = await container.gateway_router.generate(inference_request, gw_config)
 
     actual_model = gw_config.get("_actual_model", target_model)
     completion_payload = {
@@ -720,19 +883,53 @@ async def chat_completions(
             "completion_tokens": llm_resp.usage.output_tokens,
             "total_tokens": llm_resp.usage.total_tokens,
         },
-        "citations": [
-            {
-                "document_id": str(c.document_id),
-                "chunk_id": str(c.chunk_id),
-                "score": c.score,
-            }
-            for c in context_chunks
-        ],
+        "citations": citation_payload,
     }
 
     try:
-        await redis_conn.setex(cache_key, 3600, json.dumps(completion_payload))
+        await redis_conn.setex(
+            cache_key, CHAT_CACHE_TTL_SECONDS, json.dumps(completion_payload)
+        )
     except Exception as exc:
         logging.getLogger("api").warning(f"Redis cache write failed: {exc}")
 
     return completion_payload
+
+
+@router.post(
+    "/v1/tenants/{tenantId}/warmup",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_tenant_isolation)],
+)
+async def warmup_tenant(
+    tenantId: str,
+    response: Response,
+    user_context: UserContext = Depends(get_current_user),
+):
+    """Keep Ollama, the vector store, and Redis warm without spending LLM tokens."""
+    resolved_tenant_id = (
+        user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
+    )
+    started = time.monotonic()
+
+    # A unique query deliberately bypasses the exact-search cache so the local
+    # embedding model is actually exercised (the dominant cold-start cost).
+    await search_service.search(
+        SearchQuery(
+            tenant_id=resolved_tenant_id,
+            query=f"retriever warmup probe {uuid.uuid4().hex[:8]}",
+            top_k=1,
+            enable_hybrid=False,
+            enable_reranking=False,
+            enable_query_rewriting=False,
+            enable_self_query=False,
+            enable_colbert_rerank=False,
+        )
+    )
+
+    response.headers["Cache-Control"] = "no-store"
+    return {
+        "status": "warm",
+        "tenant_id": resolved_tenant_id,
+        "latency_ms": round((time.monotonic() - started) * 1000, 2),
+    }

@@ -8,6 +8,7 @@ Verifies:
 - Chat session API endpoints
 """
 
+import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -641,15 +642,19 @@ async def test_chat_completions_system_prompt_and_history() -> None:
         chat_completions,
     )
 
-    mock_template = MagicMock(content="You are a helpful AI assistant for Acme Systems.")
-    mock_search_res = MagicMock(results=[
-        SearchResult(
-            chunk_id="chk_1",
-            document_id="doc_1",
-            content="Retriever uses local Ollama nomic-embed-text.",
-            score=0.95,
-        )
-    ])
+    mock_template = MagicMock(
+        content="You are a helpful AI assistant for Acme Systems."
+    )
+    mock_search_res = MagicMock(
+        results=[
+            SearchResult(
+                chunk_id="chk_1",
+                document_id="doc_1",
+                content="Retriever uses local Ollama nomic-embed-text.",
+                score=0.95,
+            )
+        ]
+    )
 
     mock_cfg = MagicMock()
     mock_cfg.feature_flags.enable_reranking = False
@@ -660,10 +665,18 @@ async def test_chat_completions_system_prompt_and_history() -> None:
     mock_cfg.hybrid_alpha = 0.7
 
     with (
-        patch("src.routers.chat.template_registry.get_template", new_callable=AsyncMock) as mock_get_template,
-        patch("src.routers.chat.config_service.get_tenant_config", new_callable=AsyncMock) as mock_get_cfg,
-        patch("src.routers.chat.search_service.search", new_callable=AsyncMock) as mock_search,
-        patch("src.routers.chat.container.gateway_router.generate", new_callable=AsyncMock) as mock_generate,
+        patch(
+            "src.routers.chat.template_registry.get_template", new_callable=AsyncMock
+        ) as mock_get_template,
+        patch(
+            "src.routers.chat.config_service.get_tenant_config", new_callable=AsyncMock
+        ) as mock_get_cfg,
+        patch(
+            "src.routers.chat.search_service.search", new_callable=AsyncMock
+        ) as mock_search,
+        patch(
+            "src.routers.chat.container.gateway_router.generate", new_callable=AsyncMock
+        ) as mock_generate,
         patch("src.routers.chat._get_redis_conn") as mock_redis,
     ):
         mock_get_cfg.return_value = mock_cfg
@@ -703,13 +716,21 @@ async def test_chat_completions_system_prompt_and_history() -> None:
             user_context=user_ctx,
         )
 
-        assert resp["choices"][0]["message"]["content"] == "I run on local Ollama nomic-embed-text for zero cost."
+        assert (
+            resp["choices"][0]["message"]["content"]
+            == "I run on local Ollama nomic-embed-text for zero cost."
+        )
         assert mock_get_template.called
         # Verify messages sent to gateway router
         sent_messages = mock_generate.call_args[0][0].messages
         assert sent_messages[0].role == "system"
-        assert "You are a helpful AI assistant for Acme Systems." in sent_messages[0].content
-        assert "Retriever uses local Ollama nomic-embed-text." in sent_messages[0].content
+        assert (
+            "You are a helpful AI assistant for Acme Systems."
+            in sent_messages[0].content
+        )
+        assert (
+            "Retriever uses local Ollama nomic-embed-text." in sent_messages[0].content
+        )
         # Verify history was included
         assert sent_messages[1].role == "user"
         assert sent_messages[1].content == "hello"
@@ -719,3 +740,131 @@ async def test_chat_completions_system_prompt_and_history() -> None:
         assert sent_messages[3].role == "user"
         assert sent_messages[3].content == "what is your embedder?"
 
+
+def test_chat_cache_key_scopes_to_full_conversation_and_request_shape() -> None:
+    """Cache entries must not bleed across conversations or retrieval settings."""
+    from src.routers.chat import ChatCompletionRequest, _chat_cache_key
+
+    first_turn = ChatCompletionRequest(
+        messages=[{"role": "user", "content": "what is your embedder?"}]
+    )
+    second_turn = ChatCompletionRequest(
+        messages=[
+            {"role": "user", "content": "what is your embedder?"},
+            {"role": "assistant", "content": "nomic-embed-text"},
+            {"role": "user", "content": "and the vector store?"},
+        ]
+    )
+
+    assert _chat_cache_key("tenant_1", first_turn) == _chat_cache_key(
+        "tenant_1", first_turn
+    )
+    assert _chat_cache_key("tenant_1", first_turn) != _chat_cache_key(
+        "tenant_1", second_turn
+    )
+    assert _chat_cache_key("tenant_1", first_turn) != _chat_cache_key(
+        "tenant_2", first_turn
+    )
+
+    tuned = ChatCompletionRequest(
+        messages=first_turn.messages,
+        top_k=3,
+        enable_colbert_rerank=False,
+        enable_query_rewriting=False,
+    )
+    assert _chat_cache_key("tenant_1", first_turn) != _chat_cache_key("tenant_1", tuned)
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_streams_sse_and_caches_completed_answer() -> None:
+    """Streaming responses use OpenAI SSE frames and only cache completed text."""
+    from fastapi import Response
+    from fastapi.responses import StreamingResponse
+
+    from src.routers.chat import (
+        ChatCompletionMessage,
+        ChatCompletionRequest,
+        chat_completions,
+    )
+
+    mock_search_res = MagicMock(
+        results=[
+            SearchResult(
+                chunk_id="chk_1",
+                document_id="doc_1",
+                content="Retriever uses local Ollama nomic-embed-text.",
+                score=0.95,
+            )
+        ]
+    )
+    mock_cfg = MagicMock()
+    mock_cfg.feature_flags.enable_reranking = False
+    mock_cfg.feature_flags.enable_hybrid_search = True
+    mock_cfg.feature_flags.enable_query_rewriting = False
+    mock_cfg.feature_flags.enable_self_query = False
+    mock_cfg.feature_flags.enable_colbert_rerank = False
+    mock_cfg.hybrid_alpha = 0.7
+
+    async def fake_stream(_request, config):
+        config["_actual_model"] = "ollama/qwen2.5"
+        yield {"delta": "Hello"}
+        yield {"delta": " world"}
+        yield {"usage": {"input_tokens": 12, "output_tokens": 2}}
+
+    with (
+        patch(
+            "src.routers.chat.config_service.get_tenant_config",
+            new_callable=AsyncMock,
+        ) as mock_get_cfg,
+        patch(
+            "src.routers.chat.search_service.search", new_callable=AsyncMock
+        ) as mock_search,
+        patch(
+            "src.routers.chat.container.gateway_router.generate_stream",
+            new=MagicMock(
+                side_effect=lambda *args, **kwargs: fake_stream(*args, **kwargs)
+            ),
+        ),
+        patch("src.routers.chat._get_redis_conn") as mock_redis,
+    ):
+        mock_get_cfg.return_value = mock_cfg
+        mock_search.return_value = mock_search_res
+        mock_redis_inst = AsyncMock()
+        mock_redis_inst.get.return_value = None
+        mock_redis.return_value = mock_redis_inst
+
+        payload = ChatCompletionRequest(
+            messages=[ChatCompletionMessage(role="user", content="say hello")],
+            stream=True,
+        )
+        user_ctx = UserContext(
+            user_id="user_123",
+            tenant_id="tenant_abc",
+            roles=["user"],
+            scopes=["chat:write"],
+            key_id="key_1",
+        )
+
+        resp = await chat_completions(
+            tenantId="tenant_abc",
+            payload=payload,
+            response=Response(),
+            user_context=user_ctx,
+        )
+
+        assert isinstance(resp, StreamingResponse)
+        assert resp.headers["x-cache-lookup"] == "MISS"
+
+        body = "".join([chunk async for chunk in resp.body_iterator])
+
+        assert 'data: {"choices":[{"delta":{"content":"Hello"}}]}' in body
+        assert 'data: {"choices":[{"delta":{"content":" world"}}]}' in body
+        assert body.endswith("data: [DONE]\n\n")
+
+        mock_redis_inst.setex.assert_awaited_once()
+        cache_key, ttl, cached_raw = mock_redis_inst.setex.await_args.args
+        assert cache_key.startswith("semantic_cache:chat:tenant_abc:")
+        assert ttl == 600
+        cached_payload = json.loads(cached_raw)
+        assert cached_payload["choices"][0]["message"]["content"] == "Hello world"
+        assert cached_payload["model"] == "ollama/qwen2.5"

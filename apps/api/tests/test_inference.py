@@ -868,3 +868,99 @@ async def test_chat_completions_streams_sse_and_caches_completed_answer() -> Non
         cached_payload = json.loads(cached_raw)
         assert cached_payload["choices"][0]["message"]["content"] == "Hello world"
         assert cached_payload["model"] == "ollama/qwen2.5"
+
+
+# ── 6. Warm-Up Coverage ────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_warmup_endpoint_exercises_search_and_generation() -> None:
+    """Warmup must probe the embedding path and the real generation path."""
+    from fastapi import Response
+
+    from src.domain.abstractions.config import TenantConfiguration
+    from src.routers.chat import warmup_tenant
+
+    tenant_id = str(uuid.uuid4())
+    config = TenantConfiguration(tenant_id=tenant_id)
+    user_ctx = UserContext(
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["user"],
+        scopes=["chat:write"],
+        key_id="key_1",
+    )
+
+    with (
+        patch(
+            "src.routers.chat.search_service.search", new_callable=AsyncMock
+        ) as mock_search,
+        patch(
+            "src.routers.chat.config_service.get_tenant_config",
+            new_callable=AsyncMock,
+        ) as mock_get_config,
+        patch(
+            "src.routers.chat.container.gateway_router.generate",
+            new_callable=AsyncMock,
+        ) as mock_generate,
+    ):
+        mock_get_config.return_value = config
+        mock_generate.return_value = InferenceResponse(
+            content="OK",
+            usage=Usage(input_tokens=8, output_tokens=1, total_tokens=9),
+            finish_reason="stop",
+        )
+
+        result = await warmup_tenant(tenant_id, Response(), user_ctx)
+
+    assert result["status"] == "warm"
+    assert result["model"] == config.gateway_settings.primary_model
+    assert result["generation_latency_ms"] >= 0
+    mock_search.assert_awaited_once()
+    mock_generate.assert_awaited_once()
+
+    probe_request = mock_generate.await_args.args[0]
+    assert probe_request.max_tokens == 4
+    assert probe_request.temperature == 0.0
+
+
+@pytest.mark.asyncio
+async def test_warmup_endpoint_fails_when_generation_probe_fails() -> None:
+    """A broken generation path must not be reported as a warm tenant."""
+    from fastapi import HTTPException, Response
+
+    from src.domain.abstractions.config import TenantConfiguration
+    from src.routers.chat import warmup_tenant
+
+    tenant_id = str(uuid.uuid4())
+    user_ctx = UserContext(
+        user_id="user_123",
+        tenant_id=tenant_id,
+        roles=["user"],
+        scopes=["chat:write"],
+        key_id="key_1",
+    )
+
+    with (
+        patch(
+            "src.routers.chat.search_service.search", new_callable=AsyncMock
+        ) as mock_search,
+        patch(
+            "src.routers.chat.config_service.get_tenant_config",
+            new_callable=AsyncMock,
+        ) as mock_get_config,
+        patch(
+            "src.routers.chat.container.gateway_router.generate",
+            new_callable=AsyncMock,
+        ) as mock_generate,
+    ):
+        mock_search.return_value = MagicMock(results=[])
+        mock_get_config.return_value = TenantConfiguration(tenant_id=tenant_id)
+        mock_generate.side_effect = RuntimeError("provider unavailable")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await warmup_tenant(tenant_id, Response(), user_ctx)
+
+    assert exc_info.value.status_code == 502
+    mock_search.assert_awaited_once()
+    mock_generate.assert_awaited_once()

@@ -537,6 +537,8 @@ class ChatCompletionRequest(BaseModel):
 
 CHAT_CACHE_TTL_SECONDS = 600
 CHAT_CACHE_VERSION = 2
+WARMUP_SEARCH_TIMEOUT_SECONDS = 30.0
+WARMUP_GENERATION_TIMEOUT_SECONDS = 20.0
 
 
 def _chat_cache_key(tenant_id: str, payload: ChatCompletionRequest) -> str:
@@ -906,30 +908,116 @@ async def warmup_tenant(
     response: Response,
     user_context: UserContext = Depends(get_current_user),
 ):
-    """Keep Ollama, the vector store, and Redis warm without spending LLM tokens."""
+    """Exercise embedding, vector, Redis, and a minimal generation probe."""
     resolved_tenant_id = (
         user_context.tenant_id if not _UUID_RE.match(tenantId) else tenantId
     )
     started = time.monotonic()
+    logger = logging.getLogger("api")
 
     # A unique query deliberately bypasses the exact-search cache so the local
     # embedding model is actually exercised (the dominant cold-start cost).
-    await search_service.search(
-        SearchQuery(
-            tenant_id=resolved_tenant_id,
-            query=f"retriever warmup probe {uuid.uuid4().hex[:8]}",
-            top_k=1,
-            enable_hybrid=False,
-            enable_reranking=False,
-            enable_query_rewriting=False,
-            enable_self_query=False,
-            enable_colbert_rerank=False,
+    search_started = time.monotonic()
+    try:
+        await asyncio.wait_for(
+            search_service.search(
+                SearchQuery(
+                    tenant_id=resolved_tenant_id,
+                    query=f"retriever warmup probe {uuid.uuid4().hex[:8]}",
+                    top_k=1,
+                    enable_hybrid=False,
+                    enable_reranking=False,
+                    enable_query_rewriting=False,
+                    enable_self_query=False,
+                    enable_colbert_rerank=False,
+                )
+            ),
+            timeout=WARMUP_SEARCH_TIMEOUT_SECONDS,
         )
+    except TimeoutError as exc:
+        logger.warning("Warmup search timed out for tenant %s", resolved_tenant_id)
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Warmup search timed out.",
+        ) from exc
+    except Exception as exc:
+        logger.warning(
+            "Warmup search failed for tenant %s: %s", resolved_tenant_id, exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Warmup search failed.",
+        ) from exc
+    search_latency_ms = round((time.monotonic() - search_started) * 1000, 2)
+
+    try:
+        tenant_config = await config_service.get_tenant_config(resolved_tenant_id)
+    except Exception as exc:
+        logger.warning(
+            "Warmup configuration failed for tenant %s: %s", resolved_tenant_id, exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Warmup generation configuration failed.",
+        ) from exc
+
+    target_model = (
+        getattr(tenant_config.gateway_settings, "primary_model", None)
+        or getattr(tenant_config.ai_provider, "default_model", None)
+        or "openai/gpt-4o-mini"
     )
+    gateway_config: dict[str, Any] = {
+        "model": target_model,
+        "fallback_models": list(
+            getattr(tenant_config.gateway_settings, "fallback_models", None) or []
+        ),
+        "cooldown_seconds": getattr(
+            tenant_config.gateway_settings, "cooldown_seconds", 60
+        ),
+        "tenant_id": str(resolved_tenant_id),
+    }
+
+    # A minimal prompt and tiny completion budget exercise the real generation
+    # path (provider auth, routing, and model load) at negligible token cost.
+    probe_request = InferenceRequest(
+        messages=[
+            ChatMessage(role="system", content="Warmup probe. Reply with OK."),
+            ChatMessage(role="user", content="OK"),
+        ],
+        temperature=0.0,
+        max_tokens=4,
+    )
+
+    generation_started = time.monotonic()
+    try:
+        await asyncio.wait_for(
+            container.gateway_router.generate(probe_request, gateway_config),
+            timeout=WARMUP_GENERATION_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as exc:
+        logger.warning(
+            "Warmup generation timed out for tenant %s", resolved_tenant_id
+        )
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Warmup generation timed out.",
+        ) from exc
+    except Exception as exc:
+        logger.warning(
+            "Warmup generation failed for tenant %s: %s", resolved_tenant_id, exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Warmup generation failed.",
+        ) from exc
+    generation_latency_ms = round((time.monotonic() - generation_started) * 1000, 2)
 
     response.headers["Cache-Control"] = "no-store"
     return {
         "status": "warm",
         "tenant_id": resolved_tenant_id,
         "latency_ms": round((time.monotonic() - started) * 1000, 2),
+        "search_latency_ms": search_latency_ms,
+        "generation_latency_ms": generation_latency_ms,
+        "model": gateway_config.get("_actual_model", target_model),
     }

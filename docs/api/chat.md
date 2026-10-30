@@ -240,7 +240,7 @@ data: [DONE]
 
 ### 2.6 Warm Up Tenant Pools
 
-Exercises the local embedding model, vector store, and Redis without spending LLM tokens. Intended for a scheduled probe (the website calls it every five minutes).
+Exercises the local embedding model, vector store, Redis, and the real generation path. Intended for a scheduled probe (the website calls it every five minutes).
 
 - **HTTP Method:** `POST`
 - **Path:** `/v1/tenants/{tenantId}/warmup`
@@ -251,11 +251,14 @@ Exercises the local embedding model, vector store, and Redis without spending LL
 {
   "status": "warm",
   "tenant_id": "c9a28c30-e34d-4871-bc01-e9451d6c8b09",
-  "latency_ms": 812.4
+  "latency_ms": 14320.5,
+  "search_latency_ms": 13880.1,
+  "generation_latency_ms": 420.3,
+  "model": "gemini-2.5-flash"
 }
 ```
 
-The probe issues a unique low-cost search so the embedding model is actually exercised rather than served from the exact-query cache.
+The probe issues a unique low-cost search so the embedding model is actually exercised rather than served from the exact-query cache. It then sends a two-message prompt with `max_tokens: 4` through the configured gateway cascade, warming provider authentication, routing, and model execution at negligible token cost. Search and generation are bounded to 30 and 20 seconds respectively; failures return `502` (provider/configuration error) or `504` (timeout) instead of reporting a warm tenant.
 
 ---
 

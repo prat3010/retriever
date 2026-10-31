@@ -33,7 +33,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - `POST /v1/appliance/tenants/{tenantId}/seal`: Hardware-seal on-disk vector database.
   - `POST /v1/appliance/tenants/{tenantId}/unseal`: Unseal database with host PCR verification.
   - `POST /v1/appliance/tenants/{tenantId}/voice/query`: Full-duplex offline voice RAG query.
-- **Platform Battery #41 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 41 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
   - Registered `sovereign_air_gapped_appliance` under `BatteryCategory.EDGE_DISTRIBUTION` (41 platform batteries verified).
 - **Automated Verification Suites** (`apps/api/tests/test_sovereign_appliance.py`):
   - Created 9 tests covering hexagonal purity, AES-256-GCM sealing/tampering, air-gap sentinel, full-duplex voice RAG, manager lifecycle, and REST endpoints. All 25 tests passed.
@@ -68,7 +68,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - `POST /v1/tenants/{tenantId}/workflows/dag/execute`: Executes DAG stage-by-stage with telemetry.
   - `GET /v1/tenants/{tenantId}/workflows/dag/templates`: Lists enterprise templates.
   - `GET /v1/tenants/{tenantId}/workflows/dag/templates/{templateId}`: Retrieves full template graph.
-- **Platform Battery #40 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 40 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
   - Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - **Automated Verification Suites** (`apps/api/tests/`):
   - Created `test_dag_workflow.py` (9 tests) covering topological sort, cycle detection, execution, branching, templates, and hexagonal boundaries. Updated `test_batteries.py` (10 tests) asserting 40 batteries. All 19 tests passed.
@@ -88,7 +88,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Upgraded `build_filter_clause` (`src/adapters/vector/filter_builder.py`) with unified sublinear JSONB array containment (`?` and `?|`) with tenant `admin` role bypass.
   - Forwarded `user_groups` and `enable_acl_filter` across `VectorRepository`, `KeywordRepository`, `SpladeSparseAdapter`, and `HybridSearchService._fan_out_search`.
   - Updated `ingest_file_sync` to merge `doc_metadata` ACL fields into chunk metadata and persisted them in PostgreSQL.
-- **Platform Battery #39 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 39 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
   - Registered `enterprise_saas_connectors_acl` under `BatteryCategory.SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
 - **Automated Verification Suites** (`apps/api/tests/`):
   - Added `test_enterprise_saas_connectors.py` (12 tests) and `test_document_acl_retrieval.py` (8 tests), plus updated `test_batteries.py` (9 tests), all passing in 0.15s–2.0s with 0 violations.
@@ -139,7 +139,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - `GET /v1/admin/operator/clusters`: List all managed custom resources across namespaces.
   - `POST /v1/admin/operator/reconcile`: Trigger programmatic reconciliation cycle.
   - `POST /v1/admin/operator/clusters/{cluster_name}/backup`: Dispatch on-demand database & vector backup jobs.
-- **Platform Battery #28 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 28 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
   - Cataloged `kubernetes_native_operator` under `SYSTEM_EXTENSIBILITY` (now 28 platform batteries).
 
 ## [1.1.0-alpha1] - 2026-09-14 - Milestone 111: Community Connectors Ecosystem & Change-Data-Capture (CDC) Pipeline
@@ -159,7 +159,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 - **Custom Ingestion Pipeline SDK & Decorator** (`apps/api/src/domain/abstractions/connector.py`, `registry.py`):
   - Standardized `BaseConnector` lifecycle, `BaseDocumentParser`, and `@register_connector` decorator for dynamic third-party community extensions.
   - `GET /v1/admin/connectors/manifests` catalog endpoint returning descriptor manifests and parameter schemas.
-- **Platform Battery #27 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 27 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
   - Cataloged `cdc_community_connectors` under `SYSTEM_EXTENSIBILITY` (now 27 platform batteries).
 - **Decoupled Client SDK Enhancements**:
   - `@prat3010/retriever-client`: Added `listConnectorManifests()`, `listConnectors()`, `createConnector()`, `triggerConnectorSync()`.
@@ -197,8 +197,8 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Added fast 2.0-second connection timeout and safe connectivity check in `Neo4jGraphRepository._get_driver()` and `is_online()`.
   - Updated `/v1/admin/tenants/{tenantId}/graph/capabilities` and `/v1/admin/tenants/{tenantId}/graph/engine` in `src/routers/admin.py` to dynamically reflect host profiles (`expanded_vps` / `macbook` vs `oracle_vm_lean`).
   - Updated web dashboard `tenant-graph.tsx` to display real-time host status and enable 1-click Neo4j Cypher engine activation on expanded VPS nodes.
-- **Platform Battery #14 Registration (`neo4j_cypher_graph`)**:
-  - Registered Neo4j Cypher Graph Engine as **Platform Battery #14** under `COMPUTATION_GRAPH` in `src/domain/batteries/battery_service.py`.
+- **Platform Battery No. 14 Registration (`neo4j_cypher_graph`)**:
+  - Registered Neo4j Cypher Graph Engine as **Platform Battery No. 14** under `COMPUTATION_GRAPH` in `src/domain/batteries/battery_service.py`.
   - Added dynamic `status_resolver` callable in `BatteryService` and wired runtime capability evaluation in `src/container.py`: resolves to `ACTIVE` when host hardware supports it and Bolt port 7687 is reachable, and `STANDBY` when running on lean VPS with PostgreSQL recursive CTE fallback.
   - Updated fallback counts in Master Admin Dashboard (`apps/web/src/app/(dashboard)/batteries/page.tsx`) to 14 total platform batteries.
   - Added comprehensive automated test coverage in `tests/test_batteries.py` verifying battery metadata, latency profile (<5ms), algorithm foundation, and active hyperparameters.
@@ -219,7 +219,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Background `asyncio` execution with step-level memoization. Completed steps replay in $<2\text{ms}$ with zero computation cost.
   - Automatic exponential backoff retries on transient errors.
   - Outbound signed HMAC SHA-256 webhook delivery to client endpoints on job completion/failure.
-- **Platform Battery #15 Registration** (`apps/api/src/domain/batteries/battery_service.py`, `abstractions/batteries.py`):
+- **Platform Battery No. 15 Registration** (`apps/api/src/domain/batteries/battery_service.py`, `abstractions/batteries.py`):
   - Registered `durable_workflow_engine` under `BACKGROUND_WORKFLOWS` category (catalog now tracking 15 platform batteries).
 - **FastAPI REST Routers** (`apps/api/src/routers/durable_workflow.py`):
   - `/v1/tenants/{tenant_id}/workflows/blueprints`
@@ -231,7 +231,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - `/v1/tenants/{tenant_id}/workflows/events`
   - `/v1/admin/workflows/overview`
 - **Comprehensive Pytest Suite** (`apps/api/tests/test_durable_workflow.py`):
-  - 10 unit & integration tests verifying step memoization, retries, replay, idempotency, tenant RLS isolation, Battery #15, and REST endpoints.
+  - 10 unit & integration tests verifying step memoization, retries, replay, idempotency, tenant RLS isolation, Battery No. 15, and REST endpoints.
 - **Comprehensive Documentation**:
   - Detailed REST API specification (`docs/api/DURABLE_WORKFLOWS_REST_API.md`).
   - Feature architecture deep-dive (`docs/features/durable-asynchronous-execution.md`).
@@ -250,7 +250,7 @@ All notable changes to the Retriever RAG backend platform will be documented in 
   - Post-inference factual grounding rail calculating token containment and entailment against retrieved context chunks.
 - **NeMo Guardrail Domain Service** (`src/domain/guardrails/nemo_guardrail_service.py`):
   - Manages tenant policy configurations, in-memory security violation telemetry, and pre-packaged enterprise templates (`enterprise_support`, `legal_boundary`, `financial_pricing`, `developer_assistant`).
-- **Platform Battery #13 Registration** (`src/domain/batteries/battery_service.py`):
+- **Platform Battery No. 13 Registration** (`src/domain/batteries/battery_service.py`):
   - Registered `nemo_conversational_guardrails` under `SAFETY_DEFENSE` category (catalog now tracking 13 platform batteries).
 - **FastAPI REST Router** (`src/routers/guardrails.py`):
   - `/v1/guardrails/templates`, `/v1/guardrails/overview`, `/v1/tenants/{tenantId}/guardrails/config`, `/v1/tenants/{tenantId}/guardrails/validate-input`, `/v1/tenants/{tenantId}/guardrails/validate-output`, `/v1/tenants/{tenantId}/guardrails/test-flow`, `/v1/tenants/{tenantId}/guardrails/telemetry`.

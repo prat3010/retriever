@@ -5,9 +5,9 @@
 
 ---
 
-## ⚡ Current Status: Enterprise Production Ready (v2.2.0-alpha1)
+## ⚡ Current Status: Enterprise Production Ready (v2.5.0)
 
-Retriever has completed **110 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 119 automated test suites.
+Retriever has completed **127 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 119+ automated test suites.
 
 👉 **Looking for granular historical milestone logs (M1–M109)?**  
 See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTONES_HISTORY.md`](docs/engineering/MILESTONES_HISTORY.md).
@@ -80,18 +80,18 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
   - GitHub repository markdown docs, issues, and pull request sync with `since` cursor tracking (`GitHubConnector`).
   - Slack channel history and thread aggregation connector with timestamp cursor tracking (`SlackConnector`).
 - [x] **Custom Ingestion Pipeline SDK:** Standardized `BaseConnector` lifecycle, `BaseDocumentParser`, `@register_connector` decorator for dynamic third-party extensions, and `GET /v1/admin/connectors/manifests`.
-- [x] **Platform Battery #27 Registration:** Cataloged `cdc_community_connectors` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Platform Battery No. 27 Registration:** Cataloged `cdc_community_connectors` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - [x] **Decoupled Client SDKs Updated:** Added connector management methods to `@prat3010/retriever-client` and `retriever-python`.
 
 ### Milestone 112: Kubernetes Native Operator & Helm Charts (v1.2.0-alpha1) — **Completed**
 - [x] **Official Production Helm 3 Chart:** Highly configurable Helm chart in `deploy/helm/retriever/` orchestrating multi-replica FastAPI pods, Next.js Web Studio, HPA v2, Ingress with cert-manager TLS, PostgreSQL 16 + pgvector StatefulSet, and Redis 7.
 - [x] **Kubernetes Custom Resource Definition (CRD):** `RetrieverCluster` (`retriever.run/v1alpha1`) with comprehensive OpenAPI v3 schema validation, subresources (`status`, `scale`), and `kubectl get rc` printer columns.
 - [x] **Level-Triggered Cluster Reconciler:** Hexagonal reconciler managing state transitions (`Pending` $\rightarrow$ `Provisioning` $\rightarrow$ `Running`), rolling upgrades on image tag changes, GPU accelerator node affinity/tolerations, and automated database backup jobs.
-- [x] **Platform Battery #28 Registration:** Cataloged `kubernetes_native_operator` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Platform Battery No. 28 Registration:** Cataloged `kubernetes_native_operator` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - [x] **Admin Cluster Management APIs:** `GET /v1/admin/operator/status`, `GET /v1/admin/operator/clusters`, `POST /v1/admin/operator/reconcile`, and `POST /v1/admin/operator/clusters/{cluster_name}/backup`.
 
 ### Milestone 113: Multimodal Vision GraphRAG & Schematic Ingestion (v1.3.0-alpha1) — **Completed**
-- [x] **Platform Battery #29 Registration:** Cataloged `multimodal_vision_graphrag` in `BatteryService` under `COMPUTATION_GRAPH`.
+- [x] **Platform Battery No. 29 Registration:** Cataloged `multimodal_vision_graphrag` in `BatteryService` under `COMPUTATION_GRAPH`.
 - [x] **Architectural Schematic Parsing Engine:** Pure domain `SchematicExtractor` parsing SVG XML layouts, binary image headers, flow patterns, and directional connectors with protocols.
 - [x] **Normalized Coordinate Geometry:** `BoundingBox` validation ensuring strict $[0.0, 1.0]$ bounds, IoU math, and architectural ontology classification (`api_gateway`, `database`, `microservice`, `queue`, `client_app`, `cache`, `storage`, `auth_service`).
 - [x] **Cross-Modal Knowledge Graph Traversal:** Multi-hop graph search linking visual layout components to textual documentation chunks with verifiable visual citations (`[Schematic: ... | Box: ... | "..."]`).
@@ -107,7 +107,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Voice Studio Upgrade:** Integrated genuine Web Audio API `AudioContext` + `AnalyserNode` frequency spectrum visualization in `VoiceStudioPanel.tsx` and purged all fake `Math.random()` bars and timer mocks.
 
 ### Milestone 115: Distributed Model Context Protocol (MCP) Mesh & Agent Federation (v1.5.0-alpha1) — **Completed**
-- [x] **Platform Battery #30 Registration:** Cataloged `distributed_mcp_mesh` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Platform Battery No. 30 Registration:** Cataloged `distributed_mcp_mesh` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - [x] **Decentralized MCP Tool Mesh:** Multi-cluster tool discovery, dynamic capability advertisement, heartbeat leasing (120s eviction), and latency-weighted peer routing.
 - [x] **Cryptographic Trust Envelopes:** Inter-cluster tool execution and delegation signed via HMAC-SHA256 with 60-second sliding-window nonce replay protection.
 - [x] **Cross-Cluster Agent Federation:** Distributed ReAct cognitive loop allowing agents to delegate sub-goals to specialist agents on remote sovereign clusters with strict circular loop breakers (`FederationLoopError`).
@@ -115,7 +115,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated 3-tab segmented controller in `McpPanel.tsx` with decentralized node topology visualizer and cross-cluster agent delegation cockpit under Design System 2.0.
 
 ### Milestone 116: Autonomous Mesh Dynamic Load-Balancing & Ephemeral Enclave Auto-Scaling (v1.6.0-alpha1) — **Completed**
-- [x] **Platform Battery #31 Registration:** Cataloged `mesh_load_balancer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
+- [x] **Platform Battery No. 31 Registration:** Cataloged `mesh_load_balancer` in `BatteryService` under `SYSTEM_EXTENSIBILITY`.
 - [x] **Power-of-Two-Choices (P2C) Load Balancing:** Implemented pure domain P2C candidate selection algorithm minimizing composite load scores combining EWMA latency, queue depth, and slot saturation without stampedes.
 - [x] **EWMA Latency Decay & Concurrency Tracking:** Atomic execution slot reservation (`acquire_slot`/`release_slot`) with Exponentially Weighted Moving Average decay ($\alpha = 0.2$) reflecting genuine execution overhead.
 - [x] **Autonomous Scale-to-Zero Enclave Provisioning:** In-process `SovereignEnclaveProvisionerAdapter` scaling out edge enclaves under high cluster pressure and reaping idle enclaves after 300s of inactivity.
@@ -125,7 +125,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated 4th tab "Dynamic Load & Enclaves" in `McpPanel.tsx` with cluster capacity dials, interactive autoscaling policy sliders, and live event audit ledger under Design System 2.0.
 
 ### Milestone 117: Decentralized Multi-Tenant Vector Sharding & Distributed Raft Consensus (v1.7.0-alpha1) — **Completed**
-- [x] **Platform Battery #32 Registration:** Cataloged `vector_raft_sharding` in `BatteryService` under `EDGE_DISTRIBUTION`.
+- [x] **Platform Battery No. 32 Registration:** Cataloged `vector_raft_sharding` in `BatteryService` under `EDGE_DISTRIBUTION`.
 - [x] **Consistent Virtual-Node Hashing:** Deterministic 32-bit FNV-1a hash ring partitioning with 64 virtual nodes (`vnodes`) per shard, supporting both dedicated tenant isolation and shared uniform partitions.
 - [x] **Distributed Raft Consensus State Machine:** In-process Raft engine maintaining monotonic terms, candidate majority elections ($\lfloor N/2 \rfloor + 1$), heartbeat leases (50ms), and replicated AppendEntries logs for vector mutations.
 - [x] **Scatter-Gather Parallel Vector Search:** Concurrent async query fan-out with Reciprocal Rank Fusion (RRF), score normalization, duplicate suppression, and tunable read consistency quorums (`LOCAL`, `ONE`, `QUORUM`, `ALL`).
@@ -135,7 +135,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated "Vector Shards & Raft" panel in `src/components/rag/VectorShardingPanel.tsx` in `/rag/app` under Design System 2.0.
 
 ### Milestone 118: Zero-Knowledge Proof (ZKP) Vector Attestation & Verifiable Grounding (v1.8.0-alpha1) — **Completed**
-- [x] **Platform Battery #33 Registration:** Cataloged `zkp_vector_attestation` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **Platform Battery No. 33 Registration:** Cataloged `zkp_vector_attestation` in `BatteryService` under `SAFETY_DEFENSE`.
 - [x] **Deterministic Binary Merkle Trees:** Implemented canonical SHA-256 Merkle DAG construction with odd-leaf duplicate padding and leaf commitments ($h_i = \text{SHA256}(\text{tenant} \mathbin{\Vert} \text{doc} \mathbin{\Vert} i \mathbin{\Vert} \text{chunk\_sha256})$).
 - [x] **Sub-Millisecond Inclusion Proofs:** Generated authenticated inclusion proof paths ($\pi_i$) allowing instant logarithmic verification without revealing sibling or leaf plaintext text.
 - [x] **Ed25519-Signed Grounding Certificates:** Asymmetric digital signatures binding query turns, response hashes, similarity bounds, and Merkle root commitments into immutable tokens.
@@ -145,7 +145,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated "ZKP Verifiable Grounding" panel in `src/components/rag/ZkpAttestationPanel.tsx` in `/rag/app` under Design System 2.0.
 
 ### Milestone 119: Enterprise Identity Federation (SAML 2.0 / SCIM 2.0 Directory Sync) & RB-VAC (v1.9.0-alpha1) — **Completed**
-- [x] **Platform Battery #34 Registration:** Cataloged `enterprise_identity_federation` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **Platform Battery No. 34 Registration:** Cataloged `enterprise_identity_federation` in `BatteryService` under `SAFETY_DEFENSE`.
 - [x] **SAML 2.0 Identity Provider Federation:** Cryptographically verified XML signature validation (X.509 SHA-256), SP/IdP Entity ID mapping, ACS assertion consuming, replay protection via monotonic assertion ID caching, and dynamic SP metadata generation (`GET /v1/tenants/{tenantId}/identity/saml/metadata.xml`).
 - [x] **RFC 7643 / 7644 SCIM 2.0 Directory Engine:** Enterprise identity lifecycle state machine supporting bearer-authenticated User and Group provisioning, filtering (`userName eq "..."`), RFC 7644 JSON-PATCH operations (`add`, `remove`, `replace`), and stateful de-provisioning.
 - [x] **Role-Based Vector Access Control (RB-VAC):** Sub-millisecond pre-retrieval mathematical set intersection ($C_{\text{chunk}} \cap G_{\text{user}} \neq \emptyset$) pruning unauthorized vector chunks before LLM synthesis and emitting audit telemetry (`RbVacPrunedTelemetry`).
@@ -154,7 +154,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 3-subview cockpit in `src/components/rag/IdentityFederationPanel.tsx` in `/rag/app` under Design System 2.0 (SAML 2.0 SSO, SCIM 2.0 Directory Sync, RB-VAC Simulator).
 
 ### Milestone 120: Automated Continuous DPO / ORPO Model Fine-Tuning Pipeline (v1.9.0-alpha2) — **Completed**
-- [x] **Platform Battery #35 Registration:** Cataloged `continuous_preference_tuning` in `BatteryService` under `ML_INTELLIGENCE`.
+- [x] **Platform Battery No. 35 Registration:** Cataloged `continuous_preference_tuning` in `BatteryService` under `ML_INTELLIGENCE`.
 - [x] **Continuous Preference Harvesting:** Ingest pairwise feedback $(x, y_w, y_l)$ from real user chat interactions (👍/👎), ratings, and explicit corrections with prompt deduplication and buffer threshold auto-dispatch.
 - [x] **Authentic Mathematical Alignment Engines:** Bradley-Terry Direct Preference Optimization (DPO, temperature $\beta$) and monolithic reference-free Odds Ratio Preference Optimization (ORPO, regularization $\lambda_{ORPO}$).
 - [x] **State Machine & Validation Gating:** Complete continuous lifecycle (`COLLECTING` $\to$ `QUEUED` $\to$ `TRAINING` $\to$ `EVALUATING` $\to$ `COMPLETED`) with automated held-out validation gating (accuracy $\ge 0.75$).
@@ -164,7 +164,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousTuningPanel.tsx` in `/rag/app` under Design System 2.0 with real-time DPO/ORPO mathematical loss simulator.
 
 ### Milestone 121: Confidential Multi-Party Vector Computation (MPC) Privacy Enclaves (v2.0.0-alpha3) — **Completed**
-- [x] **Platform Battery #36 Registration:** Cataloged `confidential_mpc_enclave` in `BatteryService` under `SAFETY_DEFENSE`.
+- [x] **Platform Battery No. 36 Registration:** Cataloged `confidential_mpc_enclave` in `BatteryService` under `SAFETY_DEFENSE`.
 - [x] **Additive Secret Sharing Engine:** Arithmetic vector share generation over $Q_{16.16}$ fixed-point scale factor ($S = 65,536$) guaranteeing complete information-theoretic secrecy ($\sum_{i=1}^N [x]_i = x$).
 - [x] **Beaver Multiplication Triples & PPIP:** Authenticated offline triple generation ($c = a \cdot b$) executing Privacy-Preserving Inner Product ($\langle q, d \rangle$) and cosine similarity without exposing plain query or document vectors across sovereign parties.
 - [x] **Oblivious Threshold Top-K & Differential Privacy:** Secure score ranking filtering entries above $\tau_{\text{privacy}}$, bounded by Laplace noise injection ($\epsilon$ privacy budget tracking) and Shannon entropy auditing.
@@ -174,7 +174,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/MpcEnclavePanel.tsx` in `/rag/app` under Design System 2.0 (Consortium Enclaves & Sessions, Secret Share Distributor & Noise, Confidential Inner Product & Top-K, Interactive Beaver Triples & PPIP Math Simulator).
 
 ### Milestone 122: Autonomous Continuous Benchmark & Regression Gatekeeper (v2.1.0-alpha1) — **Completed**
-- [x] **Platform Battery #37 Registration:** Cataloged `autonomous_benchmark_gatekeeper` in `BatteryService` under `ML_INTELLIGENCE`.
+- [x] **Platform Battery No. 37 Registration:** Cataloged `autonomous_benchmark_gatekeeper` in `BatteryService` under `ML_INTELLIGENCE`.
 - [x] **Authentic IR & RAG Triad Metrics:** Authentic implementation of NDCG@K ($2^{rel}-1$ gain), MRR@K, Recall@K, Precision@K, Faithfulness token-overlap claim grounding, Answer Relevancy, and latency percentiles (P50, P95, P99).
 - [x] **Two-Sample Welch's t-Test Hypothesis Testing:** Evaluates candidate vs baseline metric distributions without assuming equal variance, computing Welch-Satterthwaite degrees of freedom ($\nu$) and two-tailed Student's $t$ $p$-values.
 - [x] **Autonomous Gatekeeper Policy & Automated Rollback:** Evaluates candidates against configurable tenant policies (`max_latency_p95_increase_pct`, `max_ndcg_drop_abs`, `max_faithfulness_drop_abs`, `significance_alpha`), emitting `PASSED_CLEAN`, `WARNING_DEGRADED`, or `REJECTED_REGRESSION` verdicts and triggering automated deployment rollbacks.
@@ -183,7 +183,7 @@ All 42 batteries are wired through strict Hexagonal dependency injection:
 - [x] **Control Plane Studio Upgraded:** Integrated dedicated 4-subview cockpit in `src/components/rag/ContinuousBenchmarkPanel.tsx` in `/rag/app` under Design System 2.0 (Suites & Runs Ledger, Comparative Regression Diff, Item-Level Query Inspector, Interactive Welch's t-Test Simulator).
 
 ### Milestone 123: Hierarchical Memory Augmentation with Graph-of-Thoughts (GoT) Planning (v2.2.0-alpha1) — **Completed**
-- [x] **Platform Battery #38 Registration:** Cataloged `hierarchical_memory_got_planner` in `BatteryService` under `COMPUTATION_GRAPH`.
+- [x] **Platform Battery No. 38 Registration:** Cataloged `hierarchical_memory_got_planner` in `BatteryService` under `COMPUTATION_GRAPH`.
 - [x] **Directed Acyclic Graph (DAG) Reasoning Engine:** Non-linear cognitive planning allowing multi-parent thought aggregation ($M \to 1$), recursive thought refinement ($1 \to 1$), exploratory generation ($1 \to N$), and heuristic pruning below confidence $\tau_{\text{prune}}$.
 - [x] **Topological Sort & Dynamic Programming Optimal Path:** Kahn's topological sorting algorithm enforcing acyclicity and memoized DP calculating the globally optimal reasoning path from root origin to converged synthesis.
 - [x] **3-Tier Hierarchical Memory Architecture:** Partitioned memory model spanning transient L1 Scratchpad buffer, decaying L2 Episodic memory parameterized by Hermann Ebbinghaus's exponential forgetting curve ($R(t) = e^{-t/S}$), and consolidated L3 Semantic persistent memory graphs.
@@ -214,7 +214,7 @@ Following an architectural and community reality check against viral open-source
 - [x] **Atlassian Confluence & Jira Knowledge Sync:** Dual connector for Confluence Cloud (CQL spaces, pages, XHTML macro conversion to clean Markdown, and read restrictions extraction) and Jira Cloud (JQL issues, sprint threads, status/priority/assignee/reporter metadata, and comments) with incremental modified cursors.
 - [x] **Microsoft 365 (SharePoint & OneDrive):** Enterprise Microsoft Graph API v1.0 delta crawler (`/root/delta`) with Azure AD client credentials, `@odata.deltaLink` change tracking, and Azure AD user/security group ACL mapping.
 - [x] **Document-Level Access Control List (ACL) Inheritance & Pre-Retrieval Enforcement:** Propagated `allowed_users`, `allowed_groups`, and `is_public` directly into PostgreSQL `document_chunks.meta_data`. Updated `build_filter_clause`, `vector_repository`, `keyword_repository`, `splade_sparse_adapter`, and `HybridSearchService` with JSONB array containment (`?` and `?|`) with tenant admin bypass, ensuring search queries filter unauthorized chunks prior to LLM synthesis.
-- [x] **Platform Battery #39 Registration:** Registered `enterprise_saas_connectors_acl` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
+- [x] **Platform Battery No. 39 Registration:** Registered `enterprise_saas_connectors_acl` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata and zero-toy verification.
 
 ### Milestone 126: Visual DAG Workflow Canvas & Agentic Graph Composer (v2.4.0) — **Completed (2026-09-24)**
 - [x] **Interactive Visual Workflow Studio in `apps/web`:** React 19 / Next.js 16 SVG-powered interactive canvas (`VisualDagCanvas.tsx`) in the Retriever Admin Dashboard with pan/zoom viewport navigation, draggable typed nodes, cubic Bézier spline connectors with directional arrowheads, real-time node parameter inspector drawer, and step-level telemetry.
@@ -226,7 +226,7 @@ Following an architectural and community reality check against viral open-source
   3. *Technical Codebase Assistant* (`tpl_codebase_assistant`)
   4. *Multimodal Schematic Inspector* (`tpl_multimodal_inspector`)
 - [x] **FastAPI REST Endpoints:** Mounted 4 tenant-scoped endpoints under `/v1/tenants/{tenantId}/workflows/dag/*` covering compilation, execution, and enterprise template inspection.
-- [x] **Platform Battery #40 Registration:** Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata, health check endpoint, and zero-toy verification.
+- [x] **Platform Battery No. 40 Registration:** Registered `visual_dag_workflow_composer` in `BatteryService` under `SYSTEM_EXTENSIBILITY` with full parameter metadata, health check endpoint, and zero-toy verification.
 
 ### Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine (v2.5.0) — **Completed (2026-09-24)**
 - [x] **Single Distroless Edge Container:** Self-contained Docker / OCI recipe (`deploy/docker/Dockerfile.appliance`) bundling embedded SQLite FTS5, quantized models, and non-root execution with zero internet connectivity requirements.
@@ -235,10 +235,10 @@ Following an architectural and community reality check against viral open-source
 - [x] **Full-Duplex Offline Voice & Whisper RAG:** Integrated local Whisper ASR + embedded SQLite hybrid search + Piper neural TTS voice pipeline (`SovereignVoiceRAGEngine`) with sub-350ms total conversational latency and zero cloud API dependencies.
 - [x] **Interactive Sovereign Appliance Cockpit:** Administrative UI (`sovereign-appliance-cockpit.tsx`) with real-time Air-Gap Security Shield, PCR attestation card, 1-click seal/unseal controls, and full-duplex voice RAG simulator.
 - [x] **FastAPI REST Endpoints:** 6 tenant and administrative endpoints mounted under `/v1/appliance/*` for status, network audits, manifests, hardware sealing, and voice queries.
-- [x] **Platform Battery #41 Registration:** Cataloged `sovereign_air_gapped_appliance` in `BatteryService` under `EDGE_DISTRIBUTION` with verified zero-toy parameterization.
+- [x] **Platform Battery No. 41 Registration:** Cataloged `sovereign_air_gapped_appliance` in `BatteryService` under `EDGE_DISTRIBUTION` with verified zero-toy parameterization.
 
 ### Milestone 128: System 1 Fast-Path Decision Plane & TypeSafe Jev Integration (v2.6.0) — **Completed (2026-09-27)**
-- [x] **Platform Battery #42 Registration:** Registered `system_one_fast_decision_plane` in `BatteryService` under `ML_INTELLIGENCE` with non-autoregressive parameterization, zero-toy verification, and sub-100ms latency profile.
+- [x] **Platform Battery No. 42 Registration:** Registered `system_one_fast_decision_plane` in `BatteryService` under `ML_INTELLIGENCE` with non-autoregressive parameterization, zero-toy verification, and sub-100ms latency profile.
 - [x] **Resilient Async Jev Decision Client:** Built `JevClient` with stateful circuit breaker (`CLOSED` $\to$ `OPEN` $\to$ `HALF_OPEN`), EWMA latency tracking, and multi-tenant `X-Tenant-ID` isolation headers.
 - [x] **Sub-100ms Query Intent Classifier:** Built `JevQueryIntentAdapter` implementing `QueryIntentClassifier`, parallelizing `top_k`, `enable_hybrid`, `enable_reranking`, and `enable_web_search` decisions in a single non-autoregressive pass, dropping pre-search latency from ~1,400ms to ~80ms.
 - [x] **Sub-150ms Corrective RAG (CRAG) Candidate Evaluator:** Built `JevCorrectiveRetrievalAdapter` implementing `CorrectiveRetrievalProvider`, providing calibrated confidence scoring and instant web search trigger on ambiguous/incorrect chunks without autoregressive token overhead.

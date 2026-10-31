@@ -74,10 +74,20 @@ fi
 echo "🔄 Switching active symlink to $RELEASE_DIR..."
 ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
 
+# 7.5 Install the reliable tenant warm-up timer
+echo "⏱️ Installing tenant warm-up timer..."
+sudo install -m 0644 "$RELEASE_DIR/deploy/systemd/retriever-warmup.service" /etc/systemd/system/retriever-warmup.service
+sudo install -m 0644 "$RELEASE_DIR/deploy/systemd/retriever-warmup.timer" /etc/systemd/system/retriever-warmup.timer
+sudo install -m 0755 "$RELEASE_DIR/scripts/warmup_self.sh" /usr/local/bin/retriever-warmup.sh
+if [ ! -f /etc/retriever-warmup.env ]; then
+    echo "⚠️ /etc/retriever-warmup.env is missing; warm-up will fail until it is provisioned."
+fi
+
 # 8. Reload systemd & restart API and Worker services
 echo "⚡ Restarting systemd services..."
 sudo systemctl daemon-reload
 sudo systemctl restart retriever-api retriever-worker
+sudo systemctl enable --now retriever-warmup.timer
 
 # 9. Health probe verification gate (up to 120s for cold start)
 echo "🩺 Probing service health (/health/liveness & /health/readiness)..."

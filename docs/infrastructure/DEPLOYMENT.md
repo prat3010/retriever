@@ -204,6 +204,34 @@ git pull
 sudo systemctl restart retriever-api
 ```
 
+### Continuous Warm-Up Timer
+
+The VM runs its own warm-up probe every five minutes via systemd, independent of GitHub Actions (scheduled GitHub workflows are frequently delayed by hours). The deploy script installs `deploy/systemd/retriever-warmup.{service,timer}` and `/usr/local/bin/retriever-warmup.sh`.
+
+One-time credential provisioning (kept root-only on the VM):
+
+```sh
+ssh -i ~/.ssh/oracle_rsa ubuntu@<PUBLIC_IP>
+sudo install -m 600 -o ubuntu -g ubuntu /dev/null /etc/retriever-warmup.env
+sudo tee /etc/retriever-warmup.env >/dev/null <<'EOF'
+WARMUP_TENANT_ID=<tenant-uuid>
+WARMUP_API_KEY=<read-only-tenant-key>
+EOF
+sudo chown ubuntu:ubuntu /etc/retriever-warmup.env
+sudo chmod 600 /etc/retriever-warmup.env
+sudo systemctl enable --now retriever-warmup.timer
+```
+
+Verify the timer and a manual run:
+
+```sh
+systemctl list-timers retriever-warmup.timer
+sudo systemctl start retriever-warmup.service
+sudo journalctl -u retriever-warmup.service -n 20 --no-pager
+```
+
+The service calls `http://127.0.0.1:8000/v1/tenants/<tenant>/warmup` and logs the JSON response, including `generation_latency_ms`. The GitHub Actions workflow remains an external canary for the public Vercel path, not the primary scheduler.
+
 ---
 
 ## Production Operations

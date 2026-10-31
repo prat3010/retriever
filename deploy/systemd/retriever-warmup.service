@@ -1,0 +1,13 @@
+[Unit]
+Description=Retriever tenant warm-up probe
+Documentation=https://github.com/prat3010/retriever
+After=network-online.target retriever-api.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/local/bin/retriever-warmup.sh
+TimeoutStartSec=70
+Nice=10

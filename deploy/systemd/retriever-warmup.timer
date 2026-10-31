@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Retriever tenant warm-up every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+RandomizedDelaySec=10s
+Unit=retriever-warmup.service
+
+[Install]
+WantedBy=timers.target

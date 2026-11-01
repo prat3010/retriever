@@ -4,6 +4,34 @@ All notable changes to the Retriever RAG backend platform will be documented in 
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-09-28 - Milestone 129: Tenant AI Persona Engine & Enterprise Governance Policy Lock
+
+### Added
+- **Self-Service Tenant System Prompt REST API** (`apps/api/src/routers/tenant.py`):
+  - `GET /v1/tenants/{tenantId}/prompts/default`: Inspect master system instruction prompt template for authenticated tenant.
+  - `PUT /v1/tenants/{tenantId}/prompts/default`: Update tenant-specific master prompt template with custom instructions and variables.
+- **Enterprise Governance Policy Lock** (`apps/api/alembic/versions/p1q2r3s4t5u6_add_is_locked_to_prompt_templates.py`, `apps/api/src/adapters/database/models.py`):
+  - Added `is_locked: bool` column to `prompt_templates` table via Alembic revision.
+  - Enforced cluster-administrator authority: tenant prompt update requests under lock return `HTTP 403 Forbidden` (`detail="Master system prompt is locked by cluster administrator policy."`).
+- **Admin Web Studio Integration** (`apps/web/src/components/tenant-prompts.tsx`, `apps/web/src/hooks/use-prompts.ts`):
+  - Added centralized policy lock toggle to the Admin Web Studio Prompts Management tab.
+- **Automated Verification Suites** (`apps/api/tests/test_tenant_prompt_governance.py`):
+  - 5 tests covering get/put tenant prompts, cluster admin lock/unlock, 403 enforcement, and backward-compatible template formatting.
+
+## [2.6.0] - 2026-09-27 - Milestone 128: System 1 Fast-Path Decision Plane & TypeSafe Jev Integration
+
+### Added
+- **System 1 Fast-Path Decision Plane** (`apps/api/src/adapters/cognitive/jev_decision_adapters.py`):
+  - Sub-100ms Query Intent Classifier (`JevQueryIntentAdapter`) delivering parallelized `top_k`, `enable_hybrid`, `enable_reranking`, and `enable_web_search` decisions in a single non-autoregressive pass.
+  - Sub-150ms Corrective RAG (CRAG) Candidate Evaluator (`JevCorrectiveRetrievalAdapter`) providing calibrated confidence scoring and instant web search triggering.
+- **Resilient Async Jev Decision Client** (`apps/api/src/adapters/cognitive/jev_client.py`):
+  - Built `JevClient` with stateful circuit breaker (`CLOSED` $\to$ `OPEN` $\to$ `HALF_OPEN`), EWMA latency tracking, and multi-tenant `X-Tenant-ID` isolation headers.
+  - Zero-toy resilient cascades: transparent failover to `LLMQueryIntentAdapter`, `LLMCorrectiveRetrievalAdapter`, and local scoring heuristics when `JEV_API_KEY` is absent or during network outages.
+- **Platform Battery No. 42 Registration** (`apps/api/src/domain/batteries/battery_service.py`):
+  - Registered `system_one_fast_decision_plane` under `BatteryCategory.ML_INTELLIGENCE` (42 platform batteries verified).
+- **Automated Verification Suites** (`apps/api/tests/test_system_one_jev_decision.py`):
+  - 10 unit and integration tests passing covering intent decisions, CRAG scoring, circuit breaker states, and battery catalog assertions.
+
 ## [2.5.0] - 2026-09-24 - Milestone 127: Sovereign Air-Gapped Appliance & Embedded Edge Engine
 
 ### Added

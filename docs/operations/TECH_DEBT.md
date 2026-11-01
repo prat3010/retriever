@@ -279,15 +279,13 @@ through their parent tables.*
 
 *Fixed: stack traces logged server-side only; clients receive a generic 500.*
 
-### Guest demo key does not exist in the backend (open follow-up)
-**Files:** `Prateek_website/src/app/rag/page.tsx:16`, (backend: no match)
+### ~~Guest demo key does not exist in the backend~~ (Fixed in commit db734d2 / ADR 50)
+**Files:** `Prateek_website/src/app/rag/guest/[...path]/route.ts`, `docs/runbooks/RUNBOOK_GUEST_RAG_PROXY.md`
 
 Frontend hardcodes `ret_live_GuestAccessKey2026.ReadOnlyChat` for the public
-live demo; no such key exists anywhere in this repo — the sandbox 401s or
-depends on an unverifiable manual DB insert. Also violates
-`.agents/AGENTS.md` (no hardcoded guest tenant UUIDs).
+live demo; no such key exists anywhere in this repo.
 
-Fix: provision a server-side guest tenant + read-only key, or remove the demo.
+*Fixed in ADR 50 / commit `db734d2`: created server-side guest RAG proxy (`/api/rag/guest/*`) with strict operation allowlist, per-IP rate limits, and dedicated server-injected guest user UUID. Removed all browser-exposed keys and hardcoded guest tenant fallbacks.*
 
 ### Production `OIDC_AUDIENCE` is a placeholder (open follow-up)
 **File:** `/opt/retriever/.env` on the Oracle VM (`localhost:8000`, `YOUR_SERVER_IP`)
@@ -476,20 +474,20 @@ Storage currently runs on `STORAGE_PROVIDER=local` with Remote HTTP Fallback for
 
 ## Product / Deferred (Future Extensions)
 
-### External SaaS Connectors Framework
-**Files:** `apps/api/src/domain/ingestion/`, `workers/src/tasks/`
+### ~~External SaaS Connectors Framework~~ (Shipped in M125 / v2.3.0 — Battery No. 39)
+**Files:** `apps/api/src/domain/connectors/`, `apps/api/src/routers/connectors.py`
 
-Currently, document ingestion requires direct API uploads or file uploads via the Admin Dashboard. Adding connectors (e.g. Google Drive, Notion, Slack, Confluence, SharePoint) would enable automated recurring document sync.
+Shipped in Milestone 125 as enterprise SaaS connectors with document sync, webhook triggers, and ACL filtering (Google Drive, Notion, Slack, Confluence, SharePoint, Zendesk).
 
-### GraphRAG & Knowledge Graph Indexing
-**Files:** `apps/api/src/domain/knowledge/`, `apps/api/src/domain/retrieval/`
+### ~~GraphRAG & Knowledge Graph Indexing~~ (Shipped in M37 / M113 — Battery No. 29)
+**Files:** `apps/api/src/domain/knowledge/graph_store.py`, `apps/api/src/routers/graph.py`
 
-Retrieval uses hybrid vector search + GIN text search with parent-child chunking. Adding entity-relationship extraction and graph database integration (GraphRAG) will allow multi-hop reasoning over complex relational document sets.
+Shipped in Milestone 37 & 113 as GraphRAG entity-relationship extraction, Leiden community clustering, and multi-hop Cypher/vector reasoning.
 
-### Agentic Workflows & Multi-Step Tool Execution
-**Files:** `apps/api/src/domain/inference/`
+### ~~Agentic Workflows & Multi-Step Tool Execution~~ (Shipped in M104 / M126 — Battery No. 40)
+**Files:** `apps/api/src/domain/workflow/dag_engine.py`, `apps/api/src/routers/workflows.py`
 
-The inference orchestrator handles conversational RAG and single-turn chat completion. Adding multi-step tool-calling loops will enable autonomous agentic workflows.
+Shipped in Milestone 104 & 126 as visual DAG execution engine, agentic function-calling tools, topological task scheduler, and streaming node states.
 
 ### Architectural Boundary Note: Headless End-User Auth
 **Files:** `apps/api/src/domain/identity/`

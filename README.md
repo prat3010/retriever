@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Release](https://img.shields.io/badge/release-v2.2.0-blueviolet.svg)](https://github.com/prat3010/retriever/releases)
+[![Release](https://img.shields.io/badge/release-v2.7.0-blueviolet.svg)](https://github.com/prat3010/retriever/releases)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)

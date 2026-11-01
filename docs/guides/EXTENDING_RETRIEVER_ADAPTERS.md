@@ -38,7 +38,7 @@ If you or your enterprise team wants to modify, swap, or extend any component—
 ### The Invariant Guarantee:
 When you swap or extend an adapter:
 1. **Zero Core Rewrites:** You never need to touch `src/domain/`.
-2. **Battery Preservation:** All 38 production batteries (caching, evaluation benchmarks, hybrid reranking, citation verification) continue to work out of the box.
+2. **Battery Preservation:** All 42 production batteries (caching, evaluation benchmarks, hybrid reranking, citation verification) continue to work out of the box.
 3. **Future-Proof Upgrades:** When you pull updates from upstream Retriever, your custom adapters remain completely isolated and intact.
 
 ---

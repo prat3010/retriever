@@ -5,9 +5,9 @@
 
 ---
 
-## ⚡ Current Status: Enterprise Production Ready (v2.5.0)
+## ⚡ Current Status: Enterprise Production Ready (v2.7.0)
 
-Retriever has completed **127 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, and scale-to-zero serving across 119+ automated test suites.
+Retriever has completed **129 foundational engineering milestones** spanning core retrieval, multi-tenant isolation, cognitive agentic loops, non-autoregressive decision planes, and enterprise persona governance across 150 automated test suites.
 
 👉 **Looking for granular historical milestone logs (M1–M109)?**  
 See our exhaustive 100+ milestone engineering record: [`docs/engineering/MILESTONES_HISTORY.md`](docs/engineering/MILESTONES_HISTORY.md).

@@ -5,7 +5,7 @@ When the user types `Setup`, `setup`, `init`, `start`, or asks how to get starte
 DO NOT output long markdown explanations or tell the user to read README.md.
 Follow this 4-beat interactive concierge flow:
 
-1. **Welcome & Pitch:** Explain Retriever (enterprise RAG engine replacing LangChain/Pinecone, Postgres RLS multi-tenancy, free local Ollama embeddings, 38 batteries).
+1. **Welcome & Pitch:** Explain Retriever (enterprise RAG engine replacing LangChain/Pinecone, Postgres RLS multi-tenancy, free local Ollama embeddings, 42 batteries).
 2. **Run Preflight Diagnostic:**
    ```bash
    python3 scripts/agent_preflight.py

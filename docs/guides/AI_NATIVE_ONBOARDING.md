@@ -14,7 +14,7 @@ When a developer opens Retriever and sends `Setup` (or `setup`, `init`, `start`,
 
 ```mermaid
 flowchart TD
-    User["Developer: 'Setup'"] --> Beat1["Beat 1: 10-Second Anti-Bloat Pitch<br/>(Postgres RLS, Free Local Embeddings, 38 Batteries)"]
+    User["Developer: 'Setup'"] --> Beat1["Beat 1: 10-Second Anti-Bloat Pitch<br/>(Postgres RLS, Free Local Embeddings, 42 Batteries)"]
     Beat1 --> Beat2["Beat 2: Autonomous Preflight Diagnostics<br/>(Runs python3 scripts/agent_preflight.py)"]
     Beat2 --> Beat3["Beat 3: Interactive Path Selection<br/>(Docker Stack, MCP Tools, or Python Dev)"]
     Beat3 --> Beat4["Beat 4: Live Dopamine & Verification<br/>(Wait for readiness, run demo query, output links)"]

@@ -135,7 +135,7 @@ Execute programmatic tenant creation and API key issuance via Admin API:
 python3 -c '
 import urllib.request, json, os
 
-ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266")
+ADMIN_KEY = os.getenv("ADMIN_MASTER_KEY", "YOUR_ADMIN_MASTER_KEY")
 BASE_URL = "http://localhost:8000/v1/admin/tenants"
 
 tenants = [

@@ -78,7 +78,7 @@ ENVIRONMENT=production
 RETRIEVER_API_URL=https://api.yourdomain.com
 
 # PostgreSQL + pgvector
-DATABASE_URL=postgresql+asyncpg://postgres:YourSecurePassword@db:5432/retriever
+DATABASE_URL=postgresql+asyncpg://postgres:your_secure_password@db:5432/retriever
 
 # Security Keys (Generate via: openssl rand -hex 32)
 SECRET_KEY=generate_a_random_64_char_hex_secret_here

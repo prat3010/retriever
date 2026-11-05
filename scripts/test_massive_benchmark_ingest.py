@@ -35,7 +35,7 @@ DEFAULT_API_KEY = os.getenv(
 )
 DEFAULT_ADMIN_KEY = os.getenv(
     "ADMIN_MASTER_KEY",
-    "2f4a1713e6a2526f51e7e6b7825689509c9071e0b61fa59a5804ccfdbdafd266",
+    "",
 )
 
 

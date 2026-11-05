@@ -26,6 +26,8 @@ SECRET_PATTERNS = [
     (r"(?:sk-proj-[0-9a-zA-Z_-]{40,})", "OpenAI Project Secret Key"),
     (r"(?:AIzaSy[0-9a-zA-Z_-]{33})", "Google Cloud / Gemini API Key"),
     (r"(?:ret_live_[0-9a-zA-Z_.-]{24,})", "Retriever Production API Key"),
+    (r"(?:sk-or-v1-[0-9a-fA-F]{64})", "OpenRouter API Key"),
+    (r"(?:postgres(?:ql)?(?:\+[a-z0-9]+)?://[^:\s]+:[^@\s]+@[^/\s]+/\w+)", "Database Connection String with Credentials"),
 ]
 
 # Paths to ignore during scanning
@@ -39,12 +41,12 @@ IGNORED_DIRS = {
     "env",
     "__pycache__",
     ".pytest_cache",
+    ".ruff_cache",
     "coverage",
     "public",
     "dist",
     "build",
     "storage",
-    "docs",
 }
 
 IGNORED_EXTENSIONS = {
@@ -106,7 +108,12 @@ def scan_file(file_path: Path) -> list[tuple[int, str, str]]:
                 matched_str = match.group(0)
                 if any(
                     ph in matched_str.lower()
-                    for ph in ("placeholder", "sample", "example", "your_", "guest", "demo", "00000000", "abcdef", "master_admin_secret")
+                    for ph in (
+                        "placeholder", "sample", "example", "your_", "guest", "demo",
+                        "00000000", "abcdef", "master_admin_secret", "postgres:postgres",
+                        "retriever:retriever", "user:pass", "<password>", "postgres:password",
+                        "retriever:secret", "yoursecurerootpassword", "yoursecureredispassword"
+                    )
                 ):
                     continue
                 findings.append((line_idx, label, line_clean[:60] + "..."))

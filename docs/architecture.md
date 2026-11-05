@@ -972,13 +972,13 @@ curl http://localhost:8000/health
 
 # Search test
 curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/search \
-  -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
+  -H "X-API-Key: ret_live_sample_api_key_000000000000000000000000" \
   -H "Content-Type: application/json" \
   -d '{"query": "test", "top_k": 3}'
 
 # Chat test (requires active LLM key)
 curl -X POST http://localhost:8000/v1/tenants/00000000-0000-0000-0000-000000000001/chat/sessions \
-  -H "X-API-Key: ret_live_egijtR_yPZQ.XvnZj1KP22xGoGoZuKBXq7a7PkX8-_9Z" \
+  -H "X-API-Key: ret_live_sample_api_key_000000000000000000000000" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "a8b819bb-61bb-450b-9662-62bd06b188d3"}'
 
